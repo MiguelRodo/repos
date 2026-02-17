@@ -165,7 +165,7 @@ else
   ls -la "$TEST_ROOT" | grep -E "testrepo|workspace"
 fi
 
-if [ -d "$TEST_ROOT/testrepo2" ] && [ -d "$TEST_ROOT/workspace1-release-v1.0" ]; then
+if [ -d "$TEST_ROOT/testrepo2" ] && [ -d "$TEST_ROOT/testrepo2-release-v1.0" ]; then
   print_pass "Cloned testrepo2 and created release/v1.0 worktree"
 else
   print_fail "Failed to clone testrepo2 or create worktree"
@@ -288,7 +288,7 @@ if [ -x "$WORKSPACE_SCRIPT" ]; then
       
       # Verify paths in workspace
       if grep -q '../testrepo1' entire-project.code-workspace && \
-         grep -q '../workspace4-dev' entire-project.code-workspace; then
+         grep -q '../testrepo1-dev' entire-project.code-workspace; then
         print_pass "Workspace contains correct paths for local repos"
       else
         print_fail "Workspace paths incorrect"
@@ -310,6 +310,9 @@ fi
 # ============================================
 print_test "Single-branch clone from local remote"
 
+# Clean up any existing testrepo1 from previous tests
+rm -rf "$TEST_ROOT/testrepo1"
+
 WORKSPACE5="$TEST_ROOT/workspace5"
 mkdir -p "$WORKSPACE5"
 cd "$WORKSPACE5"
@@ -317,6 +320,7 @@ cd "$WORKSPACE5"
 git init -q
 git config user.email "test@example.com"
 git config user.name "Test User"
+git remote add origin "$REPO1_BARE"
 echo "# Workspace 5" > README.md
 git add README.md
 git commit -q -m "Initial commit"

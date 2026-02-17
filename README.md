@@ -115,19 +115,26 @@ repos --help
 
 ### Advanced Features
 
-The package installs scripts to `/usr/share/repos/scripts/`:
-
-- `setup-repos.sh` - Main setup orchestrator (called by `repos` command)
-- `run-pipeline.sh` - Execute pipeline across all repositories
-- `add-branch.sh` - Create worktrees for parallel development
-- `update-branches.sh` - Sync devcontainer across worktrees
-- `update-scripts.sh` - Pull latest scripts from template
-
-You can call these directly if needed:
+The package installs additional scripts to `/usr/share/repos/scripts/` that you can call directly:
 
 ```bash
+# Execute pipeline across all repositories
 /usr/share/repos/scripts/run-pipeline.sh
+
+# Create worktrees for parallel development
 /usr/share/repos/scripts/add-branch.sh feature-x
+
+# Sync devcontainer across worktrees
+/usr/share/repos/scripts/update-branches.sh
+
+# Pull latest scripts from template
+/usr/share/repos/scripts/update-scripts.sh
+```
+
+**Note for contributors:** When developing/testing from the repository, you can run scripts directly:
+```bash
+scripts/setup-repos.sh
+scripts/run-pipeline.sh
 ```
 
 ### Repository Layout
