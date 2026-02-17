@@ -24,6 +24,9 @@ wget https://github.com/MiguelRodo/repos/releases/download/v${VERSION_REPOS}/rep
 # Install the package
 sudo dpkg -i repos_${VERSION_REPOS}_all.deb
 
+# Remove installation file
+rm repos_${VERSION_REPOS}_all.deb
+
 # If there are dependency issues, run:
 sudo apt-get install -f
 ```
