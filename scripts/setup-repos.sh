@@ -8,10 +8,20 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-if [ ! -f "$PROJECT_ROOT/repos.list" ] && [ -f "$PROJECT_ROOT/repos-to-clone.list" ]; then
-  REPOS_FILE="$PROJECT_ROOT/repos-to-clone.list"
+# Detect if we're running from an installed package location
+# If so, use current working directory for repos.list lookup
+if [[ "$SCRIPT_DIR" == */usr/share/repos/scripts ]]; then
+  # Running from installed package - use current working directory
+  REPOS_SEARCH_DIR="$PWD"
 else
-  REPOS_FILE="$PROJECT_ROOT/repos.list"
+  # Running from source - use project root
+  REPOS_SEARCH_DIR="$PROJECT_ROOT"
+fi
+
+if [ ! -f "$REPOS_SEARCH_DIR/repos.list" ] && [ -f "$REPOS_SEARCH_DIR/repos-to-clone.list" ]; then
+  REPOS_FILE="$REPOS_SEARCH_DIR/repos-to-clone.list"
+else
+  REPOS_FILE="$REPOS_SEARCH_DIR/repos.list"
 fi
 
 PUBLIC_FLAG=false
