@@ -46,19 +46,29 @@ done
 [ -f "$REPOS_FILE" ] || { echo "Error: '$REPOS_FILE' not found." >&2; exit 1; }
 
 # ── CREDENTIALS WITH FALLBACK (will be retrieved only if needed) ────────────────
+# Returns 0 if credentials are available, 1 if not
 get_credentials() {
   if [ -z "${GH_TOKEN-}" ] || [ -z "${GH_USER-}" ]; then
-    creds=$(
+    # Try to get credentials, but don't fail if unavailable
+    if ! creds=$(
       printf 'url=https://github.com\n\n' \
-        | git -c credential.interactive=false credential fill
-    )
+        | git -c credential.interactive=false credential fill 2>/dev/null
+    ); then
+      echo "Warning: GitHub credentials not available. Skipping repository creation/verification." >&2
+      return 1
+    fi
     [ -z "${GH_USER-}" ] && \
       GH_USER=$(printf '%s\n' "$creds" | awk -F= '/^username=/ {print $2}')
     [ -z "${GH_TOKEN-}" ] && \
       GH_TOKEN=$(printf '%s\n' "$creds" | awk -F= '/^password=/ {print $2}')
-    : "${GH_USER:?Could not retrieve GitHub username}"
-    : "${GH_TOKEN:?Could not retrieve GitHub token}"
+    
+    # Check if we actually got credentials
+    if [ -z "${GH_USER-}" ] || [ -z "${GH_TOKEN-}" ]; then
+      echo "Warning: GitHub credentials not available. Skipping repository creation/verification." >&2
+      return 1
+    fi
   fi
+  return 0
 }
 
 API_URL="https://api.github.com"
@@ -158,7 +168,10 @@ while IFS= read -r line || [ -n "$line" ]; do
       fi
       
       # Get credentials if needed
-      get_credentials
+      if ! get_credentials; then
+        echo "Skipping branch check for @$branch (no credentials)"
+        continue
+      fi
       AUTH_HDR="Authorization: token $GH_TOKEN"
       
       # Check if branch exists on fallback repo
@@ -212,7 +225,13 @@ while IFS= read -r line || [ -n "$line" ]; do
   case "$repo_spec" in *@*) branch=${repo_spec##*@} ;; *) branch="" ;; esac
 
   # Get credentials only when we need them (for GitHub repos)
-  get_credentials
+  if ! get_credentials; then
+    echo "Skipping repository creation/verification for $repo_spec (no credentials)"
+    # Still update fallback repo for subsequent @branch lines
+    fallback_owner="$owner"
+    fallback_repo="$repo"
+    continue
+  fi
   AUTH_HDR="Authorization: token $GH_TOKEN"
 
   # 1) Determine owner type (User vs Organization)
