@@ -122,7 +122,7 @@ get_credentials() {
     [ -z "${GH_TOKEN-}" ] && \
       GH_TOKEN=$(printf '%s\n' "$creds" | tr -d '\r' | awk -F= '/^password=/ {print $2}')
     
-    debug "Retrieved GH_USER: ${GH_USER:-<empty>}"
+    debug "Retrieved GH_USER: ${GH_USER:+<present>}"
     debug "Retrieved GH_TOKEN: ${GH_TOKEN:+<present>}"
     
     # Check if we actually got credentials
@@ -133,6 +133,8 @@ get_credentials() {
     fi
   else
     debug "Using existing GH_TOKEN and GH_USER from environment"
+    debug "Environment GH_USER: ${GH_USER:+<present>}"
+    debug "Environment GH_TOKEN: ${GH_TOKEN:+<present>}"
   fi
   debug "Credentials successfully obtained"
   return 0
