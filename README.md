@@ -28,8 +28,6 @@ sudo dpkg -i repos_${VERSION_REPOS}_all.deb
 sudo apt-get install -f
 ```
 
-Note that VERSION takes the form of `<major>.<minor>.<patch>` and has no leading `v`, e.g. `1.0.1`.
-
 #### Dependencies
 
 The package automatically handles dependencies, but requires:
