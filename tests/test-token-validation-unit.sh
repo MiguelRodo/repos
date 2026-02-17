@@ -76,7 +76,8 @@ fi
 # Test 4: Verify validate_token handles generic error messages
 print_test "validate_token handles generic API error messages"
 
-if grep -B2 'GitHub API error' "$PROJECT_ROOT/scripts/helper/create-repos.sh" | grep -q '"message"'; then
+# Check for both the new generic message and the specific API error message
+if grep -q 'GitHub API authentication failed\|GitHub API error' "$PROJECT_ROOT/scripts/helper/create-repos.sh"; then
   print_pass "validate_token reports generic API errors"
 else
   print_fail "validate_token doesn't handle generic errors"

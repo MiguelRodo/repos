@@ -190,8 +190,15 @@ validate_token() {
     # If the pattern doesn't match, the message variable will contain the full grep line
     # For more robust JSON parsing, consider using jq if available
     message=$(printf '%s\n' "$response" | grep '"message"' | head -n1 | sed -E 's/.*"message": *"([^"]+)".*/\1/')
-    debug "Token validation failed: $message"
-    echo "Error: GitHub API error: $message" >&2
+    # Validate that sed substitution succeeded by checking if message contains quotes
+    # If it still contains JSON structure, use a generic message
+    if printf '%s\n' "$message" | grep -q '"'; then
+      debug "Token validation failed: Could not parse API error message"
+      echo "Error: GitHub API authentication failed. Please check your credentials." >&2
+    else
+      debug "Token validation failed: $message"
+      echo "Error: GitHub API error: $message" >&2
+    fi
     return 1
   fi
   
@@ -318,7 +325,7 @@ while IFS= read -r line || [ -n "$line" ]; do
       # Validate token
       if ! validate_token "$AUTH_HDR"; then
         debug "Line $line_num: Token validation failed, skipping branch check"
-        echo "Skipping branch check for @$branch on $fallback_owner/$fallback_repo (invalid credentials)"
+        echo "Skipping branch check for @$branch on $fallback_owner/$fallback_repo (invalid credentials)" >&2
         continue
       fi
       
@@ -397,7 +404,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   # Validate token before making API calls
   if ! validate_token "$AUTH_HDR"; then
     debug "Line $line_num: Token validation failed, skipping repo $repo_spec"
-    echo "Skipping repository creation/verification for $repo_spec (invalid credentials)"
+    echo "Skipping repository creation/verification for $repo_spec (invalid credentials)" >&2
     # Still update fallback repo for subsequent @branch lines
     fallback_owner="$owner"
     fallback_repo="$repo"
