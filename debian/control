@@ -1,0 +1,20 @@
+Source: repos
+Section: utils
+Priority: optional
+Maintainer: Miguel Rodo <miguel.rodo@uct.ac.za>
+Build-Depends: debhelper (>= 10)
+Standards-Version: 4.5.1
+Homepage: https://github.com/MiguelRodo/repos
+
+Package: repos
+Architecture: all
+Depends: bash, git, curl, jq
+Description: Multi-repository management tool
+ This package provides infrastructure for managing multiple related repositories
+ as a unified workspace. It includes tools for:
+  - Cloning and managing multiple Git repositories
+  - Creating and managing Git worktrees
+  - Generating VS Code workspace configurations
+  - Running pipelines across repositories
+ .
+ Designed for any multi-repository workflow and project structure.
