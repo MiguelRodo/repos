@@ -22,7 +22,7 @@ When releasing a new version:
 1. Update the `version` field
 2. Calculate the SHA256 hash of the release archive:
    ```powershell
-   (Get-FileHash -Algorithm SHA256 repos-v1.0.0.zip).Hash
+   (Get-FileHash -Algorithm SHA256 v1.0.0.zip).Hash
    ```
 3. Update the `hash` field with the calculated hash
 4. Commit and push to your bucket repository

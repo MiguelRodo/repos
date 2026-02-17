@@ -41,13 +41,15 @@ if ($Uninstall) {
     }
 }
 
-Write-Host ""
-Write-Host "Installation complete!" -ForegroundColor Green
-Write-Host ""
-Write-Host "After restarting PowerShell, you can run:" -ForegroundColor Cyan
-Write-Host "  repos --help" -ForegroundColor White
-Write-Host ""
-Write-Host "Dependencies required:" -ForegroundColor Cyan
-Write-Host "  - Git for Windows (includes bash, git, curl)" -ForegroundColor White
-Write-Host "  - jq (download from https://jqlang.github.io/jq/download/)" -ForegroundColor White
-Write-Host ""
+if (-not $Uninstall) {
+    Write-Host ""
+    Write-Host "Installation complete!" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "After restarting PowerShell, you can run:" -ForegroundColor Cyan
+    Write-Host "  repos --help" -ForegroundColor White
+    Write-Host ""
+    Write-Host "Dependencies required:" -ForegroundColor Cyan
+    Write-Host "  - Git for Windows (includes bash, git, curl)" -ForegroundColor White
+    Write-Host "  - jq (download from https://jqlang.github.io/jq/download/)" -ForegroundColor White
+    Write-Host ""
+}
