@@ -35,6 +35,34 @@ trap '' ERR
 
 git() { command git "$@" </dev/null; }
 
+# — Debug support —
+DEBUG_GLOBAL=false
+DEBUG_FILE_GLOBAL=""
+DEBUG_FD_GLOBAL=2  # Default to stderr
+
+debug() {
+  if $DEBUG_GLOBAL; then
+    echo "[DEBUG clone-repos.sh] $*" >&$DEBUG_FD_GLOBAL
+  fi
+}
+
+# Get platform-independent temp directory
+get_temp_dir() {
+  # Try various temp directory variables in order of preference
+  if [ -n "${TMPDIR:-}" ] && [ -d "${TMPDIR}" ]; then
+    echo "${TMPDIR%/}"  # Remove trailing slash if present
+  elif [ -n "${TEMP:-}" ] && [ -d "${TEMP}" ]; then
+    echo "${TEMP%/}"
+  elif [ -n "${TMP:-}" ] && [ -d "${TMP}" ]; then
+    echo "${TMP%/}"
+  elif [ -d "/tmp" ]; then
+    echo "/tmp"
+  else
+    # Fallback to current directory
+    echo "."
+  fi
+}
+
 # --- Planning & state (Bash 3.2-friendly) -----------------------------------
 # Remotes we've seen (normalised https), and where their local base lives
 declare -a SEEN_REMOTES=()
@@ -311,7 +339,8 @@ Examples
 Options
   -f, --file <repo-list>   Use an alternate repo list file (default: repos.list,
                            or repos-to-clone.list if repos.list is absent).
-  -d, --debug.             Enable debug tracing.
+  -d, --debug              Enable debug tracing to stderr.
+  --debug-file [file]      Enable debug tracing to file (auto-generated if not specified).
   -h, --help               Show this help and exit.
 EOF
 }
@@ -854,24 +883,49 @@ parse_args() {
   fi
 
   DEBUG=false
+  DEBUG_FILE_ARG=""
 
   while [ "$#" -gt 0 ]; do
     case "$1" in
       -f|--file) shift; [ "$#" -gt 0 ] && REPOS_FILE="$1" || { usage; exit 1; }; shift ;;
       -d|--debug) DEBUG=true; shift ;;
+      --debug-file)
+        DEBUG=true
+        shift
+        # Check if next arg exists and is not a flag
+        if [ $# -gt 0 ] && [[ "$1" != -* ]]; then
+          DEBUG_FILE_ARG="$1"
+          shift
+        else
+          # Auto-generate debug file in platform-independent temp directory
+          TEMP_DIR=$(get_temp_dir)
+          DEBUG_FILE_ARG="${TEMP_DIR}/repos-clone-debug-$(date +%Y%m%d-%H%M%S)-$$.log"
+        fi
+        ;;
       -h|--help) usage; exit 0 ;;
       *) echo "Unknown argument: $1" >&2; usage; exit 1 ;;
     esac
   done
 
-  [[ "$DEBUG" == true ]] && echo "Using repo list file: $REPOS_FILE" >&2
+  # Set global debug variables
+  DEBUG_GLOBAL=$DEBUG
+  DEBUG_FILE_GLOBAL="$DEBUG_FILE_ARG"
+
+  # Set up debug file descriptor if needed
+  if [ -n "$DEBUG_FILE_GLOBAL" ]; then
+    exec {DEBUG_FD_GLOBAL}>>"$DEBUG_FILE_GLOBAL"
+    echo "clone-repos.sh debug output will be appended to: $DEBUG_FILE_GLOBAL" >&2
+  fi
+
+  debug "=== clone-repos.sh Debug Session Started ==="
+  debug "Using repo list file: $REPOS_FILE"
 
   if [ ! -f "$REPOS_FILE" ]; then
     echo "File '$REPOS_FILE' not found." >&2
     exit 1
   fi
 
-  [[ "$DEBUG" == true ]] && echo "Argument parsing complete." >&2
+  debug "Argument parsing complete."
   return 0
 }
 
@@ -1097,3 +1151,10 @@ main() {
 }
 
 main "$@"
+
+debug "=== clone-repos.sh Debug Session Ended ==="
+
+# Close debug file descriptor if opened
+if [ -n "$DEBUG_FILE_GLOBAL" ]; then
+  exec {DEBUG_FD_GLOBAL}>&-
+fi

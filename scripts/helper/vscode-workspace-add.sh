@@ -20,13 +20,42 @@
 
 set -e
 
+# — Debug support —
+DEBUG=false
+DEBUG_FILE=""
+DEBUG_FD=2  # Default to stderr
+
+debug() {
+  if $DEBUG; then
+    echo "[DEBUG vscode-workspace-add.sh] $*" >&$DEBUG_FD
+  fi
+}
+
+# Get platform-independent temp directory
+get_temp_dir() {
+  # Try various temp directory variables in order of preference
+  if [ -n "${TMPDIR:-}" ] && [ -d "${TMPDIR}" ]; then
+    echo "${TMPDIR%/}"  # Remove trailing slash if present
+  elif [ -n "${TEMP:-}" ] && [ -d "${TEMP}" ]; then
+    echo "${TEMP%/}"
+  elif [ -n "${TMP:-}" ] && [ -d "${TMP}" ]; then
+    echo "${TMP%/}"
+  elif [ -d "/tmp" ]; then
+    echo "/tmp"
+  else
+    # Fallback to current directory
+    echo "."
+  fi
+}
+
 usage() {
   cat <<EOF
 Usage: $0 [options]
 
 Options:
   -f, --file <file>       Specify the repository list file (default: 'repos.list').
-  -d, --debug             Enable debug output (shows path calculations).
+  -d, --debug             Enable debug output to stderr (shows path calculations).
+  --debug-file [file]     Enable debug output to file (auto-generated if not specified).
   -h, --help              Display this help message.
 
 Each line in the repository list file can be in one of three formats:
@@ -511,6 +540,7 @@ main() {
     repos_list_file="repos.list"
   fi
   DEBUG=false
+  DEBUG_FILE=""
   
   # Argument parsing
   while [ "$#" -gt 0 ]; do
@@ -523,6 +553,19 @@ main() {
         DEBUG=true
         shift
         ;;
+      --debug-file)
+        DEBUG=true
+        shift
+        # Check if next arg exists and is not a flag
+        if [ $# -gt 0 ] && [[ "$1" != -* ]]; then
+          DEBUG_FILE="$1"
+          shift
+        else
+          # Auto-generate debug file in platform-independent temp directory
+          TEMP_DIR=$(get_temp_dir)
+          DEBUG_FILE="${TEMP_DIR}/repos-workspace-debug-$(date +%Y%m%d-%H%M%S)-$$.log"
+        fi
+        ;;
       -h|--help)
         usage; exit 0
         ;;
@@ -533,6 +576,15 @@ main() {
         ;;
     esac
   done
+
+  # Set up debug file descriptor if needed
+  if [ -n "$DEBUG_FILE" ]; then
+    exec {DEBUG_FD}>>"$DEBUG_FILE"
+    echo "vscode-workspace-add.sh debug output will be appended to: $DEBUG_FILE" >&2
+  fi
+
+  debug "=== vscode-workspace-add.sh Debug Session Started ==="
+  debug "Repository list file: $repos_list_file"
 
   if [ ! -f "$repos_list_file" ]; then
     echo "Repository list file '$repos_list_file' not found."
@@ -554,3 +606,10 @@ main() {
 }
 
 main "$@"
+
+debug "=== vscode-workspace-add.sh Debug Session Ended ==="
+
+# Close debug file descriptor if opened
+if [ -n "$DEBUG_FILE" ]; then
+  exec {DEBUG_FD}>&-
+fi
