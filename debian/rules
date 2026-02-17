@@ -1,0 +1,26 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_install:
+	# Install scripts to /usr/share/repos/scripts/
+	install -d debian/repos/usr/share/repos
+	cp -r scripts debian/repos/usr/share/repos/
+	
+	# Make all shell scripts executable
+	find debian/repos/usr/share/repos/scripts -type f -name "*.sh" -exec chmod +x {} \;
+	
+	# Install the wrapper script to /usr/bin/repos
+	install -d debian/repos/usr/bin
+	install -m 755 debian/repos.sh debian/repos/usr/bin/repos
+
+override_dh_auto_clean:
+	dh_auto_clean
+	rm -rf debian/repos
+
+override_dh_auto_build:
+	# No build step needed
+
+override_dh_auto_test:
+	# No tests during package build

@@ -1,0 +1,9 @@
+repos (1.0.0) unstable; urgency=medium
+
+  * Initial release
+  * Multi-repository management tools
+  * Support for Git worktrees
+  * VS Code workspace generation
+  * Pipeline execution across repositories
+
+ -- Miguel Rodo <miguel.rodo@uct.ac.za>  Mon, 17 Feb 2026 07:40:00 +0000
