@@ -19,7 +19,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y debhelper devscripts
+          sudo apt-get install -y debhelper devscripts build-essential
       
       - name: Get version from tag
         id: get_version
