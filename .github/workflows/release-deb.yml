@@ -9,6 +9,8 @@ on:
 jobs:
   build-deb:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required for uploading to releases
     
     steps:
       - name: Checkout code
