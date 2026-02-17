@@ -9,7 +9,7 @@ set -o pipefail
 # — Debug support —
 DEBUG=false
 DEBUG_FILE=""
-DEBUG_FD=2  # Default to stderr
+DEBUG_FD=3  # Use FD 3 for debug output (compatible with Bash 3.2+)
 
 debug() {
   if $DEBUG; then
@@ -89,8 +89,11 @@ done
 
 # Set up debug file descriptor if needed
 if [ -n "$DEBUG_FILE" ]; then
-  exec {DEBUG_FD}>>"$DEBUG_FILE"
+  exec 3>>"$DEBUG_FILE"
   echo "create-repos.sh debug output will be appended to: $DEBUG_FILE" >&2
+else
+  # Redirect FD 3 to stderr by default
+  exec 3>&2
 fi
 
 debug "=== create-repos.sh Debug Session Started ==="
@@ -415,5 +418,5 @@ debug "=== create-repos.sh Debug Session Ended ==="
 
 # Close debug file descriptor if opened
 if [ -n "$DEBUG_FILE" ]; then
-  exec {DEBUG_FD}>&-
+  exec 3>&-
 fi

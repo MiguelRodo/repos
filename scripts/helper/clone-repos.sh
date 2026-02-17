@@ -38,7 +38,7 @@ git() { command git "$@" </dev/null; }
 # — Debug support —
 DEBUG_GLOBAL=false
 DEBUG_FILE_GLOBAL=""
-DEBUG_FD_GLOBAL=2  # Default to stderr
+DEBUG_FD_GLOBAL=3  # Use FD 3 for debug output (compatible with Bash 3.2+)
 
 debug() {
   if $DEBUG_GLOBAL; then
@@ -913,8 +913,11 @@ parse_args() {
 
   # Set up debug file descriptor if needed
   if [ -n "$DEBUG_FILE_GLOBAL" ]; then
-    exec {DEBUG_FD_GLOBAL}>>"$DEBUG_FILE_GLOBAL"
+    exec 3>>"$DEBUG_FILE_GLOBAL"
     echo "clone-repos.sh debug output will be appended to: $DEBUG_FILE_GLOBAL" >&2
+  else
+    # Redirect FD 3 to stderr by default
+    exec 3>&2
   fi
 
   debug "=== clone-repos.sh Debug Session Started ==="
@@ -1156,5 +1159,5 @@ debug "=== clone-repos.sh Debug Session Ended ==="
 
 # Close debug file descriptor if opened
 if [ -n "$DEBUG_FILE_GLOBAL" ]; then
-  exec {DEBUG_FD_GLOBAL}>&-
+  exec 3>&-
 fi
