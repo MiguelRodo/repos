@@ -6,6 +6,34 @@ set -o errexit   # same as -e
 set -o nounset   # same as -u
 set -o pipefail
 
+# — Debug support —
+DEBUG=false
+DEBUG_FILE=""
+DEBUG_FD=2  # Default to stderr
+
+debug() {
+  if $DEBUG; then
+    echo "[DEBUG create-repos.sh] $*" >&$DEBUG_FD
+  fi
+}
+
+# Get platform-independent temp directory
+get_temp_dir() {
+  # Try various temp directory variables in order of preference
+  if [ -n "${TMPDIR:-}" ] && [ -d "${TMPDIR}" ]; then
+    echo "${TMPDIR%/}"  # Remove trailing slash if present
+  elif [ -n "${TEMP:-}" ] && [ -d "${TEMP}" ]; then
+    echo "${TEMP%/}"
+  elif [ -n "${TMP:-}" ] && [ -d "${TMP}" ]; then
+    echo "${TMP%/}"
+  elif [ -d "/tmp" ]; then
+    echo "/tmp"
+  else
+    # Fallback to current directory
+    echo "."
+  fi
+}
+
 # ── CONFIG & USAGE ─────────────────────────────────────────────────────────────
 if [ ! -f "repos.list" ] && [ -f "repos-to-clone.list" ]; then
   REPOS_FILE="repos-to-clone.list"
@@ -15,11 +43,13 @@ fi
 
 usage() {
   cat <<EOF
-Usage: $0 [-f <repo-list>] [-p|--public]
+Usage: $0 [-f <repo-list>] [-p|--public] [--debug] [--debug-file [file]]
 
-  -f FILE         read lines from FILE (default: repos.list)
-  -p, --public    create repos as public (default: private)
-  -h, --help      show this message and exit
+  -f FILE              read lines from FILE (default: repos.list)
+  -p, --public         create repos as public (default: private)
+  --debug              enable debug output to stderr
+  --debug-file [file]  enable debug output to file (auto-generated if not specified)
+  -h, --help           show this message and exit
 
 Each non-blank, non-# line of <repo-list> can be:
   owner/repo[@branch] [target_directory]
@@ -38,22 +68,49 @@ while [ $# -gt 0 ]; do
   case $1 in
     -f)           shift; REPOS_FILE="$1"; shift ;;
     -p|--public)  PRIVATE_FLAG=false; shift ;;
+    --debug)      DEBUG=true; shift ;;
+    --debug-file)
+      DEBUG=true
+      shift
+      # Check if next arg exists and is not a flag
+      if [ $# -gt 0 ] && [[ "$1" != -* ]]; then
+        DEBUG_FILE="$1"
+        shift
+      else
+        # Auto-generate debug file in platform-independent temp directory
+        TEMP_DIR=$(get_temp_dir)
+        DEBUG_FILE="${TEMP_DIR}/repos-create-debug-$(date +%Y%m%d-%H%M%S)-$$.log"
+      fi
+      ;;
     -h|--help)    usage ;;
     *)            echo "Unknown argument: $1" >&2; usage ;;
   esac
 done
+
+# Set up debug file descriptor if needed
+if [ -n "$DEBUG_FILE" ]; then
+  exec {DEBUG_FD}>>"$DEBUG_FILE"
+  echo "create-repos.sh debug output will be appended to: $DEBUG_FILE" >&2
+fi
+
+debug "=== create-repos.sh Debug Session Started ==="
+debug "Repos file: $REPOS_FILE"
+debug "Private flag: $PRIVATE_FLAG"
 
 [ -f "$REPOS_FILE" ] || { echo "Error: '$REPOS_FILE' not found." >&2; exit 1; }
 
 # ── CREDENTIALS WITH FALLBACK (will be retrieved only if needed) ────────────────
 # Returns 0 if credentials are available, 1 if not
 get_credentials() {
+  debug "Attempting to get GitHub credentials..."
   if [ -z "${GH_TOKEN-}" ] || [ -z "${GH_USER-}" ]; then
+    debug "GH_TOKEN or GH_USER not set, trying git credential fill..."
     # Try to get credentials, but don't fail if unavailable
     if ! creds=$(
       printf 'url=https://github.com\n\n' \
         | git -c credential.interactive=false credential fill 2>/dev/null
     ); then
+      debug "git credential fill failed"
       echo "Warning: GitHub credentials not available. Skipping repository creation/verification." >&2
       return 1
     fi
@@ -62,12 +119,19 @@ get_credentials() {
     [ -z "${GH_TOKEN-}" ] && \
       GH_TOKEN=$(printf '%s\n' "$creds" | awk -F= '/^password=/ {print $2}')
     
+    debug "Retrieved GH_USER: ${GH_USER:-<empty>}"
+    debug "Retrieved GH_TOKEN: ${GH_TOKEN:+<present>}"
+    
     # Check if we actually got credentials
     if [ -z "${GH_USER-}" ] || [ -z "${GH_TOKEN-}" ]; then
+      debug "Credentials incomplete after retrieval"
       echo "Warning: GitHub credentials not available. Skipping repository creation/verification." >&2
       return 1
     fi
+  else
+    debug "Using existing GH_TOKEN and GH_USER from environment"
   fi
+  debug "Credentials successfully obtained"
   return 0
 }
 
@@ -147,11 +211,21 @@ fallback_owner=""
 fallback_repo=""
 
 # Initialize fallback to current repo (if we're in a git repo)
-get_current_repo_info || true  # Don't fail if not in a git repo
+debug "Checking if in a git repo for fallback..."
+if get_current_repo_info; then
+  debug "Initial fallback repo set to: $fallback_owner/$fallback_repo"
+else
+  debug "Not in a git repo or no origin remote found"
+fi
 
+debug "Starting to process repos.list..."
+line_num=0
 
 while IFS= read -r line || [ -n "$line" ]; do
-  case "$line" in ''|\#*) continue ;; esac
+  line_num=$((line_num + 1))
+  case "$line" in ''|\#*) debug "Line $line_num: Skipping empty or comment line"; continue ;; esac
+  
+  debug "Line $line_num: Processing: $line"
 
   repo_spec=${line%%[[:space:]]*}
   
@@ -161,30 +235,39 @@ while IFS= read -r line || [ -n "$line" ]; do
       branch=${repo_spec#@}
       # Extract branch name, removing any options like --no-worktree
       branch=${branch%%[[:space:]]*}
+      debug "Line $line_num: @branch detected: $branch"
       
       if [ -z "$fallback_owner" ] || [ -z "$fallback_repo" ]; then
+        debug "Line $line_num: No fallback repo available for @$branch"
         echo "Warning: @$branch cannot be processed - no previous owner/repo line found to use as fallback repository; skipping branch check."
         continue
       fi
       
+      debug "Line $line_num: Will check/create branch $branch on fallback repo $fallback_owner/$fallback_repo"
+      
       # Get credentials if needed
       if ! get_credentials; then
+        debug "Line $line_num: No credentials available, skipping branch check"
         echo "Skipping branch check for @$branch (no credentials)"
         continue
       fi
       AUTH_HDR="Authorization: token $GH_TOKEN"
       
       # Check if branch exists on fallback repo
+      debug "Line $line_num: Checking if branch $branch exists on $fallback_owner/$fallback_repo"
       ref_status=$(
         curl -s -o /dev/null -w "%{http_code}" \
           -H "$AUTH_HDR" \
           "$API_URL/repos/$fallback_owner/$fallback_repo/git/refs/heads/$branch"
       )
+      debug "Line $line_num: Branch check returned HTTP $ref_status"
       if [ "$ref_status" -eq 200 ]; then
         echo "Branch exists: $branch"
       elif [ "$ref_status" -eq 404 ]; then
         printf "Creating branch %s on %s/%s ... " "$branch" "$fallback_owner" "$fallback_repo"
+        debug "Line $line_num: Creating branch $branch"
         code=$( create_branch "$fallback_owner" "$fallback_repo" "$branch" )
+        debug "Line $line_num: Branch creation returned HTTP $code"
         if [ "$code" -eq 201 ]; then
           echo "done."
         else
@@ -195,6 +278,7 @@ while IFS= read -r line || [ -n "$line" ]; do
       fi
       
       # @branch lines don't change the fallback
+      debug "Line $line_num: @branch processing complete, fallback remains: $fallback_owner/$fallback_repo"
       continue
       ;;
   esac
@@ -202,6 +286,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   # Skip local remotes (file:// URLs and absolute paths)
   case "$repo_spec" in
     file://*|/*)
+      debug "Line $line_num: Skipping local remote: $repo_spec"
       echo "Skipping local remote: $repo_spec"
       continue
       ;;
@@ -211,9 +296,11 @@ while IFS= read -r line || [ -n "$line" ]; do
   case "$repo_spec" in
     https://github.com/*|git@github.com:*|ssh://git@github.com/*)
       # This is a GitHub URL, process it
+      debug "Line $line_num: Detected GitHub URL: $repo_spec"
       ;;
     https://*|git@*|ssh://*)
       # This is a non-GitHub remote URL
+      debug "Line $line_num: Skipping non-GitHub remote: $repo_spec"
       echo "Skipping non-GitHub remote: $repo_spec"
       continue
       ;;
@@ -223,23 +310,30 @@ while IFS= read -r line || [ -n "$line" ]; do
   owner=${repo_path%%/*}
   repo=${repo_path##*/}
   case "$repo_spec" in *@*) branch=${repo_spec##*@} ;; *) branch="" ;; esac
+  
+  debug "Line $line_num: Parsed - owner: $owner, repo: $repo, branch: ${branch:-<none>}"
 
   # Get credentials only when we need them (for GitHub repos)
   if ! get_credentials; then
+    debug "Line $line_num: No credentials, skipping repo $repo_spec"
     echo "Skipping repository creation/verification for $repo_spec (no credentials)"
     # Still update fallback repo for subsequent @branch lines
     fallback_owner="$owner"
     fallback_repo="$repo"
+    debug "Line $line_num: Updated fallback to: $fallback_owner/$fallback_repo"
     continue
   fi
   AUTH_HDR="Authorization: token $GH_TOKEN"
 
   # 1) Determine owner type (User vs Organization)
+  debug "Line $line_num: Checking owner type for $owner"
   owner_info=$(curl -s -H "$AUTH_HDR" "$API_URL/users/$owner")
   owner_type=$(printf '%s\n' "$owner_info" \
     | grep '"type"' \
     | head -n1 \
     | sed -E 's/.*"type": *"([^"]+)".*/\1/')
+  
+  debug "Line $line_num: Owner type: $owner_type"
 
   case "$owner_type" in
     Organization)
@@ -316,3 +410,10 @@ while IFS= read -r line || [ -n "$line" ]; do
   fallback_repo="$repo"
 
 done < "$REPOS_FILE"
+
+debug "=== create-repos.sh Debug Session Ended ==="
+
+# Close debug file descriptor if opened
+if [ -n "$DEBUG_FILE" ]; then
+  exec {DEBUG_FD}>&-
+fi
