@@ -52,8 +52,8 @@ repos <- function(...) {
   # Prepare arguments
   args <- c(...)
   
-  # Run the script
-  exit_status <- system2(script_path, args = args, stdout = "", stderr = "")
+  # Run the script (output is shown to the user)
+  exit_status <- system2(script_path, args = args)
   
   # Return exit status invisibly
   invisible(exit_status)

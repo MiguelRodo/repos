@@ -159,7 +159,7 @@ repos --public
 repos --help
 ```
 
-**System Requirements:** The Python package requires `bash`, `git`, `curl`, and `jq` to be installed on your system.
+**System Requirements:** The Python package requires `bash`, `git`, `curl`, and `jq` to be installed on your system. On Windows, you need [Git for Windows](https://git-scm.com/download/win) (which includes Git Bash) or WSL (Windows Subsystem for Linux).
 
 **How it works:** The Python package bundles the Bash scripts in `src/repos/scripts/` and provides both a CLI entry point and a Python API using `subprocess.run()`.
 

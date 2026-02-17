@@ -66,11 +66,17 @@ def run_script(script_name="setup-repos.sh", args=None):
     Raises:
         FileNotFoundError: If the script cannot be found
         subprocess.CalledProcessError: If the script exits with non-zero status
+        PermissionError: If the script cannot be made executable
     """
     script_path = get_script_path(script_name)
     
-    # Ensure the script is executable
-    os.chmod(script_path, 0o755)
+    # Ensure the script is executable (may fail in restricted environments)
+    try:
+        os.chmod(script_path, 0o755)
+    except (OSError, PermissionError) as e:
+        # If we can't change permissions, try to run anyway
+        # (the script may already be executable)
+        pass
     
     # Prepare command
     cmd = [script_path]
