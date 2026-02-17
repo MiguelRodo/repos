@@ -1,0 +1,16 @@
+^debian/
+^\.github/
+^\.devcontainer/
+^venv/
+^.*\.egg-info$
+^\.git/
+^\.gitignore$
+^scoop$
+^homebrew$
+^install\.ps1$
+^bin$
+^tests$
+^pyproject\.toml$
+^MANIFEST\.in$
+^src$
+^scripts$

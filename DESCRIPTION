@@ -1,0 +1,13 @@
+Package: repos
+Type: Package
+Title: Multi-Repository Management Tool
+Version: 1.0.0
+Authors@R: person("Miguel", "Rodo", email = "miguel.rodo@uct.ac.za", role = c("aut", "cre"))
+Description: A command-line tool for managing multiple related Git repositories as a unified workspace.
+    Provides wrappers for Bash scripts that handle multi-repository management, Git worktrees,
+    VS Code integration, and pipeline execution.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+SystemRequirements: bash, git, curl, jq
+RoxygenNote: 7.0.0
