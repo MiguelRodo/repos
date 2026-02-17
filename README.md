@@ -17,11 +17,12 @@ A command-line tool for managing multiple related Git repositories as a unified 
 Download and install the latest `.deb` package from the [Releases page](https://github.com/MiguelRodo/repos/releases):
 
 ```bash
-# Download the latest release (replace VERSION with actual version, e.g., 1.0.0)
-wget https://github.com/MiguelRodo/repos/releases/download/vVERSION/repos_VERSION_all.deb
+# Download the latest release (replace VERSION_REPOS with desired version; we try to ensure this is the latest one)
+VERSION_REPOS=1.0.2
+wget https://github.com/MiguelRodo/repos/releases/download/v${VERSION_REPOS}/repos_${VERSION_REPOS}_all.deb
 
 # Install the package
-sudo dpkg -i repos_VERSION_all.deb
+sudo dpkg -i repos_${VERSION_REPOS}_all.deb
 
 # If there are dependency issues, run:
 sudo apt-get install -f
