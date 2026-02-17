@@ -110,6 +110,72 @@ sudo dpkg -i ../repos_*.deb
 ./scripts/setup-repos.sh
 ```
 
+### Language Wrappers
+
+The repository also provides native R and Python packages that wrap the underlying Bash scripts, making it easy to use repos from your preferred language environment.
+
+#### R Package
+
+Install directly from GitHub using `devtools`:
+
+```r
+# Install devtools if you haven't already
+install.packages("devtools")
+
+# Install repos package
+devtools::install_github("MiguelRodo/repos")
+
+# Use the repos function
+library(repos)
+repos()  # Run with default repos.list
+
+# Or with options
+repos("-f", "my-repos.list")
+repos("--public")
+repos("--help")
+```
+
+**System Requirements:** The R package requires `bash`, `git`, `curl`, and `jq` to be installed on your system.
+
+**How it works:** The R package bundles the Bash scripts in `inst/scripts/` and provides a wrapper function that locates and executes them using `system2()`.
+
+#### Python Package
+
+Install using pip:
+
+```bash
+# Install from local clone
+git clone https://github.com/MiguelRodo/repos.git
+cd repos
+pip install .
+
+# Or install in development mode
+pip install -e .
+
+# Use the repos command
+repos  # Run with default repos.list
+repos -f my-repos.list
+repos --public
+repos --help
+```
+
+**System Requirements:** The Python package requires `bash`, `git`, `curl`, and `jq` to be installed on your system.
+
+**How it works:** The Python package bundles the Bash scripts in `src/repos/scripts/` and provides both a CLI entry point and a Python API using `subprocess.run()`.
+
+**Python API:**
+
+```python
+from repos import run_script
+
+# Run the setup script
+run_script("setup-repos.sh", ["-f", "my-repos.list"])
+
+# Run other scripts
+run_script("run-pipeline.sh")
+run_script("add-branch.sh", ["feature-x"])
+```
+
 ## Quick Start
 
 ### 1. Create a repos.list file
