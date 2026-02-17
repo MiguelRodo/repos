@@ -43,13 +43,71 @@ These are typically pre-installed on Ubuntu/Debian systems. If not:
 sudo apt-get install bash git curl jq
 ```
 
+### Windows (Scoop)
+
+Install using [Scoop](https://scoop.sh/):
+
+```powershell
+# Add the repos bucket (replace <username> with the bucket owner)
+scoop bucket add repos https://github.com/<username>/scoop-bucket
+
+# Install repos
+scoop install repos
+```
+
+Dependencies (`git` and `jq`) are automatically installed by Scoop. You'll also need Git for Windows for bash support.
+
+### Windows (Manual)
+
+1. Clone the repository:
+   ```powershell
+   git clone https://github.com/MiguelRodo/repos.git
+   cd repos
+   ```
+
+2. Run the installer:
+   ```powershell
+   .\install.ps1
+   ```
+
+3. Restart your PowerShell session for the PATH changes to take effect.
+
+4. Verify installation:
+   ```powershell
+   repos --help
+   ```
+
+#### Windows Dependencies
+
+- **Git for Windows** (required for bash, git, and curl): [Download here](https://git-scm.com/download/win)
+- **jq** (required for JSON processing): [Download here](https://jqlang.github.io/jq/download/)
+
+### macOS (Homebrew)
+
+Install using [Homebrew](https://brew.sh/):
+
+```bash
+# Add the repos tap (replace <username> with the tap owner)
+brew tap <username>/repos
+
+# Install repos
+brew install repos
+```
+
+The formula automatically handles the `jq` dependency. Git is typically pre-installed on macOS.
+
 ### From Source
 
 ```bash
 git clone https://github.com/MiguelRodo/repos.git
 cd repos
+
+# For Ubuntu/Debian
 sudo dpkg-buildpackage -us -uc -b
 sudo dpkg -i ../repos_*.deb
+
+# For other systems, use the scripts directly
+./scripts/setup-repos.sh
 ```
 
 ## Quick Start
