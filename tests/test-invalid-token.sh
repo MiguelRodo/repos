@@ -104,7 +104,7 @@ print_info "Script output:"
 echo "$output"
 
 # Check if the output contains our error message
-if echo "$output" | grep -q "Invalid GitHub token\|invalid credentials"; then
+if echo "$output" | grep -qE "Invalid GitHub token|invalid credentials"; then
   print_pass "Script detected invalid token and reported it to user"
 else
   print_info "Note: Script may have skipped due to other reasons (e.g., no credentials)"

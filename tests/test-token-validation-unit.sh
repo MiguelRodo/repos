@@ -85,7 +85,7 @@ fi
 # Test 5: Verify error messages are sent to stderr
 print_test "Error messages are sent to stderr (>&2)"
 
-if grep 'Invalid GitHub token' "$PROJECT_ROOT/scripts/helper/create-repos.sh" | grep -q '>&2'; then
+if grep -q 'echo.*Invalid GitHub token.*>&2' "$PROJECT_ROOT/scripts/helper/create-repos.sh"; then
   print_pass "Error messages correctly sent to stderr"
 else
   print_fail "Error messages not sent to stderr"

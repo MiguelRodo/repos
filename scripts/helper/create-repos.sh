@@ -187,6 +187,7 @@ validate_token() {
   if printf '%s\n' "$response" | grep -q '"message"'; then
     local message
     # Note: This sed pattern doesn't handle escaped quotes within JSON values
+    # If the pattern doesn't match, the message variable will contain the full grep line
     # For more robust JSON parsing, consider using jq if available
     message=$(printf '%s\n' "$response" | grep '"message"' | head -n1 | sed -E 's/.*"message": *"([^"]+)".*/\1/')
     debug "Token validation failed: $message"
