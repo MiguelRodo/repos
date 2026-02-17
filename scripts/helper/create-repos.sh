@@ -118,9 +118,9 @@ get_credentials() {
       return 1
     fi
     [ -z "${GH_USER-}" ] && \
-      GH_USER=$(printf '%s\n' "$creds" | awk -F= '/^username=/ {print $2}')
+      GH_USER=$(printf '%s\n' "$creds" | tr -d '\r' | awk -F= '/^username=/ {print $2}')
     [ -z "${GH_TOKEN-}" ] && \
-      GH_TOKEN=$(printf '%s\n' "$creds" | awk -F= '/^password=/ {print $2}')
+      GH_TOKEN=$(printf '%s\n' "$creds" | tr -d '\r' | awk -F= '/^password=/ {print $2}')
     
     debug "Retrieved GH_USER: ${GH_USER:-<empty>}"
     debug "Retrieved GH_TOKEN: ${GH_TOKEN:+<present>}"
