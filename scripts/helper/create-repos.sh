@@ -186,6 +186,8 @@ validate_token() {
   # If we get here and there's any message field with error-like content
   if printf '%s\n' "$response" | grep -q '"message"'; then
     local message
+    # Note: This sed pattern doesn't handle escaped quotes within JSON values
+    # For more robust JSON parsing, consider using jq if available
     message=$(printf '%s\n' "$response" | grep '"message"' | head -n1 | sed -E 's/.*"message": *"([^"]+)".*/\1/')
     debug "Token validation failed: $message"
     echo "Error: GitHub API error: $message" >&2
@@ -315,7 +317,7 @@ while IFS= read -r line || [ -n "$line" ]; do
       # Validate token
       if ! validate_token "$AUTH_HDR"; then
         debug "Line $line_num: Token validation failed, skipping branch check"
-        echo "Skipping branch check for @$branch (invalid credentials)"
+        echo "Skipping branch check for @$branch on $fallback_owner/$fallback_repo (invalid credentials)"
         continue
       fi
       
