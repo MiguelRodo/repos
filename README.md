@@ -27,6 +27,8 @@ sudo dpkg -i repos_VERSION_all.deb
 sudo apt-get install -f
 ```
 
+Note that VERSION takes the form of <major>.<minor>.<patch>, e.g. 1.0.1..
+
 #### Dependencies
 
 The package automatically handles dependencies, but requires:
