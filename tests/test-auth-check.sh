@@ -69,7 +69,8 @@ git commit -m "Initial commit"
 
 # Create minimal repos.list (doesn't actually need to clone, just trigger auth check)
 cat > repos.list <<'EOF'
-# Empty file to test auth check
+# Test auth check with a GitHub repo
+test/test-repo
 EOF
 
 # 2. Unset all auth-related environment variables

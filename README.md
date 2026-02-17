@@ -130,6 +130,14 @@ You can call these directly if needed:
 /usr/share/repos/scripts/add-branch.sh feature-x
 ```
 
+Or from the repository:
+
+```bash
+scripts/setup-repos.sh
+scripts/run-pipeline.sh
+scripts/add-branch.sh feature-x
+```
+
 ### Repository Layout
 
 All repositories are cloned to the **parent directory** of your current location:
