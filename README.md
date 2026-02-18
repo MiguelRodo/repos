@@ -1,5 +1,7 @@
 # repos - Multi-Repository Management Tool
 
+[![Test Installation Methods](https://github.com/MiguelRodo/repos/actions/workflows/test-installation.yml/badge.svg)](https://github.com/MiguelRodo/repos/actions/workflows/test-installation.yml)
+
 A command-line tool for managing multiple related Git repositories as a unified workspace.
 
 ## Features
