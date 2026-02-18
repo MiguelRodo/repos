@@ -6,17 +6,17 @@
 #   • Lines starting with "@<branch>" inherit a "fallback repo":
 #       - Initially: the CURRENT repo's remote (the repo that contains repos.list).
 #       - After each clone line: fallback updates to the repo used/implied by that line.
-#   • "@<branch>" resolves to a worktree path by default.
-#   • Per-line opt-out: add "--no-worktree" or "-n" to treat @branch as a clone instead.
+#   • "@<branch>" resolves to a clone path by default.
+#   • Per-line opt-in: add "--worktree" or "-w" to treat @branch as a worktree instead.
 #
 # Examples (repos.list):
-#   @data-tidy data-tidy                 # uses current repo as fallback (worktree path)
+#   @data-tidy data-tidy                 # uses current repo as fallback (clone path)
 #   SATVILab/projr                       # fallback → SATVILab/projr
-#   @dev                                 # worktree path on SATVILab/projr
-#   @dev-miguel                          # worktree path on SATVILab/projr
+#   @dev                                 # clone path on SATVILab/projr
+#   @dev-miguel --worktree               # worktree path on SATVILab/projr
 #   SATVILab/Analysis@test               # fallback → SATVILab/Analysis
-#   @tweak                               # worktree path on SATVILab/Analysis
-#   @dev-2                               # worktree path on SATVILab/Analysis
+#   @tweak                               # clone path on SATVILab/Analysis
+#   @dev-2 --worktree                    # worktree path on SATVILab/Analysis
 
 set -e
 
@@ -67,8 +67,8 @@ Each line in the repository list file can be in one of three formats:
 2) Clone exactly one branch
    owner/repo@branch [target_directory]
 
-3) Create a worktree from the current fallback repo
-   @branch [target_directory] [--no-worktree|-n]
+3) Clone a branch from the current fallback repo
+   @branch [target_directory] [--worktree|-w]
 
 Where repo_spec is one of:
   owner/repo[@branch]
@@ -85,9 +85,9 @@ Examples:
   user1/project1
   user2/project2@develop ./Projects/Repo2
   https://gitlab.com/user4/project4@feature-branch ./GitLabRepos
-  @analysis analysis                   # worktree off current repo
+  @analysis analysis                   # clone off current repo
   SATVILab/stimgate                    # fallback updates
-  @dev  stimgate-dev                   # worktree off SATVILab/stimgate
+  @dev  stimgate-dev --worktree        # worktree off SATVILab/stimgate
 EOF
 }
 
@@ -293,16 +293,16 @@ build_paths_list() {
     first="$1"; shift
     case "$first" in
       @*)
-        # Worktree line: count as reference to fallback repo if not --no-worktree
-        no_worktree=0
+        # @branch line: count as reference to fallback repo only if using --worktree
+        use_worktree=0
         while [ "$#" -gt 0 ]; do
           case "$1" in
-            -n|--no-worktree) no_worktree=1 ;;
+            -w|--worktree) use_worktree=1 ;;
           esac
           shift
         done
         
-        if [ "$no_worktree" -eq 0 ]; then
+        if [ "$use_worktree" -eq 1 ]; then
           # This is a worktree, count it as a reference to fallback
           plan_repo_name="$plan_fallback_name"
           
@@ -385,15 +385,15 @@ build_paths_list() {
     first="$1"; shift
     target_dir=""
     is_worktree=0
-    no_worktree=0
+    use_worktree=0
     
     case "$first" in
       @*)
-        # Worktree line: @branch [target_dir] [--no-worktree|-n]
+        # @branch line: @branch [target_dir] [--worktree|-w]
         branch="${first#@}"
         while [ "$#" -gt 0 ]; do
           case "$1" in
-            -n|--no-worktree) no_worktree=1 ;;
+            -w|--worktree) use_worktree=1 ;;
             -a|--all-branches) ;; # ignore for path calculation
             -*)
               ;; # ignore unknown options
@@ -407,11 +407,7 @@ build_paths_list() {
         done
         
         # Determine if this is a worktree or clone
-        if [ "$no_worktree" -eq 1 ]; then
-          is_worktree=0
-        else
-          is_worktree=1
-        fi
+        is_worktree=$use_worktree
         
         if [ "$is_worktree" -eq 1 ]; then
           # Worktree path: ../<fallback_repo>-<branch> or ../<target_dir>
@@ -439,7 +435,7 @@ build_paths_list() {
         while [ "$#" -gt 0 ]; do
           case "$1" in
             -a|--all-branches) ;; # ignore for path calculation
-            -n|--no-worktree) ;; # ignore on clone lines
+            -w|--worktree) ;; # ignore on clone lines
             -*)
               ;; # ignore unknown options
             *)
