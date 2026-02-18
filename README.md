@@ -7,17 +7,17 @@ A command-line tool for managing multiple related Git repositories as a unified 
 
 ## Overview
 
-Many projects consist of multiple repositories. For instance, an analysis project might have one repository for data curation and another for analysis. To facilitate this workflow, you can create a repos.list file that specifies the repositories and their branches, and then run repos to clone them (creating repositories as needed if you have permissions).
+Many projects consist of multiple repositories. For instance, an analysis project might have one repository for data curation and another for analysis. To facilitate this workflow, you can create a repos.list file that specifies the repositories and their branches, and then run `repos` to clone them (creating repositories and branches as needed).
 
 Here's an example repos.list file:
 
 ```
 myorg/data-curation
-myorg/analysis@main
+myorg/analysis
 myorg/documentation
 ```
 
-Run repos to clone them:
+Run `repos` to clone them, and create them if they do not exist:
 
 ```bash
 repos
@@ -29,18 +29,27 @@ This creates the following directory structure:
 workspace/
 ├── my-project/          # Your main project (contains repos.list)
 ├── data-curation/       # Cloned from myorg/data-curation
-├── analysis-main/       # Cloned from myorg/analysis@main
+├── analysis/            # Cloned from myorg/analysis@main
 └── documentation/       # Cloned from myorg/documentation
 ```
 
 ### Customizations
 
-- Create repositories as public using the --public flag
-- Specify a different repos.list file with -f my-repos.list
-- Enable Codespaces authentication with --codespaces
-- Specify custom devcontainer paths with -d
-- Clone specific branches using owner/repo@branch syntax
-- Create worktrees from the current repository using @branch-name
+#### `repos.list`
+
+- Clone to a specific path, e.g. `myorg/data-curation data` 
+- Clone specific branches, e.g. `owner/repo@branch`
+- Create worktrees from the current repository using `--worktree`, e.g. `owner/repo@branch --worktree`
+- Skip specifying repository in `repos.list`, as previous repo listed or current repo used as default.
+  - For example, specifying `@data-curation` in the first line would use the current repository as its repository
+  - Alternately, specifying `@dev` in the line after `myorg/analysis` would clone the `dev` branch from `myorg/analysis`
+- Create repositories as public using the `--public` flag,  e.g. `owner/repo --public`
+
+#### `repos`
+
+- Enable Codespaces authentication with `--codespaces`, e.g. `repos --codespaces`
+- Specify custom `devcontainer.json` paths with `-d`, e.g. `repos -d .devcontainer/prebuild/devcontainer.json`
+  - Use multiple `-d` flags to specify multiple `devcontainer.json` files
 
 ## Installation
 
