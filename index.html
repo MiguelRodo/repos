@@ -136,38 +136,49 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><a href="https://github.com/MiguelRodo/repos/actions/workflows/test-installation.yml"><img src="https://github.com/MiguelRodo/repos/actions/workflows/test-installation.yml/badge.svg" class="img-fluid figure-img"></a></p>
-<figcaption>Test Installation Methods</figcaption>
-</figure>
-</div>
+<p><a href="https://github.com/MiguelRodo/repos/actions/workflows/test-installation.yml"><img src="https://github.com/MiguelRodo/repos/actions/workflows/test-installation.yml/badge.svg" class="img-fluid" alt="Test Installation Methods"></a> <a href="https://github.com/MiguelRodo/repos/actions/workflows/test-suite.yml"><img src="https://github.com/MiguelRodo/repos/actions/workflows/test-suite.yml/badge.svg" class="img-fluid" alt="Test Suite"></a></p>
 <p>A command-line tool for managing multiple related Git repositories as a unified workspace.</p>
 <section id="overview" class="level2">
 <h2 class="anchored" data-anchor-id="overview">Overview</h2>
-<p>Many projects consist of multiple repositories. For instance, an analysis project might have one repository for data curation and another for analysis. To facilitate this workflow, you can create a repos.list file that specifies the repositories and their branches, and then run repos to clone them (creating repositories as needed if you have permissions).</p>
+<p>Many projects consist of multiple repositories. For instance, an analysis project might have one repository for data curation and another for analysis. To facilitate this workflow, you can create a repos.list file that specifies the repositories and their branches, and then run <code>repos</code> to clone them (creating repositories and branches as needed).</p>
 <p>Here’s an example repos.list file:</p>
 <pre><code>myorg/data-curation
-myorg/analysis@main
+myorg/analysis
 myorg/documentation</code></pre>
-<p>Run repos to clone them:</p>
+<p>Run <code>repos</code> to clone them, and create them if they do not exist:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>This creates the following directory structure:</p>
 <pre><code>workspace/
 ├── my-project/          # Your main project (contains repos.list)
 ├── data-curation/       # Cloned from myorg/data-curation
-├── analysis-main/       # Cloned from myorg/analysis@main
+├── analysis/            # Cloned from myorg/analysis
 └── documentation/       # Cloned from myorg/documentation</code></pre>
 <section id="customizations" class="level3">
 <h3 class="anchored" data-anchor-id="customizations">Customizations</h3>
+<section id="repos.list" class="level4">
+<h4 class="anchored" data-anchor-id="repos.list"><code>repos.list</code></h4>
 <ul>
-<li>Create repositories as public using the –public flag</li>
-<li>Specify a different repos.list file with -f my-repos.list</li>
-<li>Enable Codespaces authentication with –codespaces</li>
-<li>Specify custom devcontainer paths with -d</li>
-<li>Clone specific branches using owner/repo@branch syntax</li>
-<li>Create worktrees from the current repository using <span class="citation" data-cites="branch-name">@branch-name</span></li>
+<li>Clone to a specific path, e.g.&nbsp;<code>myorg/data-curation data</code></li>
+<li>Clone specific branches, e.g.&nbsp;<code>owner/repo@branch</code></li>
+<li>Create worktrees from the current repository using <code>--worktree</code>, e.g.&nbsp;<code>owner/repo@branch --worktree</code></li>
+<li>Skip specifying repository in <code>repos.list</code>, as previous repo listed or current repo used as default.
+<ul>
+<li>For example, specifying <code>@data-curation</code> in the first line would use the current repository as its repository</li>
+<li>Alternately, specifying <code>@dev</code> in the line after <code>myorg/analysis</code> would clone the <code>dev</code> branch from <code>myorg/analysis</code></li>
+</ul></li>
+<li>Create repositories as public using the <code>--public</code> flag, e.g.&nbsp;<code>owner/repo --public</code></li>
 </ul>
+</section>
+<section id="repos" class="level4">
+<h4 class="anchored" data-anchor-id="repos"><code>repos</code></h4>
+<ul>
+<li>Enable Codespaces authentication with <code>--codespaces</code>, e.g.&nbsp;<code>repos --codespaces</code></li>
+<li>Specify custom <code>devcontainer.json</code> paths with <code>-d</code>, e.g.&nbsp;<code>repos -d .devcontainer/prebuild/devcontainer.json</code>
+<ul>
+<li>Use multiple <code>-d</code> flags to specify multiple <code>devcontainer.json</code> files</li>
+</ul></li>
+</ul>
+</section>
 </section>
 </section>
 <section id="installation" class="level2">
