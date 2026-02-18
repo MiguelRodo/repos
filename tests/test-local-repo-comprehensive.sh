@@ -234,7 +234,7 @@ fi
 # ============================================
 # Test 4: Non-existing worktree from pre-created repo
 # ============================================
-print_test "Create worktree from pre-existing repo (non-existing branch worktree)"
+print_test "Create worktree from pre-existing repo (with --worktree flag)"
 
 WORKSPACE4="$TEST_ROOT/ws4"
 mkdir -p "$WORKSPACE4"
@@ -254,10 +254,10 @@ file://$REPO1_BARE
 EOF
 "$CLONE_SCRIPT" -f repos.list >/dev/null 2>&1 || true
 
-# Now add a worktree
+# Now add a worktree with explicit --worktree flag
 cat > repos.list <<EOF
 file://$REPO1_BARE
-@dev
+@dev --worktree
 EOF
 "$CLONE_SCRIPT" -f repos.list >/dev/null 2>&1 || true
 
