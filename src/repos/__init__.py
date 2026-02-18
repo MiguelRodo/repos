@@ -93,18 +93,52 @@ def run_script(script_name="setup-repos.sh", args=None):
     return result
 
 
+USAGE = """\
+Usage: repos <command> [options]
+
+Commands:
+  setup    Clone and configure repositories from a repos.list file
+  run      Execute a script inside each cloned repository
+
+Run 'repos <command> --help' for more information on a command.
+"""
+
+SUBCOMMAND_SCRIPTS = {
+    "setup": "setup-repos.sh",
+    "run": "run-pipeline.sh",
+}
+
+
 def main():
     """
     Main entry point for the repos CLI command.
     
     This function is registered as a console script entry point,
     allowing users to run 'repos' from the command line after installation.
+
+    Supports subcommands:
+      repos setup [flags]   — delegates to setup-repos.sh
+      repos run [flags]     — delegates to run-pipeline.sh
     """
-    # Get arguments from command line (excluding the script name)
     args = sys.argv[1:]
-    
+
+    # No arguments or help flag → print usage
+    if not args or args[0] in ("-h", "--help"):
+        print(USAGE, end="")
+        sys.exit(0 if args else 1)
+
+    subcommand = args[0]
+    remaining = args[1:]
+
+    if subcommand not in SUBCOMMAND_SCRIPTS:
+        print(f"Error: unknown command '{subcommand}'\n", file=sys.stderr)
+        print(USAGE, end="", file=sys.stderr)
+        sys.exit(1)
+
+    script = SUBCOMMAND_SCRIPTS[subcommand]
+
     try:
-        run_script("setup-repos.sh", args)
+        run_script(script, remaining)
         sys.exit(0)
     except subprocess.CalledProcessError as e:
         sys.exit(e.returncode)

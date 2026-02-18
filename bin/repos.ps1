@@ -1,15 +1,47 @@
 #!/usr/bin/env pwsh
 # repos.ps1 - Multi-repository management tool wrapper for Windows
-# This script launches setup-repos.sh using Git Bash
+# This script launches setup-repos.sh or run-pipeline.sh using Git Bash
+
+$Usage = @"
+Usage: repos <command> [options]
+
+Commands:
+  setup    Clone and configure repositories from a repos.list file
+  run      Execute a script inside each cloned repository
+
+Run 'repos <command> --help' for more information on a command.
+"@
 
 # Determine the absolute path to the scripts directory
 $ScriptRoot = Split-Path -Parent $PSCommandPath
 $ScriptsDir = Join-Path (Split-Path -Parent $ScriptRoot) "scripts"
-$SetupScript = Join-Path $ScriptsDir "setup-repos.sh"
 
-# Verify the setup script exists
-if (-not (Test-Path $SetupScript)) {
-    Write-Error "Error: setup-repos.sh not found at $SetupScript"
+$SubcommandScripts = @{
+    "setup" = "setup-repos.sh"
+    "run"   = "run-pipeline.sh"
+}
+
+# Parse subcommand
+if ($args.Count -eq 0 -or $args[0] -eq "--help" -or $args[0] -eq "-h") {
+    Write-Output $Usage
+    if ($args.Count -eq 0) { exit 1 } else { exit 0 }
+}
+
+$Subcommand = $args[0]
+$Remaining = $args[1..($args.Count - 1)]
+
+if (-not $SubcommandScripts.ContainsKey($Subcommand)) {
+    Write-Error "Error: unknown command '$Subcommand'"
+    Write-Output ""
+    Write-Output $Usage
+    exit 1
+}
+
+$TargetScript = Join-Path $ScriptsDir $SubcommandScripts[$Subcommand]
+
+# Verify the target script exists
+if (-not (Test-Path $TargetScript)) {
+    Write-Error "Error: $($SubcommandScripts[$Subcommand]) not found at $TargetScript"
     Write-Error "The repos package may not be installed correctly."
     exit 1
 }
@@ -41,13 +73,13 @@ if (-not $BashPath) {
 }
 
 # Convert Windows path to Unix-style path for Git Bash
-$SetupScriptUnix = $SetupScript -replace '\\', '/'
-if ($SetupScriptUnix -match '^([A-Za-z]):(.*)$') {
+$TargetScriptUnix = $TargetScript -replace '\\', '/'
+if ($TargetScriptUnix -match '^([A-Za-z]):(.*)$') {
     $Drive = $matches[1].ToLower()
     $Path = $matches[2]
-    $SetupScriptUnix = "/$Drive$Path"
+    $TargetScriptUnix = "/$Drive$Path"
 }
 
-# Execute setup-repos.sh with all passed arguments
-& $BashPath -c "$SetupScriptUnix $args"
+# Execute the target script with remaining arguments
+& $BashPath -c "$TargetScriptUnix $Remaining"
 exit $LASTEXITCODE
