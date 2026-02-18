@@ -103,7 +103,7 @@ def setup(
     tool: Optional[str] = None,
     debug: bool = False,
     debug_file: Optional[Union[bool, str]] = None,
-    *args
+    **kwargs
 ):
     """
     Clone and configure repositories from a repos.list file.
@@ -117,7 +117,7 @@ def setup(
         tool: Force tool for codespaces-auth-add.sh (e.g., "jq", "python")
         debug: If True, enable debug output to stderr
         debug_file: Enable debug output to file (auto-generated if True, or specify path)
-        *args: Additional arguments passed directly to setup-repos.sh for backward compatibility
+        **kwargs: Additional keyword arguments (captured but ignored, for extensibility)
         
     Returns:
         subprocess.CompletedProcess object
@@ -137,9 +137,6 @@ def setup(
         
         >>> # Multiple options
         >>> setup(public=True, codespaces=True, debug=True)
-        
-        >>> # Backward compatibility - still works
-        >>> setup("--public", "--codespaces")
     """
     script_args = []
     
@@ -173,11 +170,28 @@ def setup(
         else:
             script_args.extend(["--debug-file", debug_file])
     
-    # Append any positional arguments for backward compatibility
-    if args:
-        script_args.extend(args)
-    
     return run_script("setup-repos.sh", script_args)
+
+
+def setup_raw(*args):
+    """
+    Clone and configure repositories from a repos.list file (raw argument passing).
+    
+    This function provides backward compatibility for passing raw command-line arguments.
+    For idiomatic Python usage, use setup() with keyword arguments instead.
+    
+    Args:
+        *args: Command-line arguments to pass directly to setup-repos.sh
+        
+    Returns:
+        subprocess.CompletedProcess object
+        
+    Examples:
+        >>> # Backward compatibility - raw argument passing
+        >>> setup_raw("--public", "--codespaces")
+        >>> setup_raw("-f", "custom.list", "--public")
+    """
+    return run_script("setup-repos.sh", list(args))
 
 
 def run(
@@ -190,7 +204,7 @@ def run(
     dry_run: bool = False,
     verbose: bool = False,
     continue_on_error: bool = False,
-    *args
+    **kwargs
 ):
     """
     Execute a script inside each cloned repository.
@@ -205,7 +219,7 @@ def run(
         dry_run: If True, show what would be done without executing
         verbose: If True, enable verbose logging
         continue_on_error: If True, continue on failure and report all results
-        *args: Additional arguments passed directly to run-pipeline.sh for backward compatibility
+        **kwargs: Additional keyword arguments (captured but ignored, for extensibility)
         
     Returns:
         subprocess.CompletedProcess object
@@ -231,9 +245,6 @@ def run(
         
         >>> # Multiple options
         >>> run(script="test.sh", verbose=True, ensure_setup=True)
-        
-        >>> # Backward compatibility - still works
-        >>> run("--script", "build.sh", "--dry-run")
     """
     script_args = []
     
@@ -267,11 +278,28 @@ def run(
     if continue_on_error:
         script_args.append("--continue-on-error")
     
-    # Append any positional arguments for backward compatibility
-    if args:
-        script_args.extend(args)
-    
     return run_script("run-pipeline.sh", script_args)
+
+
+def run_raw(*args):
+    """
+    Execute a script inside each cloned repository (raw argument passing).
+    
+    This function provides backward compatibility for passing raw command-line arguments.
+    For idiomatic Python usage, use run() with keyword arguments instead.
+    
+    Args:
+        *args: Command-line arguments to pass directly to run-pipeline.sh
+        
+    Returns:
+        subprocess.CompletedProcess object
+        
+    Examples:
+        >>> # Backward compatibility - raw argument passing
+        >>> run_raw("--script", "build.sh", "--dry-run")
+        >>> run_raw("-f", "custom.list", "--continue-on-error")
+    """
+    return run_script("run-pipeline.sh", list(args))
 
 
 USAGE = """\
