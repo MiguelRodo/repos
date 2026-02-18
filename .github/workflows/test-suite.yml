@@ -1,0 +1,129 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  test-suite-ubuntu:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl jq bash
+
+      - name: Make scripts and tests executable
+        run: |
+          chmod +x scripts/*.sh
+          chmod +x scripts/helper/*.sh
+          chmod +x tests/*.sh
+
+      - name: Run auth check test
+        run: |
+          cd tests
+          ./test-auth-check.sh
+
+      - name: Run setup-repos local test
+        run: |
+          cd tests
+          ./test-setup-repos-local.sh
+
+      - name: Run branch with slashes test
+        run: |
+          cd tests
+          ./test-branch-with-slashes.sh
+
+      - name: Run clone variations comprehensive test
+        run: |
+          cd tests
+          ./test-clone-variations-comprehensive.sh
+
+      - name: Run codespaces auth test
+        run: |
+          cd tests
+          ./test-codespaces-auth.sh
+
+      - name: Run codespaces path resolution test
+        run: |
+          cd tests
+          ./test-codespaces-path-resolution.sh
+
+      - name: Run create-repos fallback test
+        run: |
+          cd tests
+          ./test-create-repos-fallback.sh
+
+      - name: Run credential CRLF test
+        run: |
+          cd tests
+          ./test-credential-crlf.sh
+
+      - name: Run fallback repo worktree test
+        run: |
+          cd tests
+          ./test-fallback-repo-worktree.sh
+
+      - name: Run integration branch slashes test
+        run: |
+          cd tests
+          ./test-integration-branch-slashes.sh
+
+      - name: Run invalid token test
+        run: |
+          cd tests
+          ./test-invalid-token.sh
+
+      - name: Run local remotes simple test
+        run: |
+          cd tests
+          ./test-local-remotes-simple.sh
+
+      - name: Run local repo comprehensive test
+        run: |
+          cd tests
+          ./test-local-repo-comprehensive.sh
+
+      - name: Run pipeline test
+        run: |
+          cd tests
+          ./test-run-pipeline.sh
+
+      - name: Run stale worktree test
+        run: |
+          cd tests
+          ./test-stale-worktree.sh
+
+      - name: Run token validation unit test
+        run: |
+          cd tests
+          ./test-token-validation-unit.sh
+
+      - name: Run update scripts test
+        run: |
+          cd tests
+          ./test-update-scripts.sh
+
+      - name: Run worktree custom base dir test
+        run: |
+          cd tests
+          ./test-worktree-custom-base-dir.sh
+
+      - name: Run worktree tracking test
+        run: |
+          cd tests
+          ./test-worktree-tracking.sh
+
+      - name: Test suite summary
+        if: always()
+        run: |
+          echo "✅ Test suite completed on Ubuntu"
