@@ -143,6 +143,70 @@ get_credentials() {
 API_URL="https://api.github.com"
 if $PRIVATE_FLAG; then JSON_PRIVATE=true; else JSON_PRIVATE=false; fi
 
+# ── Token validation ───────────────────────────────────────────────────────────
+# Validates that the provided token is valid by making a test API call
+# Returns 0 if token is valid, 1 if invalid
+validate_token() {
+  local auth_header="$1"
+  debug "Validating GitHub token..."
+  
+  # Make a simple API call to check token validity
+  local response
+  response=$(curl -s -H "$auth_header" "$API_URL/user")
+  
+  # Check if response is empty or doesn't look like JSON
+  if [ -z "$response" ]; then
+    debug "Token validation: Empty response from API"
+    # If we can't validate, we should still try to proceed
+    # This could be a network issue rather than an invalid token
+    return 0
+  fi
+  
+  # Check if response contains an error message for bad credentials
+  if printf '%s\n' "$response" | grep -q '"message".*"Bad credentials"'; then
+    debug "Token validation failed: Bad credentials"
+    echo "Error: Invalid GitHub token. Please check your credentials." >&2
+    echo "The provided token does not have valid GitHub API access." >&2
+    return 1
+  fi
+  
+  # Check if response contains an error message for other auth issues
+  if printf '%s\n' "$response" | grep -q '"message".*"Requires authentication"'; then
+    debug "Token validation failed: Requires authentication"
+    echo "Error: GitHub authentication required. Please check your credentials." >&2
+    return 1
+  fi
+  
+  # If we can extract a login field, the token is valid
+  if printf '%s\n' "$response" | grep -q '"login"'; then
+    debug "Token validation successful"
+    return 0
+  fi
+  
+  # If we get here and there's any message field with error-like content
+  if printf '%s\n' "$response" | grep -q '"message"'; then
+    local message
+    # Note: This sed pattern doesn't handle escaped quotes within JSON values
+    # If the pattern doesn't match, the message variable will contain the full grep line
+    # For more robust JSON parsing, consider using jq if available
+    message=$(printf '%s\n' "$response" | grep '"message"' | head -n1 | sed -E 's/.*"message": *"([^"]+)".*/\1/')
+    # Validate that sed substitution succeeded by checking if message contains quotes
+    # If it still contains JSON structure, use a generic message
+    if printf '%s\n' "$message" | grep -q '"'; then
+      debug "Token validation failed: Could not parse API error message"
+      echo "Error: GitHub API authentication failed. Please check your credentials." >&2
+    else
+      debug "Token validation failed: $message"
+      echo "Error: GitHub API error: $message" >&2
+    fi
+    return 1
+  fi
+  
+  # If we get here, assume valid (we got a response without error)
+  debug "Token appears valid (no error detected)"
+  return 0
+}
+
 # ── Helpers for branch creation ────────────────────────────────────────────────
 api_get_field() {
   url=$1; field=$2
@@ -258,6 +322,13 @@ while IFS= read -r line || [ -n "$line" ]; do
       fi
       AUTH_HDR="Authorization: token $GH_TOKEN"
       
+      # Validate token
+      if ! validate_token "$AUTH_HDR"; then
+        debug "Line $line_num: Token validation failed, skipping branch check"
+        echo "Skipping branch check for @$branch on $fallback_owner/$fallback_repo (invalid credentials)" >&2
+        continue
+      fi
+      
       # Check if branch exists on fallback repo
       debug "Line $line_num: Checking if branch $branch exists on $fallback_owner/$fallback_repo"
       ref_status=$(
@@ -329,6 +400,17 @@ while IFS= read -r line || [ -n "$line" ]; do
     continue
   fi
   AUTH_HDR="Authorization: token $GH_TOKEN"
+
+  # Validate token before making API calls
+  if ! validate_token "$AUTH_HDR"; then
+    debug "Line $line_num: Token validation failed, skipping repo $repo_spec"
+    echo "Skipping repository creation/verification for $repo_spec (invalid credentials)" >&2
+    # Still update fallback repo for subsequent @branch lines
+    fallback_owner="$owner"
+    fallback_repo="$repo"
+    debug "Line $line_num: Updated fallback to: $fallback_owner/$fallback_repo"
+    continue
+  fi
 
   # 1) Determine owner type (User vs Organization)
   debug "Line $line_num: Checking owner type for $owner"
