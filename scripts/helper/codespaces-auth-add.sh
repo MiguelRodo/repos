@@ -11,7 +11,7 @@ set -o pipefail
 # ——— Defaults ———————————————————————————————————————————————
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-DEVFILE="$PROJECT_ROOT/.devcontainer/devcontainer.json"
+DEVCONTAINER_PATHS=()  # Array of devcontainer.json paths to update
 if [ ! -f "$PROJECT_ROOT/repos.list" ] && [ -f "$PROJECT_ROOT/repos-to-clone.list" ]; then
   REPOS_FILE="$PROJECT_ROOT/repos-to-clone.list"
 else
@@ -32,6 +32,8 @@ Usage: codespaces-auth-add.sh [options]
 Options:
   -f, --file <path>        Read repos from <path> (default: repos.list)
   -r, --repo <a,b,c...>    Comma-separated repos; overrides the file
+  -d, --devcontainer <path> Path to devcontainer.json (can be specified multiple times)
+                           If not specified, no files are updated (opt-in behavior)
   --permissions all        Use "permissions":"write-all"
   --permissions contents   Use "permissions":{"contents":"write"}
   -t, --tool <name>        Force update mechanism: jq, python, python3, py, or Rscript
@@ -47,6 +49,9 @@ File format (same as clone-repos.sh):
   - Lines starting with '#' or blank lines are skipped
 
 Examples:
+  codespaces-auth-add.sh -d .devcontainer/devcontainer.json
+  codespaces-auth-add.sh -d path1/devcontainer.json -d path2/devcontainer.json
+  
   @data-tidy              # Uses current repo
   SATVILab/projr          # Explicit repo, becomes new fallback
   @dev                    # Uses SATVILab/projr (current fallback)
@@ -81,6 +86,10 @@ parse_args(){
       -r|--repo)
         shift; [ $# -gt 0 ] || { echo "Error: Missing repo list" >&2; usage; }
         REPOS_OVERRIDE="$1"; shift
+        ;;
+      -d|--devcontainer)
+        shift; [ $# -gt 0 ] || { echo "Error: Missing devcontainer path" >&2; usage; }
+        DEVCONTAINER_PATHS+=("$1"); shift
         ;;
       --permissions)
         shift; [ $# -gt 0 ] || { echo "Error: Missing type" >&2; usage; }
@@ -481,6 +490,7 @@ RSCRIPT
 
 # ——— Dispatch to the first available tool ——————————————————————
 update_devfile(){
+  local devfile="$1"
   local tool=""
 
   # 1) Pick the forced tool or auto-detect
@@ -500,43 +510,64 @@ update_devfile(){
   # 2) Invoke the updater
   case "$tool" in
     jq)
-      update_with_jq "$DEVFILE"
+      update_with_jq "$devfile"
       ;;
     python|python3|py)
       if [ "$DRY_RUN" -eq 1 ]; then
         # In dry-run, just print what Python would output
-        update_with_python "$DEVFILE" "$tool"
+        update_with_python "$devfile" "$tool"
       else
         # Safely write via a temporary file, then move into place
         tmp="$(mktemp)"
-        update_with_python "$DEVFILE" "$tool" > "$tmp"
-        mv "$tmp" "$DEVFILE"
-        echo "Updated '$DEVFILE' with $tool."
+        update_with_python "$devfile" "$tool" > "$tmp"
+        mv "$tmp" "$devfile"
+        echo "Updated '$devfile' with $tool."
       fi
       ;;
     Rscript)
-      update_with_rscript "$DEVFILE"
+      update_with_rscript "$devfile"
       ;;
   esac
 
   # 3) In dry-run mode, show the result
   if [ "$DRY_RUN" -eq 1 ]; then
-    echo "=== DRY-RUN OUTPUT ==="
-    cat "$DEVFILE"
+    echo "=== DRY-RUN OUTPUT for $devfile ==="
+    cat "$devfile"
   fi
 }
 
 # ——— Main ————————————————————————————————————————————————
 main(){
   parse_args "$@"
+  
+  # If no devcontainer paths specified, exit with message (opt-in behavior)
+  if [ ${#DEVCONTAINER_PATHS[@]} -eq 0 ]; then
+    echo "No devcontainer.json paths specified. Use -d/--devcontainer to specify paths to update." >&2
+    exit 0
+  fi
+  
   build_raw_list
   filter_valid_list
 
   echo "DEBUG: will add the following repos:" >&2
   printf '%s' "$VALID_LIST" >&2
 
-  [ -f "$DEVFILE" ] || { echo "Error: devcontainer.json not found at $DEVFILE" >&2; exit 1; }
-  update_devfile
+  # Process each devcontainer.json path
+  for devfile in "${DEVCONTAINER_PATHS[@]}"; do
+    # Convert to absolute path if relative
+    if [[ ! "$devfile" = /* ]]; then
+      # Use current working directory for relative paths
+      devfile="$(pwd)/$devfile"
+    fi
+    
+    if [ ! -f "$devfile" ]; then
+      echo "Error: devcontainer.json not found at $devfile" >&2
+      exit 1
+    fi
+    
+    echo "Processing $devfile..." >&2
+    update_devfile "$devfile"
+  done
 }
 
 main "$@"
