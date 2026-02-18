@@ -1,0 +1,9 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Welcome",
+    "section": "",
+    "text": "Hello\nThis is the Quarto-powered website for the repository.\nAdd additional .qmd pages as needed. The site is built in CI and published to gh-pages — source files remain in this branch only."
+  }
+]
