@@ -60,7 +60,7 @@ Each non-blank, non-# line of <repo-list> can be:
 
 Target directories are informational only (used by clone-repos.sh).
 EOF
-  exit 1
+  exit "${1:-1}"
 }
 
 PRIVATE_FLAG=true
@@ -82,7 +82,7 @@ while [ $# -gt 0 ]; do
         DEBUG_FILE="${TEMP_DIR}/repos-create-debug-$(date +%Y%m%d-%H%M%S)-$$.log"
       fi
       ;;
-    -h|--help)    usage ;;
+    -h|--help)    usage 0 ;;
     *)            echo "Unknown argument: $1" >&2; usage ;;
   esac
 done

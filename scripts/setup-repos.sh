@@ -79,7 +79,7 @@ Options:
   --debug-file [file]           Enable debug output to file (auto-generated if not specified)
   -h, --help                    Show this help and exit
 EOF
-  exit 1
+  exit "${1:-1}"
 }
 
 # — Parse args —
@@ -110,7 +110,7 @@ while [ $# -gt 0 ]; do
         DEBUG_FILE="${TEMP_DIR}/repos-debug-$(date +%Y%m%d-%H%M%S)-$$.log"
       fi
       ;;
-    -h|--help)      usage ;;
+    -h|--help)      usage 0 ;;
     *)              echo "Unknown option: $1" >&2; usage ;;
   esac
 done

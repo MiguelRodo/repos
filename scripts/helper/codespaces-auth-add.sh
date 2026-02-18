@@ -58,7 +58,7 @@ Examples:
   SATVILab/Analysis@test  # Explicit repo with branch, becomes new fallback
   @feature                # Uses SATVILab/Analysis (current fallback)
 EOF
-  exit 1
+  exit "${1:-1}"
 }
 
 # ——— Default permissions block —————————————————————————————————
@@ -111,7 +111,7 @@ parse_args(){
         DRY_RUN=1; shift
         ;;
       -h|--help)
-        usage
+        usage 0
         ;;
       *)
         echo "Error: Unknown option: $1" >&2; usage
