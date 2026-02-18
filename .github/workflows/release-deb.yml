@@ -19,7 +19,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y debhelper devscripts build-essential dpkg-dev gnupg apt-ftparchive
+          sudo apt-get install -y debhelper devscripts build-essential dpkg-dev gnupg apt-utils
 
       - name: Get version from tag
         id: get_version
