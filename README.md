@@ -217,7 +217,17 @@ This will:
 1. Create any missing repositories on GitHub (if you have permissions)
 2. Clone all specified repositories to the parent directory
 3. Generate a VS Code workspace file
-4. Configure authentication for GitHub Codespaces
+
+To also configure authentication for GitHub Codespaces, use the `--codespaces` flag or specify devcontainer paths with `-d`:
+
+```bash
+# Enable Codespaces authentication with default path
+repos --codespaces
+
+# Specify custom devcontainer.json paths
+repos -d .devcontainer/devcontainer.json
+repos -d path1/devcontainer.json -d path2/devcontainer.json
+```
 
 ## Usage
 
@@ -234,6 +244,12 @@ repos -f my-repos.list
 
 # Create repositories as public (default is private)
 repos --public
+
+# Enable Codespaces authentication
+repos --codespaces
+
+# Specify custom devcontainer.json paths
+repos -d .devcontainer/devcontainer.json
 
 # Show help
 repos --help
