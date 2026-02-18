@@ -20,7 +20,7 @@ Download and install the latest `.deb` package from the [Releases page](https://
 
 ```bash
 # Download the latest release (replace VERSION_REPOS with desired version; we try to ensure this is the latest one)
-VERSION_REPOS=1.0.8
+VERSION_REPOS=1.0.9
 wget https://github.com/MiguelRodo/repos/releases/download/v${VERSION_REPOS}/repos_${VERSION_REPOS}_all.deb
 
 # Install the package
