@@ -78,6 +78,7 @@ jobs:
         uses: r-lib/actions/setup-r@v2
         with:
           r-version: 'release'
+          use-public-rspm: true
       
       - name: Install system dependencies
         run: |
@@ -85,8 +86,13 @@ jobs:
           sudo apt-get install -y git curl jq
       
       - name: Install R package dependencies
-        run: |
-          Rscript -e 'install.packages(c("devtools", "roxygen2"))'
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: |
+            any::devtools
+            any::roxygen2
+          needs: |
+            devtools
       
       - name: Build and install R package
         run: |
