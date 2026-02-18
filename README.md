@@ -29,7 +29,7 @@ This creates the following directory structure:
 workspace/
 ├── my-project/          # Your main project (contains repos.list)
 ├── data-curation/       # Cloned from myorg/data-curation
-├── analysis/            # Cloned from myorg/analysis@main
+├── analysis/            # Cloned from myorg/analysis
 └── documentation/       # Cloned from myorg/documentation
 ```
 
