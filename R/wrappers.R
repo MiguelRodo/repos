@@ -41,9 +41,9 @@ run_repos_script <- function(script_name, args = character()) {
 #' @examples
 #' \dontrun{
 #' repos("setup")
-#' repos("setup", "--public")
+#' repos("setup", public = TRUE)
 #' repos("run")
-#' repos("run", "--script", "build.sh")
+#' repos("run", script = "build.sh")
 #' }
 #'
 #' @export
@@ -67,14 +67,16 @@ repos <- function(command, ...) {
 #'
 #' Clone and configure repositories from a \code{repos.list} file.
 #'
-#' @param ... Additional arguments passed to the \code{setup-repos.sh} script.
-#'   Common options include:
-#'   \itemize{
-#'     \item \code{-f FILE}: Use a different repos list file (default: repos.list)
-#'     \item \code{--public}: Create repositories as public (default is private)
-#'     \item \code{--codespaces}: Enable Codespaces authentication
-#'     \item \code{--help}: Show help message
-#'   }
+#' @param file Path to repos list file (default: repos.list)
+#' @param public Logical. If \code{TRUE}, create repositories as public (default is private)
+#' @param codespaces Logical. If \code{TRUE}, enable Codespaces authentication
+#' @param devcontainer Character vector of paths to devcontainer.json files (implies codespaces = TRUE)
+#' @param permissions Character string. Pass through to codespaces-auth-add.sh ("all" or "contents")
+#' @param tool Character string. Force tool for codespaces-auth-add.sh (e.g., "jq", "python")
+#' @param debug Logical. If \code{TRUE}, enable debug output to stderr
+#' @param debug_file Character string. Enable debug output to file (auto-generated if TRUE)
+#' @param ... Additional arguments passed directly to the \code{setup-repos.sh} script as-is.
+#'   Useful for passing custom flags or for backward compatibility.
 #'
 #' @return Invisibly returns the exit status of the script (0 for success).
 #'
@@ -97,37 +99,90 @@ repos <- function(command, ...) {
 #' repos_setup()
 #'
 #' # Use a different file
-#' repos_setup("-f", "my-repos.list")
+#' repos_setup(file = "my-repos.list")
 #'
 #' # Create repositories as public
-#' repos_setup("--public")
+#' repos_setup(public = TRUE)
 #'
-#' # Show help
-#' repos_setup("--help")
+#' # Enable codespaces authentication
+#' repos_setup(codespaces = TRUE)
+#'
+#' # Multiple options
+#' repos_setup(public = TRUE, codespaces = TRUE, debug = TRUE)
+#'
+#' # Backward compatibility - still works
+#' repos_setup("--public", "--codespaces")
 #' }
 #'
 #' @export
-repos_setup <- function(...) {
-  run_repos_script("setup-repos.sh", args = c(...))
+repos_setup <- function(file = NULL, public = FALSE, codespaces = FALSE,
+                        devcontainer = NULL, permissions = NULL, tool = NULL,
+                        debug = FALSE, debug_file = NULL, ...) {
+  args <- character()
+  
+  # Build argument vector from named parameters
+  if (!is.null(file)) {
+    args <- c(args, "-f", file)
+  }
+  
+  if (isTRUE(public)) {
+    args <- c(args, "--public")
+  }
+  
+  if (isTRUE(codespaces)) {
+    args <- c(args, "--codespaces")
+  }
+  
+  if (!is.null(devcontainer)) {
+    for (dc in devcontainer) {
+      args <- c(args, "-d", dc)
+    }
+  }
+  
+  if (!is.null(permissions)) {
+    args <- c(args, "--permissions", permissions)
+  }
+  
+  if (!is.null(tool)) {
+    args <- c(args, "-t", tool)
+  }
+  
+  if (isTRUE(debug)) {
+    args <- c(args, "--debug")
+  }
+  
+  if (!is.null(debug_file)) {
+    if (isTRUE(debug_file)) {
+      args <- c(args, "--debug-file")
+    } else {
+      args <- c(args, "--debug-file", debug_file)
+    }
+  }
+  
+  # Append any additional arguments passed via ...
+  additional_args <- c(...)
+  if (length(additional_args) > 0) {
+    args <- c(args, additional_args)
+  }
+  
+  run_repos_script("setup-repos.sh", args = args)
 }
 
 #' Run Pipeline Across Repositories
 #'
 #' Execute a script inside each cloned repository.
 #'
-#' @param ... Additional arguments passed to the \code{run-pipeline.sh} script.
-#'   Common options include:
-#'   \itemize{
-#'     \item \code{-f FILE}: Repo list file (default: repos.list)
-#'     \item \code{--script PATH}: Script to run in each repo (default: run.sh)
-#'     \item \code{--ensure-setup}: Run setup-repos.sh before executing scripts
-#'     \item \code{-d, --skip-deps}: Skip the install-r-deps.sh step
-#'     \item \code{-i, --include NAMES}: Comma-separated repo names to include
-#'     \item \code{-e, --exclude NAMES}: Comma-separated repo names to exclude
-#'     \item \code{-n, --dry-run}: Show what would be done without executing
-#'     \item \code{--continue-on-error}: Continue on failure, report all results
-#'     \item \code{--help}: Show help message
-#'   }
+#' @param file Path to repos list file (default: repos.list)
+#' @param script Script to run in each repo, relative to repo root (default: run.sh)
+#' @param include Character vector or comma-separated string of repo names to include
+#' @param exclude Character vector or comma-separated string of repo names to exclude
+#' @param ensure_setup Logical. If \code{TRUE}, run setup-repos.sh before executing scripts
+#' @param skip_deps Logical. If \code{TRUE}, skip the install-r-deps.sh step
+#' @param dry_run Logical. If \code{TRUE}, show what would be done without executing
+#' @param verbose Logical. If \code{TRUE}, enable verbose logging
+#' @param continue_on_error Logical. If \code{TRUE}, continue on failure and report all results
+#' @param ... Additional arguments passed directly to the \code{run-pipeline.sh} script as-is.
+#'   Useful for passing custom flags or for backward compatibility.
 #'
 #' @return Invisibly returns the exit status of the script (0 for success).
 #'
@@ -147,19 +202,77 @@ repos_setup <- function(...) {
 #' repos_run()
 #'
 #' # Run a custom script
-#' repos_run("--script", "build.sh")
+#' repos_run(script = "build.sh")
 #'
 #' # Continue past failures
-#' repos_run("--continue-on-error")
+#' repos_run(continue_on_error = TRUE)
 #'
 #' # Dry-run mode
-#' repos_run("--dry-run")
+#' repos_run(dry_run = TRUE)
 #'
-#' # Show help
-#' repos_run("--help")
+#' # Include only specific repos
+#' repos_run(include = c("repo1", "repo2"))
+#'
+#' # Exclude specific repos
+#' repos_run(exclude = "repo3")
+#'
+#' # Multiple options
+#' repos_run(script = "test.sh", verbose = TRUE, ensure_setup = TRUE)
+#'
+#' # Backward compatibility - still works
+#' repos_run("--script", "build.sh", "--dry-run")
 #' }
 #'
 #' @export
-repos_run <- function(...) {
-  run_repos_script("run-pipeline.sh", args = c(...))
+repos_run <- function(file = NULL, script = NULL, include = NULL, exclude = NULL,
+                      ensure_setup = FALSE, skip_deps = FALSE, dry_run = FALSE,
+                      verbose = FALSE, continue_on_error = FALSE, ...) {
+  args <- character()
+  
+  # Build argument vector from named parameters
+  if (!is.null(file)) {
+    args <- c(args, "-f", file)
+  }
+  
+  if (!is.null(script)) {
+    args <- c(args, "--script", script)
+  }
+  
+  if (!is.null(include)) {
+    include_str <- if (length(include) > 1) paste(include, collapse = ",") else include
+    args <- c(args, "-i", include_str)
+  }
+  
+  if (!is.null(exclude)) {
+    exclude_str <- if (length(exclude) > 1) paste(exclude, collapse = ",") else exclude
+    args <- c(args, "-e", exclude_str)
+  }
+  
+  if (isTRUE(ensure_setup)) {
+    args <- c(args, "--ensure-setup")
+  }
+  
+  if (isTRUE(skip_deps)) {
+    args <- c(args, "-d")
+  }
+  
+  if (isTRUE(dry_run)) {
+    args <- c(args, "-n")
+  }
+  
+  if (isTRUE(verbose)) {
+    args <- c(args, "-v")
+  }
+  
+  if (isTRUE(continue_on_error)) {
+    args <- c(args, "--continue-on-error")
+  }
+  
+  # Append any additional arguments passed via ...
+  additional_args <- c(...)
+  if (length(additional_args) > 0) {
+    args <- c(args, additional_args)
+  }
+  
+  run_repos_script("run-pipeline.sh", args = args)
 }

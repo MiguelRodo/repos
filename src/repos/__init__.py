@@ -8,6 +8,7 @@ import os
 import sys
 import subprocess
 from pathlib import Path
+from typing import Optional, List, Union
 
 __version__ = "1.0.0"
 
@@ -91,6 +92,214 @@ def run_script(script_name="setup-repos.sh", args=None):
     )
     
     return result
+
+
+def setup(
+    file: Optional[str] = None,
+    public: bool = False,
+    codespaces: bool = False,
+    devcontainer: Optional[Union[str, List[str]]] = None,
+    permissions: Optional[str] = None,
+    tool: Optional[str] = None,
+    debug: bool = False,
+    debug_file: Optional[Union[bool, str]] = None,
+    **kwargs
+):
+    """
+    Clone and configure repositories from a repos.list file.
+    
+    Args:
+        file: Path to repos list file (default: repos.list)
+        public: If True, create repositories as public (default is private)
+        codespaces: If True, enable Codespaces authentication
+        devcontainer: Path(s) to devcontainer.json file(s) (implies codespaces=True)
+        permissions: Pass through to codespaces-auth-add.sh ("all" or "contents")
+        tool: Force tool for codespaces-auth-add.sh (e.g., "jq", "python")
+        debug: If True, enable debug output to stderr
+        debug_file: Enable debug output to file (auto-generated if True, or specify path)
+        **kwargs: Additional keyword arguments (captured but ignored, for extensibility)
+        
+    Returns:
+        subprocess.CompletedProcess object
+        
+    Examples:
+        >>> # Setup repositories from default repos.list
+        >>> setup()
+        
+        >>> # Use a different file
+        >>> setup(file="my-repos.list")
+        
+        >>> # Create repositories as public
+        >>> setup(public=True)
+        
+        >>> # Enable codespaces authentication
+        >>> setup(codespaces=True)
+        
+        >>> # Multiple options
+        >>> setup(public=True, codespaces=True, debug=True)
+    """
+    script_args = []
+    
+    # Build argument list from keyword parameters
+    if file is not None:
+        script_args.extend(["-f", file])
+    
+    if public:
+        script_args.append("--public")
+    
+    if codespaces:
+        script_args.append("--codespaces")
+    
+    if devcontainer is not None:
+        devcontainers = [devcontainer] if isinstance(devcontainer, str) else devcontainer
+        for dc in devcontainers:
+            script_args.extend(["-d", dc])
+    
+    if permissions is not None:
+        script_args.extend(["--permissions", permissions])
+    
+    if tool is not None:
+        script_args.extend(["-t", tool])
+    
+    if debug:
+        script_args.append("--debug")
+    
+    if debug_file is not None:
+        if debug_file is True:
+            script_args.append("--debug-file")
+        else:
+            script_args.extend(["--debug-file", debug_file])
+    
+    return run_script("setup-repos.sh", script_args)
+
+
+def setup_raw(*args):
+    """
+    Clone and configure repositories from a repos.list file (raw argument passing).
+    
+    This function provides backward compatibility for passing raw command-line arguments.
+    For idiomatic Python usage, use setup() with keyword arguments instead.
+    
+    Args:
+        *args: Command-line arguments to pass directly to setup-repos.sh
+        
+    Returns:
+        subprocess.CompletedProcess object
+        
+    Examples:
+        >>> # Backward compatibility - raw argument passing
+        >>> setup_raw("--public", "--codespaces")
+        >>> setup_raw("-f", "custom.list", "--public")
+    """
+    return run_script("setup-repos.sh", list(args))
+
+
+def run(
+    file: Optional[str] = None,
+    script: Optional[str] = None,
+    include: Optional[Union[str, List[str]]] = None,
+    exclude: Optional[Union[str, List[str]]] = None,
+    ensure_setup: bool = False,
+    skip_deps: bool = False,
+    dry_run: bool = False,
+    verbose: bool = False,
+    continue_on_error: bool = False,
+    **kwargs
+):
+    """
+    Execute a script inside each cloned repository.
+    
+    Args:
+        file: Path to repos list file (default: repos.list)
+        script: Script to run in each repo, relative to repo root (default: run.sh)
+        include: Repo name(s) to include (string or list of strings)
+        exclude: Repo name(s) to exclude (string or list of strings)
+        ensure_setup: If True, run setup-repos.sh before executing scripts
+        skip_deps: If True, skip the install-r-deps.sh step
+        dry_run: If True, show what would be done without executing
+        verbose: If True, enable verbose logging
+        continue_on_error: If True, continue on failure and report all results
+        **kwargs: Additional keyword arguments (captured but ignored, for extensibility)
+        
+    Returns:
+        subprocess.CompletedProcess object
+        
+    Examples:
+        >>> # Run the default script (run.sh) in each repo
+        >>> run()
+        
+        >>> # Run a custom script
+        >>> run(script="build.sh")
+        
+        >>> # Continue past failures
+        >>> run(continue_on_error=True)
+        
+        >>> # Dry-run mode
+        >>> run(dry_run=True)
+        
+        >>> # Include only specific repos
+        >>> run(include=["repo1", "repo2"])
+        
+        >>> # Exclude specific repos
+        >>> run(exclude="repo3")
+        
+        >>> # Multiple options
+        >>> run(script="test.sh", verbose=True, ensure_setup=True)
+    """
+    script_args = []
+    
+    # Build argument list from keyword parameters
+    if file is not None:
+        script_args.extend(["-f", file])
+    
+    if script is not None:
+        script_args.extend(["--script", script])
+    
+    if include is not None:
+        include_str = ",".join(include) if isinstance(include, list) else include
+        script_args.extend(["-i", include_str])
+    
+    if exclude is not None:
+        exclude_str = ",".join(exclude) if isinstance(exclude, list) else exclude
+        script_args.extend(["-e", exclude_str])
+    
+    if ensure_setup:
+        script_args.append("--ensure-setup")
+    
+    if skip_deps:
+        script_args.append("-d")
+    
+    if dry_run:
+        script_args.append("-n")
+    
+    if verbose:
+        script_args.append("-v")
+    
+    if continue_on_error:
+        script_args.append("--continue-on-error")
+    
+    return run_script("run-pipeline.sh", script_args)
+
+
+def run_raw(*args):
+    """
+    Execute a script inside each cloned repository (raw argument passing).
+    
+    This function provides backward compatibility for passing raw command-line arguments.
+    For idiomatic Python usage, use run() with keyword arguments instead.
+    
+    Args:
+        *args: Command-line arguments to pass directly to run-pipeline.sh
+        
+    Returns:
+        subprocess.CompletedProcess object
+        
+    Examples:
+        >>> # Backward compatibility - raw argument passing
+        >>> run_raw("--script", "build.sh", "--dry-run")
+        >>> run_raw("-f", "custom.list", "--continue-on-error")
+    """
+    return run_script("run-pipeline.sh", list(args))
 
 
 USAGE = """\

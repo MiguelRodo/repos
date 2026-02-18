@@ -325,26 +325,35 @@ install.packages("devtools")
 # Install repos package
 devtools::install_github("MiguelRodo/repos")
 
-# Use the repos functions
+# Use the repos functions with idiomatic R syntax
 library(repos)
-repos("setup")                         # Setup repositories
-repos("setup", "-f", "my-repos.list")  # Use a different file
-repos("setup", "--public")             # Create repos as public
-repos("run")                           # Run pipeline in each repo
-repos("run", "--script", "build.sh")
 
-# Or use the direct functions
-repos_setup()
-repos_setup("--help")
-repos_run()
-repos_run("--help")
+# Setup repositories
+repos_setup()                              # Setup with defaults
+repos_setup(file = "my-repos.list")        # Use a different file
+repos_setup(public = TRUE)                 # Create repos as public
+repos_setup(public = TRUE, codespaces = TRUE)  # Multiple options
+
+# Run pipeline in each repo
+repos_run()                                # Run with defaults
+repos_run(script = "build.sh")             # Run custom script
+repos_run(dry_run = TRUE, verbose = TRUE)  # Dry run with verbose output
+repos_run(include = c("repo1", "repo2"))   # Run only in specific repos
+
+# Or use the general repos function
+repos("setup", public = TRUE)
+repos("run", script = "build.sh")
+
+# Backward compatibility - old syntax still works
+repos_setup("--public")
+repos_run("--script", "build.sh")
 ```
 
 Run the repos command:
 
 ```r
 library(repos)
-repos("setup")
+repos_setup()
 ```
 
 **System Requirements:** The R package requires `bash`, `git`, `curl`, and `jq` to be installed on your system.
@@ -387,14 +396,31 @@ repos --help
 **Python API:**
 
 ```python
+# Idiomatic Python syntax (recommended)
+from repos import setup, run
+
+# Setup repositories
+setup()                              # Setup with defaults
+setup(file="my-repos.list")          # Use a different file
+setup(public=True)                   # Create repos as public
+setup(public=True, codespaces=True)  # Multiple options
+
+# Run pipeline in each repo
+run()                                # Run with defaults
+run(script="build.sh")               # Run custom script
+run(dry_run=True, verbose=True)      # Dry run with verbose output
+run(include=["repo1", "repo2"])      # Run only in specific repos
+
+# Backward compatibility - raw argument passing
+from repos import setup_raw, run_raw
+
+setup_raw("--public")
+run_raw("--script", "build.sh")
+
+# Low-level API (if needed)
 from repos import run_script
-
-# Run the setup script
 run_script("setup-repos.sh", ["-f", "my-repos.list"])
-
-# Run other scripts
 run_script("run-pipeline.sh")
-run_script("add-branch.sh", ["feature-x"])
 ```
 
 ## Quick Start
