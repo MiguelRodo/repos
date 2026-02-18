@@ -19,7 +19,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y debhelper devscripts build-essential dpkg-dev gnupg
+          sudo apt-get install -y debhelper devscripts build-essential dpkg-dev gnupg apt-ftparchive
 
       - name: Get version from tag
         id: get_version
@@ -37,15 +37,8 @@ jobs:
         run: |
           VERSION="${{ steps.get_version.outputs.version }}"
           DATE=$(date -R)
-          cat > debian/changelog <<EOF
-          repos ($VERSION) unstable; urgency=medium
-
-            * Release version $VERSION
-
-           -- Miguel Rodo <miguel.rodo@uct.ac.za>  $DATE
-          EOF
-          # Fix indentation — remove leading spaces from heredoc
-          sed -i 's/^          //' debian/changelog
+          # use printf so no leading spaces are inserted
+          printf "repos (%s) unstable; urgency=medium\n\n  * Release version %s\n\n -- Miguel Rodo <miguel.rodo@uct.ac.za>  %s\n" "$VERSION" "$VERSION" "$DATE" > debian/changelog
 
       - name: Build Debian package
         run: |
@@ -73,41 +66,55 @@ jobs:
 
       # ── Publish to apt-miguelrodo ──────────────────────────────
       - name: Checkout apt-miguelrodo
+        if: github.ref_type == 'tag'
         uses: actions/checkout@v4
         with:
           repository: MiguelRodo/apt-miguelrodo
           token: ${{ secrets.APT_REPO_TOKEN }}
           path: apt-repo
 
-      - name: Import GPG private key
+      - name: Import GPG private key (isolated)
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
         run: |
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+          export GNUPGHOME="$(mktemp -d)"
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+          # show imported fingerprint for verification (safe)
+          gpg --list-secret-keys --with-colons | sed -n 's/^fpr:://p' || true
+          # keep GNUPGHOME set for subsequent steps in this job
+          echo "GNUPGHOME=$GNUPGHOME" >> $GITHUB_ENV
 
       - name: Update APT repository
+        if: github.ref_type == 'tag'
+        env:
+          GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
-          # Copy the new .deb into the repo
           cp ../*.deb apt-repo/
-
           cd apt-repo
-
-          # Generate Packages index
           dpkg-scanpackages --multiversion . /dev/null > Packages
           gzip -k -f Packages
-
-          # Generate Release file
           apt-ftparchive release . > Release
+          # use GNUPGHOME from env; sign with fingerprint securely via stdin
+          if [ -n "$GPG_PASSPHRASE" ]; then
+            # pass the passphrase on stdin to avoid putting it on the command line
+            printf '%s' "$GPG_PASSPHRASE" | \
+              gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 \
+                  --default-key "$GPG_KEY_ID" -abs -o Release.gpg Release
 
-          # Sign the Release file
-          gpg --batch --yes --pinentry-mode loopback \
-            --default-key "${{ secrets.GPG_KEY_ID }}" \
-            -abs -o Release.gpg Release
+            printf '%s' "$GPG_PASSPHRASE" | \
+              gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 \
+                  --default-key "$GPG_KEY_ID" --clearsign -o InRelease Release
+          else
+            gpg --batch --yes --pinentry-mode loopback \
+                --default-key "$GPG_KEY_ID" -abs -o Release.gpg Release
 
-          # Also create InRelease (clearsigned, preferred by modern apt)
-          gpg --batch --yes --pinentry-mode loopback \
-            --default-key "${{ secrets.GPG_KEY_ID }}" \
-            --clearsign -o InRelease Release
+            gpg --batch --yes --pinentry-mode loopback \
+                --default-key "$GPG_KEY_ID" --clearsign -o InRelease Release
+          fi
 
       - name: Push to apt-miguelrodo
+        if: github.ref_type == 'tag'
         run: |
           cd apt-repo
           git config user.name "github-actions[bot]"
@@ -115,3 +122,13 @@ jobs:
           git add -A
           git commit -m "Update repos package to ${{ steps.get_version.outputs.version }}" || echo "No changes to commit"
           git push
+
+      - name: Cleanup GPG home
+        if: always()
+        run: |
+          # remove temporary GNUPGHOME (if set) and clear the env var for subsequent steps
+          if [ -n "${GNUPGHOME:-}" ] && [ -d "$GNUPGHOME" ]; then
+            rm -rf "$GNUPGHOME" || true
+          fi
+          echo "GNUPGHOME=" >> $GITHUB_ENV
+
