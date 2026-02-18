@@ -61,6 +61,54 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to Miguel's APT Repo
+        if: github.ref_type == 'tag'
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+          # This pulls the secret you just pasted into GitHub Settings
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: |
+          # 1. Install Reprepro
+          sudo apt-get install -y reprepro
+
+          # 2. Import the GPG Key
+          # This tells the ephemeral runner: "I am Miguel Rodo Bot"
+          echo "$GPG_PRIVATE_KEY" | gpg --import
+
+          # 3. Clone the Repo
+          git clone https://x-access-token:${API_TOKEN_GITHUB}@github.com/miguelrodo/apt-miguelrodo.git apt-repo
+
+          # 4. Configure Reprepro (The Critical Part)
+          # We must tell reprepro to sign with the key we just imported.
+          mkdir -p apt-repo/conf
+          
+          # Only create config if it doesn't exist
+          if [ ! -f apt-repo/conf/distributions ]; then
+              echo "Creating config..."
+              # We use 'SignWith: yes' to tell it to auto-find the key we imported
+              cat <<EOF > apt-repo/conf/distributions
+          Origin: miguelrodo
+          Label: apt-miguelrodo
+          Codename: stable
+          Architectures: amd64 arm64 source
+          Components: main
+          Description: Miguel Rodo's Personal Repository
+          SignWith: yes
+          EOF
+          fi
+
+          # 5. Add the package
+          cd apt-repo
+          reprepro includedeb stable ../../*.deb
+
+          # 6. Push
+          git config user.email "miguel.rodo@uct.ac.za"
+          git config user.name "Miguel Rodo Bot"
+          git add .
+          git commit -m "Add repos version ${{ steps.get_version.outputs.version }}"
+          git push origin main
+
       
       - name: Upload artifact (for manual builds)
         if: github.ref_type != 'tag'
