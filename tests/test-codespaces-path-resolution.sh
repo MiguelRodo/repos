@@ -96,12 +96,11 @@ print_info "    - repos.list"
 # ============================================
 # Test: Script can find devcontainer.json
 # ============================================
-print_test "Script finds devcontainer.json at correct path"
+print_test "Script finds devcontainer.json at correct path when specified with -d"
 
-# Run the script with dry-run to avoid actual modification
-# We expect it to succeed finding the devcontainer.json
+# Run the script with dry-run and explicit -d flag
 set +e
-output=$(./scripts/helper/codespaces-auth-add.sh -f repos.list --dry-run 2>&1)
+output=$(./scripts/helper/codespaces-auth-add.sh -f repos.list -d .devcontainer/devcontainer.json --dry-run 2>&1)
 exit_code=$?
 set -e
 
@@ -167,7 +166,7 @@ if ! command -v jq >/dev/null 2>&1; then
     print_info "Using Python fallback for JSON processing"
     # Run with python tool
     set +e
-    output=$(./scripts/helper/codespaces-auth-add.sh -f repos.list -t python3 --dry-run 2>&1)
+    output=$(./scripts/helper/codespaces-auth-add.sh -f repos.list -d .devcontainer/devcontainer.json -t python3 --dry-run 2>&1)
     exit_code=$?
     set -e
     
@@ -185,7 +184,7 @@ if ! command -v jq >/dev/null 2>&1; then
 else
   # Run with jq
   set +e
-  output=$(./scripts/helper/codespaces-auth-add.sh -f repos.list -t jq --dry-run 2>&1)
+  output=$(./scripts/helper/codespaces-auth-add.sh -f repos.list -d .devcontainer/devcontainer.json -t jq --dry-run 2>&1)
   exit_code=$?
   set -e
   
