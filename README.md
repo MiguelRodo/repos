@@ -325,26 +325,31 @@ install.packages("devtools")
 # Install repos package
 devtools::install_github("MiguelRodo/repos")
 
-# Use the repos function
+# Use the repos functions
 library(repos)
-repos()  # Run with default repos.list
+repos("setup")                         # Setup repositories
+repos("setup", "-f", "my-repos.list")  # Use a different file
+repos("setup", "--public")             # Create repos as public
+repos("run", "--skip-setup")           # Run pipeline in each repo
+repos("run", "--skip-setup", "--script", "build.sh")
 
-# Or with options
-repos("-f", "my-repos.list")
-repos("--public")
-repos("--help")
+# Or use the direct functions
+repos_setup()
+repos_setup("--help")
+repos_run("--skip-setup")
+repos_run("--help")
 ```
 
 Run the repos command:
 
 ```r
 library(repos)
-repos()
+repos("setup")
 ```
 
 **System Requirements:** The R package requires `bash`, `git`, `curl`, and `jq` to be installed on your system.
 
-**How it works:** The R package bundles the Bash scripts in `inst/scripts/` and provides a wrapper function that locates and executes them using `system2()`.
+**How it works:** The R package bundles the Bash scripts in `inst/scripts/` and provides wrapper functions that locate and execute them using `system2()`.
 
 #### <a name="python-package"></a>Python Package
 
