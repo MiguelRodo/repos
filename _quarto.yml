@@ -1,0 +1,9 @@
+project:
+  type: website
+
+website:
+  title: "Repository Website"
+
+format:
+  html:
+    theme: cosmo
