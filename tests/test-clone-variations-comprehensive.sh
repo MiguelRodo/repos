@@ -12,9 +12,9 @@
 #   4. Full repo clone with -a flag (all branches)
 #   5. Single-branch clone (owner/repo@branch) - single reference, no suffix
 #   6. Single-branch clone with custom target directory
-#   7. Worktree from current repo (@branch) - default behavior
-#   8. Worktree with custom target directory
-#   9. Worktree with --no-worktree flag (clone instead of worktree)
+#   7. Clone from current repo (@branch) - default behavior
+#   8. Clone with custom target directory (@branch custom-dir)
+#   9. Clone with --worktree flag (worktree instead of clone)
 #   10. Fallback repo tracking across multiple clone lines
 #   11. Branch name sanitization (feature/test → feature-test in paths)
 #   12. Multiple references to same repo (branch suffix logic)
@@ -26,7 +26,7 @@
 # TESTED VARIATIONS:
 #   - Clone types: full clone, single-branch clone, worktree
 #   - Target specification: default, custom directory
-#   - Flags: -a (all branches), --no-worktree
+#   - Flags: -a (all branches), --worktree
 #   - Remote formats: owner/repo, file://, absolute paths
 #   - Branch naming: simple names, names with slashes
 #   - Reference counting: single vs multiple references (affects suffix logic)
@@ -352,9 +352,9 @@ else
 fi
 
 # ============================================
-# Test 6: Worktree from current repo (@branch)
+# Test 6: Clone from current repo (@branch)
 # ============================================
-print_test "Worktree from current repo: @branch"
+print_test "Clone from current repo: @branch"
 
 WORKSPACE6="$TEST_ROOT/workspace6"
 mkdir -p "$WORKSPACE6"
@@ -378,29 +378,30 @@ EOF
 "$CLONE_SCRIPT" -f repos.list >/dev/null 2>&1 || true
 
 if [ -d "$TEST_ROOT/workspace6-dev" ]; then
-  print_pass "Created worktree ../workspace6-dev"
+  print_pass "Created clone ../workspace6-dev"
   cd "$TEST_ROOT/workspace6-dev"
   BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
   if [ "$BRANCH" = "dev" ]; then
-    print_pass "Worktree on correct branch: dev"
+    print_pass "Clone on correct branch: dev"
   else
-    print_fail "Worktree wrong branch: $BRANCH (expected: dev)"
+    print_fail "Clone wrong branch: $BRANCH (expected: dev)"
   fi
   
-  # Verify it's a worktree, not a clone
-  if git worktree list | grep -q "workspace6-dev"; then
-    print_pass "Confirmed it's a git worktree"
+  # Verify it's a clone, not a worktree
+  cd "$WORKSPACE6"
+  if ! git worktree list 2>/dev/null | grep -q "workspace6-dev"; then
+    print_pass "Confirmed it's a clone, not a worktree"
   else
-    print_warning "May not be a worktree (could be a clone)"
+    print_fail "Should be a clone, but appears to be a worktree"
   fi
 else
-  print_fail "Failed to create worktree"
+  print_fail "Failed to create clone"
 fi
 
 # ============================================
-# Test 7: Worktree with custom target directory
+# Test 7: Clone with custom target directory
 # ============================================
-print_test "Worktree with custom target: @branch custom-dir"
+print_test "Clone with custom target: @branch custom-dir"
 
 WORKSPACE7="$TEST_ROOT/workspace7"
 mkdir -p "$WORKSPACE7"
@@ -417,28 +418,28 @@ git commit -q -m "Initial commit"
 git fetch -q origin
 
 cat > repos.list <<EOF
-@staging my-worktree
+@staging my-clone
 EOF
 
 "$CLONE_SCRIPT" -f repos.list >/dev/null 2>&1 || true
 
-if [ -d "$TEST_ROOT/my-worktree" ]; then
-  print_pass "Created worktree to custom directory: ../my-worktree"
-  cd "$TEST_ROOT/my-worktree"
+if [ -d "$TEST_ROOT/my-clone" ]; then
+  print_pass "Created clone to custom directory: ../my-clone"
+  cd "$TEST_ROOT/my-clone"
   BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
   if [ "$BRANCH" = "staging" ]; then
-    print_pass "Worktree on correct branch: staging"
+    print_pass "Clone on correct branch: staging"
   else
-    print_fail "Worktree wrong branch: $BRANCH (expected: staging)"
+    print_fail "Clone wrong branch: $BRANCH (expected: staging)"
   fi
 else
-  print_fail "Failed to create worktree to custom directory"
+  print_fail "Failed to create clone to custom directory"
 fi
 
 # ============================================
-# Test 8: Worktree with --no-worktree flag (clone instead)
+# Test 8: Clone with --worktree flag (worktree instead of clone)
 # ============================================
-print_test "Worktree with --no-worktree flag: @branch --no-worktree"
+print_test "Clone with --worktree flag: @branch --worktree"
 
 WORKSPACE8="$TEST_ROOT/workspace8"
 mkdir -p "$WORKSPACE8"
@@ -460,36 +461,31 @@ git commit -q -m "Initial commit"
 git fetch -q origin
 
 cat > repos.list <<EOF
-@feature/test --no-worktree
+@feature/test --worktree
 EOF
 
 "$CLONE_SCRIPT" -f repos.list >/dev/null 2>&1 || true
 
-# With --no-worktree, it should clone to ../repo-test8 (base name)
-if [ -d "$TEST_ROOT/repo-test8" ]; then
-  print_pass "Created clone with --no-worktree: ../repo-test8"
-  cd "$TEST_ROOT/repo-test8"
+# With --worktree, it should create a worktree at ../workspace8-feature-test
+if [ -d "$TEST_ROOT/workspace8-feature-test" ]; then
+  print_pass "Created worktree with --worktree: ../workspace8-feature-test"
+  cd "$TEST_ROOT/workspace8-feature-test"
   BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
   if [ "$BRANCH" = "feature/test" ]; then
-    print_pass "Clone on correct branch: feature/test"
+    print_pass "Worktree on correct branch: feature/test"
   else
-    print_fail "Clone wrong branch: $BRANCH (expected: feature/test)"
+    print_fail "Worktree wrong branch: $BRANCH (expected: feature/test)"
   fi
   
-  # Verify it's NOT a worktree
+  # Verify it's a worktree
   cd "$WORKSPACE8"
-  if ! git worktree list 2>/dev/null | grep -q "repo-test8"; then
-    print_pass "Confirmed it's a clone, not a worktree"
+  if git worktree list 2>/dev/null | grep -q "workspace8-feature-test"; then
+    print_pass "Confirmed it's a worktree, not a clone"
   else
-    print_fail "Should be a clone, but appears to be a worktree"
+    print_fail "Should be a worktree, but appears to be a clone"
   fi
 else
-  # Check if it created with a different name
-  if [ -d "$TEST_ROOT/workspace8-feature-test" ]; then
-    print_warning "Created with workspace prefix (unexpected)"
-  else
-    print_fail "Failed to create clone with --no-worktree"
-  fi
+  print_fail "Failed to create worktree with --worktree"
 fi
 
 # ============================================
@@ -508,7 +504,7 @@ git remote add origin "file://$REPO1_BARE"
 echo "# Workspace 9" > README.md
 git add README.md
 git commit -q -m "Initial commit"
-# Fetch branches so worktree creation works
+# Fetch branches so clone creation works
 git fetch -q origin
 
 cat > repos.list <<EOF
@@ -516,34 +512,34 @@ cat > repos.list <<EOF
 @dev fallback-test-1
 # Clone repo2 (updates fallback to repo2)
 file://$REPO2_BARE
-# This should create worktree from repo2, not workspace9
+# This should create clone from repo2, not workspace9
 @staging fallback-test-2
 EOF
 
 "$CLONE_SCRIPT" -f repos.list >/dev/null 2>&1 || true
 
-# First worktree should be from workspace9
+# First clone should be from workspace9
 if [ -d "$TEST_ROOT/fallback-test-1" ]; then
   cd "$TEST_ROOT/fallback-test-1"
-  if git remote -v | grep -q "repo1.git"; then
+  if git remote -v | grep -q "repo1"; then
     print_pass "First @branch used workspace9 (repo1) as fallback"
   else
     print_fail "First @branch used wrong fallback"
   fi
 else
-  print_fail "Failed to create first worktree"
+  print_fail "Failed to create first clone"
 fi
 
-# Second worktree should be from repo2
+# Second clone should be from repo2
 if [ -d "$TEST_ROOT/fallback-test-2" ]; then
   cd "$TEST_ROOT/fallback-test-2"
-  if git remote -v | grep -q "repo2.git"; then
+  if git remote -v | grep -q "repo2"; then
     print_pass "Second @branch used repo2 as fallback (fallback updated)"
   else
     print_fail "Second @branch used wrong fallback"
   fi
 else
-  print_fail "Failed to create second worktree"
+  print_fail "Failed to create second clone"
 fi
 
 # ============================================
@@ -582,13 +578,13 @@ if [ -d "$TEST_ROOT/workspace10-feature-test" ]; then
     print_fail "Branch name not preserved: $BRANCH"
   fi
 else
-  print_fail "Failed to create worktree with sanitized name"
+  print_fail "Failed to create clone with sanitized name"
 fi
 
 if [ -d "$TEST_ROOT/workspace10-release-v1.0" ]; then
   print_pass "Sanitized release/v1.0 → workspace10-release-v1.0"
 else
-  print_fail "Failed to create second worktree with sanitized name"
+  print_fail "Failed to create second clone with sanitized name"
 fi
 
 # ============================================
@@ -708,9 +704,9 @@ else
 fi
 
 if [ -d "$TEST_ROOT/workspace13-beta" ]; then
-  print_pass "Created worktree from repo cloned via absolute path"
+  print_pass "Created clone from repo cloned via absolute path"
 else
-  print_fail "Failed to create worktree"
+  print_fail "Failed to create clone"
 fi
 
 # ============================================
@@ -749,9 +745,9 @@ else
 fi
 
 if [ -d "$TEST_ROOT/workspace14-gamma" ]; then
-  print_pass "Created worktree from repo cloned via file:// URL"
+  print_pass "Created clone from repo cloned via file:// URL"
 else
-  print_fail "Failed to create worktree"
+  print_fail "Failed to create clone"
 fi
 
 # ============================================
@@ -812,7 +808,7 @@ else
   echo "Coverage summary:"
   echo "  ✓ Full repo clone variations"
   echo "  ✓ Single-branch clone variations"
-  echo "  ✓ Worktree variations"
+  echo "  ✓ Clone and worktree variations"
   echo "  ✓ Fallback repo tracking"
   echo "  ✓ Branch name sanitization"
   echo "  ✓ Multiple/single reference logic"

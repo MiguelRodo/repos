@@ -140,7 +140,7 @@ git commit -m "Initial commit"
 # Create repos.list with a worktree line
 cat > repos.list <<'EOF'
 # Test worktree
-@test-branch
+@test-branch --worktree
 EOF
 
 # Set GH_TOKEN for the test (dummy value is fine - we're not actually cloning remote repos)

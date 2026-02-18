@@ -1,26 +1,26 @@
 #!/usr/bin/env bash
-# clone-repos.sh — Multi-repo / multi-branch cloner with worktree-by-default for @branch
+# clone-repos.sh — Multi-repo / multi-branch cloner with branch-by-default for @branch
 # Portable: Bash ≥3.2 (macOS default), Linux, WSL, Git Bash
 #
 # Behaviour:
 #   • Lines starting with "@<branch>" inherit a "fallback repo":
 #       - Initially: the CURRENT repo's remote (the repo that contains repos.list).
 #       - After each line: fallback updates to the repo used/implied by that line.
-#   • "@<branch>" creates a GIT WORKTREE by default.
-#   • Per-line opt-out: add "--no-worktree" or "-n" to clone instead of worktree.
+#   • "@<branch>" clones as a BRANCH by default.
+#   • Per-line opt-in: add "--worktree" or "-w" to create a worktree instead of clone.
 #
 # Examples (repos.list):
-#   @data-tidy data-tidy                 # uses current repo as fallback (worktree)
+#   @data-tidy data-tidy                 # uses current repo as fallback (clone)
 #   SATVILab/projr                       # fallback → SATVILab/projr
-#   @dev                                 # worktree on SATVILab/projr
-#   @dev-miguel                          # worktree on SATVILab/projr
+#   @dev                                 # clone on SATVILab/projr
+#   @dev-miguel --worktree               # worktree on SATVILab/projr
 #   SATVILab/Analysis@test               # fallback → SATVILab/Analysis
-#   @tweak                               # worktree on SATVILab/Analysis
-#   @dev-2                               # worktree on SATVILab/Analysis
+#   @tweak                               # clone on SATVILab/Analysis
+#   @dev-2 --worktree                    # worktree on SATVILab/Analysis
 #
 # Notes:
 #   • Clone lines still accept "-a|--all-branches" (single-branch is default).
-#   • @branch worktrees are always anchored off a LOCAL base directory:
+#   • @branch clones are always anchored off a LOCAL base directory:
 #       - If a full clone exists (or is planned later), that path is the base.
 #       - Otherwise the first single-branch clone becomes the base.
 #     No side “-base” directories are created.
@@ -294,24 +294,23 @@ Each non-empty, non-comment line in <repo-list> is one instruction. There are th
        branch, creates <branch> locally, and pushes it upstream with tracking.
      • Updates the fallback repo to this newly cloned local directory.
 
-3) Create a worktree from the current fallback repo
-   @branch [target_directory] [--no-worktree|-n]
+3) Clone a branch from the current fallback repo
+   @branch [target_directory] [--worktree|-w]
    Behaviour (default):
-     • Creates a git worktree for <branch> anchored at the current fallback
-       repo’s LOCAL directory. No side “<repo>-base” directories are created.
+     • Clones the <branch> from the current fallback repo's remote.
      • Destination is ../<repo>-<branch> by default, or ../<target_directory> if given.
-     • If the branch does not exist locally but exists on origin, a tracking
-       worktree is created. If it does not exist on origin, the branch is created
-       from origin/<default>, then pushed with upstream set.
-   Opt-out:
-     • Add --no-worktree (or -n) to clone the fallback repo’s @branch instead
-       of creating a worktree.
+     • If the branch does not exist remotely, the script clones the default
+       branch, creates <branch> locally, and pushes it upstream with tracking.
+   Opt-in for worktree:
+     • Add --worktree (or -w) to create a git worktree instead of a clone.
+       Worktrees are anchored at the current fallback repo's LOCAL directory.
+       No side "<repo>-base" directories are created.
 
 Fallback repo rules
   • Initially, the fallback repo is the repository containing <repo-list>
     (i.e. the current directory when you run this script).
   • After any successful clone line (1 or 2), the fallback repo becomes that
-    newly cloned directory. @branch lines then hang worktrees off it.
+    newly cloned directory. @branch lines then clone or create worktrees from it.
   • @branch lines themselves do not change the fallback.
 
 Conventions and paths
@@ -533,14 +532,14 @@ find_worktree_for_branch() {
 }
 
 # --- Parsing -----------------------------------------------------------------
-# Returns: repo_spec \x1f target_dir \x1f all_branches \x1f is_worktree
+# Returns: repo_spec \x1f target_dir \x1f all_branches \x1f is_worktree \x1f is_at_branch
 parse_effective_line() {
   set -f
   local line="$1" fallback_repo_https="$2"
-  local first target_dir="" all_branches=0 is_worktree=0 no_worktree=0
+  local first target_dir="" all_branches=0 is_worktree=0 use_worktree=0 is_at_branch=0
 
   set -- $line
-  [ "$#" -eq 0 ] && { printf '%s\x1f%s\x1f%s\x1f%s\n' "" "" "0" "0"; set +f; return 0; }
+  [ "$#" -eq 0 ] && { printf '%s\x1f%s\x1f%s\x1f%s\x1f%s\n' "" "" "0" "0" "0"; set +f; return 0; }
 
   first="$1"; shift
   case "$first" in
@@ -548,7 +547,7 @@ parse_effective_line() {
       local branch="${first#@}"
       while [ "$#" -gt 0 ]; do
         case "$1" in
-          -n|--no-worktree) no_worktree=1 ;;
+          -w|--worktree) use_worktree=1 ;;
           -a|--all-branches) all_branches=1 ;;  # harmless for worktrees
           -*)
             echo "Warning: ignoring unknown option '$1' on line: $line" >&2 ;;
@@ -560,15 +559,16 @@ parse_effective_line() {
         shift
       done
       [ -z "$fallback_repo_https" ] && { echo "Error: no fallback repo available for '$line'."; set +f; return 1; }
-      is_worktree=$(( no_worktree ? 0 : 1 ))
-      printf '%s@%s\x1f%s\x1f%s\x1f%s\n' "$fallback_repo_https" "$branch" "$target_dir" "$all_branches" "$is_worktree"
+      is_worktree=$use_worktree
+      is_at_branch=1
+      printf '%s@%s\x1f%s\x1f%s\x1f%s\x1f%s\n' "$fallback_repo_https" "$branch" "$target_dir" "$all_branches" "$is_worktree" "$is_at_branch"
       ;;
     *)
       local repo_spec="$first"
       while [ "$#" -gt 0 ]; do
         case "$1" in
           -a|--all-branches) all_branches=1 ;;
-          -n|--no-worktree)  echo "Warning: '--no-worktree' ignored on clone line: $line" >&2 ;;
+          -w|--worktree)  echo "Warning: '--worktree' ignored on clone line: $line" >&2 ;;
           -*)
             echo "Warning: ignoring unknown option '$1' on line: $line" >&2 ;;
           *)
@@ -579,7 +579,7 @@ parse_effective_line() {
         shift
       done
       is_worktree=0
-      printf '%s\x1f%s\x1f%s\x1f%s\n' "$repo_spec" "$target_dir" "$all_branches" "$is_worktree"
+      printf '%s\x1f%s\x1f%s\x1f%s\x1f%s\n' "$repo_spec" "$target_dir" "$all_branches" "$is_worktree" "$is_at_branch"
       ;;
   esac
   set +f
@@ -959,22 +959,22 @@ plan_forward() {
 
     case "$tok1" in
       @*)
-        # Worktree line: count as reference to fallback repo
-        # Check if --no-worktree flag is present
-        no_worktree=0
+        # @branch line: count as reference to fallback repo only if using --worktree
+        # Check if --worktree flag is present
+        use_worktree=0
         while [ "$#" -gt 0 ]; do
           case "$1" in
-            -n|--no-worktree) no_worktree=1 ;;
+            -w|--worktree) use_worktree=1 ;;
           esac
           shift
         done
         
-        # If it's a worktree (not --no-worktree), count it as a reference to fallback
-        if [ "$no_worktree" -eq 0 ]; then
+        # If it's a worktree (with --worktree), count it as a reference to fallback
+        if [ "$use_worktree" -eq 1 ]; then
           [[ "$debug" == true ]] && echo "Planning: worktree on fallback $fallback_https" >&2
           plan_remember_remote "$fallback_https" 0 ""
         fi
-        # Note: worktree lines don't change the fallback
+        # Note: @branch lines don't change the fallback
         ;;
       *)
         # clone line: owner/repo[@ref] or https url
@@ -1063,9 +1063,9 @@ main() {
       [[ "$DEBUG" == true ]] && echo "Parsing line: $trimmed" >&2
       local rc=0
       # Parse with current fallback
-      local parsed repo_spec target_dir all_branches is_worktree
+      local parsed repo_spec target_dir all_branches is_worktree is_at_branch
       parsed="$(parse_effective_line "$trimmed" "$fallback_repo_https")"
-      IFS=$'\x1f' read -r repo_spec target_dir all_branches is_worktree <<<"$parsed"
+      IFS=$'\x1f' read -r repo_spec target_dir all_branches is_worktree is_at_branch <<<"$parsed"
       [ -z "$repo_spec" ] && { rc=0; ( exit "$rc" ); }
 
       if [ "$is_worktree" -eq 1 ]; then
@@ -1098,6 +1098,25 @@ main() {
         esac
         this_remote_https="$(spec_to_https "$repo_no_ref")"
         local seen_before; [ "$(remote_index "$this_remote_https")" -ge 0 ] && seen_before=1 || seen_before=0
+
+        # If this is an @branch clone (not a worktree) and no explicit target_dir,
+        # calculate target_dir based on fallback repo's local name + branch
+        if [ "$is_at_branch" -eq 1 ] && [ "$is_branch_clone" -eq 1 ] && [ -z "$target_dir" ]; then
+          local fallback_local_name
+          if [ "$fallback_repo_https" = "$current_repo_https" ]; then
+            fallback_local_name="$(basename "$start_dir")"
+          else
+            local idx; idx="$(remote_index "$fallback_repo_https")"
+            if [ "$idx" -ge 0 ] && [ -n "${REMOTE_LOCAL_PATH[$idx]}" ]; then
+              fallback_local_name="$(basename "${REMOTE_LOCAL_PATH[$idx]}")"
+            else
+              fallback_local_name="$(plan_base_name "$fallback_repo_https")"
+            fi
+          fi
+          local safe_ref; safe_ref="$(sanitize_branch_name "$ref")"
+          target_dir="${fallback_local_name}-${safe_ref}"
+          [[ "$DEBUG" == true ]] && echo "@branch clone: using target_dir='$target_dir'" >&2
+        fi
 
         clone_one_repo "$repo_spec" "$target_dir" "$parent_dir" "$all_branches" "$DEBUG" || rc=$?
         fallback_repo_https="$this_remote_https"
