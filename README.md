@@ -57,7 +57,7 @@ You can install repos as a system package (Ubuntu/Debian, macOS, Windows), from 
 
 ### <a name="ubuntu-debian"></a>Ubuntu/Debian
 
-You can install repos either system-wide (requires sudo) or to your local user directory (no sudo required).
+You can install repos from the APT repository, with a downloaded `.deb`, or to your local user directory (no sudo required).
 
 #### Option 1: Local Installation (No sudo required)
 
@@ -101,7 +101,37 @@ To uninstall:
 bash uninstall-local.sh
 ```
 
-#### Option 2: System-wide Installation (Requires sudo)
+#### Option 2: Install from APT Repository (Recommended)
+
+Install and update `repos` directly via `apt` from [MiguelRodo/apt-miguelrodo](https://github.com/MiguelRodo/apt-miguelrodo):
+
+```bash
+# Add repository signing key
+curl -fsSL https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/KEY.gpg \
+   | sudo gpg --dearmor -o /usr/share/keyrings/miguelrodo-repos.gpg
+
+# Add apt source
+echo "deb [signed-by=/usr/share/keyrings/miguelrodo-repos.gpg] https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/ ./" \
+   | sudo tee /etc/apt/sources.list.d/miguelrodo-repos.list >/dev/null
+
+# Install repos
+sudo apt-get update
+sudo apt-get install -y repos
+```
+
+Run the repos command:
+
+```bash
+repos
+```
+
+To uninstall:
+
+```bash
+sudo apt-get remove repos
+```
+
+#### Option 3: System-wide Installation from Release .deb (Requires sudo)
 
 Install the .deb package to use the repos command system-wide.
 
@@ -136,7 +166,7 @@ sudo dpkg -r repos
 
 #### Dependencies
 
-Both installation methods require:
+All installation methods require:
 - `bash` - Shell interpreter
 - `git` - Version control
 - `curl` - HTTP client
