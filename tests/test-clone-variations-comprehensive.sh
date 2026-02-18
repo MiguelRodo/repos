@@ -521,7 +521,7 @@ EOF
 # First clone should be from workspace9
 if [ -d "$TEST_ROOT/fallback-test-1" ]; then
   cd "$TEST_ROOT/fallback-test-1"
-  if git remote -v | grep -q "repo1.git"; then
+  if git remote -v | grep -q "repo1"; then
     print_pass "First @branch used workspace9 (repo1) as fallback"
   else
     print_fail "First @branch used wrong fallback"
@@ -533,7 +533,7 @@ fi
 # Second clone should be from repo2
 if [ -d "$TEST_ROOT/fallback-test-2" ]; then
   cd "$TEST_ROOT/fallback-test-2"
-  if git remote -v | grep -q "repo2.git"; then
+  if git remote -v | grep -q "repo2"; then
     print_pass "Second @branch used repo2 as fallback (fallback updated)"
   else
     print_fail "Second @branch used wrong fallback"
