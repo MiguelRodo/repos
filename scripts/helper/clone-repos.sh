@@ -1098,6 +1098,25 @@ main() {
         this_remote_https="$(spec_to_https "$repo_no_ref")"
         local seen_before; [ "$(remote_index "$this_remote_https")" -ge 0 ] && seen_before=1 || seen_before=0
 
+        # If this is an @branch clone (not a worktree) and no explicit target_dir,
+        # calculate target_dir based on fallback repo's local name + branch
+        if [ "$is_branch_clone" -eq 1 ] && [ -z "$target_dir" ] && [ "$this_remote_https" = "$fallback_repo_https" ]; then
+          local fallback_local_name
+          if [ "$fallback_repo_https" = "$current_repo_https" ]; then
+            fallback_local_name="$(basename "$start_dir")"
+          else
+            local idx; idx="$(remote_index "$fallback_repo_https")"
+            if [ "$idx" -ge 0 ] && [ -n "${REMOTE_LOCAL_PATH[$idx]}" ]; then
+              fallback_local_name="$(basename "${REMOTE_LOCAL_PATH[$idx]}")"
+            else
+              fallback_local_name="$(plan_base_name "$fallback_repo_https")"
+            fi
+          fi
+          local safe_ref; safe_ref="$(sanitize_branch_name "$ref")"
+          target_dir="${fallback_local_name}-${safe_ref}"
+          [[ "$DEBUG" == true ]] && echo "@branch clone: using target_dir='$target_dir'" >&2
+        fi
+
         clone_one_repo "$repo_spec" "$target_dir" "$parent_dir" "$all_branches" "$DEBUG" || rc=$?
         fallback_repo_https="$this_remote_https"
 

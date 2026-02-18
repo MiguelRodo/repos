@@ -104,7 +104,7 @@ git push -q origin HEAD:main
 # Create repos.list with the problematic scenario
 cat > repos.list <<EOF
 file://$REPO_BARE@branch1 slides
-@branch2 data
+@branch2 data --worktree
 EOF
 
 # Run clone-repos.sh

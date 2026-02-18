@@ -139,7 +139,7 @@ git commit -m "Initial project"
 # Create repos.list mimicking the problem scenario
 cat > repos.list <<EOF
 file://$UPSTREAM_REPO@slides-2026-sta5069z slides
-@data-2026-sta5069z data
+@data-2026-sta5069z data --worktree
 file://$EVAL_REPO@2026-sta5069z eval
 EOF
 

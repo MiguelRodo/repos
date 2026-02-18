@@ -102,7 +102,7 @@ run_test
 
 # Create repos.list (using relative path that works from test directory)
 cat > repos.list << 'EOF'
-@data-branch data
+@data-branch data --worktree
 EOF
 
 # Run clone-repos.sh
