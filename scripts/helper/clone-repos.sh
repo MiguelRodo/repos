@@ -559,6 +559,10 @@ parse_effective_line() {
         shift
       done
       [ -z "$fallback_repo_https" ] && { echo "Error: no fallback repo available for '$line'."; set +f; return 1; }
+      # Apply global worktree flag if set and no explicit flag on the line
+      if [ "$use_worktree" -eq 0 ] && [ "${GLOBAL_WORKTREE:-false}" = "true" ]; then
+        use_worktree=1
+      fi
       is_worktree=$use_worktree
       is_at_branch=1
       printf '%s@%s\x1f%s\x1f%s\x1f%s\x1f%s\n' "$fallback_repo_https" "$branch" "$target_dir" "$all_branches" "$is_worktree" "$is_at_branch"
@@ -884,11 +888,13 @@ parse_args() {
 
   DEBUG=false
   DEBUG_FILE_ARG=""
+  GLOBAL_WORKTREE=false
 
   while [ "$#" -gt 0 ]; do
     case "$1" in
       -f|--file) shift; [ "$#" -gt 0 ] && REPOS_FILE="$1" || { usage; exit 1; }; shift ;;
       -d|--debug) DEBUG=true; shift ;;
+      --worktree) GLOBAL_WORKTREE=true; shift ;;
       --debug-file)
         DEBUG=true
         shift

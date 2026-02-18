@@ -296,7 +296,40 @@ while IFS= read -r line || [ -n "$line" ]; do
   
   debug "Line $line_num: Processing: $line"
 
+  # Parse line to extract repo_spec and any flags
+  # Check if line is just a global flag (--codespaces, --public, --private, --worktree)
+  trimmed_line="${line#"${line%%[![:space:]]*}"}"
+  trimmed_line="${trimmed_line%"${trimmed_line##*[![:space:]]}"}"; trimmed_line=${trimmed_line%$'\r'}
+  
+  # Skip lines that are just global flags
+  case "$trimmed_line" in
+    --codespaces|--codespaces[[:space:]]*|\
+    --public|--public[[:space:]]*|\
+    --private|--private[[:space:]]*|\
+    --worktree|--worktree[[:space:]]*)
+      debug "Line $line_num: Skipping global flag line: $trimmed_line"
+      continue
+      ;;
+  esac
+
   repo_spec=${line%%[[:space:]]*}
+  
+  # Parse line-specific flags for this repo
+  line_is_public=""
+  rest_of_line="${line#*[[:space:]]}"
+  if [ "$rest_of_line" != "$line" ]; then
+    # There are additional tokens on the line
+    case " $rest_of_line " in
+      *" --public "*)
+        line_is_public=true
+        debug "Line $line_num: Found --public flag on this line"
+        ;;
+      *" --private "*)
+        line_is_public=false
+        debug "Line $line_num: Found --private flag on this line"
+        ;;
+    esac
+  fi
   
   # Handle @branch lines (worktrees) - check branch on fallback repo
   case "$repo_spec" in
@@ -445,10 +478,28 @@ while IFS= read -r line || [ -n "$line" ]; do
     echo "Exists: $owner/$repo"
   elif [ "$status" -eq 404 ]; then
     # build payload (auto_init if we’ll push a branch later)
-    if [ -n "$branch" ]; then
-      payload="{\"name\":\"$repo\",\"private\":$JSON_PRIVATE,\"auto_init\":true}"
+    # Determine if this repo should be private or public
+    # Line-specific flag takes precedence over global flag
+    local this_repo_private
+    if [ -n "$line_is_public" ]; then
+      # Line has explicit --public or --private flag
+      if [ "$line_is_public" = "true" ]; then
+        this_repo_private=false
+        debug "Line $line_num: Using line-specific --public flag"
+      else
+        this_repo_private=true
+        debug "Line $line_num: Using line-specific --private flag"
+      fi
     else
-      payload="{\"name\":\"$repo\",\"private\":$JSON_PRIVATE}"
+      # Use global default
+      this_repo_private=$PRIVATE_FLAG
+      debug "Line $line_num: Using global private flag: $this_repo_private"
+    fi
+    
+    if [ -n "$branch" ]; then
+      payload="{\"name\":\"$repo\",\"private\":$this_repo_private,\"auto_init\":true}"
+    else
+      payload="{\"name\":\"$repo\",\"private\":$this_repo_private}"
     fi
 
     printf "Creating repo %s/%s ... " "$owner" "$repo"

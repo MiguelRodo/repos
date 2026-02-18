@@ -137,6 +137,85 @@ debug "Debug file: ${DEBUG_FILE:-none}"
 
 debug "Repos file exists: $REPOS_FILE"
 
+# — Parse global flags from repos.list —
+parse_repos_file_flags() {
+  local file="$1"
+  local codespaces_found=false
+  local public_found=false
+  local private_found=false
+  local worktree_found=false
+  
+  while IFS= read -r line || [ -n "$line" ]; do
+    # Skip empty lines
+    case "$line" in "") continue ;; esac
+    
+    # Trim leading whitespace
+    line="${line#"${line%%[![:space:]]*}"}"
+    
+    # Skip comment lines
+    case "$line" in \#*) continue ;; esac
+    
+    # Remove inline comments
+    case "$line" in 
+      *" # "*) line="${line%% # *}" ;;
+      *" #"*) line="${line%% #*}" ;;
+    esac
+    
+    # Trim trailing whitespace
+    line="${line%"${line##*[![:space:]]}"}"; line=${line%$'\r'}
+    
+    # Skip now-empty lines
+    [ -z "$line" ] && continue
+    
+    # Check for global flags (must be alone on line or followed only by whitespace/comments)
+    case "$line" in
+      --codespaces|--codespaces[[:space:]]*)
+        codespaces_found=true
+        debug "Found --codespaces flag in repos.list"
+        ;;
+      --public|--public[[:space:]]*)
+        public_found=true
+        debug "Found --public flag in repos.list"
+        ;;
+      --private|--private[[:space:]]*)
+        private_found=true
+        debug "Found --private flag in repos.list"
+        ;;
+      --worktree|--worktree[[:space:]]*)
+        worktree_found=true
+        debug "Found --worktree flag in repos.list"
+        ;;
+    esac
+  done < "$file"
+  
+  # Return flags as space-separated values: codespaces public private worktree
+  echo "$codespaces_found $public_found $private_found $worktree_found"
+}
+
+# Parse flags from repos.list
+read -r file_codespaces file_public file_private file_worktree <<< "$(parse_repos_file_flags "$REPOS_FILE")"
+
+# Apply flags from repos.list if not already set via command line
+if [ "$file_codespaces" = "true" ] && [ "$CODESPACES_FLAG" = "false" ]; then
+  CODESPACES_FLAG=true
+  debug "Enabled --codespaces from repos.list"
+fi
+
+if [ "$file_public" = "true" ] && [ "$PUBLIC_FLAG" = "false" ]; then
+  PUBLIC_FLAG=true
+  debug "Enabled --public from repos.list"
+fi
+
+if [ "$file_private" = "true" ] && [ "$PUBLIC_FLAG" = "true" ]; then
+  # --private in repos.list overrides --public from command line
+  PUBLIC_FLAG=false
+  debug "Disabled --public due to --private in repos.list"
+fi
+
+# Store worktree flag for passing to clone-repos.sh
+WORKTREE_FLAG="$file_worktree"
+debug "Worktree flag from repos.list: $WORKTREE_FLAG"
+
 # — Ensure helpers exist —
 for script in "$CREATE_SCRIPT" "$CLONE_SCRIPT" "$WORKSPACE_SCRIPT"; do
   [ -x "$script" ] || { echo "Error: '$script' not found or not executable." >&2; exit 1; }
@@ -164,6 +243,10 @@ create_args+=( "${DEBUG_ARGS[@]}" )
 echo "=== 2) Cloning repos locally ==="
 debug "Running clone-repos.sh with args: --file $REPOS_FILE ${DEBUG_ARGS[*]}"
 clone_args=( --file "$REPOS_FILE" )
+if [ "$WORKTREE_FLAG" = "true" ]; then
+  clone_args+=( --worktree )
+  debug "Adding --worktree flag to clone-repos.sh"
+fi
 clone_args+=( "${DEBUG_ARGS[@]}" )
 "$CLONE_SCRIPT" "${clone_args[@]}"
 
