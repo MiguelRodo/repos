@@ -45,7 +45,35 @@ workspace/
 - Skip specifying repository in `repos.list`, as previous repo listed or current repo used as default.
   - For example, specifying `@data-curation` in the first line would use the current repository as its repository
   - Alternately, specifying `@dev` in the line after `myorg/analysis` would clone the `dev` branch from `myorg/analysis`
-- Create repositories as public using the `--public` flag,  e.g. `owner/repo --public`
+- Create repositories as public using the `--public` flag, e.g. `owner/repo --public`
+
+##### Global Flags in repos.list
+
+You can specify global flags at the start of any line in `repos.list` (with only blank space or comments after the flag):
+
+- `--codespaces` - Enable Codespaces authentication for all repositories
+- `--public` - Create all repositories as public by default
+- `--private` - Create all repositories as private by default
+- `--worktree` - Create all branch clones as worktrees instead of separate clones
+
+Example:
+```
+--public
+--codespaces
+myorg/repo1
+myorg/repo2
+```
+
+##### Per-Line Flags
+
+You can also specify `--public` or `--private` on individual repository lines to override the global setting:
+
+Example:
+```
+--private             # Default to private
+myorg/public-repo --public   # Override: create as public
+myorg/private-repo    # Use default: private
+```
 
 #### `repos`
 
