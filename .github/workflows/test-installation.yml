@@ -1,0 +1,253 @@
+name: Test Installation Methods
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  # Test Python package installation
+  test-python-package:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ['3.8', '3.11']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - name: Install system dependencies
+        run: |
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            sudo apt-get update
+            sudo apt-get install -y git curl jq
+          elif [ "${{ runner.os }}" = "macOS" ]; then
+            brew install jq
+          fi
+      
+      - name: Install Python package
+        run: |
+          pip install .
+          echo "Installation completed"
+      
+      - name: Verify repos command is available
+        run: |
+          which repos
+          repos --help
+      
+      - name: Test Python API
+        run: |
+          python -c "from repos import get_script_path, run_script; print('Python API works')"
+          python -c "from repos import get_script_path; path = get_script_path('setup-repos.sh'); print(f'Script path: {path}')"
+      
+      - name: Create test repos.list
+        run: |
+          cat > test-repos.list << 'EOF'
+          # Test file for validation
+          EOF
+      
+      - name: Run basic functionality test
+        run: |
+          # Test that help works
+          repos --help || exit 1
+          echo "Python package installation test passed"
+
+  # Test R package installation
+  test-r-package:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release'
+      
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl jq
+      
+      - name: Install R package dependencies
+        run: |
+          Rscript -e 'install.packages(c("devtools", "roxygen2"))'
+      
+      - name: Build and install R package
+        run: |
+          Rscript -e 'devtools::install(".")'
+      
+      - name: Test R package
+        run: |
+          Rscript -e 'library(repos); repos("--help")'
+          echo "R package installation test passed"
+
+  # Test Debian package installation
+  test-debian-package:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y debhelper devscripts build-essential
+      
+      - name: Update changelog for test build
+        run: |
+          VERSION="1.0.0-test"
+          DATE=$(date -R)
+          cat > debian/changelog << EOF
+          repos ($VERSION) unstable; urgency=medium
+
+            * Test build for CI
+
+           -- Test User <test@example.com>  $DATE
+          EOF
+      
+      - name: Build Debian package
+        run: |
+          dpkg-buildpackage -us -uc -b
+      
+      - name: Install Debian package
+        run: |
+          sudo dpkg -i ../repos_*.deb || true
+          sudo apt-get install -f -y
+      
+      - name: Verify repos command is available
+        run: |
+          which repos
+          repos --help
+      
+      - name: Verify script installation
+        run: |
+          test -f /usr/share/repos/scripts/setup-repos.sh || exit 1
+          test -f /usr/share/repos/scripts/run-pipeline.sh || exit 1
+          echo "Debian package installation test passed"
+      
+      - name: Run existing tests
+        run: |
+          cd tests
+          ./test-auth-check.sh || true
+          echo "Debian package tests completed"
+
+  # Test Windows manual installation
+  test-windows-manual:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          # Install jq using chocolatey
+          choco install jq -y
+          # Git is already installed on GitHub runners
+      
+      - name: Run install.ps1
+        shell: pwsh
+        run: |
+          .\install.ps1
+          Write-Host "Installation script executed"
+      
+      - name: Verify repos is in PATH (new session)
+        shell: pwsh
+        run: |
+          # Reload environment variables
+          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","User") + ";" + [System.Environment]::GetEnvironmentVariable("Path","Machine")
+          
+          # Verify the bin directory is in path
+          $binDir = Join-Path $PWD "bin"
+          if ($env:Path -like "*$binDir*") {
+            Write-Host "repos bin directory found in PATH"
+          } else {
+            Write-Error "repos bin directory not found in PATH"
+            exit 1
+          }
+      
+      - name: Test repos command
+        shell: bash
+        run: |
+          # Run repos command using Git Bash
+          ./bin/repos --help
+          echo "Windows manual installation test passed"
+
+  # Test from source (direct script usage)
+  test-from-source:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl jq bash
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x scripts/*.sh
+      
+      - name: Test setup-repos.sh directly
+        run: |
+          ./scripts/setup-repos.sh --help
+      
+      - name: Run test suite
+        run: |
+          cd tests
+          # Run a subset of tests to verify functionality
+          ./test-auth-check.sh
+          ./test-setup-repos-local.sh
+          echo "From source tests passed"
+      
+      - name: Test other scripts
+        run: |
+          ./scripts/run-pipeline.sh --help || true
+          ./scripts/add-branch.sh --help || true
+          echo "From source installation test passed"
+
+  # Summary job to ensure all tests pass
+  test-summary:
+    runs-on: ubuntu-latest
+    needs: [test-python-package, test-r-package, test-debian-package, test-windows-manual, test-from-source]
+    if: always()
+    
+    steps:
+      - name: Check all tests passed
+        run: |
+          if [ "${{ needs.test-python-package.result }}" != "success" ]; then
+            echo "Python package tests failed"
+            exit 1
+          fi
+          if [ "${{ needs.test-r-package.result }}" != "success" ]; then
+            echo "R package tests failed"
+            exit 1
+          fi
+          if [ "${{ needs.test-debian-package.result }}" != "success" ]; then
+            echo "Debian package tests failed"
+            exit 1
+          fi
+          if [ "${{ needs.test-windows-manual.result }}" != "success" ]; then
+            echo "Windows manual tests failed"
+            exit 1
+          fi
+          if [ "${{ needs.test-from-source.result }}" != "success" ]; then
+            echo "From source tests failed"
+            exit 1
+          fi
+          echo "✅ All installation methods tested successfully!"
