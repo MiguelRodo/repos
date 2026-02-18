@@ -57,6 +57,52 @@ You can install repos as a system package (Ubuntu/Debian, macOS, Windows), from 
 
 ### <a name="ubuntu-debian"></a>Ubuntu/Debian
 
+You can install repos either system-wide (requires sudo) or to your local user directory (no sudo required).
+
+#### Option 1: Local Installation (No sudo required)
+
+Install to your user directory (`~/.local/bin`):
+
+```bash
+# Clone the repository
+git clone https://github.com/MiguelRodo/repos.git
+cd repos
+
+# Run the local installer
+bash install-local.sh
+```
+
+The installer will:
+- Install the `repos` command to `~/.local/bin`
+- Install scripts to `~/.local/share/repos/scripts`
+- Check if `~/.local/bin` is in your PATH and provide instructions if needed
+
+If `~/.local/bin` is not in your PATH, add this line to your `~/.bashrc` or `~/.profile`:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Then reload your configuration:
+
+```bash
+source ~/.bashrc
+```
+
+Run the repos command:
+
+```bash
+repos
+```
+
+To uninstall:
+
+```bash
+bash uninstall-local.sh
+```
+
+#### Option 2: System-wide Installation (Requires sudo)
+
 Install the .deb package to use the repos command system-wide.
 
 Download and install the latest `.deb` package from the [Releases page](https://github.com/MiguelRodo/repos/releases):
@@ -82,15 +128,21 @@ Run the repos command:
 repos
 ```
 
+To uninstall:
+
+```bash
+sudo dpkg -r repos
+```
+
 #### Dependencies
 
-The package automatically handles dependencies, but requires:
+Both installation methods require:
 - `bash` - Shell interpreter
 - `git` - Version control
 - `curl` - HTTP client
 - `jq` - JSON processor
 
-These are typically pre-installed on Ubuntu/Debian systems. If not:
+These are typically pre-installed on Ubuntu/Debian systems. If not, install them:
 
 ```bash
 sudo apt-get install bash git curl jq
@@ -181,7 +233,10 @@ Install from source to use the repos command or run scripts directly.
 git clone https://github.com/MiguelRodo/repos.git
 cd repos
 
-# For Ubuntu/Debian
+# For Ubuntu/Debian - Local installation (no sudo)
+bash install-local.sh
+
+# For Ubuntu/Debian - System-wide installation (requires sudo)
 sudo dpkg-buildpackage -us -uc -b
 sudo dpkg -i ../repos_*.deb
 
@@ -522,6 +577,14 @@ sudo apt-get install bash git curl jq
 ```
 
 ## Uninstallation
+
+### Local Installation
+
+```bash
+bash uninstall-local.sh
+```
+
+### System-wide Installation
 
 ```bash
 sudo dpkg -r repos
