@@ -532,14 +532,14 @@ find_worktree_for_branch() {
 }
 
 # --- Parsing -----------------------------------------------------------------
-# Returns: repo_spec \x1f target_dir \x1f all_branches \x1f is_worktree
+# Returns: repo_spec \x1f target_dir \x1f all_branches \x1f is_worktree \x1f is_at_branch
 parse_effective_line() {
   set -f
   local line="$1" fallback_repo_https="$2"
-  local first target_dir="" all_branches=0 is_worktree=0 use_worktree=0
+  local first target_dir="" all_branches=0 is_worktree=0 use_worktree=0 is_at_branch=0
 
   set -- $line
-  [ "$#" -eq 0 ] && { printf '%s\x1f%s\x1f%s\x1f%s\n' "" "" "0" "0"; set +f; return 0; }
+  [ "$#" -eq 0 ] && { printf '%s\x1f%s\x1f%s\x1f%s\x1f%s\n' "" "" "0" "0" "0"; set +f; return 0; }
 
   first="$1"; shift
   case "$first" in
@@ -560,7 +560,8 @@ parse_effective_line() {
       done
       [ -z "$fallback_repo_https" ] && { echo "Error: no fallback repo available for '$line'."; set +f; return 1; }
       is_worktree=$use_worktree
-      printf '%s@%s\x1f%s\x1f%s\x1f%s\n' "$fallback_repo_https" "$branch" "$target_dir" "$all_branches" "$is_worktree"
+      is_at_branch=1
+      printf '%s@%s\x1f%s\x1f%s\x1f%s\x1f%s\n' "$fallback_repo_https" "$branch" "$target_dir" "$all_branches" "$is_worktree" "$is_at_branch"
       ;;
     *)
       local repo_spec="$first"
@@ -578,7 +579,7 @@ parse_effective_line() {
         shift
       done
       is_worktree=0
-      printf '%s\x1f%s\x1f%s\x1f%s\n' "$repo_spec" "$target_dir" "$all_branches" "$is_worktree"
+      printf '%s\x1f%s\x1f%s\x1f%s\x1f%s\n' "$repo_spec" "$target_dir" "$all_branches" "$is_worktree" "$is_at_branch"
       ;;
   esac
   set +f
@@ -1062,9 +1063,9 @@ main() {
       [[ "$DEBUG" == true ]] && echo "Parsing line: $trimmed" >&2
       local rc=0
       # Parse with current fallback
-      local parsed repo_spec target_dir all_branches is_worktree
+      local parsed repo_spec target_dir all_branches is_worktree is_at_branch
       parsed="$(parse_effective_line "$trimmed" "$fallback_repo_https")"
-      IFS=$'\x1f' read -r repo_spec target_dir all_branches is_worktree <<<"$parsed"
+      IFS=$'\x1f' read -r repo_spec target_dir all_branches is_worktree is_at_branch <<<"$parsed"
       [ -z "$repo_spec" ] && { rc=0; ( exit "$rc" ); }
 
       if [ "$is_worktree" -eq 1 ]; then
@@ -1100,7 +1101,7 @@ main() {
 
         # If this is an @branch clone (not a worktree) and no explicit target_dir,
         # calculate target_dir based on fallback repo's local name + branch
-        if [ "$is_branch_clone" -eq 1 ] && [ -z "$target_dir" ] && [ "$this_remote_https" = "$fallback_repo_https" ]; then
+        if [ "$is_at_branch" -eq 1 ] && [ "$is_branch_clone" -eq 1 ] && [ -z "$target_dir" ]; then
           local fallback_local_name
           if [ "$fallback_repo_https" = "$current_repo_https" ]; then
             fallback_local_name="$(basename "$start_dir")"
