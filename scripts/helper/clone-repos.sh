@@ -1068,21 +1068,6 @@ main() {
       IFS=$'\x1f' read -r repo_spec target_dir all_branches is_worktree is_at_branch <<<"$parsed"
       [ -z "$repo_spec" ] && { rc=0; ( exit "$rc" ); }
 
-      # Auto-enable worktree mode for @branch lines when base repo exists
-      if [ "$is_at_branch" -eq 1 ] && [ "$is_worktree" -eq 0 ]; then
-        # Check if the fallback repo already exists locally
-        local idx; idx="$(remote_index "$fallback_repo_https")"
-        if [ "$idx" -ge 0 ] && [ -n "${REMOTE_LOCAL_PATH[$idx]}" ]; then
-          # Base repo exists, use worktree mode
-          is_worktree=1
-          [[ "$DEBUG" == true ]] && echo "Auto-enabling worktree mode for @branch line (base repo exists)" >&2
-        elif [ "$fallback_repo_https" = "$current_repo_https" ]; then
-          # Fallback is current repo, use worktree mode
-          is_worktree=1
-          [[ "$DEBUG" == true ]] && echo "Auto-enabling worktree mode for @branch line (using current repo)" >&2
-        fi
-      fi
-
       if [ "$is_worktree" -eq 1 ]; then
         local branch=""; case "$repo_spec" in *@*) branch="${repo_spec##*@}" ;; esac
         local base_abs
