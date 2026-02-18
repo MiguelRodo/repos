@@ -7,7 +7,7 @@ A command-line tool for managing multiple related Git repositories as a unified 
 
 ## Overview
 
-Many projects consist of multiple repositories. For instance, an analysis project might have one repository for data curation and another for analysis. To facilitate this workflow, you can create a repos.list file that specifies the repositories and their branches, and then run `repos` to clone them (creating repositories and branches as needed).
+Many projects consist of multiple repositories. For instance, an analysis project might have one repository for data curation and another for analysis. To facilitate this workflow, you can create a repos.list file that specifies the repositories and their branches, and then run `repos setup` to clone them (creating repositories and branches as needed).
 
 Here's an example repos.list file:
 
@@ -17,10 +17,10 @@ myorg/analysis
 myorg/documentation
 ```
 
-Run `repos` to clone them, and create them if they do not exist:
+Run `repos setup` to clone them, and create them if they do not exist:
 
 ```bash
-repos
+repos setup
 ```
 
 This creates the following directory structure:
@@ -75,8 +75,8 @@ myorg/private-repo    # Use default: private
 
 #### `repos`
 
-- Enable Codespaces authentication with `--codespaces`, e.g. `repos --codespaces`
-- Specify custom `devcontainer.json` paths with `-d`, e.g. `repos -d .devcontainer/prebuild/devcontainer.json`
+- Enable Codespaces authentication with `--codespaces`, e.g. `repos setup --codespaces`
+- Specify custom `devcontainer.json` paths with `-d`, e.g. `repos setup -d .devcontainer/prebuild/devcontainer.json`
   - Use multiple `-d` flags to specify multiple `devcontainer.json` files
 
 ## Installation
@@ -120,7 +120,7 @@ source ~/.bashrc
 Run the repos command:
 
 ```bash
-repos
+repos --help
 ```
 
 To uninstall:
@@ -150,7 +150,7 @@ sudo apt-get install -y repos
 Run the repos command:
 
 ```bash
-repos
+repos --help
 ```
 
 To uninstall:
@@ -183,7 +183,7 @@ sudo apt-get install -f
 Run the repos command:
 
 ```bash
-repos
+repos --help
 ```
 
 To uninstall:
@@ -223,7 +223,7 @@ scoop install repos
 Run the repos command:
 
 ```powershell
-repos
+repos --help
 ```
 
 Dependencies (`git` and `jq`) are automatically installed by Scoop. You'll also need Git for Windows for bash support.
@@ -253,7 +253,7 @@ Install manually to use the repos command in PowerShell or Git Bash.
 Run the repos command:
 
 ```powershell
-repos
+repos --help
 ```
 
 #### Windows Dependencies
@@ -278,7 +278,7 @@ brew install repos
 Run the repos command:
 
 ```bash
-repos
+repos --help
 ```
 
 The formula automatically handles the `jq` dependency. Git is typically pre-installed on macOS.
@@ -305,7 +305,7 @@ sudo dpkg -i ../repos_*.deb
 Run the repos command:
 
 ```bash
-repos
+repos --help
 ```
 
 ### <a name="language-wrappers"></a>Language Wrappers
@@ -362,16 +362,17 @@ pip install .
 pip install -e .
 
 # Use the repos command
-repos  # Run with default repos.list
-repos -f my-repos.list
-repos --public
+repos setup                    # Run with default repos.list
+repos setup -f my-repos.list
+repos setup --public
+repos run --skip-setup
 repos --help
 ```
 
 Run the repos command:
 
 ```bash
-repos
+repos --help
 ```
 
 **System Requirements:** The Python package requires `bash`, `git`, `curl`, and `jq` to be installed on your system. On Windows, you need [Git for Windows](https://git-scm.com/download/win) (which includes Git Bash) or WSL (Windows Subsystem for Linux).
@@ -423,7 +424,7 @@ myorg/docs
 ### 2. Run setup
 
 ```bash
-repos
+repos setup
 ```
 
 This will:
@@ -435,37 +436,75 @@ To also configure authentication for GitHub Codespaces, use the `--codespaces` f
 
 ```bash
 # Enable Codespaces authentication with default path
-repos --codespaces
+repos setup --codespaces
 
 # Specify custom devcontainer.json paths
-repos -d .devcontainer/devcontainer.json
-repos -d path1/devcontainer.json -d path2/devcontainer.json
+repos setup -d .devcontainer/devcontainer.json
+repos setup -d path1/devcontainer.json -d path2/devcontainer.json
 ```
 
 ## Usage
 
-### Basic Commands
+### Subcommands
 
-The `repos` command is a wrapper around `setup-repos.sh`. All options are passed through:
+The `repos` CLI uses subcommands:
+
+```bash
+repos setup [flags]   # Clone and configure repositories
+repos run [flags]     # Execute a script in each repository
+repos --help          # Show available subcommands
+```
+
+### repos setup
+
+Set up repositories from a `repos.list` file:
 
 ```bash
 # Setup repositories from repos.list
-repos
+repos setup
 
 # Use a different file
-repos -f my-repos.list
+repos setup -f my-repos.list
 
 # Create repositories as public (default is private)
-repos --public
+repos setup --public
 
 # Enable Codespaces authentication
-repos --codespaces
+repos setup --codespaces
 
 # Specify custom devcontainer.json paths
-repos -d .devcontainer/devcontainer.json
+repos setup -d .devcontainer/devcontainer.json
 
 # Show help
-repos --help
+repos setup --help
+```
+
+### repos run
+
+Execute a script inside each cloned repository:
+
+```bash
+# Run the default script (run.sh) in each repository
+repos run --skip-setup
+
+# Run a custom script in each repository
+repos run --skip-setup --script pipeline.sh
+
+# Use an alternative list file (concise format)
+repos run --skip-setup -f repos-test.list
+
+# Include/exclude specific repos
+repos run --skip-setup --include "backend,frontend"
+repos run --skip-setup --exclude "docs"
+
+# Continue past failures and report all results
+repos run --skip-setup --no-stop-on-error
+
+# Dry-run mode
+repos run --skip-setup --dry-run
+
+# Show help
+repos run --help
 ```
 
 ### Advanced Features
@@ -525,12 +564,13 @@ owner/repo custom-directory
 If your repositories contain `run.sh` scripts, you can execute them across all repositories:
 
 ```bash
-/usr/share/repos/scripts/run-pipeline.sh
+repos run --skip-setup
 
 # With options
-/usr/share/repos/scripts/run-pipeline.sh --skip-setup
-/usr/share/repos/scripts/run-pipeline.sh --include "backend,frontend"
-/usr/share/repos/scripts/run-pipeline.sh --dry-run
+repos run --skip-setup --include "backend,frontend"
+repos run --skip-setup --dry-run
+repos run --skip-setup --script pipeline.sh
+repos run --skip-setup --no-stop-on-error
 ```
 
 ## Configuration
@@ -551,7 +591,7 @@ gh auth login
 
 ### VS Code Workspace
 
-After running `repos`, open the generated workspace:
+After running `repos setup`, open the generated workspace:
 
 ```bash
 code entire-project.code-workspace
@@ -568,7 +608,7 @@ user/api-server
 user/database-scripts
 
 # Run
-repos
+repos setup
 ```
 
 ### Example 2: Work on multiple branches
@@ -581,7 +621,7 @@ myorg/main-project
 @bugfix-123
 
 # Run
-repos
+repos setup
 
 # Now you have:
 # - myorg/main-project (main branch)
