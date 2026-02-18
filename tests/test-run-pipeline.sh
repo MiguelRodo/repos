@@ -131,7 +131,7 @@ fi
 print_test "Dry-run mode (--dry-run)"
 
 cd test-project
-if scripts/run-pipeline.sh --dry-run --skip-setup 2>&1 | grep -q "DRY-RUN"; then
+if scripts/run-pipeline.sh --dry-run 2>&1 | grep -q "DRY-RUN"; then
   print_pass "Dry-run mode works"
 else
   print_fail "Dry-run mode not working"
@@ -141,13 +141,15 @@ cd ..
 # ============================================
 # Test 4: Skip setup flag
 # ============================================
-print_test "Skip setup flag (--skip-setup)"
+print_test "Ensure setup flag (--ensure-setup)"
 
 cd test-project
-if scripts/run-pipeline.sh --skip-setup --skip-deps --dry-run 2>&1 | grep -q "Skipping setup"; then
-  print_pass "Skip setup flag works"
+# With --ensure-setup, it should attempt to run setup (not show the default skip message)
+output=$(scripts/run-pipeline.sh --ensure-setup --skip-deps --dry-run 2>&1)
+if echo "$output" | grep -q "Skipping setup step (default"; then
+  print_fail "Ensure setup flag not working"
 else
-  print_fail "Skip setup flag not working"
+  print_pass "Ensure setup flag works"
 fi
 cd ..
 
@@ -157,7 +159,7 @@ cd ..
 print_test "Skip deps flag (--skip-deps)"
 
 cd test-project
-if scripts/run-pipeline.sh --skip-setup --skip-deps --dry-run 2>&1 | grep -q "Skipping.*dependencies"; then
+if scripts/run-pipeline.sh --skip-deps --dry-run 2>&1 | grep -q "Skipping.*dependencies"; then
   print_pass "Skip deps flag works"
 else
   print_fail "Skip deps flag not working"
@@ -175,7 +177,7 @@ cd test-project
 rm -f ../test-repo1/.test-executed ../test-repo2/.test-executed
 
 # Run pipeline (skip setup and deps, just execute)
-if scripts/run-pipeline.sh --skip-setup --skip-deps 2>&1; then
+if scripts/run-pipeline.sh --skip-deps 2>&1; then
   if [ -f ../test-repo1/.test-executed ] && [ -f ../test-repo2/.test-executed ]; then
     print_pass "run.sh scripts executed in all repos"
   else
@@ -199,7 +201,7 @@ cd test-project
 rm -f ../test-repo1/.test-executed ../test-repo2/.test-executed
 
 # Run only test-repo1
-if scripts/run-pipeline.sh --skip-setup --skip-deps --include "test-repo1" 2>&1; then
+if scripts/run-pipeline.sh --skip-deps --include "test-repo1" 2>&1; then
   if [ -f ../test-repo1/.test-executed ] && [ ! -f ../test-repo2/.test-executed ]; then
     print_pass "Include filter works correctly"
   else
@@ -223,7 +225,7 @@ cd test-project
 rm -f ../test-repo1/.test-executed ../test-repo2/.test-executed
 
 # Exclude test-repo1
-if scripts/run-pipeline.sh --skip-setup --skip-deps --exclude "test-repo1" 2>&1; then
+if scripts/run-pipeline.sh --skip-deps --exclude "test-repo1" 2>&1; then
   if [ ! -f ../test-repo1/.test-executed ] && [ -f ../test-repo2/.test-executed ]; then
     print_pass "Exclude filter works correctly"
   else
@@ -251,7 +253,7 @@ org/test-repo1
 org/test-repo2
 EOF
 
-if scripts/run-pipeline.sh --skip-setup --skip-deps -f repos-full.list 2>&1 | grep -q -i "workspace.*not.*found\|cannot"; then
+if scripts/run-pipeline.sh --skip-deps -f repos-full.list 2>&1 | grep -q -i "workspace.*not.*found\|cannot"; then
   print_pass "Handles missing workspace file gracefully"
 else
   print_fail "Does not handle missing workspace file"
@@ -282,7 +284,7 @@ test-repo3
 EOF
 
 cd test-project
-if scripts/run-pipeline.sh --skip-setup --skip-deps -f repos-no-run.list 2>&1 | grep -q "no run.sh found\|0 succeeded.*0 failed.*1 skipped"; then
+if scripts/run-pipeline.sh --skip-deps -f repos-no-run.list 2>&1 | grep -q "no run.sh found\|0 succeeded.*0 failed.*1 skipped"; then
   print_pass "Handles repos without run.sh"
 else
   print_fail "Does not properly handle repos without run.sh"
@@ -317,7 +319,7 @@ EOF
 rm -f test-repo1/.test-pipeline-executed
 
 cd test-project
-if scripts/run-pipeline.sh --skip-setup --skip-deps --script pipeline.sh 2>&1; then
+if scripts/run-pipeline.sh --skip-deps --script pipeline.sh 2>&1; then
   if [ -f ../test-repo1/.test-pipeline-executed ]; then
     print_pass "--script flag runs the correct script"
   else
@@ -335,9 +337,9 @@ rm -f ../test-repo1/.test-pipeline-executed ../test-repo1/pipeline.sh
 cd ..
 
 # ============================================
-# Test 12: --no-stop-on-error continues on failure
+# Test 12: --continue-on-error continues on failure
 # ============================================
-print_test "--no-stop-on-error continues past failures"
+print_test "--continue-on-error continues past failures"
 
 # Create a failing run.sh in test-repo1
 cat > test-repo1/run.sh <<'RUNSH'
@@ -350,11 +352,11 @@ chmod +x test-repo1/run.sh
 rm -f test-repo2/.test-executed
 
 cd test-project
-output=$(scripts/run-pipeline.sh --skip-setup --skip-deps --no-stop-on-error 2>&1 || true)
+output=$(scripts/run-pipeline.sh --skip-deps --continue-on-error 2>&1 || true)
 if echo "$output" | grep -q "failed (exit code 1)" && [ -f ../test-repo2/.test-executed ]; then
-  print_pass "--no-stop-on-error continues and reports failures"
+  print_pass "--continue-on-error continues and reports failures"
 else
-  print_fail "--no-stop-on-error did not continue past failure"
+  print_fail "--continue-on-error did not continue past failure"
   print_info "Output: $output"
   print_info "test-repo2 executed: $([ -f ../test-repo2/.test-executed ] && echo '✓' || echo '✗')"
 fi
@@ -381,7 +383,7 @@ test-repo2
 EOF
 
 cd test-project
-if scripts/run-pipeline.sh --skip-setup --skip-deps -f repos-concise.list 2>&1; then
+if scripts/run-pipeline.sh --skip-deps -f repos-concise.list 2>&1; then
   if [ -f ../test-repo1/.test-executed ] && [ -f ../test-repo2/.test-executed ]; then
     print_pass "Concise format list file works"
   else
@@ -414,7 +416,7 @@ test-repo2
 EOF
 
 cd test-project
-if scripts/run-pipeline.sh --skip-setup --skip-deps -f repos-custom.list 2>&1; then
+if scripts/run-pipeline.sh --skip-deps -f repos-custom.list 2>&1; then
   if [ -f ../test-repo1/.test-custom-executed ] && [ -f ../test-repo2/.test-executed ]; then
     print_pass "Concise format per-line script name works"
   else
@@ -436,7 +438,7 @@ print_test "Pipeline summary output format"
 rm -f test-repo1/.test-executed test-repo2/.test-executed
 
 cd test-project
-output=$(scripts/run-pipeline.sh --skip-setup --skip-deps 2>&1)
+output=$(scripts/run-pipeline.sh --skip-deps 2>&1)
 if echo "$output" | grep -q "=== Pipeline Summary ===" && echo "$output" | grep -q "Total:.*repositories"; then
   print_pass "Pipeline summary is printed"
 else

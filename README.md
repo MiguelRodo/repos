@@ -330,13 +330,13 @@ library(repos)
 repos("setup")                         # Setup repositories
 repos("setup", "-f", "my-repos.list")  # Use a different file
 repos("setup", "--public")             # Create repos as public
-repos("run", "--skip-setup")           # Run pipeline in each repo
-repos("run", "--skip-setup", "--script", "build.sh")
+repos("run")                           # Run pipeline in each repo
+repos("run", "--script", "build.sh")
 
 # Or use the direct functions
 repos_setup()
 repos_setup("--help")
-repos_run("--skip-setup")
+repos_run()
 repos_run("--help")
 ```
 
@@ -370,7 +370,7 @@ pip install -e .
 repos setup                    # Run with default repos.list
 repos setup -f my-repos.list
 repos setup --public
-repos run --skip-setup
+repos run
 repos --help
 ```
 
@@ -490,23 +490,26 @@ Execute a script inside each cloned repository:
 
 ```bash
 # Run the default script (run.sh) in each repository
-repos run --skip-setup
+repos run
 
 # Run a custom script in each repository
-repos run --skip-setup --script pipeline.sh
+repos run --script pipeline.sh
 
 # Use an alternative list file (concise format)
-repos run --skip-setup -f repos-test.list
+repos run -f repos-test.list
 
 # Include/exclude specific repos
-repos run --skip-setup --include "backend,frontend"
-repos run --skip-setup --exclude "docs"
+repos run --include "backend,frontend"
+repos run --exclude "docs"
 
 # Continue past failures and report all results
-repos run --skip-setup --no-stop-on-error
+repos run --continue-on-error
 
 # Dry-run mode
-repos run --skip-setup --dry-run
+repos run --dry-run
+
+# Force setup step before running
+repos run --ensure-setup
 
 # Show help
 repos run --help
@@ -569,13 +572,13 @@ owner/repo custom-directory
 If your repositories contain `run.sh` scripts, you can execute them across all repositories:
 
 ```bash
-repos run --skip-setup
+repos run
 
 # With options
-repos run --skip-setup --include "backend,frontend"
-repos run --skip-setup --dry-run
-repos run --skip-setup --script pipeline.sh
-repos run --skip-setup --no-stop-on-error
+repos run --include "backend,frontend"
+repos run --dry-run
+repos run --script pipeline.sh
+repos run --continue-on-error
 ```
 
 ## Configuration

@@ -43,11 +43,12 @@ Options:
                            (default: run.sh)
   -i, --include <names>    Comma-separated list of repo names to INCLUDE
   -e, --exclude <names>    Comma-separated list of repo names to EXCLUDE
-  -s, --skip-setup         Skip the setup-repos.sh step
+      --ensure-setup       Run setup-repos.sh before executing scripts
+                           (by default, setup is skipped)
   -d, --skip-deps          Skip the install-r-deps.sh step
   -n, --dry-run            Show what would be done, but don't execute
   -v, --verbose            Enable verbose logging
-      --no-stop-on-error   Continue on failure, report all results in summary
+      --continue-on-error  Continue on failure, report all results in summary
   -h, --help               Show this message
 
 Path Resolution (follows clone-repos.sh logic):
@@ -64,6 +65,10 @@ File Format:
     repo-directory-2 pipeline.sh
     repo-directory-3
 
+  Format is auto-detected via content sniffing: lines containing '/',
+  starting with '@', or matching global flags (--codespaces, etc.) indicate
+  fully-specified format. Otherwise, concise format is assumed.
+
 If a folder exists and contains the target script, this script will make it
 executable and then run it.
 EOF
@@ -77,7 +82,7 @@ parse_args() {
     REPOS_FILE="$PROJECT_ROOT/repos.list"
   fi
   
-  SKIP_SETUP=false
+  SKIP_SETUP=true
   SKIP_DEPS=false
   DRY_RUN=false
   VERBOSE=false
@@ -96,15 +101,15 @@ parse_args() {
         shift; INCLUDE_RAW="$1"; shift ;;
       -e|--exclude)
         shift; EXCLUDE_RAW="$1"; shift ;;
-      -s|--skip-setup)
-        SKIP_SETUP=true; shift ;;
+      --ensure-setup)
+        SKIP_SETUP=false; shift ;;
       -d|--skip-deps)
         SKIP_DEPS=true; shift ;;
       -n|--dry-run)
         DRY_RUN=true; shift ;;
       -v|--verbose)
         VERBOSE=true; shift ;;
-      --no-stop-on-error)
+      --continue-on-error)
         STOP_ON_ERROR=false; shift ;;
       -h|--help)
         usage; exit 0 ;;
@@ -262,7 +267,7 @@ main() {
       echo "Warning: setup-repos.sh not found or not executable; skipping setup step."
     fi
   else
-    echo "=== 1) Skipping setup step (--skip-setup) ==="
+    echo "=== 1) Skipping setup step (default; use --ensure-setup to run) ==="
   fi
 
   # Step 2: Install R dependencies (unless skipped)

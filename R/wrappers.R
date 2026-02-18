@@ -42,8 +42,8 @@ run_repos_script <- function(script_name, args = character()) {
 #' \dontrun{
 #' repos("setup")
 #' repos("setup", "--public")
-#' repos("run", "--skip-setup")
-#' repos("run", "--skip-setup", "--script", "build.sh")
+#' repos("run")
+#' repos("run", "--script", "build.sh")
 #' }
 #'
 #' @export
@@ -120,12 +120,12 @@ repos_setup <- function(...) {
 #'   \itemize{
 #'     \item \code{-f FILE}: Repo list file (default: repos.list)
 #'     \item \code{--script PATH}: Script to run in each repo (default: run.sh)
-#'     \item \code{-s, --skip-setup}: Skip the setup-repos.sh step
+#'     \item \code{--ensure-setup}: Run setup-repos.sh before executing scripts
 #'     \item \code{-d, --skip-deps}: Skip the install-r-deps.sh step
 #'     \item \code{-i, --include NAMES}: Comma-separated repo names to include
 #'     \item \code{-e, --exclude NAMES}: Comma-separated repo names to exclude
 #'     \item \code{-n, --dry-run}: Show what would be done without executing
-#'     \item \code{--no-stop-on-error}: Continue on failure, report all results
+#'     \item \code{--continue-on-error}: Continue on failure, report all results
 #'     \item \code{--help}: Show help message
 #'   }
 #'
@@ -143,17 +143,17 @@ repos_setup <- function(...) {
 #'
 #' @examples
 #' \dontrun{
-#' # Run the default script (run.sh) in each repo, skipping setup
-#' repos_run("--skip-setup")
+#' # Run the default script (run.sh) in each repo
+#' repos_run()
 #'
 #' # Run a custom script
-#' repos_run("--skip-setup", "--script", "build.sh")
+#' repos_run("--script", "build.sh")
 #'
 #' # Continue past failures
-#' repos_run("--skip-setup", "--no-stop-on-error")
+#' repos_run("--continue-on-error")
 #'
 #' # Dry-run mode
-#' repos_run("--skip-setup", "--dry-run")
+#' repos_run("--dry-run")
 #'
 #' # Show help
 #' repos_run("--help")
