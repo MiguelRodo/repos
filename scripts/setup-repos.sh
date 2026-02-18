@@ -55,6 +55,8 @@ fi
 PUBLIC_FLAG=false
 PERMISSIONS_OPT=""
 TOOL_OPT=""
+CODESPACES_FLAG=false
+DEVCONTAINER_PATHS=()
 
 CODESPACES_SCRIPT="$SCRIPT_DIR/helper/codespaces-auth-add.sh"
 CREATE_SCRIPT="$SCRIPT_DIR/helper/create-repos.sh"
@@ -66,13 +68,16 @@ usage() {
 Usage: $0 [options]
 
 Options:
-  -f, --file <file>           Use <file> instead of repos.list
-  -p, --public                Create repos as public (default is private)
-  --permissions <all|contents> Pass through to codespaces-auth-add.sh
-  -t, --tool <jq|python|…>    Force tool for codespaces-auth-add.sh
-  --debug                     Enable debug output to stderr
-  --debug-file [file]         Enable debug output to file (auto-generated if not specified)
-  -h, --help                  Show this help and exit
+  -f, --file <file>             Use <file> instead of repos.list
+  -p, --public                  Create repos as public (default is private)
+  --codespaces                  Enable Codespaces authentication configuration
+  -d, --devcontainer <path>     Path to devcontainer.json (can be specified multiple times)
+                                Implies --codespaces
+  --permissions <all|contents>  Pass through to codespaces-auth-add.sh
+  -t, --tool <jq|python|…>      Force tool for codespaces-auth-add.sh
+  --debug                       Enable debug output to stderr
+  --debug-file [file]           Enable debug output to file (auto-generated if not specified)
+  -h, --help                    Show this help and exit
 EOF
   exit 1
 }
@@ -82,6 +87,13 @@ while [ $# -gt 0 ]; do
   case $1 in
     -f|--file)      shift; [ $# -gt 0 ] || usage; REPOS_FILE="$1"; shift ;;
     -p|--public)    PUBLIC_FLAG=true; shift ;;
+    --codespaces)   CODESPACES_FLAG=true; shift ;;
+    -d|--devcontainer)
+      shift; [ $# -gt 0 ] || usage
+      DEVCONTAINER_PATHS+=("$1")
+      CODESPACES_FLAG=true
+      shift
+      ;;
     --permissions)  shift; [ $# -gt 0 ] || usage; PERMISSIONS_OPT="$1"; shift ;;
     -t|--tool)      shift; [ $# -gt 0 ] || usage; TOOL_OPT="$1"; shift ;;
     --debug)        DEBUG=true; shift ;;
@@ -161,12 +173,28 @@ workspace_args=( -f "$REPOS_FILE" )
 workspace_args+=( "${DEBUG_ARGS[@]}" )
 "$WORKSPACE_SCRIPT" "${workspace_args[@]}"
 
-if [ -f "$PROJECT_ROOT/.devcontainer/devcontainer.json" ]; then
-  debug "Found devcontainer.json, will run codespaces auth step"
+if $CODESPACES_FLAG; then
+  debug "Codespaces flag enabled, will run codespaces auth step"
   if [ -x "$CODESPACES_SCRIPT" ]; then
     echo "=== 4) Injecting Codespaces permissions ==="
     debug "Running codespaces-auth-add.sh"
     codespaces_args=( -f "$REPOS_FILE" )
+    
+    # Add devcontainer paths if specified
+    if [ ${#DEVCONTAINER_PATHS[@]} -gt 0 ]; then
+      for devpath in "${DEVCONTAINER_PATHS[@]}"; do
+        codespaces_args+=( -d "$devpath" )
+      done
+    else
+      # Default to PROJECT_ROOT/.devcontainer/devcontainer.json if it exists
+      if [ -f "$PROJECT_ROOT/.devcontainer/devcontainer.json" ]; then
+        codespaces_args+=( -d "$PROJECT_ROOT/.devcontainer/devcontainer.json" )
+      else
+        echo "Warning: No devcontainer.json paths specified and default path not found."
+        debug "Default devcontainer.json not found at: $PROJECT_ROOT/.devcontainer/devcontainer.json"
+      fi
+    fi
+    
     [ -n "$PERMISSIONS_OPT" ] && codespaces_args+=( --permissions "$PERMISSIONS_OPT" )
     [ -n "$TOOL_OPT" ]       && codespaces_args+=( -t "$TOOL_OPT" )
     codespaces_args+=( "${DEBUG_ARGS[@]}" )
@@ -176,8 +204,8 @@ if [ -f "$PROJECT_ROOT/.devcontainer/devcontainer.json" ]; then
     debug "codespaces-auth-add.sh not executable: $CODESPACES_SCRIPT"
   fi
 else
-  echo "No .devcontainer/devcontainer.json; skipping Codespaces auth step."
-  debug "No devcontainer.json found at: $PROJECT_ROOT/.devcontainer/devcontainer.json"
+  echo "Skipping Codespaces auth step (use --codespaces or -d to enable)."
+  debug "Codespaces flag not set"
 fi
 
 echo "✅ Setup complete."
