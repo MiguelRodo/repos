@@ -959,6 +959,17 @@ plan_forward() {
     case "$trimmed" in *" # "*) trimmed="${trimmed%% # *}" ;; *" #"*) trimmed="${trimmed%% #*}" ;; esac
     trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"; trimmed=${trimmed%$'\r'}
     [ -z "$trimmed" ] && continue
+    
+    # Skip global flag lines (they're handled by setup-repos.sh)
+    case "$trimmed" in
+      --codespaces|--codespaces[[:space:]]*|\
+      --public|--public[[:space:]]*|\
+      --private|--private[[:space:]]*|\
+      --worktree|--worktree[[:space:]]*)
+        [[ "$debug" == true ]] && echo "Planning: skipping global flag line: $trimmed" >&2
+        continue
+        ;;
+    esac
 
     set -- $trimmed
     tok1="$1"; shift || true
@@ -1053,11 +1064,22 @@ main() {
     case "$trimmed" in \#*|"") continue ;; esac
     case "$trimmed" in *" # "*) trimmed="${trimmed%% # *}" ;; *" #"*) trimmed="${trimmed%% #*}" ;; esac
     trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"; trimmed=${trimmed%$'\r'}
-    # if the lie is now empty
+    # if the line is now empty
     if [ -z "$trimmed" ]; then
       [[ "$DEBUG" == true ]] && echo "Skipping empty line after trimming." >&2
       continue
     fi
+    
+    # Skip global flag lines (they're handled by setup-repos.sh)
+    case "$trimmed" in
+      --codespaces|--codespaces[[:space:]]*|\
+      --public|--public[[:space:]]*|\
+      --private|--private[[:space:]]*|\
+      --worktree|--worktree[[:space:]]*)
+        [[ "$DEBUG" == true ]] && echo "Skipping global flag line: $trimmed" >&2
+        continue
+        ;;
+    esac
 
     CURRENT_LINE="$trimmed"
     [[ "$DEBUG" == true ]] && echo "Current line to process: $CURRENT_LINE" >&2
