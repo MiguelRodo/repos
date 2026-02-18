@@ -11,6 +11,8 @@ jobs:
   # Test Python package installation
   test-python-package:
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -65,6 +67,8 @@ jobs:
   # Test R package installation
   test-r-package:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout code
@@ -96,6 +100,8 @@ jobs:
   # Test Debian package installation
   test-debian-package:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout code
@@ -148,6 +154,8 @@ jobs:
   # Test Windows manual installation
   test-windows-manual:
     runs-on: windows-latest
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout code
@@ -194,6 +202,8 @@ jobs:
   # Test from source (direct script usage)
   test-from-source:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
       - name: Checkout code
@@ -230,6 +240,8 @@ jobs:
   # Summary job to ensure all tests pass
   test-summary:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: [test-python-package, test-r-package, test-debian-package, test-windows-manual, test-from-source]
     if: always()
     
