@@ -43,16 +43,17 @@ jobs:
       - name: Build Debian package
         run: |
           dpkg-buildpackage -us -uc -b
+          cp -v ../*.deb ./
 
       - name: List built packages
         run: |
-          ls -lh ../*.deb
+          ls -lh ./*.deb
 
       - name: Create Release
         if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v2
         with:
-          files: ../*.deb
+          files: ./*.deb
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -62,7 +63,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: repos-deb
-          path: ../*.deb
+          path: ./*.deb
 
       # ── Publish to apt-miguelrodo ──────────────────────────────
       - name: Checkout apt-miguelrodo
@@ -90,7 +91,7 @@ jobs:
           GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
-          cp ../*.deb apt-repo/
+          cp ./*.deb apt-repo/
           cd apt-repo
           dpkg-scanpackages --multiversion . /dev/null > Packages
           gzip -k -f Packages
