@@ -1,17 +1,34 @@
 #!/usr/bin/env bash
 # repos - Multi-repository management tool wrapper
-# This script launches setup-repos.sh from the installed location
+# Dispatches subcommands to the appropriate script
 
 set -euo pipefail
 
 SCRIPT_DIR="/usr/share/repos/scripts"
-SETUP_SCRIPT="$SCRIPT_DIR/setup-repos.sh"
 
-if [ ! -f "$SETUP_SCRIPT" ]; then
-  echo "Error: setup-repos.sh not found at $SETUP_SCRIPT" >&2
-  echo "The repos package may not be installed correctly." >&2
-  exit 1
+usage() {
+  cat <<EOF
+Usage: repos <command> [options]
+
+Commands:
+  setup    Clone and configure repositories from a repos.list file
+  run      Execute a script inside each cloned repository
+
+Run 'repos <command> --help' for more information on a command.
+EOF
+}
+
+if [ $# -eq 0 ]; then
+  usage >&2; exit 1
 fi
 
-# Execute setup-repos.sh with all passed arguments
-exec "$SETUP_SCRIPT" "$@"
+case "$1" in
+  -h|--help)
+    usage; exit 0 ;;
+  setup)
+    shift; exec "$SCRIPT_DIR/setup-repos.sh" "$@" ;;
+  run)
+    shift; exec "$SCRIPT_DIR/run-pipeline.sh" "$@" ;;
+  *)
+    echo "Error: unknown command '$1'" >&2; echo "" >&2; usage >&2; exit 1 ;;
+esac
