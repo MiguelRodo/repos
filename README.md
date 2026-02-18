@@ -5,17 +5,50 @@
 
 A command-line tool for managing multiple related Git repositories as a unified workspace.
 
-## Features
+## Overview
 
-- **Multi-Repository Management**: Clone and manage multiple related Git repositories
-- **Git Worktrees**: Create and manage Git worktrees for parallel development
-- **VS Code Integration**: Generate workspace files for multi-root workspaces
-- **Pipeline Execution**: Run scripts across all repositories
-- **Simple Configuration**: Define repositories in a simple list file
+Many projects consist of multiple repositories. For instance, an analysis project might have one repository for data curation and another for analysis. To facilitate this workflow, you can create a repos.list file that specifies the repositories and their branches, and then run repos to clone them (creating repositories as needed if you have permissions).
+
+Here's an example repos.list file:
+
+```
+myorg/data-curation
+myorg/analysis@main
+myorg/documentation
+```
+
+Run repos to clone them:
+
+```bash
+repos
+```
+
+This creates the following directory structure:
+
+```
+workspace/
+├── my-project/          # Your main project (contains repos.list)
+├── data-curation/       # Cloned from myorg/data-curation
+├── analysis-main/       # Cloned from myorg/analysis@main
+└── documentation/       # Cloned from myorg/documentation
+```
+
+### Customizations
+
+- Create repositories as public using the --public flag
+- Specify a different repos.list file with -f my-repos.list
+- Enable Codespaces authentication with --codespaces
+- Specify custom devcontainer paths with -d
+- Clone specific branches using owner/repo@branch syntax
+- Create worktrees from the current repository using @branch-name
 
 ## Installation
 
-### Ubuntu/Debian
+You can install repos as a system package (Ubuntu/Debian, macOS, Windows), from source, or as a language-specific wrapper (R or Python).
+
+### <a name="ubuntu-debian"></a>Ubuntu/Debian
+
+Install the .deb package to use the repos command system-wide.
 
 Download and install the latest `.deb` package from the [Releases page](https://github.com/MiguelRodo/repos/releases):
 
@@ -34,6 +67,12 @@ rm repos_${VERSION_REPOS}_all.deb
 sudo apt-get install -f
 ```
 
+Run the repos command:
+
+```bash
+repos
+```
+
 #### Dependencies
 
 The package automatically handles dependencies, but requires:
@@ -48,7 +87,9 @@ These are typically pre-installed on Ubuntu/Debian systems. If not:
 sudo apt-get install bash git curl jq
 ```
 
-### Windows (Scoop)
+### <a name="windows-scoop"></a>Windows (Scoop)
+
+Install using Scoop to use the repos command in your shell.
 
 Install using [Scoop](https://scoop.sh/):
 
@@ -60,9 +101,17 @@ scoop bucket add repos https://github.com/<username>/scoop-bucket
 scoop install repos
 ```
 
+Run the repos command:
+
+```powershell
+repos
+```
+
 Dependencies (`git` and `jq`) are automatically installed by Scoop. You'll also need Git for Windows for bash support.
 
-### Windows (Manual)
+### <a name="windows-manual"></a>Windows (Manual)
+
+Install manually to use the repos command in PowerShell or Git Bash.
 
 1. Clone the repository:
    ```powershell
@@ -82,12 +131,20 @@ Dependencies (`git` and `jq`) are automatically installed by Scoop. You'll also 
    repos --help
    ```
 
+Run the repos command:
+
+```powershell
+repos
+```
+
 #### Windows Dependencies
 
 - **Git for Windows** (required for bash, git, and curl): [Download here](https://git-scm.com/download/win)
 - **jq** (required for JSON processing): [Download here](https://jqlang.github.io/jq/download/)
 
-### macOS (Homebrew)
+### <a name="macos-homebrew"></a>macOS (Homebrew)
+
+Install using Homebrew to use the repos command system-wide.
 
 Install using [Homebrew](https://brew.sh/):
 
@@ -99,9 +156,17 @@ brew tap <username>/repos
 brew install repos
 ```
 
+Run the repos command:
+
+```bash
+repos
+```
+
 The formula automatically handles the `jq` dependency. Git is typically pre-installed on macOS.
 
-### From Source
+### <a name="from-source"></a>From Source
+
+Install from source to use the repos command or run scripts directly.
 
 ```bash
 git clone https://github.com/MiguelRodo/repos.git
@@ -115,11 +180,19 @@ sudo dpkg -i ../repos_*.deb
 ./scripts/setup-repos.sh
 ```
 
-### Language Wrappers
+Run the repos command:
+
+```bash
+repos
+```
+
+### <a name="language-wrappers"></a>Language Wrappers
 
 The repository also provides native R and Python packages that wrap the underlying Bash scripts, making it easy to use repos from your preferred language environment.
 
-#### R Package
+#### <a name="r-package"></a>R Package
+
+Install the R package to use repos from within R.
 
 Install directly from GitHub using `devtools`:
 
@@ -140,11 +213,20 @@ repos("--public")
 repos("--help")
 ```
 
+Run the repos command:
+
+```r
+library(repos)
+repos()
+```
+
 **System Requirements:** The R package requires `bash`, `git`, `curl`, and `jq` to be installed on your system.
 
 **How it works:** The R package bundles the Bash scripts in `inst/scripts/` and provides a wrapper function that locates and executes them using `system2()`.
 
-#### Python Package
+#### <a name="python-package"></a>Python Package
+
+Install the Python package to use repos from Python or the command line.
 
 Install using pip:
 
@@ -162,6 +244,12 @@ repos  # Run with default repos.list
 repos -f my-repos.list
 repos --public
 repos --help
+```
+
+Run the repos command:
+
+```bash
+repos
 ```
 
 **System Requirements:** The Python package requires `bash`, `git`, `curl`, and `jq` to be installed on your system. On Windows, you need [Git for Windows](https://git-scm.com/download/win) (which includes Git Bash) or WSL (Windows Subsystem for Linux).
