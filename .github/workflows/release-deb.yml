@@ -10,109 +10,108 @@ jobs:
   build-deb:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Required for uploading to releases
-    
+      contents: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y debhelper devscripts build-essential
-      
+          sudo apt-get install -y debhelper devscripts build-essential dpkg-dev gnupg
+
       - name: Get version from tag
         id: get_version
         run: |
           if [ "${{ github.ref_type }}" = "tag" ]; then
             VERSION="${{ github.ref_name }}"
-            VERSION="${VERSION#v}"  # Remove 'v' prefix
+            VERSION="${VERSION#v}"
           else
             VERSION="1.0.0"
           fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Building version: $VERSION"
-      
+
       - name: Update changelog with version
         run: |
           VERSION="${{ steps.get_version.outputs.version }}"
           DATE=$(date -R)
-          cat > debian/changelog << EOF
+          cat > debian/changelog <<EOF
           repos ($VERSION) unstable; urgency=medium
 
             * Release version $VERSION
 
            -- Miguel Rodo <miguel.rodo@uct.ac.za>  $DATE
           EOF
-      
+          # Fix indentation — remove leading spaces from heredoc
+          sed -i 's/^          //' debian/changelog
+
       - name: Build Debian package
         run: |
           dpkg-buildpackage -us -uc -b
-      
+
       - name: List built packages
         run: |
           ls -lh ../*.deb
-      
+
       - name: Create Release
         if: github.ref_type == 'tag'
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: ../*.deb
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish to Miguel's APT Repo
-        if: github.ref_type == 'tag'
-        env:
-          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
-          # This pulls the secret you just pasted into GitHub Settings
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-        run: |
-          # 1. Install Reprepro
-          sudo apt-get install -y reprepro
-
-          # 2. Import the GPG Key
-          # This tells the ephemeral runner: "I am Miguel Rodo Bot"
-          echo "$GPG_PRIVATE_KEY" | gpg --import
-
-          # 3. Clone the Repo
-          git clone https://x-access-token:${API_TOKEN_GITHUB}@github.com/miguelrodo/apt-miguelrodo.git apt-repo
-
-          # 4. Configure Reprepro (The Critical Part)
-          # We must tell reprepro to sign with the key we just imported.
-          mkdir -p apt-repo/conf
-          
-          # Only create config if it doesn't exist
-          if [ ! -f apt-repo/conf/distributions ]; then
-              echo "Creating config..."
-              # We use 'SignWith: yes' to tell it to auto-find the key we imported
-              cat <<EOF > apt-repo/conf/distributions
-          Origin: miguelrodo
-          Label: apt-miguelrodo
-          Codename: stable
-          Architectures: amd64 arm64 source
-          Components: main
-          Description: Miguel Rodo's Personal Repository
-          SignWith: yes
-          EOF
-          fi
-
-          # 5. Add the package
-          cd apt-repo
-          reprepro includedeb stable ../../*.deb
-
-          # 6. Push
-          git config user.email "miguel.rodo@uct.ac.za"
-          git config user.name "Miguel Rodo Bot"
-          git add .
-          git commit -m "Add repos version ${{ steps.get_version.outputs.version }}"
-          git push origin main
-
-      
       - name: Upload artifact (for manual builds)
         if: github.ref_type != 'tag'
         uses: actions/upload-artifact@v4
         with:
           name: repos-deb
           path: ../*.deb
+
+      # ── Publish to apt-miguelrodo ──────────────────────────────
+      - name: Checkout apt-miguelrodo
+        uses: actions/checkout@v4
+        with:
+          repository: MiguelRodo/apt-miguelrodo
+          token: ${{ secrets.APT_REPO_TOKEN }}
+          path: apt-repo
+
+      - name: Import GPG private key
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+
+      - name: Update APT repository
+        run: |
+          # Copy the new .deb into the repo
+          cp ../*.deb apt-repo/
+
+          cd apt-repo
+
+          # Generate Packages index
+          dpkg-scanpackages --multiversion . /dev/null > Packages
+          gzip -k -f Packages
+
+          # Generate Release file
+          apt-ftparchive release . > Release
+
+          # Sign the Release file
+          gpg --batch --yes --pinentry-mode loopback \
+            --default-key "${{ secrets.GPG_KEY_ID }}" \
+            -abs -o Release.gpg Release
+
+          # Also create InRelease (clearsigned, preferred by modern apt)
+          gpg --batch --yes --pinentry-mode loopback \
+            --default-key "${{ secrets.GPG_KEY_ID }}" \
+            --clearsign -o InRelease Release
+
+      - name: Push to apt-miguelrodo
+        run: |
+          cd apt-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Update repos package to ${{ steps.get_version.outputs.version }}" || echo "No changes to commit"
+          git push
