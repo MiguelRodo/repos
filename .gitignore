@@ -46,3 +46,7 @@ MANIFEST
 venv/
 ENV/
 env/
+
+# Quarto
+_site/
+.quarto/
