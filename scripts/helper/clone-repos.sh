@@ -717,7 +717,10 @@ clone_one_repo() {
       if [ "${all_branches:-0}" -eq 0 ]; then clone_opts=(--single-branch); fi
       clone_opts+=("--branch" "$ref")
       echo "Cloning $repo_url → $dest (branch $ref)"
-      git clone "${clone_opts[@]}" "$repo_url" "$dest" </dev/null
+      if ! git clone "${clone_opts[@]}" "$repo_url" "$dest" </dev/null; then
+        [[ "$debug" == true ]] && echo "clone_one_repo: clone failed" >&2
+        return 1
+      fi
       CNT_CLONED_BRANCH=$((CNT_CLONED_BRANCH + 1))
       CLONE_DEST="$dest"
       remember_remote "$remote_https" "$dest"
@@ -729,7 +732,10 @@ clone_one_repo() {
       if [ "${all_branches:-0}" -eq 0 ]; then clone_opts=(--single-branch); fi
       echo "Remote branch '$ref' not found on $repo_url; creating it."
       echo "Cloning default branch of $repo_url → $dest"
-      git clone "${clone_opts[@]}" "$repo_url" "$dest" </dev/null
+      if ! git clone "${clone_opts[@]}" "$repo_url" "$dest" </dev/null; then
+        [[ "$debug" == true ]] && echo "clone_one_repo: clone failed" >&2
+        return 1
+      fi
       CNT_CLONED_BRANCH=$((CNT_CLONED_BRANCH + 1))
       CLONE_DEST="$dest"
       remember_remote "$remote_https" "$dest"
@@ -745,7 +751,10 @@ clone_one_repo() {
     local clone_opts=()
     if [ "${all_branches:-0}" -eq 0 ]; then clone_opts=(--single-branch); fi
     echo "Cloning $repo_url → $dest"
-    git clone "${clone_opts[@]}" "$repo_url" "$dest" </dev/null
+    if ! git clone "${clone_opts[@]}" "$repo_url" "$dest" </dev/null; then
+      [[ "$debug" == true ]] && echo "clone_one_repo: clone failed" >&2
+      return 1
+    fi
     CNT_CLONED_FULL=$((CNT_CLONED_FULL + 1))
     CLONE_DEST="$dest"
     remember_remote "$remote_https" "$dest"
@@ -985,7 +994,12 @@ plan_forward() {
           esac
           shift
         done
-        
+
+        # Apply global worktree flag if set and no explicit flag on the line
+        if [ "$use_worktree" -eq 0 ] && [ "${GLOBAL_WORKTREE:-false}" = "true" ]; then
+          use_worktree=1
+        fi
+
         # If it's a worktree (with --worktree), count it as a reference to fallback
         if [ "$use_worktree" -eq 1 ]; then
           [[ "$debug" == true ]] && echo "Planning: worktree on fallback $fallback_https" >&2
