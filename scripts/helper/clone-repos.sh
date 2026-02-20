@@ -566,6 +566,15 @@ parse_effective_line() {
       fi
       is_worktree=$use_worktree
       is_at_branch=1
+      # Validate target_dir to prevent path traversal
+      if [ -n "$target_dir" ]; then
+        case "$target_dir" in
+          /*|*..*)
+            echo "Error: target directory cannot be absolute or contain '..': $target_dir" >&2
+            set +f; return 1
+            ;;
+        esac
+      fi
       printf '%s@%s\x1f%s\x1f%s\x1f%s\x1f%s\n' "$fallback_repo_https" "$branch" "$target_dir" "$all_branches" "$is_worktree" "$is_at_branch"
       ;;
     *)
@@ -584,6 +593,15 @@ parse_effective_line() {
         esac
         shift
       done
+      # Validate target_dir to prevent path traversal
+      if [ -n "$target_dir" ]; then
+        case "$target_dir" in
+          /*|*..*)
+            echo "Error: target directory cannot be absolute or contain '..': $target_dir" >&2
+            set +f; return 1
+            ;;
+        esac
+      fi
       is_worktree=0
       printf '%s\x1f%s\x1f%s\x1f%s\x1f%s\n' "$repo_spec" "$target_dir" "$all_branches" "$is_worktree" "$is_at_branch"
       ;;
@@ -1107,84 +1125,89 @@ main() {
       [[ "$DEBUG" == true ]] && echo "Parsing line: $trimmed" >&2
       local rc=0
       # Parse with current fallback
-      local parsed repo_spec target_dir all_branches is_worktree is_at_branch
-      parsed="$(parse_effective_line "$trimmed" "$fallback_repo_https")"
-      IFS=$'\x1f' read -r repo_spec target_dir all_branches is_worktree is_at_branch <<<"$parsed"
-      [ -z "$repo_spec" ] && { rc=0; ( exit "$rc" ); }
-
-      if [ "$is_worktree" -eq 1 ]; then
-        local branch=""; case "$repo_spec" in *@*) branch="${repo_spec##*@}" ;; esac
-        local base_abs
-        if [ "$fallback_repo_https" = "$current_repo_https" ]; then
-          base_abs="$start_dir"
-        else
-          # Check if this remote was already cloned (possibly with a custom directory)
-          local idx; idx="$(remote_index "$fallback_repo_https")"
-          if [ "$idx" -ge 0 ] && [ -n "${REMOTE_LOCAL_PATH[$idx]}" ]; then
-            # Use the actual path where it was cloned
-            base_abs="${REMOTE_LOCAL_PATH[$idx]}"
-            [[ "$DEBUG" == true ]] && echo "Using existing clone at '$base_abs' for worktree base" >&2
-          else
-            # Not cloned yet, use planned base name
-            local base_name; base_name="$(plan_base_name "$fallback_repo_https")"
-            base_abs="$parent_dir/$base_name"
-            ensure_base_exists "$fallback_repo_https" "$base_abs" "$DEBUG" || rc=$?
-          fi
-        fi
-        [ $rc -eq 0 ] && create_worktree_for_branch "$base_abs" "$branch" "$target_dir" "$parent_dir" "$DEBUG" || rc=$?
-        fallback_repo_local="$base_abs"
-        remember_remote "$fallback_repo_https" "$fallback_repo_local"
+      local parsed repo_spec="" target_dir="" all_branches=0 is_worktree=0 is_at_branch=0
+      if parsed="$(parse_effective_line "$trimmed" "$fallback_repo_https")"; then
+        IFS=$'\x1f' read -r repo_spec target_dir all_branches is_worktree is_at_branch <<<"$parsed"
+        [ -z "$repo_spec" ] && { rc=0; ( exit "$rc" ); }
       else
-        local repo_no_ref ref is_branch_clone this_remote_https
-        case "$repo_spec" in
-          *@*) repo_no_ref="${repo_spec%@*}"; ref="${repo_spec##*@}"; is_branch_clone=1 ;;
-          *)   repo_no_ref="$repo_spec";      ref="";                 is_branch_clone=0 ;;
-        esac
-        this_remote_https="$(spec_to_https "$repo_no_ref")"
-        local seen_before; [ "$(remote_index "$this_remote_https")" -ge 0 ] && seen_before=1 || seen_before=0
+        rc=1
+      fi
 
-        # If this is an @branch clone (not a worktree) and no explicit target_dir,
-        # calculate target_dir based on fallback repo's local name + branch
-        if [ "$is_at_branch" -eq 1 ] && [ "$is_branch_clone" -eq 1 ] && [ -z "$target_dir" ]; then
-          local fallback_local_name
+      if [ "$rc" -eq 0 ] && [ -n "$repo_spec" ]; then
+        if [ "$is_worktree" -eq 1 ]; then
+          local branch=""; case "$repo_spec" in *@*) branch="${repo_spec##*@}" ;; esac
+          local base_abs
           if [ "$fallback_repo_https" = "$current_repo_https" ]; then
-            fallback_local_name="$(basename "$start_dir")"
+            base_abs="$start_dir"
           else
+            # Check if this remote was already cloned (possibly with a custom directory)
             local idx; idx="$(remote_index "$fallback_repo_https")"
             if [ "$idx" -ge 0 ] && [ -n "${REMOTE_LOCAL_PATH[$idx]}" ]; then
-              fallback_local_name="$(basename "${REMOTE_LOCAL_PATH[$idx]}")"
+              # Use the actual path where it was cloned
+              base_abs="${REMOTE_LOCAL_PATH[$idx]}"
+              [[ "$DEBUG" == true ]] && echo "Using existing clone at '$base_abs' for worktree base" >&2
             else
-              fallback_local_name="$(plan_base_name "$fallback_repo_https")"
+              # Not cloned yet, use planned base name
+              local base_name; base_name="$(plan_base_name "$fallback_repo_https")"
+              base_abs="$parent_dir/$base_name"
+              ensure_base_exists "$fallback_repo_https" "$base_abs" "$DEBUG" || rc=$?
             fi
           fi
-          local safe_ref; safe_ref="$(sanitize_branch_name "$ref")"
-          target_dir="${fallback_local_name}-${safe_ref}"
-          [[ "$DEBUG" == true ]] && echo "@branch clone: using target_dir='$target_dir'" >&2
-        fi
-
-        clone_one_repo "$repo_spec" "$target_dir" "$parent_dir" "$all_branches" "$DEBUG" || rc=$?
-        fallback_repo_https="$this_remote_https"
-
-        if [ "$is_branch_clone" -eq 0 ]; then
-          fallback_repo_local="$CLONE_DEST"
-          remember_remote "$this_remote_https" "$fallback_repo_local"
+          [ $rc -eq 0 ] && create_worktree_for_branch "$base_abs" "$branch" "$target_dir" "$parent_dir" "$DEBUG" || rc=$?
+          fallback_repo_local="$base_abs"
+          remember_remote "$fallback_repo_https" "$fallback_repo_local"
         else
-          if [ "$seen_before" -eq 0 ] && [ "$(plan_has_full "$this_remote_https")" -eq 1 ]; then
-            local base_name; base_name="$(plan_base_name "$this_remote_https")"
-            local base_abs="$parent_dir/$base_name"
-            ensure_base_exists "$this_remote_https" "$base_abs" "$DEBUG" || rc=$?
-            fallback_repo_local="$base_abs"
-            remember_remote "$this_remote_https" "$fallback_repo_local"
-          elif [ "$seen_before" -eq 0 ]; then
+          local repo_no_ref ref is_branch_clone this_remote_https
+          case "$repo_spec" in
+            *@*) repo_no_ref="${repo_spec%@*}"; ref="${repo_spec##*@}"; is_branch_clone=1 ;;
+            *)   repo_no_ref="$repo_spec";      ref="";                 is_branch_clone=0 ;;
+          esac
+          this_remote_https="$(spec_to_https "$repo_no_ref")"
+          local seen_before; [ "$(remote_index "$this_remote_https")" -ge 0 ] && seen_before=1 || seen_before=0
+
+          # If this is an @branch clone (not a worktree) and no explicit target_dir,
+          # calculate target_dir based on fallback repo's local name + branch
+          if [ "$is_at_branch" -eq 1 ] && [ "$is_branch_clone" -eq 1 ] && [ -z "$target_dir" ]; then
+            local fallback_local_name
+            if [ "$fallback_repo_https" = "$current_repo_https" ]; then
+              fallback_local_name="$(basename "$start_dir")"
+            else
+              local idx; idx="$(remote_index "$fallback_repo_https")"
+              if [ "$idx" -ge 0 ] && [ -n "${REMOTE_LOCAL_PATH[$idx]}" ]; then
+                fallback_local_name="$(basename "${REMOTE_LOCAL_PATH[$idx]}")"
+              else
+                fallback_local_name="$(plan_base_name "$fallback_repo_https")"
+              fi
+            fi
+            local safe_ref; safe_ref="$(sanitize_branch_name "$ref")"
+            target_dir="${fallback_local_name}-${safe_ref}"
+            [[ "$DEBUG" == true ]] && echo "@branch clone: using target_dir='$target_dir'" >&2
+          fi
+
+          clone_one_repo "$repo_spec" "$target_dir" "$parent_dir" "$all_branches" "$DEBUG" || rc=$?
+          fallback_repo_https="$this_remote_https"
+
+          if [ "$is_branch_clone" -eq 0 ]; then
             fallback_repo_local="$CLONE_DEST"
             remember_remote "$this_remote_https" "$fallback_repo_local"
           else
-            # Repo was seen before: update fallback_repo_local to the actual clone destination
-            fallback_repo_local="$CLONE_DEST"
-            remember_remote "$this_remote_https" "$fallback_repo_local"
-          fi
+            if [ "$seen_before" -eq 0 ] && [ "$(plan_has_full "$this_remote_https")" -eq 1 ]; then
+              local base_name; base_name="$(plan_base_name "$this_remote_https")"
+              local base_abs="$parent_dir/$base_name"
+              ensure_base_exists "$this_remote_https" "$base_abs" "$DEBUG" || rc=$?
+              fallback_repo_local="$base_abs"
+              remember_remote "$this_remote_https" "$fallback_repo_local"
+            elif [ "$seen_before" -eq 0 ]; then
+              fallback_repo_local="$CLONE_DEST"
+              remember_remote "$this_remote_https" "$fallback_repo_local"
+            else
+              # Repo was seen before: update fallback_repo_local to the actual clone destination
+              fallback_repo_local="$CLONE_DEST"
+              remember_remote "$this_remote_https" "$fallback_repo_local"
+            fi
         fi
       fi
+      fi # matches if [ "$rc" -eq 0 ] && [ -n "$repo_spec" ]
       ( exit "$rc" )
     }
     line_rc=$?

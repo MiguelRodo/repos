@@ -106,6 +106,13 @@ REPO_NAME="$(basename "$PROJECT_ROOT")"
 PARENT_DIR="$(dirname "$PROJECT_ROOT")"
 
 if [ -n "$TARGET_DIR" ]; then
+  # Validate TARGET_DIR to prevent path traversal
+  case "$TARGET_DIR" in
+    /*|*..*)
+      echo "Error: target directory cannot be absolute or contain '..': $TARGET_DIR" >&2
+      exit 1
+      ;;
+  esac
   DEST="$PARENT_DIR/$TARGET_DIR"
 else
   SAFE_BRANCH_NAME="$(sanitize_branch_name "$BRANCH_NAME")"
