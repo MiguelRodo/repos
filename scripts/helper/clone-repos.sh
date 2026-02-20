@@ -549,6 +549,7 @@ parse_effective_line() {
         case "$1" in
           -w|--worktree) use_worktree=1 ;;
           -a|--all-branches) all_branches=1 ;;  # harmless for worktrees
+          --public|--private|--codespaces) ;;   # ignore valid create-repos flags
           -*)
             echo "Warning: ignoring unknown option '$1' on line: $line" >&2 ;;
           *)
@@ -573,6 +574,7 @@ parse_effective_line() {
         case "$1" in
           -a|--all-branches) all_branches=1 ;;
           -w|--worktree)  echo "Warning: '--worktree' ignored on clone line: $line" >&2 ;;
+          --public|--private|--codespaces) ;;   # ignore valid create-repos flags
           -*)
             echo "Warning: ignoring unknown option '$1' on line: $line" >&2 ;;
           *)
