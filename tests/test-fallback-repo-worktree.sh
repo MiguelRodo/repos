@@ -257,6 +257,108 @@ else
 fi
 
 # ============================================
+# Test 4: Global --worktree flag in repos.list
+# ============================================
+print_test "Global --worktree flag causes @branch lines to use worktrees"
+
+WORK_DIR2="$TEST_ROOT/work2"
+mkdir -p "$WORK_DIR2/sta5069z"
+cd "$WORK_DIR2/sta5069z"
+
+git init
+git config user.email "test@example.com"
+git config user.name "Test User"
+git remote add origin "file://$REMOTE_ROOT/dummy.git"
+echo "Project root" > README.md
+git add README.md
+git commit -m "Initial project"
+
+# Create repos.list with global --worktree flag (at the bottom, like the user's example)
+cat > repos.list <<EOF
+file://$UPSTREAM_REPO@slides-2026-sta5069z slides
+@data-2026-sta5069z data
+file://$EVAL_REPO@2026-sta5069z eval
+--worktree
+EOF
+
+OUTPUT2=$("$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list --worktree 2>&1 || true)
+print_info "clone-repos.sh output (global --worktree):"
+echo "$OUTPUT2"
+
+# Check that @data-2026-sta5069z was created as a worktree (not a separate clone)
+if [ -e "$WORK_DIR2/data/.git" ]; then
+  if [ -f "$WORK_DIR2/data/.git" ]; then
+    print_pass "data is a worktree (global --worktree applied to @branch line)"
+  else
+    print_fail "data is a full clone, not a worktree (global --worktree not applied)"
+  fi
+else
+  print_fail "data directory does not exist"
+fi
+
+# Check slides was cloned (not a worktree - it has a full repo spec)
+if [ -d "$WORK_DIR2/slides/.git" ] && [ ! -f "$WORK_DIR2/slides/.git" ]; then
+  print_pass "slides is a full clone (repo@branch lines unaffected by global --worktree)"
+else
+  print_fail "slides directory missing or is a worktree (unexpected)"
+fi
+
+# ============================================
+# Test 5: Failed clone is reported as error
+# ============================================
+print_test "Failed clone is reported as an error, not silently ignored"
+
+WORK_DIR3="$TEST_ROOT/work3"
+mkdir -p "$WORK_DIR3/sta5069z"
+cd "$WORK_DIR3/sta5069z"
+
+git init
+git config user.email "test@example.com"
+git config user.name "Test User"
+git remote add origin "file://$REMOTE_ROOT/dummy.git"
+echo "Project root" > README.md
+git add README.md
+git commit -m "Initial project"
+
+# repos.list with a non-existent remote to trigger a clone failure
+cat > repos.list <<EOF
+file://$UPSTREAM_REPO@slides-2026-sta5069z slides
+@data-2026-sta5069z data --worktree
+file:///nonexistent/path/missing.git@some-branch missing
+EOF
+
+OUTPUT3=$("$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1 || true)
+print_info "clone-repos.sh output (with failing clone):"
+echo "$OUTPUT3"
+
+# The failed clone must be counted as an error
+if echo "$OUTPUT3" | grep -q "Errors.*: 1"; then
+  print_pass "Failed clone is correctly counted as an error"
+else
+  print_fail "Failed clone not reported as error (expected Errors: 1)"
+fi
+
+# The summary must NOT show the failed clone as a successful clone
+if echo "$OUTPUT3" | grep -q "Cloned (single-branch).*: 1"; then
+  print_pass "Only the successful clone is counted in Cloned (single-branch)"
+else
+  # Both slides (successful) clone counts; the missing.git clone should NOT be counted
+  CLONE_COUNT=$(echo "$OUTPUT3" | grep "Cloned (single-branch)" | grep -o "[0-9]\+")
+  if [ "$CLONE_COUNT" -le 1 ]; then
+    print_pass "Failed clone not counted in Cloned (single-branch): $CLONE_COUNT"
+  else
+    print_fail "Failed clone incorrectly counted in Cloned (single-branch): $CLONE_COUNT"
+  fi
+fi
+
+# No spurious 'fatal: not a git repository' errors from post-clone operations
+if echo "$OUTPUT3" | grep -q "fatal: not a git repository"; then
+  print_fail "Spurious 'fatal: not a git repository' errors appeared (clone failure not handled early)"
+else
+  print_pass "No spurious 'fatal: not a git repository' errors after failed clone"
+fi
+
+# ============================================
 # Summary
 # ============================================
 print_header "Test Summary"
