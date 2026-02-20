@@ -286,6 +286,16 @@ build_paths_list() {
     trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"; trimmed=${trimmed%$'\r'}
     [ -z "$trimmed" ] && continue
     
+    # Skip global flag lines (they're handled by setup-repos.sh)
+    case "$trimmed" in
+      --codespaces|--codespaces[[:space:]]*|\
+      --public|--public[[:space:]]*|\
+      --private|--private[[:space:]]*|\
+      --worktree|--worktree[[:space:]]*)
+        continue
+        ;;
+    esac
+
     set -f
     set -- $trimmed
     [ "$#" -eq 0 ] && { set +f; continue; }
@@ -375,6 +385,16 @@ build_paths_list() {
     [ -z "$trimmed" ] && continue
     
     [[ "$debug" == true ]] && echo "[DEBUG] Processing line: $trimmed" >&2
+
+    # Skip global flag lines (they're handled by setup-repos.sh)
+    case "$trimmed" in
+      --codespaces|--codespaces[[:space:]]*|\
+      --public|--public[[:space:]]*|\
+      --private|--private[[:space:]]*|\
+      --worktree|--worktree[[:space:]]*)
+        continue
+        ;;
+    esac
 
     # Parse the line (word splitting is intentional)
     set -f
