@@ -96,7 +96,14 @@ parse_args() {
       -f|--file)
         shift; REPOS_FILE="$1"; shift ;;
       --script)
-        shift; RUN_SCRIPT="$1"; shift ;;
+        shift; RUN_SCRIPT="$1"
+        case "$RUN_SCRIPT" in
+          /*|*..*)
+            echo "Error: script path cannot be absolute or contain '..': $RUN_SCRIPT" >&2
+            exit 1
+            ;;
+        esac
+        shift ;;
       -i|--include)
         shift; INCLUDE_RAW="$1"; shift ;;
       -e|--exclude)
@@ -303,6 +310,20 @@ main() {
       script_name="$(echo "$line" | awk '{print $2}')"
       [ -z "$script_name" ] && script_name="$RUN_SCRIPT"
 
+      # Validate dir_name and script_name to prevent path traversal
+      case "$dir_name" in
+        /*|*..*)
+          echo "Error: directory name cannot be absolute or contain '..': $dir_name" >&2
+          if [ "$STOP_ON_ERROR" = true ]; then exit 1; else continue; fi
+          ;;
+      esac
+      case "$script_name" in
+        /*|*..*)
+          echo "Error: script name cannot be absolute or contain '..': $script_name" >&2
+          if [ "$STOP_ON_ERROR" = true ]; then exit 1; else continue; fi
+          ;;
+      esac
+
       local full_path
       full_path="$(cd "$PROJECT_ROOT/.." && pwd)/$dir_name"
       run_in_repo "$full_path" "$dir_name" "$script_name"
@@ -323,6 +344,25 @@ main() {
   
   if [ -n "$workspace_file" ] && command -v jq >/dev/null 2>&1; then
     while IFS= read -r folder_path; do
+      # Validate folder_path to prevent path traversal
+      case "$folder_path" in
+        /*)
+          echo "Error: folder path in workspace cannot be absolute: $folder_path" >&2
+          if [ "$STOP_ON_ERROR" = true ]; then exit 1; else continue; fi
+          ;;
+        ../*)
+          # We allow one ../ at the start because repos are in PROJECT_ROOT/..
+          rest="${folder_path#../}"
+          if [[ "$rest" == *".."* ]]; then
+            echo "Error: invalid folder path in workspace (too many '..'): $folder_path" >&2
+            if [ "$STOP_ON_ERROR" = true ]; then exit 1; else continue; fi
+          fi
+          ;;
+        *..*)
+          echo "Error: folder path in workspace cannot contain '..': $folder_path" >&2
+          if [ "$STOP_ON_ERROR" = true ]; then exit 1; else continue; fi
+          ;;
+      esac
       local full_path="$PROJECT_ROOT/$folder_path"
       local repo_name
       repo_name="$(basename "$full_path")"

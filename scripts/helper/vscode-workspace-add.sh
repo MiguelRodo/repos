@@ -429,6 +429,16 @@ build_paths_list() {
         # Determine if this is a worktree or clone
         is_worktree=$use_worktree
         
+        # Validate target_dir to prevent path traversal
+        if [ -n "$target_dir" ]; then
+          case "$target_dir" in
+            /*|*..*)
+              echo "Error: target directory cannot be absolute or contain '..': $target_dir" >&2
+              set +f; continue
+              ;;
+          esac
+        fi
+
         if [ "$is_worktree" -eq 1 ]; then
           # Worktree path: ../<fallback_repo>-<branch> or ../<target_dir>
           if [ -n "$target_dir" ]; then
@@ -473,6 +483,16 @@ build_paths_list() {
           *)   repo_no_ref="$repo_spec"; ref="" ;;
         esac
         
+        # Validate target_dir to prevent path traversal
+        if [ -n "$target_dir" ]; then
+          case "$target_dir" in
+            /*|*..*)
+              echo "Error: target directory cannot be absolute or contain '..': $target_dir" >&2
+              set +f; continue
+              ;;
+          esac
+        fi
+
         # Get the repo name for path calculation
         repo_name="$(spec_to_repo_name "$repo_no_ref")"
         

@@ -1203,8 +1203,8 @@ main() {
               fallback_repo_local="$CLONE_DEST"
               remember_remote "$this_remote_https" "$fallback_repo_local"
             fi
+          fi
         fi
-      fi
       fi # matches if [ "$rc" -eq 0 ] && [ -n "$repo_spec" ]
       ( exit "$rc" )
     }
