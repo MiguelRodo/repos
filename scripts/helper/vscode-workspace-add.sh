@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # vscode-workspace-add.sh — VS Code workspace updater for multi-repo / multi-branch setups
 # Portable: Bash ≥3.2 (macOS default), Linux, WSL, Git Bash
+# Requires: bash 3.2+, mktemp
 #
 # Behaviour:
 #   • Lines starting with "@<branch>" inherit a "fallback repo":
@@ -577,9 +578,9 @@ main() {
           DEBUG_FILE="$1"
           shift
         else
-        # Auto-generate debug file securely
+          # Auto-generate debug file securely
           TEMP_DIR=$(get_temp_dir)
-        DEBUG_FILE=$(mktemp "${TEMP_DIR}/repos-workspace-debug-XXXXXX")
+          DEBUG_FILE=$(mktemp "${TEMP_DIR}/repos-workspace-debug-XXXXXX")
         fi
         ;;
       -h|--help)

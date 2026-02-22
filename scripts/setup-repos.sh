@@ -1,8 +1,16 @@
 #!/usr/bin/env bash
 # setup-repos.sh — orchestrate project bootstrapping
-# Requires: bash 3.2+, curl, git, and helper scripts
+# Requires: bash 3.2+, curl, git, mktemp, and helper scripts
 
 set -euo pipefail
+
+# — Prerequisites —
+for cmd in curl git mktemp; do
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "Error: '$cmd' is required but not found in PATH." >&2
+    exit 1
+  fi
+done
 
 # — Debug support —
 DEBUG=false

@@ -191,7 +191,7 @@ ensure_base_exists() { # remote https, base_abs_path, debug
 check_prerequisites() {
   local debug="$1"
   [[ "$debug" == true ]] && echo "Checking prerequisites..." >&2
-  for cmd in git; do
+  for cmd in git mktemp; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
       echo "Error: '$cmd' is required but not found in PATH." >&2
       exit 1
