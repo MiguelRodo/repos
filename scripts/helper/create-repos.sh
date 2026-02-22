@@ -77,9 +77,9 @@ while [ $# -gt 0 ]; do
         DEBUG_FILE="$1"
         shift
       else
-        # Auto-generate debug file in platform-independent temp directory
+        # Auto-generate debug file securely
         TEMP_DIR=$(get_temp_dir)
-        DEBUG_FILE="${TEMP_DIR}/repos-create-debug-$(date +%Y%m%d-%H%M%S)-$$.log"
+        DEBUG_FILE=$(mktemp "${TEMP_DIR}/repos-create-debug-XXXXXX")
       fi
       ;;
     -h|--help)    usage 0 ;;
