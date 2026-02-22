@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # vscode-workspace-add.sh — VS Code workspace updater for multi-repo / multi-branch setups
 # Portable: Bash ≥3.2 (macOS default), Linux, WSL, Git Bash
+# Requires: bash 3.2+, mktemp
 #
 # Behaviour:
 #   • Lines starting with "@<branch>" inherit a "fallback repo":

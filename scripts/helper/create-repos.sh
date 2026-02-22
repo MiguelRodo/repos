@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # create-repos.sh — create GitHub repos (with branches) from a list
-# Requires: bash 3.2+, curl
+# Requires: bash 3.2+, curl, mktemp
 
 set -o errexit   # same as -e
 set -o nounset   # same as -u
