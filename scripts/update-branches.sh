@@ -122,25 +122,27 @@ while IFS= read -r line; do
     continue
   fi
   
-  # Read and process the prebuild file
+  # Read and process the prebuild file securely
+  TMP_DEST=$(mktemp "$DEST_FILE.XXXXXX")
   if [ "$JSON_TOOL" = "jq" ]; then
-    jq 'del(.customizations.codespaces.repositories)' "$PREBUILD_FILE" > "$DEST_FILE.tmp"
+    jq 'del(.customizations.codespaces.repositories)' "$PREBUILD_FILE" > "$TMP_DEST"
   else
+    export PREBUILD_FILE DEST_FILE TMP_DEST
     python3 -c "
-import json, sys
-with open('$PREBUILD_FILE') as f:
+import json, sys, os
+with open(os.environ['PREBUILD_FILE']) as f:
     data = json.load(f)
 if 'customizations' in data and 'codespaces' in data['customizations']:
     if 'repositories' in data['customizations']['codespaces']:
         del data['customizations']['codespaces']['repositories']
-with open('$DEST_FILE.tmp', 'w') as f:
+with open(os.environ['TMP_DEST'], 'w') as f:
     json.dump(data, f, indent=2)
     f.write('\n')
 "
   fi
   
   # Move the temp file to destination
-  mv "$DEST_FILE.tmp" "$DEST_FILE"
+  mv "$TMP_DEST" "$DEST_FILE"
   
   echo "    ✓ Updated devcontainer.json"
   
