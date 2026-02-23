@@ -257,6 +257,20 @@ sanitize_branch_name() {
   printf '%s\n' "${branch//\//-}"
 }
 
+# Validate target_dir to prevent path traversal
+validate_target_dir() {
+  local dir="$1"
+  if [ -n "$dir" ]; then
+    case "$dir" in
+      /*|*..*)
+        echo "Error: target directory cannot be absolute or contain '..': $dir" >&2
+        return 1
+        ;;
+    esac
+  fi
+  return 0
+}
+
 build_paths_list() {
   local repos_list_file="$1"
   local current_dir="$2"
@@ -306,13 +320,21 @@ build_paths_list() {
       @*)
         # @branch line: count as reference to fallback repo only if using --worktree
         use_worktree=0
+        target_dir=""
         while [ "$#" -gt 0 ]; do
           case "$1" in
             -w|--worktree) use_worktree=1 ;;
+            *)
+              if [ -z "$target_dir" ]; then
+                target_dir="$1"
+              fi
+              ;;
           esac
           shift
         done
         
+        validate_target_dir "$target_dir" || { set +f; return 1; }
+
         if [ "$use_worktree" -eq 1 ]; then
           # This is a worktree, count it as a reference to fallback
           plan_repo_name="$plan_fallback_name"
@@ -339,6 +361,21 @@ build_paths_list() {
       *)
         # Clone line: extract repo name
         repo_spec="$first"
+        target_dir=""
+        while [ "$#" -gt 0 ]; do
+          case "$1" in
+            -*) ;; # ignore options
+            *)
+              if [ -z "$target_dir" ]; then
+                target_dir="$1"
+              fi
+              ;;
+          esac
+          shift
+        done
+
+        validate_target_dir "$target_dir" || { set +f; return 1; }
+
         case "$repo_spec" in
           *@*) repo_no_ref="${repo_spec%@*}" ;;
           *)   repo_no_ref="$repo_spec" ;;
@@ -427,6 +464,8 @@ build_paths_list() {
           shift
         done
         
+        validate_target_dir "$target_dir" || { set +f; return 1; }
+
         # Determine if this is a worktree or clone
         is_worktree=$use_worktree
         
@@ -468,6 +507,8 @@ build_paths_list() {
           shift
         done
         
+        validate_target_dir "$target_dir" || { set +f; return 1; }
+
         # Split repo_spec into repo and optional branch
         case "$repo_spec" in
           *@*) repo_no_ref="${repo_spec%@*}"; ref="${repo_spec##*@}" ;;

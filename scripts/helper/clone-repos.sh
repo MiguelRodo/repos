@@ -1237,6 +1237,8 @@ main() {
   echo "  Cloned (single-branch)  : $CNT_CLONED_BRANCH"
   echo "  Worktrees added         : $CNT_WORKTREE_ADDED"
   echo "  Errors                  : $CNT_ERRORS"
+
+  [ "$CNT_ERRORS" -eq 0 ] || exit 1
 }
 
 main "$@"

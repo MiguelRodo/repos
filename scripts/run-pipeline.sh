@@ -204,6 +204,20 @@ print_summary() {
   echo "Total: ${TOTAL_COUNT} repositories | ${SUCCESS_COUNT} succeeded | ${FAIL_COUNT} failed | ${SKIP_COUNT} skipped"
 }
 
+# Validate directory name to prevent path traversal
+validate_dir_name() {
+  local dir="$1"
+  if [ -n "$dir" ]; then
+    case "$dir" in
+      /*|*..*)
+        echo "Error: directory name cannot be absolute or contain '..': $dir" >&2
+        return 1
+        ;;
+    esac
+  fi
+  return 0
+}
+
 # --- Execute script in a single repo directory ---
 run_in_repo() {
   local full_path="$1" repo_name="$2" script_name="$3"
@@ -299,9 +313,15 @@ main() {
 
       # Parse: <dir_name> [script_name]
       local dir_name script_name
-      dir_name="$(echo "$line" | awk '{print $1}')"
-      script_name="$(echo "$line" | awk '{print $2}')"
+      dir_name="$(printf '%s\n' "$line" | awk '{print $1}')"
+      script_name="$(printf '%s\n' "$line" | awk '{print $2}')"
       [ -z "$script_name" ] && script_name="$RUN_SCRIPT"
+
+      validate_dir_name "$dir_name" || {
+        record_fail "$dir_name" "$script_name" "1"
+        if [ "$STOP_ON_ERROR" = true ]; then print_summary; exit 1; fi
+        continue
+      }
 
       local full_path
       full_path="$(cd "$PROJECT_ROOT/.." && pwd)/$dir_name"
