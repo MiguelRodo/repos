@@ -10,3 +10,7 @@
 **Vulnerability:** User-specified target directories in `repos.list` were not validated in `vscode-workspace-add.sh` and `run-pipeline.sh`, allowing malicious entries to point to arbitrary locations outside the workspace.
 **Learning:** Even if the primary tool (`clone-repos.sh`) validates input, secondary tools that parse the same input must also implement consistent validation, especially if they generate configuration (`entire-project.code-workspace`) that is subsequently trusted by other tools (`run-pipeline.sh`).
 **Prevention:** Centralize input validation where possible, or ensure all entry points for user-controlled data implement the same strict validation rules. Always disallow absolute paths and `..` components in user-provided directory names.
+## 2026-02-24 - [High] Path Traversal in Workspace-Consuming Scripts
+**Vulnerability:** Secondary tools like `install-r-deps.sh` and the workspace loop in `run-pipeline.sh` blindly trusted paths in the VS Code workspace file, allowing path traversal attacks.
+**Learning:** Even if the generator script (`vscode-workspace-add.sh`) validates paths, all consumer scripts must also implement validation. In this project, sibling repositories are intended, so exactly one leading `..` is allowed, but nothing more.
+**Prevention:** Implement `validate_workspace_path` in all scripts that consume workspace files. The validation should permit exactly one leading `../` to support the sibling repo architecture while blocking all other `..` components and absolute paths.

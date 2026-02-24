@@ -36,6 +36,26 @@ fi
 # 4. Parse all the "path" entries into a Bash array
 FOLDERS=()
 while IFS= read -r folder; do
+  # Validate folder to prevent path traversal
+  if [ -n "$folder" ]; then
+    case "$folder" in
+      /*) # Absolute path
+        echo "⚠️  [$folder] Invalid folder path (absolute) – skipping" >&2
+        continue ;;
+      ../*)
+        # Allowed to start with ../ (sibling repo), but no more .. after that
+        sub="${folder#../}"
+        case "$sub" in
+          *..*)
+            echo "⚠️  [$folder] Invalid folder path (path traversal) – skipping" >&2
+            continue ;;
+        esac ;;
+      *..*)
+        # Any other .. is forbidden
+        echo "⚠️  [$folder] Invalid folder path (contains '..') – skipping" >&2
+        continue ;;
+    esac
+  fi
   FOLDERS+=("$folder")
 done < <(jq -r '.folders[].path' "$WORKSPACE_FILE")
 

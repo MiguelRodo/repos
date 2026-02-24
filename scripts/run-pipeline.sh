@@ -218,6 +218,30 @@ validate_dir_name() {
   return 0
 }
 
+# Validate workspace path (allows one leading ../)
+validate_workspace_path() {
+  local path="$1"
+  if [ -n "$path" ]; then
+    case "$path" in
+      /*) # Absolute
+        echo "Error: workspace path cannot be absolute: $path" >&2
+        return 1 ;;
+      ../*)
+        # Allowed to start with ../ (sibling repo), but no more .. after that
+        local sub="${path#../}"
+        case "$sub" in
+          *..*)
+            echo "Error: workspace path contains invalid '..' components: $path" >&2
+            return 1 ;;
+        esac ;;
+      *..*)
+        echo "Error: workspace path contains '..': $path" >&2
+        return 1 ;;
+    esac
+  fi
+  return 0
+}
+
 # --- Execute script in a single repo directory ---
 run_in_repo() {
   local full_path="$1" repo_name="$2" script_name="$3"
@@ -343,6 +367,10 @@ main() {
   
   if [ -n "$workspace_file" ] && command -v jq >/dev/null 2>&1; then
     while IFS= read -r folder_path; do
+      validate_workspace_path "$folder_path" || {
+        echo "Skipping invalid workspace path: $folder_path" >&2
+        continue
+      }
       local full_path="$PROJECT_ROOT/$folder_path"
       local repo_name
       repo_name="$(basename "$full_path")"
