@@ -33,10 +33,40 @@ else
   exit 1
 fi
 
+# Validate workspace path to prevent path traversal
+# Allows at most one leading '..' component for sibling repos
+validate_workspace_path() {
+  local path="$1"
+  [ -z "$path" ] && return 1
+  [ "$path" = "." ] && return 0
+
+  # Must not be absolute
+  case "$path" in
+    /*) return 1 ;;
+  esac
+
+  # Allow one leading ../
+  local check_path="$path"
+  if [[ "$path" == ../* ]]; then
+    check_path="${path#../}"
+  fi
+
+  # Must not contain any more ..
+  case "$check_path" in
+    *..*) return 1 ;;
+  esac
+
+  return 0
+}
+
 # 4. Parse all the "path" entries into a Bash array
 FOLDERS=()
 while IFS= read -r folder; do
-  FOLDERS+=("$folder")
+  if validate_workspace_path "$folder"; then
+    FOLDERS+=("$folder")
+  else
+    echo "⚠️  skipping potentially malicious workspace path: $folder" >&2
+  fi
 done < <(jq -r '.folders[].path' "$WORKSPACE_FILE")
 
 # 5. Your provided helpers, tweaked to operate per‑folder

@@ -90,7 +90,7 @@ if ! $FORCE && ! git diff --quiet HEAD -- "$TARGET_DIR"; then
 fi
 
 # --- Create temp directory ---
-TEMP_DIR="$(mktemp -d)"
+TEMP_DIR="$(mktemp -d /tmp/repos-update-XXXXXX)"
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
 echo "Fetching scripts from $UPSTREAM_REPO (branch: $UPSTREAM_BRANCH)..."

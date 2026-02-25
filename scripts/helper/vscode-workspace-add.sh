@@ -111,7 +111,8 @@ update_with_jq() {
       > "$workspace_file"
   else
     # merge into existing file: set .folders = $folders
-    tmp="$(mktemp)"
+    local temp_dir; temp_dir=$(get_temp_dir)
+    tmp="$(mktemp "${temp_dir}/tmp.XXXXXX")"
     jq --argjson folders "$folders_json" \
        '.folders = $folders' \
        "$workspace_file" > "$tmp" \

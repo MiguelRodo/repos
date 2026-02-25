@@ -146,6 +146,32 @@ should_process() {
   return 0
 }
 
+# Validate workspace path to prevent path traversal
+# Allows at most one leading '..' component for sibling repos
+validate_workspace_path() {
+  local path="$1"
+  [ -z "$path" ] && return 1
+  [ "$path" = "." ] && return 0
+
+  # Must not be absolute
+  case "$path" in
+    /*) return 1 ;;
+  esac
+
+  # Allow one leading ../
+  local check_path="$path"
+  if [[ "$path" == ../* ]]; then
+    check_path="${path#../}"
+  fi
+
+  # Must not contain any more ..
+  case "$check_path" in
+    *..*) return 1 ;;
+  esac
+
+  return 0
+}
+
 # --- Detect concise format ---
 # A concise list file contains only directory names (and optional script names),
 # no org/repo, @branch, or global flags like --codespaces / --worktree / --public / --private.
@@ -343,6 +369,12 @@ main() {
   
   if [ -n "$workspace_file" ] && command -v jq >/dev/null 2>&1; then
     while IFS= read -r folder_path; do
+      validate_workspace_path "$folder_path" || {
+        echo "Warning: skipping potentially malicious workspace path: $folder_path" >&2
+        record_fail "$(basename "$folder_path")" "$RUN_SCRIPT" "1"
+        [ "$STOP_ON_ERROR" = true ] && { print_summary; exit 1; }
+        continue
+      }
       local full_path="$PROJECT_ROOT/$folder_path"
       local repo_name
       repo_name="$(basename "$full_path")"

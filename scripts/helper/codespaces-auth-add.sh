@@ -120,6 +120,23 @@ parse_args(){
   done
 }
 
+# Get platform-independent temp directory
+get_temp_dir() {
+  # Try various temp directory variables in order of preference
+  if [ -n "${TMPDIR:-}" ] && [ -d "${TMPDIR}" ]; then
+    echo "${TMPDIR%/}"  # Remove trailing slash if present
+  elif [ -n "${TEMP:-}" ] && [ -d "${TEMP}" ]; then
+    echo "${TEMP%/}"
+  elif [ -n "${TMP:-}" ] && [ -d "${TMP}" ]; then
+    echo "${TMP%/}"
+  elif [ -d "/tmp" ]; then
+    echo "/tmp"
+  else
+    # Fallback to current directory
+    echo "."
+  fi
+}
+
 # ——— Helper to trim leading and trailing whitespace —————————————
 trim_whitespace() {
   local str="$1"
@@ -379,7 +396,8 @@ update_with_jq(){
       { customizations:{ codespaces:{ repositories:$repos } } }
     ' >"$file"
   else
-    tmp=$(mktemp)
+    local temp_dir; temp_dir=$(get_temp_dir)
+    tmp=$(mktemp "${temp_dir}/tmp.XXXXXX")
     jq --argjson repos "$repos_obj" '
       .customizations.codespaces.repositories
         |= ( (. // {}) + $repos )
@@ -518,7 +536,8 @@ update_devfile(){
         update_with_python "$devfile" "$tool"
       else
         # Safely write via a temporary file, then move into place
-        tmp="$(mktemp)"
+        local temp_dir; temp_dir=$(get_temp_dir)
+        tmp="$(mktemp "${temp_dir}/tmp.XXXXXX")"
         update_with_python "$devfile" "$tool" > "$tmp"
         mv "$tmp" "$devfile"
         echo "Updated '$devfile' with $tool."
