@@ -380,6 +380,15 @@ build_paths_list() {
           *@*) repo_no_ref="${repo_spec%@*}" ;;
           *)   repo_no_ref="$repo_spec" ;;
         esac
+
+        # Validate repo_no_ref to prevent path traversal
+        case "$repo_no_ref" in
+          *..*)
+            echo "Error: repository spec cannot contain '..': $repo_no_ref" >&2
+            set +f; return 1
+            ;;
+        esac
+
         plan_repo_name="$(spec_to_repo_name "$repo_no_ref")"
         
         # Find or add this repo in the plan
@@ -515,6 +524,14 @@ build_paths_list() {
           *)   repo_no_ref="$repo_spec"; ref="" ;;
         esac
         
+        # Validate repo_no_ref to prevent path traversal
+        case "$repo_no_ref" in
+          *..*)
+            echo "Error: repository spec cannot contain '..': $repo_no_ref" >&2
+            set +f; return 1
+            ;;
+        esac
+
         # Get the repo name for path calculation
         repo_name="$(spec_to_repo_name "$repo_no_ref")"
         

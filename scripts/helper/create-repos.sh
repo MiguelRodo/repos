@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # create-repos.sh — create GitHub repos (with branches) from a list
-# Requires: bash 3.2+, curl, mktemp
+# Requires: bash 3.2+, curl, jq, mktemp
 
 set -o errexit   # same as -e
 set -o nounset   # same as -u
@@ -496,11 +496,10 @@ while IFS= read -r line || [ -n "$line" ]; do
       debug "Line $line_num: Using global private flag: $this_repo_private"
     fi
     
-    if [ -n "$branch" ]; then
-      payload="{\"name\":\"$repo\",\"private\":$this_repo_private,\"auto_init\":true}"
-    else
-      payload="{\"name\":\"$repo\",\"private\":$this_repo_private}"
-    fi
+    # Build JSON payload safely using jq
+    payload=$(jq -n --arg name "$repo" --argjson priv "$this_repo_private" \
+      --argjson init "$([ -n "$branch" ] && echo true || echo false)" \
+      '{name: $name, private: $priv} + (if $init then {auto_init: true} else {} end)')
 
     printf "Creating repo %s/%s ... " "$owner" "$repo"
     http_code=$(

@@ -579,6 +579,13 @@ parse_effective_line() {
       ;;
     *)
       local repo_spec="$first"
+      # Validate repo_spec to prevent path traversal
+      case "${repo_spec%@*}" in
+        *..*)
+          echo "Error: repository spec cannot contain '..': $repo_spec" >&2
+          set +f; return 1
+          ;;
+      esac
       while [ "$#" -gt 0 ]; do
         case "$1" in
           -a|--all-branches) all_branches=1 ;;
