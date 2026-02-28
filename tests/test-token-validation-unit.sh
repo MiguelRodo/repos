@@ -67,7 +67,7 @@ fi
 # Test 3: Verify validate_token accepts valid response with login field
 print_test "validate_token accepts valid response with 'login' field"
 
-if grep -A2 '"login"' "$PROJECT_ROOT/scripts/helper/create-repos.sh" | grep -q "Token validation successful"; then
+if grep -A2 'if \[ -n "$login" \]' "$PROJECT_ROOT/scripts/helper/create-repos.sh" | grep -q "Token validation successful"; then
   print_pass "validate_token accepts responses with 'login' field"
 else
   print_fail "validate_token doesn't accept valid responses"

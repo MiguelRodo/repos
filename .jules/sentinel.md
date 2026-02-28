@@ -10,3 +10,8 @@
 **Vulnerability:** User-specified target directories in `repos.list` were not validated in `vscode-workspace-add.sh` and `run-pipeline.sh`, allowing malicious entries to point to arbitrary locations outside the workspace.
 **Learning:** Even if the primary tool (`clone-repos.sh`) validates input, secondary tools that parse the same input must also implement consistent validation, especially if they generate configuration (`entire-project.code-workspace`) that is subsequently trusted by other tools (`run-pipeline.sh`).
 **Prevention:** Centralize input validation where possible, or ensure all entry points for user-controlled data implement the same strict validation rules. Always disallow absolute paths and `..` components in user-provided directory names.
+
+## 2026-02-24 - [High] Insecure JSON Construction and Fragile Parsing
+**Vulnerability:** Insecure JSON construction via string concatenation and fragile parsing using `grep`/`sed` in `create-repos.sh`.
+**Learning:** Manual JSON construction is vulnerable to injection if user-controlled variables (like repo or branch names) contain special characters. Fragile parsing with `grep`/`sed` is unreliable and can lead to incorrect state or security bypasses if API responses change.
+**Prevention:** Always use `jq` for JSON processing in shell scripts. Use `jq --arg` or `--argjson` for safe injection of variables into payloads, and use `jq` path expressions for robust parsing. Ensure `jq` is verified as a prerequisite.
