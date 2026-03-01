@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # create-repos.sh — create GitHub repos (with branches) from a list
-# Requires: bash 3.2+, curl, mktemp
+# Requires: bash 3.2+, curl, mktemp, jq
 
 set -o errexit   # same as -e
 set -o nounset   # same as -u
@@ -162,39 +162,27 @@ validate_token() {
     return 0
   fi
   
-  # Check if response contains an error message for bad credentials
-  if printf '%s\n' "$response" | grep -q '"message".*"Bad credentials"'; then
-    debug "Token validation failed: Bad credentials"
-    echo "Error: Invalid GitHub token. Please check your credentials." >&2
-    echo "The provided token does not have valid GitHub API access." >&2
-    return 1
-  fi
-  
-  # Check if response contains an error message for other auth issues
-  if printf '%s\n' "$response" | grep -q '"message".*"Requires authentication"'; then
-    debug "Token validation failed: Requires authentication"
-    echo "Error: GitHub authentication required. Please check your credentials." >&2
-    return 1
-  fi
-  
-  # If we can extract a login field, the token is valid
-  if printf '%s\n' "$response" | grep -q '"login"'; then
-    debug "Token validation successful"
+  # Use jq for robust JSON parsing
+  # Check if the token is valid by looking for the 'login' field
+  local login
+  login=$(printf '%s\n' "$response" | jq -r '.login // empty')
+  if [ -n "$login" ]; then
+    debug "Token validation successful for user: $login"
     return 0
   fi
+
+  # Extract error message if it exists
+  local message
+  message=$(printf '%s\n' "$response" | jq -r '.message // empty')
   
-  # If we get here and there's any message field with error-like content
-  if printf '%s\n' "$response" | grep -q '"message"'; then
-    local message
-    # Note: This sed pattern doesn't handle escaped quotes within JSON values
-    # If the pattern doesn't match, the message variable will contain the full grep line
-    # For more robust JSON parsing, consider using jq if available
-    message=$(printf '%s\n' "$response" | grep '"message"' | head -n1 | sed -E 's/.*"message": *"([^"]+)".*/\1/')
-    # Validate that sed substitution succeeded by checking if message contains quotes
-    # If it still contains JSON structure, use a generic message
-    if printf '%s\n' "$message" | grep -q '"'; then
-      debug "Token validation failed: Could not parse API error message"
-      echo "Error: GitHub API authentication failed. Please check your credentials." >&2
+  if [ -n "$message" ]; then
+    if [ "$message" = "Bad credentials" ]; then
+      debug "Token validation failed: Bad credentials"
+      echo "Error: Invalid GitHub token. Please check your credentials." >&2
+      echo "The provided token does not have valid GitHub API access." >&2
+    elif [ "$message" = "Requires authentication" ]; then
+      debug "Token validation failed: Requires authentication"
+      echo "Error: GitHub authentication required. Please check your credentials." >&2
     else
       debug "Token validation failed: $message"
       echo "Error: GitHub API error: $message" >&2
@@ -202,18 +190,16 @@ validate_token() {
     return 1
   fi
   
-  # If we get here, assume valid (we got a response without error)
-  debug "Token appears valid (no error detected)"
-  return 0
+  # Fallback if no message or login found
+  debug "Token validation failed: Unrecognized API response"
+  echo "Error: GitHub API authentication failed. Please check your credentials." >&2
+  return 1
 }
 
 # ── Helpers for branch creation ────────────────────────────────────────────────
 api_get_field() {
   url=$1; field=$2
-  curl -s -H "$AUTH_HDR" "$url" \
-    | grep "\"$field\"" \
-    | head -n1 \
-    | sed -E "s/.*\"$field\": *\"([^\"]+)\".*/\1/"
+  curl -s -H "$AUTH_HDR" "$url" | jq -r ".$field // empty"
 }
 
 create_branch() {
@@ -222,12 +208,15 @@ create_branch() {
   defsha=$(
     curl -s -H "$AUTH_HDR" \
       "$API_URL/repos/$owner/$repo/git/ref/heads/$defbr" \
-    | grep '"sha"' | head -n1 \
-    | sed -E 's/.*"sha": *"([^"]+)".*/\1/'
+    | jq -r '.object.sha // .sha // empty'
   )
+  # Construct payload securely with jq
+  local payload
+  payload=$(jq -n --arg ref "refs/heads/$newbr" --arg sha "$defsha" '{ref: $ref, sha: $sha}')
+
   curl -s -o /dev/null -w "%{http_code}" -X POST \
     -H "$AUTH_HDR" -H "Content-Type: application/json" \
-    -d "{\"ref\":\"refs/heads/$newbr\",\"sha\":\"$defsha\"}" \
+    -d "$payload" \
     "$API_URL/repos/$owner/$repo/git/refs"
 }
 
@@ -448,10 +437,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   # 1) Determine owner type (User vs Organization)
   debug "Line $line_num: Checking owner type for $owner"
   owner_info=$(curl -s -H "$AUTH_HDR" "$API_URL/users/$owner")
-  owner_type=$(printf '%s\n' "$owner_info" \
-    | grep '"type"' \
-    | head -n1 \
-    | sed -E 's/.*"type": *"([^"]+)".*/\1/')
+  owner_type=$(printf '%s\n' "$owner_info" | jq -r '.type // empty')
   
   debug "Line $line_num: Owner type: $owner_type"
 
@@ -497,9 +483,9 @@ while IFS= read -r line || [ -n "$line" ]; do
     fi
     
     if [ -n "$branch" ]; then
-      payload="{\"name\":\"$repo\",\"private\":$this_repo_private,\"auto_init\":true}"
+      payload=$(jq -n --arg name "$repo" --argjson private "$this_repo_private" '{name: $name, private: $private, auto_init: true}')
     else
-      payload="{\"name\":\"$repo\",\"private\":$this_repo_private}"
+      payload=$(jq -n --arg name "$repo" --argjson private "$this_repo_private" '{name: $name, private: $private}')
     fi
 
     printf "Creating repo %s/%s ... " "$owner" "$repo"
