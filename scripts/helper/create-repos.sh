@@ -416,6 +416,13 @@ while IFS= read -r line || [ -n "$line" ]; do
   esac
   
   repo_path=${repo_spec%@*}
+  # Validate repo_path to prevent path traversal
+  case "$repo_path" in
+    *..*)
+      echo "Error: repository spec cannot contain '..': $repo_spec" >&2
+      exit 1
+      ;;
+  esac
   owner=${repo_path%%/*}
   repo=${repo_path##*/}
   case "$repo_spec" in *@*) branch=${repo_spec##*@} ;; *) branch="" ;; esac

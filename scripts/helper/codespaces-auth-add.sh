@@ -292,6 +292,13 @@ build_raw_list(){
           ;;
         *)
           # Regular repo line - extract and update fallback
+          # Validate repo_spec to prevent path traversal
+          case "${first%@*}" in
+            *..*)
+              echo "Error: repository spec cannot contain '..': $first" >&2
+              exit 1
+              ;;
+          esac
           local normalized repo_no_branch repo_https
           if normalized=$(normalise "$trimmed" ""); then
             RAW_LIST+="$normalized"$'\n'
