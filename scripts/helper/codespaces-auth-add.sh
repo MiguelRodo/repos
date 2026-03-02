@@ -9,6 +9,23 @@ set -o nounset   # same as -u
 set -o pipefail
 
 # ——— Defaults ———————————————————————————————————————————————
+# Get platform-independent temp directory
+get_temp_dir() {
+  # Try various temp directory variables in order of preference
+  if [ -n "${TMPDIR:-}" ] && [ -d "${TMPDIR}" ]; then
+    echo "${TMPDIR%/}"  # Remove trailing slash if present
+  elif [ -n "${TEMP:-}" ] && [ -d "${TEMP}" ]; then
+    echo "${TEMP%/}"
+  elif [ -n "${TMP:-}" ] && [ -d "${TMP}" ]; then
+    echo "${TMP%/}"
+  elif [ -d "/tmp" ]; then
+    echo "/tmp"
+  else
+    # Fallback to current directory
+    echo "."
+  fi
+}
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 DEVCONTAINER_PATHS=()  # Array of devcontainer.json paths to update
@@ -236,9 +253,10 @@ normalise(){
   esac
 }
 
-# ——— Validate owner/repo (no datasets/) ——————————————————————————
+# ——— Validate owner/repo (no datasets/ and no ..) ————————————————
 validate(){
   case "$1" in
+    *..*)       return 1 ;;            # no path traversal
     [!d]*/*)    printf '%s\n' "$1" ;;  # any owner/repo not starting datasets/
     *)          return 1 ;;
   esac
@@ -379,7 +397,7 @@ update_with_jq(){
       { customizations:{ codespaces:{ repositories:$repos } } }
     ' >"$file"
   else
-    tmp=$(mktemp)
+    tmp="$(mktemp "$(get_temp_dir)/repos-auth-XXXXXX")"
     jq --argjson repos "$repos_obj" '
       .customizations.codespaces.repositories
         |= ( (. // {}) + $repos )
@@ -518,7 +536,7 @@ update_devfile(){
         update_with_python "$devfile" "$tool"
       else
         # Safely write via a temporary file, then move into place
-        tmp="$(mktemp)"
+        tmp="$(mktemp "$(get_temp_dir)/repos-auth-XXXXXX")"
         update_with_python "$devfile" "$tool" > "$tmp"
         mv "$tmp" "$devfile"
         echo "Updated '$devfile' with $tool."

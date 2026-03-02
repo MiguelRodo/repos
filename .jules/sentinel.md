@@ -11,6 +11,10 @@
 **Learning:** Even if the primary tool (`clone-repos.sh`) validates input, secondary tools that parse the same input must also implement consistent validation, especially if they generate configuration (`entire-project.code-workspace`) that is subsequently trusted by other tools (`run-pipeline.sh`).
 **Prevention:** Centralize input validation where possible, or ensure all entry points for user-controlled data implement the same strict validation rules. Always disallow absolute paths and `..` components in user-provided directory names.
 
+## 2027-02-27 - [High] Path Traversal in Repository Specifications
+**Vulnerability:** Scripts derived local directory names from the `owner/repo` repository specification without checking for `..` components. An entry like `owner/repo/..` would cause the script to target the parent directory.
+**Learning:** Validating explicit "target directory" arguments is insufficient if other parts of the input (like the repository name) are also used to construct file paths. Attackers will use the least-validated field to achieve the same traversal.
+**Prevention:** Apply strict `..` validation to ALL user-provided tokens that contribute to path construction, including repository specifications, even if they are primarily intended as URLs or identifiers.
 ## 2026-05-22 - [Medium] Fragile and Insecure JSON Parsing in Shell Scripts
 **Vulnerability:** Use of `grep` and `sed` for parsing GitHub API responses and manual string concatenation for building JSON payloads.
 **Learning:** Manual JSON handling is error-prone and vulnerable to injection if variables contain special characters (like quotes). Line-based parsing fails if the API response format changes slightly (e.g. whitespace changes).
