@@ -579,6 +579,13 @@ parse_effective_line() {
       ;;
     *)
       local repo_spec="$first"
+      # Validate repo_spec to prevent path traversal
+      case "$repo_spec" in
+        *..*)
+          echo "Error: repository specification cannot contain '..': $repo_spec" >&2
+          set +f; return 1
+          ;;
+      esac
       while [ "$#" -gt 0 ]; do
         case "$1" in
           -a|--all-branches) all_branches=1 ;;
@@ -1030,6 +1037,13 @@ plan_forward() {
       *)
         # clone line: owner/repo[@ref] or https url
         remote_spec="$tok1"
+        # Validate remote_spec to prevent path traversal
+        case "$remote_spec" in
+          *..*)
+            echo "Error: repository specification cannot contain '..': $remote_spec" >&2
+            continue
+            ;;
+        esac
         case "$remote_spec" in
           *@*) repo="${remote_spec%@*}"; ref="${remote_spec##*@}" ;;
           *)   repo="$remote_spec"; ref="" ;;

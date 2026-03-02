@@ -7,7 +7,7 @@ set -o nounset   # same as -u
 set -o pipefail
 
 # — Prerequisites —
-for cmd in curl git mktemp jq; do
+for cmd in curl git jq mktemp; do
   if ! command -v "$cmd" >/dev/null 2>&1; then
     echo "Error: '$cmd' is required but not found in PATH." >&2
     exit 1
@@ -165,14 +165,15 @@ validate_token() {
   # Check if response is empty
   if [ -z "$response" ]; then
     debug "Token validation: Empty response from API"
+    # If we can't validate, we should still try to proceed
+    # This could be a network issue rather than an invalid token
     return 0
   fi
-
-  # Use jq to parse the response
-  local message login
-  message=$(echo "$response" | jq -r '.message // empty')
-  login=$(echo "$response" | jq -r '.login // empty')
   
+  # Check for errors using jq
+  local message
+  message=$(printf '%s\n' "$response" | jq -r '.message // empty')
+
   if [ "$message" = "Bad credentials" ]; then
     debug "Token validation failed: Bad credentials"
     echo "Error: Invalid GitHub token. Please check your credentials." >&2
@@ -186,35 +187,45 @@ validate_token() {
     return 1
   fi
   
-  if [ -n "$login" ]; then
-    debug "Token validation successful for user: $login"
+  # If we can extract a login field, the token is valid
+  if printf '%s\n' "$response" | jq -e '.login' >/dev/null 2>&1; then
+    debug "Token validation successful"
     return 0
   fi
   
+  # If there's any other message, report it
   if [ -n "$message" ]; then
     debug "Token validation failed: $message"
     echo "Error: GitHub API error: $message" >&2
     return 1
   fi
   
-  # If we get here, assume valid (we got a response without detectable error)
-  debug "Token appears valid (no error detected in response)"
+  # If we get here, assume valid (we got a response without error)
+  debug "Token appears valid (no error detected)"
   return 0
 }
 
 # ── Helpers for branch creation ────────────────────────────────────────────────
 api_get_field() {
-  local url="$1" field="$2"
-  curl -s -H "$AUTH_HDR" "$url" | jq -r ".$field // empty"
+  local url="$1"; local field="$2"
+  curl -s -H "$AUTH_HDR" "$url" | jq -r ".${field}"
 }
 
 create_branch() {
-  owner=$1; repo=$2; newbr=$3
-  defbr=$( api_get_field "$API_URL/repos/$owner/$repo" default_branch )
-  local response
-  response=$(curl -s -H "$AUTH_HDR" "$API_URL/repos/$owner/$repo/git/ref/heads/$defbr")
-  defsha=$(echo "$response" | jq -r '.object.sha // .sha // empty')
+  local owner="$1"; local repo="$2"; local newbr="$3"
+  local defbr
+  defbr=$( api_get_field "$API_URL/repos/$owner/$repo" "default_branch" )
+
+  local defsha
+  defsha=$(
+    curl -s -H "$AUTH_HDR" \
+      "$API_URL/repos/$owner/$repo/git/ref/heads/$defbr" \
+    | jq -r '.object.sha // .sha'
+  )
+
+  local payload
   payload=$(jq -n --arg ref "refs/heads/$newbr" --arg sha "$defsha" '{ref: $ref, sha: $sha}')
+
   curl -s -o /dev/null -w "%{http_code}" -X POST \
     -H "$AUTH_HDR" -H "Content-Type: application/json" \
     -d "$payload" \
@@ -438,7 +449,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   # 1) Determine owner type (User vs Organization)
   debug "Line $line_num: Checking owner type for $owner"
   owner_info=$(curl -s -H "$AUTH_HDR" "$API_URL/users/$owner")
-  owner_type=$(echo "$owner_info" | jq -r '.type // empty')
+  owner_type=$(printf '%s\n' "$owner_info" | jq -r '.type // empty')
   
   debug "Line $line_num: Owner type: $owner_type"
 

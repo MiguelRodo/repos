@@ -44,9 +44,6 @@ print_header "Token Validation Function Unit Tests"
 # Test 1: Verify validate_token handles "Bad credentials" response
 print_test "validate_token detects 'Bad credentials' error"
 
-# Create a mock response file
-MOCK_RESPONSE='{"message":"Bad credentials","documentation_url":"https://docs.github.com/rest"}'
-
 # Source the function (extract just the validate_token function for testing)
 # For simplicity, we'll just verify the logic is in the script
 if grep -A5 '"Bad credentials"' "$PROJECT_ROOT/scripts/helper/create-repos.sh" | grep -q "Invalid GitHub token"; then
@@ -67,7 +64,8 @@ fi
 # Test 3: Verify validate_token accepts valid response with login field
 print_test "validate_token accepts valid response with 'login' field"
 
-if grep -A2 'if \[ -n "$login" \]' "$PROJECT_ROOT/scripts/helper/create-repos.sh" | grep -q "Token validation successful"; then
+if grep -A2 'jq -e' "$PROJECT_ROOT/scripts/helper/create-repos.sh" | grep -q ".login" && \
+   grep -A2 'jq -e' "$PROJECT_ROOT/scripts/helper/create-repos.sh" | grep -q "Token validation successful"; then
   print_pass "validate_token accepts responses with 'login' field"
 else
   print_fail "validate_token doesn't accept valid responses"

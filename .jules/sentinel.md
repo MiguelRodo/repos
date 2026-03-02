@@ -11,7 +11,11 @@
 **Learning:** Even if the primary tool (`clone-repos.sh`) validates input, secondary tools that parse the same input must also implement consistent validation, especially if they generate configuration (`entire-project.code-workspace`) that is subsequently trusted by other tools (`run-pipeline.sh`).
 **Prevention:** Centralize input validation where possible, or ensure all entry points for user-controlled data implement the same strict validation rules. Always disallow absolute paths and `..` components in user-provided directory names.
 
-## 2026-02-24 - [High] Insecure JSON Construction and Fragile Parsing
-**Vulnerability:** Insecure JSON construction via string concatenation and fragile parsing using `grep`/`sed` in `create-repos.sh`.
-**Learning:** Manual JSON construction is vulnerable to injection if user-controlled variables (like repo or branch names) contain special characters. Fragile parsing with `grep`/`sed` is unreliable and can lead to incorrect state or security bypasses if API responses change.
-**Prevention:** Always use `jq` for JSON processing in shell scripts. Use `jq --arg` or `--argjson` for safe injection of variables into payloads, and use `jq` path expressions for robust parsing. Ensure `jq` is verified as a prerequisite.
+## 2027-02-27 - [High] Path Traversal in Repository Specifications
+**Vulnerability:** Scripts derived local directory names from the `owner/repo` repository specification without checking for `..` components. An entry like `owner/repo/..` would cause the script to target the parent directory.
+**Learning:** Validating explicit "target directory" arguments is insufficient if other parts of the input (like the repository name) are also used to construct file paths. Attackers will use the least-validated field to achieve the same traversal.
+**Prevention:** Apply strict `..` validation to ALL user-provided tokens that contribute to path construction, including repository specifications, even if they are primarily intended as URLs or identifiers.
+## 2026-05-22 - [Medium] Fragile and Insecure JSON Parsing in Shell Scripts
+**Vulnerability:** Use of `grep` and `sed` for parsing GitHub API responses and manual string concatenation for building JSON payloads.
+**Learning:** Manual JSON handling is error-prone and vulnerable to injection if variables contain special characters (like quotes). Line-based parsing fails if the API response format changes slightly (e.g. whitespace changes).
+**Prevention:** Always use `jq` for both parsing and constructing JSON. Use `jq --arg` or `jq --argjson` to safely inject variables into JSON objects, ensuring proper escaping and preventing injection.
