@@ -1037,6 +1037,13 @@ plan_forward() {
       *)
         # clone line: owner/repo[@ref] or https url
         remote_spec="$tok1"
+        # Validate remote_spec to prevent path traversal
+        case "$remote_spec" in
+          *..*)
+            echo "Error: repository specification cannot contain '..': $remote_spec" >&2
+            continue
+            ;;
+        esac
         case "$remote_spec" in
           *@*) repo="${remote_spec%@*}"; ref="${remote_spec##*@}" ;;
           *)   repo="$remote_spec"; ref="" ;;

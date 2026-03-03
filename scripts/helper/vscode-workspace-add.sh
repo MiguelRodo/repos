@@ -523,6 +523,14 @@ build_paths_list() {
           *@*) repo_no_ref="${repo_spec%@*}"; ref="${repo_spec##*@}" ;;
           *)   repo_no_ref="$repo_spec"; ref="" ;;
         esac
+
+        # Validate repo_no_ref to prevent path traversal
+        case "$repo_no_ref" in
+          *..*)
+            echo "Error: repository specification cannot contain '..': $repo_no_ref" >&2
+            set +f; return 1
+            ;;
+        esac
         
         # Validate repo_no_ref to prevent path traversal
         case "$repo_no_ref" in
