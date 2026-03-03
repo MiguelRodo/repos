@@ -502,11 +502,9 @@ while IFS= read -r line || [ -n "$line" ]; do
     fi
     
     # Build JSON payload safely using jq
-    if [ -n "$branch" ]; then
-      payload=$(jq -n --arg name "$repo" --argjson private "$this_repo_private" '{name: $name, private: $private, auto_init: true}')
-    else
-      payload=$(jq -n --arg name "$repo" --argjson private "$this_repo_private" '{name: $name, private: $private}')
-    fi
+    payload=$(jq -n --arg name "$repo" --argjson priv "$this_repo_private" \
+      --argjson init "$([ -n "$branch" ] && echo true || echo false)" \
+      '{name: $name, private: $priv} + (if $init then {auto_init: true} else {} end)')
 
     printf "Creating repo %s/%s ... " "$owner" "$repo"
     http_code=$(
