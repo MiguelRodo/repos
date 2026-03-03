@@ -19,3 +19,8 @@
 **Vulnerability:** Use of `grep` and `sed` for parsing GitHub API responses and manual string concatenation for building JSON payloads.
 **Learning:** Manual JSON handling is error-prone and vulnerable to injection if variables contain special characters (like quotes). Line-based parsing fails if the API response format changes slightly (e.g. whitespace changes).
 **Prevention:** Always use `jq` for both parsing and constructing JSON. Use `jq --arg` or `jq --argjson` to safely inject variables into JSON objects, ensuring proper escaping and preventing injection.
+
+## 2024-03-03 - [High] Path Traversal and Command Injection in Pipeline Execution
+**Vulnerability:** `run-pipeline.sh` allowed arbitrary script paths via the `--script` flag or concise repository list, leading to execution of scripts outside the repository boundaries. Lack of input validation also posed a command injection risk.
+**Learning:** Even if a tool is intended for local use, allowing user-controlled paths to be passed to execution commands without validation is dangerous. Input should be restricted to a safe character allow-list.
+**Prevention:** Implement strict validation for all user-provided execution paths. Disallow absolute paths, `..` components, and shell metacharacters. Use a regex like `^[a-zA-Z0-9._/-]+$` for an allow-list of safe characters.

@@ -96,7 +96,9 @@ parse_args() {
       -f|--file)
         shift; REPOS_FILE="$1"; shift ;;
       --script)
-        shift; RUN_SCRIPT="$1"; shift ;;
+        shift
+        validate_script_path "$1" || exit 1
+        RUN_SCRIPT="$1"; shift ;;
       -i|--include)
         shift; INCLUDE_RAW="$1"; shift ;;
       -e|--exclude)
@@ -218,6 +220,28 @@ validate_dir_name() {
   return 0
 }
 
+# Validate script path to prevent path traversal and command injection
+validate_script_path() {
+  local script_path="$1"
+  if [ -n "$script_path" ]; then
+    # Disallow absolute paths and path traversal
+    case "$script_path" in
+      /*|*..*)
+        echo "Error: script path cannot be absolute or contain '..': $script_path" >&2
+        return 1
+        ;;
+    esac
+
+    # Stricter validation: allow only alphanumeric, underscores, dashes, dots, and forward slashes
+    # This provides defense-in-depth against command injection
+    if [[ ! "$script_path" =~ ^[a-zA-Z0-9._/-]+$ ]]; then
+      echo "Error: script path contains disallowed characters: $script_path" >&2
+      return 1
+    fi
+  fi
+  return 0
+}
+
 # --- Execute script in a single repo directory ---
 run_in_repo() {
   local full_path="$1" repo_name="$2" script_name="$3"
@@ -316,6 +340,12 @@ main() {
       dir_name="$(printf '%s\n' "$line" | awk '{print $1}')"
       script_name="$(printf '%s\n' "$line" | awk '{print $2}')"
       [ -z "$script_name" ] && script_name="$RUN_SCRIPT"
+
+      validate_script_path "$script_name" || {
+        record_fail "$dir_name" "$script_name" "1"
+        if [ "$STOP_ON_ERROR" = true ]; then print_summary; exit 1; fi
+        continue
+      }
 
       validate_dir_name "$dir_name" || {
         record_fail "$dir_name" "$script_name" "1"
