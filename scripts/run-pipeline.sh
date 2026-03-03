@@ -373,6 +373,25 @@ main() {
   
   if [ -n "$workspace_file" ] && command -v jq >/dev/null 2>&1; then
     while IFS= read -r folder_path; do
+      # Validate folder_path to prevent path traversal
+      case "$folder_path" in
+        /*|*../*..*)
+          echo "Error: invalid workspace folder path (too many '..'): $folder_path" >&2
+          record_fail "$folder_path" "$RUN_SCRIPT" "1"
+          if [ "$STOP_ON_ERROR" = true ]; then print_summary; exit 1; fi
+          continue
+          ;;
+        ../*)
+          # Legitimate sibling repo path (exactly one leading ..)
+          # Check if there are any MORE .. components
+          if [[ "${folder_path#../}" == *..* ]]; then
+            echo "Error: invalid workspace folder path (contains '..'): $folder_path" >&2
+            record_fail "$folder_path" "$RUN_SCRIPT" "1"
+            if [ "$STOP_ON_ERROR" = true ]; then print_summary; exit 1; fi
+            continue
+          fi
+          ;;
+      esac
       local full_path="$PROJECT_ROOT/$folder_path"
       local repo_name
       repo_name="$(basename "$full_path")"
