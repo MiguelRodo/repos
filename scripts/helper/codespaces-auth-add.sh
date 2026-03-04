@@ -367,13 +367,13 @@ build_jq_array(){
 # ——— Generate the per-repo permissions object via jq —————————————
 build_jq_obj(){
   local arr_json="$1"
-  jq -n --argjson arr "$arr_json" '
+  jq -n --argjson arr "$arr_json" --arg perms "$PERMISSIONS" '
     reduce $arr[] as $repo ({}; 
       . + {
         ($repo): (
-          if "'"$PERMISSIONS"'" == "all" then
+          if $perms == "all" then
             { permissions:"write-all" }
-          elif "'"$PERMISSIONS"'" == "contents" then
+          elif $perms == "contents" then
             { permissions:{ contents:"write" } }
           else
             {

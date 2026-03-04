@@ -208,7 +208,8 @@ validate_token() {
 # ── Helpers for branch creation ────────────────────────────────────────────────
 api_get_field() {
   local url="$1"; local field="$2"
-  curl -s -H "$AUTH_HDR" "$url" | jq -r ".${field}"
+  # Use getpath with split to support nested fields (e.g. "commit.sha") securely
+  curl -s -H "$AUTH_HDR" "$url" | jq -r --arg field "$field" 'getpath($field | split("."))'
 }
 
 create_branch() {

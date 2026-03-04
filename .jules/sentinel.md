@@ -26,3 +26,7 @@
 **Vulnerability:** Scripts derived local directory names from the `owner/repo` repository specification without checking for `..` components. An entry like `owner/repo/..` would cause the script to target the parent directory.
 **Learning:** Validating explicit "target directory" arguments is insufficient if other parts of the input (like the repository name) are also used to construct file paths. Attackers will use the least-validated field to achieve the same traversal.
 **Prevention:** Apply strict `..` validation to ALL user-provided tokens that contribute to path construction, including repository specifications, even if they are primarily intended as URLs or identifiers.
+## 2027-02-28 - [Medium] Insecure Shell Interpolation in jq Filters
+**Vulnerability:** Shell variables were interpolated directly into `jq` filter strings (e.g., `jq -r ".${field}"` or `if "'"$PERMISSIONS"'" == "all"`), potentially leading to injection vulnerabilities.
+**Learning:** Interpolating shell variables into `jq` filters is insecure as it allows the variable content to be parsed as part of the filter logic. Simple replacement with `.[$field]` also fails for nested paths (e.g., `commit.sha`).
+**Prevention:** Always use `jq`'s `--arg` or `--argjson` flags to pass values into the `jq` environment. For dynamic field access that may include nested paths, use `getpath($field | split("."))` to safely traverse the object.
