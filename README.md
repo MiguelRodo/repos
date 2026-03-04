@@ -73,7 +73,7 @@ myorg/public-repo --public   # Override: create as public
 myorg/private-repo    # Use default: private
 ```
 
-#### `repos`
+#### `repos setup`
 
 - Enable Codespaces authentication with `--codespaces`, e.g. `repos setup --codespaces`
 - Specify custom `devcontainer.json` paths with `-d`, e.g. `repos setup -d .devcontainer/prebuild/devcontainer.json`
