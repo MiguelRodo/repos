@@ -158,7 +158,7 @@ with open(os.environ['TMP_DEST'], 'w') as f:
     
     # Get current branch
     BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-    git push origin "$BRANCH" || echo "    ⚠️  Push failed (you may need to push manually)"
+    git push origin -- "$BRANCH" || echo "    ⚠️  Push failed (you may need to push manually)"
     
     echo "    ✓ Committed and pushed"
     UPDATED_COUNT=$((UPDATED_COUNT + 1))

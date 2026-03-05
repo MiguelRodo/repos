@@ -142,15 +142,15 @@ if git ls-remote --exit-code --heads origin "$BRANCH_NAME" >/dev/null 2>&1; then
   echo "Branch exists on origin, creating tracking worktree..."
   # Ensure we have the remote tracking branch
   git fetch origin "refs/heads/$BRANCH_NAME:refs/remotes/origin/$BRANCH_NAME" 2>/dev/null || true
-  git worktree add -b "$BRANCH_NAME" "$DEST" "origin/$BRANCH_NAME" || \
-    git worktree add "$DEST" "$BRANCH_NAME"
+  git worktree add -b "$BRANCH_NAME" -- "$DEST" "origin/$BRANCH_NAME" || \
+    git worktree add -- "$DEST" "$BRANCH_NAME"
 else
   echo "Creating new branch from current HEAD..."
-  git worktree add -b "$BRANCH_NAME" "$DEST"
+  git worktree add -b "$BRANCH_NAME" -- "$DEST"
   
   # Push to origin with tracking
   echo "Pushing branch to origin..."
-  git -C "$DEST" push -u origin "$BRANCH_NAME"
+  git -C "$DEST" push -u origin -- "$BRANCH_NAME"
 fi
 
 # --- Clean the worktree ---
@@ -243,7 +243,7 @@ fi
 echo "Committing infrastructure changes..."
 git add -A
 git commit -m "Initialize ${BRANCH_NAME} branch with minimal infrastructure" || true
-git push origin "$BRANCH_NAME" || true
+git push origin -- "$BRANCH_NAME" || true
 
 # --- Update repos.list ---
 cd "$PROJECT_ROOT"
