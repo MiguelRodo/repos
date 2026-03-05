@@ -176,7 +176,7 @@ ensure_base_exists() { # remote https, base_abs_path, debug
   [[ "$debug" == true ]] && echo "ensure_base_exists: creating base directory and cloning" >&2
   mkdir -p "$base"
   echo "Priming base clone for $remote → $base"
-  if ! git clone "$remote" "$base" </dev/null; then
+  if ! git clone -- "$remote" "$base" </dev/null; then
     echo "Error: failed to clone '$remote' into '$base'." >&2
     [[ "$debug" == true ]] && echo "ensure_base_exists: clone failed, returning error code 3" >&2
     return 3
@@ -737,14 +737,14 @@ clone_one_repo() {
   # If a branch ref was requested, check whether it exists on the remote.
   if [ -n "$ref" ]; then
     [[ "$debug" == true ]] && echo "clone_one_repo: checking if branch '$ref' exists on remote" >&2
-    if git ls-remote --exit-code --heads "$repo_url" "$ref" >/dev/null 2>&1; then
+    if git ls-remote --exit-code --heads -- "$repo_url" "$ref" >/dev/null 2>&1; then
       # Remote branch exists: clone it directly.
       [[ "$debug" == true ]] && echo "clone_one_repo: remote branch exists, cloning directly" >&2
       local clone_opts=()
       if [ "${all_branches:-0}" -eq 0 ]; then clone_opts=(--single-branch); fi
       clone_opts+=("--branch" "$ref")
       echo "Cloning $repo_url → $dest (branch $ref)"
-      if ! git clone "${clone_opts[@]}" "$repo_url" "$dest" </dev/null; then
+      if ! git clone "${clone_opts[@]}" -- "$repo_url" "$dest" </dev/null; then
         [[ "$debug" == true ]] && echo "clone_one_repo: clone failed" >&2
         return 1
       fi
@@ -759,7 +759,7 @@ clone_one_repo() {
       if [ "${all_branches:-0}" -eq 0 ]; then clone_opts=(--single-branch); fi
       echo "Remote branch '$ref' not found on $repo_url; creating it."
       echo "Cloning default branch of $repo_url → $dest"
-      if ! git clone "${clone_opts[@]}" "$repo_url" "$dest" </dev/null; then
+      if ! git clone "${clone_opts[@]}" -- "$repo_url" "$dest" </dev/null; then
         [[ "$debug" == true ]] && echo "clone_one_repo: clone failed" >&2
         return 1
       fi
@@ -768,8 +768,8 @@ clone_one_repo() {
       remember_remote "$remote_https" "$dest"
       # Create the new branch locally and publish it upstream with tracking.
       [[ "$debug" == true ]] && echo "clone_one_repo: creating and pushing new branch '$ref'" >&2
-      git -C "$dest" switch -c "$ref" </dev/null
-      git -C "$dest" push -u origin HEAD:"$ref" </dev/null
+      git -C "$dest" switch -c "$ref" -- </dev/null
+      git -C "$dest" push -u origin -- HEAD:"$ref" </dev/null
       [[ "$debug" == true ]] && echo "clone_one_repo: new branch created and pushed" >&2
     fi
   else
@@ -778,7 +778,7 @@ clone_one_repo() {
     local clone_opts=()
     if [ "${all_branches:-0}" -eq 0 ]; then clone_opts=(--single-branch); fi
     echo "Cloning $repo_url → $dest"
-    if ! git clone "${clone_opts[@]}" "$repo_url" "$dest" </dev/null; then
+    if ! git clone "${clone_opts[@]}" -- "$repo_url" "$dest" </dev/null; then
       [[ "$debug" == true ]] && echo "clone_one_repo: clone failed" >&2
       return 1
     fi
@@ -859,14 +859,14 @@ create_worktree_for_branch() {
   if local_branch_exists "$base" "$branch"; then
     [[ "$debug" == true ]] && echo "create_worktree_for_branch: local branch exists, adding worktree" >&2
     echo "Adding worktree $dest (existing local branch '$branch')"
-    git -C "$base" worktree add "$dest" "$branch" </dev/null
+    git -C "$base" worktree add -- "$dest" "$branch" </dev/null
     CNT_WORKTREE_ADDED=$((CNT_WORKTREE_ADDED + 1))
     [[ "$debug" == true ]] && echo "create_worktree_for_branch: worktree added, setting upstream if needed" >&2
     if git -C "$base" rev-parse --verify --quiet "refs/remotes/origin/$branch" >/dev/null; then
       ensure_wildcard_fetch_refspec "$base"
       git -C "$dest" branch --set-upstream-to="origin/$branch" || true
     else
-      git -C "$dest" push -u origin HEAD:"$branch" || true
+      git -C "$dest" push -u origin -- HEAD:"$branch" || true
     fi
   elif git -C "$base" ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
     echo "Branch exists: $branch (on remote)"
@@ -875,7 +875,7 @@ create_worktree_for_branch() {
     # Ensure the remote-tracking ref exists even in single-branch clones
     git -C "$base" fetch origin "refs/heads/$branch:refs/remotes/origin/$branch" || true
     if git -C "$base" rev-parse --verify --quiet "refs/remotes/origin/$branch" >/dev/null; then
-      git -C "$base" worktree add -b "$branch" "$dest" "origin/$branch" </dev/null
+      git -C "$base" worktree add -b "$branch" -- "$dest" "origin/$branch" </dev/null
       CNT_WORKTREE_ADDED=$((CNT_WORKTREE_ADDED + 1))
       ensure_wildcard_fetch_refspec "$base"
       git -C "$dest" branch --set-upstream-to "origin/$branch" || true
@@ -889,9 +889,9 @@ create_worktree_for_branch() {
       base_ref="origin/$defb"
       if ! remote_branch_exists "$base" "$defb"; then base_ref="HEAD"; fi
       echo "Could not resolve origin/$branch locally; creating from $base_ref instead"
-      git -C "$base" worktree add -b "$branch" "$dest" "$base_ref" </dev/null
+      git -C "$base" worktree add -b "$branch" -- "$dest" "$base_ref" </dev/null
       CNT_WORKTREE_ADDED=$((CNT_WORKTREE_ADDED + 1))
-      git -C "$dest" push -u origin HEAD:"$branch" || true
+      git -C "$dest" push -u origin -- HEAD:"$branch" || true
     fi
   else
     # New branch off default; cope with single-branch bases (no origin/<default>)
@@ -906,8 +906,8 @@ create_worktree_for_branch() {
     fi
     [[ "$debug" == true ]] && echo "create_worktree_for_branch: base_ref='$base_ref'" >&2
     echo "Adding worktree $dest (new branch '$branch' from $base_ref)"
-    git -C "$base" worktree add -b "$branch" "$dest" "$base_ref" </dev/null
-    git -C "$dest" push -u origin HEAD:"$branch" || true
+    git -C "$base" worktree add -b "$branch" -- "$dest" "$base_ref" </dev/null
+    git -C "$dest" push -u origin -- HEAD:"$branch" || true
     CNT_WORKTREE_ADDED=$((CNT_WORKTREE_ADDED + 1))
     [[ "$debug" == true ]] && echo "create_worktree_for_branch: worktree added and pushed" >&2
   fi
