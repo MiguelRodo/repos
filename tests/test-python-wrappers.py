@@ -2,7 +2,6 @@
 """Test Python wrapper functions with idiomatic syntax"""
 
 import sys
-import os
 from pathlib import Path
 
 # Add src to path to import repos module
