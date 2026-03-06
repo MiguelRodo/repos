@@ -35,3 +35,8 @@
 **Vulnerability:** Git commands like `git clone`, `git worktree add`, and `git push` were invoked with user-provided or variable-based arguments (e.g., branch names or repository URLs) without the `--` separator. This allowed an attacker to inject command-line flags (e.g., using a branch name like `-h`).
 **Learning:** Positional arguments that start with a hyphen can be interpreted as options by many Unix commands, including Git. Relying on variable expansion without termination of option parsing is a common source of argument injection.
 **Prevention:** Always use the `--` separator to terminate option parsing before passing positional arguments that may be user-controlled or contain arbitrary strings. Example: `git worktree add -- "$DEST" "$BRANCH"`.
+
+## 2027-03-01 - [Medium] Unintentional Glob Expansion in Shell Word-Splitting
+**Vulnerability:** User-provided strings from `repos.list` were word-split into positional parameters using `set -- $line` without disabling globbing. An entry like `*` would expand to the list of files in the current directory.
+**Learning:** Shell word-splitting (unquoted variable expansion) performs both field splitting and filename expansion (globbing) by default. This can lead to unexpected script behavior, incorrect configuration, or information leakage if the input contains glob characters.
+**Prevention:** Always disable globbing with `set -f` (noglob) before performing word-splitting on variables that might contain glob characters, and restore it with `set +f` afterwards if needed.

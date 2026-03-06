@@ -224,7 +224,9 @@ normalise(){
   line=$(trim_whitespace "$line")
   
   # Parse first token
+  set -f
   set -- $line
+  set +f
   first="$1"
   
   case "$first" in
@@ -296,7 +298,9 @@ build_raw_list(){
       [ -z "$trimmed" ] && continue
       
       # Parse first token
+      set -f
       set -- $trimmed
+      set +f
       local first="$1"
       
       case "$first" in

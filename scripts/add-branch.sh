@@ -138,10 +138,10 @@ fi
 # Check if branch exists on origin
 git fetch origin >/dev/null 2>&1 || true
 
-if git ls-remote --exit-code --heads origin "$BRANCH_NAME" >/dev/null 2>&1; then
+if git ls-remote --exit-code --heads origin -- "$BRANCH_NAME" >/dev/null 2>&1; then
   echo "Branch exists on origin, creating tracking worktree..."
   # Ensure we have the remote tracking branch
-  git fetch origin "refs/heads/$BRANCH_NAME:refs/remotes/origin/$BRANCH_NAME" 2>/dev/null || true
+  git fetch origin -- "refs/heads/$BRANCH_NAME:refs/remotes/origin/$BRANCH_NAME" 2>/dev/null || true
   git worktree add -b "$BRANCH_NAME" -- "$DEST" "origin/$BRANCH_NAME" || \
     git worktree add -- "$DEST" "$BRANCH_NAME"
 else

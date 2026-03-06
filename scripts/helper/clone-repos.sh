@@ -868,7 +868,7 @@ create_worktree_for_branch() {
     else
       git -C "$dest" push -u origin -- HEAD:"$branch" || true
     fi
-  elif git -C "$base" ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+  elif git -C "$base" ls-remote --exit-code --heads origin -- "$branch" >/dev/null 2>&1; then
     echo "Branch exists: $branch (on remote)"
     [[ "$debug" == true ]] && echo "create_worktree_for_branch: branch exists on origin, tracking it" >&2
     echo "Adding worktree $dest (tracking origin/$branch)"
