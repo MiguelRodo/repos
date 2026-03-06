@@ -691,11 +691,13 @@ main() {
   update_workspace_file "$workspace_file" "$paths_list"
 }
 
-main "$@"
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+  main "$@"
 
-debug "=== vscode-workspace-add.sh Debug Session Ended ==="
+  debug "=== vscode-workspace-add.sh Debug Session Ended ==="
 
-# Close debug file descriptor if opened
-if [ -n "$DEBUG_FILE" ]; then
-  exec 3>&-
+  # Close debug file descriptor if opened
+  if [ -n "$DEBUG_FILE" ]; then
+    exec 3>&-
+  fi
 fi
