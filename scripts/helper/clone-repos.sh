@@ -864,7 +864,7 @@ create_worktree_for_branch() {
     [[ "$debug" == true ]] && echo "create_worktree_for_branch: worktree added, setting upstream if needed" >&2
     if git -C "$base" rev-parse --verify --quiet "refs/remotes/origin/$branch" >/dev/null; then
       ensure_wildcard_fetch_refspec "$base"
-      git -C "$dest" branch --set-upstream-to="origin/$branch" || true
+      git -C "$dest" branch --set-upstream-to "origin/$branch" -- || true
     else
       git -C "$dest" push -u origin -- HEAD:"$branch" || true
     fi
@@ -878,7 +878,7 @@ create_worktree_for_branch() {
       git -C "$base" worktree add -b "$branch" -- "$dest" "origin/$branch" </dev/null
       CNT_WORKTREE_ADDED=$((CNT_WORKTREE_ADDED + 1))
       ensure_wildcard_fetch_refspec "$base"
-      git -C "$dest" branch --set-upstream-to "origin/$branch" || true
+      git -C "$dest" branch --set-upstream-to "origin/$branch" -- || true
       [[ "$debug" == true ]] && echo "create_worktree_for_branch: worktree added from origin/$branch" >&2
     else
       # Fallback: remote declared it exists, but we still don't see it locally.
@@ -1007,7 +1007,9 @@ plan_forward() {
         ;;
     esac
 
+    set -f
     set -- $trimmed
+    set +f
     tok1="$1"; shift || true
 
     case "$tok1" in
