@@ -155,7 +155,7 @@ is_concise_format() {
   local file="$1"
   while IFS= read -r line || [ -n "$line" ]; do
     # Strip leading/trailing whitespace
-    line="$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+    line="$(printf '%s\n' "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
     # Skip empty lines and comments
     [ -z "$line" ] && continue
     [[ "$line" == \#* ]] && continue
@@ -331,7 +331,7 @@ main() {
   if is_concise_format "$REPOS_FILE"; then
     $VERBOSE && echo "Detected concise format in $REPOS_FILE"
     while IFS= read -r line || [ -n "$line" ]; do
-      line="$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+      line="$(printf '%s\n' "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
       [ -z "$line" ] && continue
       [[ "$line" == \#* ]] && continue
 

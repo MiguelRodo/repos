@@ -100,6 +100,32 @@ else
 fi
 
 # ============================================
+# Test 6: Glob Expansion in repos.list
+# ============================================
+print_test "Glob expansion in repos.list"
+
+# Create a dummy file that would be matched by a glob
+touch "$TEST_ROOT/pwned.list"
+
+# Create a repos.list with a glob
+cat > repos.list <<EOF
+owner/*.list
+EOF
+
+# Run clone-repos.sh in debug mode and capture output
+if "$CLONE_SCRIPT" -f repos.list --debug 2>error.log; then
+  : # It might fail for other reasons, that's fine
+fi
+
+# Check if 'pwned.list' appeared in the debug output where repo_spec is parsed
+if grep -q "pwned.list" error.log; then
+  print_fail "Glob expansion occurred! 'pwned.list' found in output"
+else
+  print_pass "Glob expansion was disabled"
+fi
+rm "$TEST_ROOT/pwned.list"
+
+# ============================================
 # Test 2: Path Traversal in vscode-workspace-add.sh
 # ============================================
 print_test "Path traversal in vscode-workspace-add.sh"
@@ -183,7 +209,7 @@ else
 fi
 
 # ============================================
-# Test 6: Path Traversal in run-pipeline.sh (Workspace Folder)
+# Test 7: Path Traversal in run-pipeline.sh (Workspace Folder)
 # ============================================
 print_test "Path traversal in run-pipeline.sh (workspace folder)"
 
