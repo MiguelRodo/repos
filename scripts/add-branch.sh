@@ -12,6 +12,13 @@
 
 set -Eeo pipefail
 
+# Never prompt for credentials (prevents stdin reads that can kill the loop)
+export GIT_TERMINAL_PROMPT=0
+export GIT_ASKPASS=/bin/false
+: "${GIT_SSH_COMMAND:=ssh -oBatchMode=yes}"
+
+git() { command git "$@" </dev/null; }
+
 # --- Paths ---
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -88,7 +95,7 @@ if [ -z "$BRANCH_NAME" ]; then
 fi
 
 # --- Validate we're in a git repo ---
-cd "$PROJECT_ROOT"
+cd -- "$PROJECT_ROOT"
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "Error: not inside a Git working tree" >&2
   exit 1
@@ -119,9 +126,9 @@ else
   DEST="$PARENT_DIR/${REPO_NAME}-${SAFE_BRANCH_NAME}"
 fi
 
-echo "Creating worktree: $DEST"
-echo "  Branch: $BRANCH_NAME"
-echo "  Base repo: $PROJECT_ROOT"
+printf 'Creating worktree: %s\n' "$DEST"
+printf '  Branch: %s\n' "$BRANCH_NAME"
+printf '  Base repo: %s\n' "$PROJECT_ROOT"
 
 # --- Check if destination already exists ---
 if [ -e "$DEST" ]; then
@@ -139,24 +146,24 @@ fi
 git fetch origin >/dev/null 2>&1 || true
 
 if git ls-remote --exit-code --heads origin "$BRANCH_NAME" >/dev/null 2>&1; then
-  echo "Branch exists on origin, creating tracking worktree..."
+  printf 'Branch exists on origin, creating tracking worktree...\n'
   # Ensure we have the remote tracking branch
   git fetch origin "refs/heads/$BRANCH_NAME:refs/remotes/origin/$BRANCH_NAME" 2>/dev/null || true
   git worktree add -b "$BRANCH_NAME" -- "$DEST" "origin/$BRANCH_NAME" || \
     git worktree add -- "$DEST" "$BRANCH_NAME"
 else
-  echo "Creating new branch from current HEAD..."
+  printf 'Creating new branch from current HEAD...\n'
   git worktree add -b "$BRANCH_NAME" -- "$DEST"
   
   # Push to origin with tracking
-  echo "Pushing branch to origin..."
+  printf 'Pushing branch to origin...\n'
   git -C "$DEST" push -u origin -- "$BRANCH_NAME"
 fi
 
 # --- Clean the worktree ---
-echo "Cleaning worktree to minimal infrastructure..."
+printf 'Cleaning worktree to minimal infrastructure...\n'
 
-cd "$DEST"
+cd -- "$DEST"
 
 # Keep only .git, .gitignore, and .devcontainer
 KEEP_FILES=(
@@ -187,8 +194,8 @@ for item in *; do
   done
   
   if [ "$should_keep" = false ]; then
-    echo "  Removing: $item"
-    rm -rf "$item"
+    printf '  Removing: %s\n' "$item"
+    rm -rf -- "$item"
   fi
 done
 
@@ -197,7 +204,7 @@ for item in .[!.]*; do
   [ ! -e "$item" ] && continue
   case "$item" in
     .git|.gitignore|.devcontainer) continue ;;
-    *) echo "  Removing: $item"; rm -rf "$item" ;;
+    *) printf '  Removing: %s\n' "$item"; rm -rf -- "$item" ;;
   esac
 done
 
@@ -246,20 +253,20 @@ git commit -m "Initialize ${BRANCH_NAME} branch with minimal infrastructure" || 
 git push origin -- "$BRANCH_NAME" || true
 
 # --- Update repos.list ---
-cd "$PROJECT_ROOT"
-echo "Adding branch to repos.list..."
+cd -- "$PROJECT_ROOT"
+printf 'Adding branch to repos.list...\n'
 
 # Check if @branch line already exists
 if grep -q "^@${BRANCH_NAME}" repos.list 2>/dev/null; then
-  echo "  Branch already in repos.list"
+  printf '  Branch already in repos.list\n'
 else
   # Add after the current repo (first line or after any existing @branch lines from current repo)
   if [ -n "$TARGET_DIR" ]; then
-    echo "@${BRANCH_NAME} ${TARGET_DIR}" >> repos.list
+    printf '@%s %s\n' "$BRANCH_NAME" "$TARGET_DIR" >> repos.list
   else
-    echo "@${BRANCH_NAME}" >> repos.list
+    printf '@%s\n' "$BRANCH_NAME" >> repos.list
   fi
-  echo "  ✓ Added @${BRANCH_NAME} to repos.list"
+  printf '  ✓ Added @%s to repos.list\n' "$BRANCH_NAME"
 fi
 
 # --- Update workspace ---
