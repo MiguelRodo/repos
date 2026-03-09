@@ -145,7 +145,7 @@ fi
 # Check if branch exists on origin
 git fetch origin >/dev/null 2>&1 || true
 
-if git ls-remote --exit-code --heads origin "$BRANCH_NAME" >/dev/null 2>&1; then
+if git ls-remote --exit-code --heads origin -- "$BRANCH_NAME" >/dev/null 2>&1; then
   printf 'Branch exists on origin, creating tracking worktree...\n'
   # Ensure we have the remote tracking branch
   git fetch origin "refs/heads/$BRANCH_NAME:refs/remotes/origin/$BRANCH_NAME" 2>/dev/null || true
@@ -220,7 +220,7 @@ if [ -f ".devcontainer/prebuild/devcontainer.json" ]; then
   # Remove the repositories section if it exists (using multiple approaches for portability)
   if command -v jq >/dev/null 2>&1; then
     # Use jq if available
-    echo "$PREBUILD_CONTENT" | jq 'del(.customizations.codespaces.repositories)' > .devcontainer/devcontainer.json
+    printf '%s\n' "$PREBUILD_CONTENT" | jq 'del(.customizations.codespaces.repositories)' > .devcontainer/devcontainer.json
   elif command -v python3 >/dev/null 2>&1; then
     # Use Python if available
     python3 -c "
@@ -238,7 +238,7 @@ print(json.dumps(data, indent=2))
   fi
   
   # Remove prebuild directory
-  rm -rf .devcontainer/prebuild
+  rm -rf -- .devcontainer/prebuild
   echo "  ✓ Devcontainer configured"
 elif [ -f ".devcontainer/devcontainer.json" ]; then
   echo "  Devcontainer already exists, keeping as-is"

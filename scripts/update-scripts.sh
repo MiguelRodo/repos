@@ -196,7 +196,7 @@ copy_scripts() {
     elif [ -f "$item" ]; then
       # Copy file and preserve permissions
       cp "$item" "$dst_dir/$item_name"
-      chmod +x "$dst_dir/$item_name"
+      chmod +x -- "$dst_dir/$item_name"
       echo "  ✓ Updated $rel_item"
     fi
   done

@@ -260,10 +260,10 @@ run_in_repo() {
         record_success "$repo_name" "$script_name"
       else
         $VERBOSE && echo "  chmod +x \"$target\""
-        chmod +x "$target"
+        chmod +x -- "$target"
         $VERBOSE && echo "  cd \"$full_path\" && ./$script_name"
         local rc=0
-        ( cd "$full_path" && "./$script_name" ) || rc=$?
+        ( cd -- "$full_path" && "./$script_name" ) || rc=$?
         if [ $rc -eq 0 ]; then
           record_success "$repo_name" "$script_name"
         else
@@ -354,7 +354,7 @@ main() {
       }
 
       local full_path
-      full_path="$(cd "$PROJECT_ROOT/.." && pwd)/$dir_name"
+      full_path="$(cd -- "$PROJECT_ROOT/.." && pwd)/$dir_name"
       run_in_repo "$full_path" "$dir_name" "$script_name"
     done < "$REPOS_FILE"
 
