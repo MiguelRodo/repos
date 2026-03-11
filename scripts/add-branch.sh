@@ -65,6 +65,8 @@ while [ "$#" -gt 0 ]; do
       USE_BRANCH=true; shift ;;
     -h|--help)
       usage; exit 0 ;;
+    --)
+      shift; break ;;
     -*)
       echo "Error: Unknown option: $1" >&2
       usage; exit 1 ;;
@@ -81,14 +83,33 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
+# If break was used for --, process remaining arguments as positional
+while [ "$#" -gt 0 ]; do
+  if [ -z "$BRANCH_NAME" ]; then
+    BRANCH_NAME="$1"
+  elif [ -z "$TARGET_DIR" ]; then
+    TARGET_DIR="$1"
+  else
+    echo "Error: Too many arguments after --" >&2
+    usage; exit 1
+  fi
+  shift
+done
+
 if [ -z "$BRANCH_NAME" ]; then
   echo "Error: branch-name is required" >&2
   usage
   exit 1
 fi
 
+# Validate branch name to prevent shell injection or malformed paths
+if ! git check-ref-format --allow-onelevel "$BRANCH_NAME" >/dev/null 2>&1; then
+  echo "Error: invalid branch name: $BRANCH_NAME" >&2
+  exit 1
+fi
+
 # --- Validate we're in a git repo ---
-cd "$PROJECT_ROOT"
+cd -- "$PROJECT_ROOT"
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "Error: not inside a Git working tree" >&2
   exit 1
@@ -119,9 +140,9 @@ else
   DEST="$PARENT_DIR/${REPO_NAME}-${SAFE_BRANCH_NAME}"
 fi
 
-echo "Creating worktree: $DEST"
-echo "  Branch: $BRANCH_NAME"
-echo "  Base repo: $PROJECT_ROOT"
+printf 'Creating worktree: %s\n' "$DEST"
+printf '  Branch: %s\n' "$BRANCH_NAME"
+printf '  Base repo: %s\n' "$PROJECT_ROOT"
 
 # --- Check if destination already exists ---
 if [ -e "$DEST" ]; then
@@ -246,20 +267,21 @@ git commit -m "Initialize ${BRANCH_NAME} branch with minimal infrastructure" || 
 git push origin -- "$BRANCH_NAME" || true
 
 # --- Update repos.list ---
-cd "$PROJECT_ROOT"
+cd -- "$PROJECT_ROOT"
 echo "Adding branch to repos.list..."
 
 # Check if @branch line already exists
-if grep -q "^@${BRANCH_NAME}" repos.list 2>/dev/null; then
+# Use grep -e to prevent BRANCH_NAME from being interpreted as a flag
+if grep -E -q -e "^@${BRANCH_NAME}([[:space:]]|$)" repos.list 2>/dev/null; then
   echo "  Branch already in repos.list"
 else
   # Add after the current repo (first line or after any existing @branch lines from current repo)
   if [ -n "$TARGET_DIR" ]; then
-    echo "@${BRANCH_NAME} ${TARGET_DIR}" >> repos.list
+    printf '@%s %s\n' "$BRANCH_NAME" "$TARGET_DIR" >> repos.list
   else
-    echo "@${BRANCH_NAME}" >> repos.list
+    printf '@%s\n' "$BRANCH_NAME" >> repos.list
   fi
-  echo "  ✓ Added @${BRANCH_NAME} to repos.list"
+  printf '  ✓ Added @%s to repos.list\n' "$BRANCH_NAME"
 fi
 
 # --- Update workspace ---
@@ -273,10 +295,10 @@ fi
 
 echo ""
 echo "✅ Worktree created successfully!"
-echo "   Location: $DEST"
-echo "   Branch: $BRANCH_NAME"
+printf '   Location: %s\n' "$DEST"
+printf '   Branch: %s\n' "$BRANCH_NAME"
 echo ""
 echo "Next steps:"
-echo "  - Open in VS Code: code \"$DEST\""
-echo "  - Or open workspace: code \"$PROJECT_ROOT/entire-project.code-workspace\""
-echo "  - To remove: git worktree remove \"$DEST\""
+printf '  - Open in VS Code: code "%s"\n' "$DEST"
+printf '  - Or open workspace: code "%s/entire-project.code-workspace"\n' "$PROJECT_ROOT"
+printf '  - To remove: git worktree remove "%s"\n' "$DEST"
