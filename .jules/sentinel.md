@@ -40,3 +40,8 @@
 **Vulnerability:** Use of `set -- $variable` without disabling glob expansion and `echo "$variable"` for user-provided input.
 **Learning:** Shell scripts that parse external configuration files by word-splitting into positional parameters (`set -- $line`) will unintentionally expand glob characters (`*`, `?`) if they match local files. Additionally, `echo` can interpret leading hyphens in variable values as command flags.
 **Prevention:** Use `set -f` and `set +f` around `set -- $variable` to disable glob expansion during word-splitting. Replace `echo "$variable"` with `printf '%s\n' "$variable"` to ensure the string is treated literally and not as an option.
+
+## 2026-03-12 - [High] Argument Injection and Partial Match in Branch Management
+**Vulnerability:** `scripts/add-branch.sh` was vulnerable to argument injection via branch names starting with hyphens and logic errors due to partial regex matching in `repos.list` (e.g., `@dev` matching `@dev-feature`). It also lacked validation for path traversal in branch names.
+**Learning:** Relying on simple string matching for branch names in configuration files is fragile. Git branch names can contain characters that are special in regex (like `.`) or shell-command-like (starting with `-`).
+**Prevention:** Use `git check-ref-format --allow-onelevel` to validate branch names. Always use `grep -e` to terminate option parsing and use anchored regex patterns like `^@${BRANCH}\([[:space:]]\|$\)` to ensure exact matching.

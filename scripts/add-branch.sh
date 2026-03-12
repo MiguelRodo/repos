@@ -87,6 +87,12 @@ if [ -z "$BRANCH_NAME" ]; then
   exit 1
 fi
 
+# Validate branch name format (prevents path traversal and malformed names)
+if ! git check-ref-format --allow-onelevel "$BRANCH_NAME"; then
+  echo "Error: invalid branch name: $BRANCH_NAME" >&2
+  exit 1
+fi
+
 # --- Validate we're in a git repo ---
 cd "$PROJECT_ROOT"
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -250,16 +256,17 @@ cd "$PROJECT_ROOT"
 echo "Adding branch to repos.list..."
 
 # Check if @branch line already exists
-if grep -q "^@${BRANCH_NAME}" repos.list 2>/dev/null; then
+# Use -e to handle leading hyphens and a precise pattern to avoid partial matches
+if grep -q -e "^@${BRANCH_NAME}\([[:space:]]\|$\)" repos.list 2>/dev/null; then
   echo "  Branch already in repos.list"
 else
   # Add after the current repo (first line or after any existing @branch lines from current repo)
   if [ -n "$TARGET_DIR" ]; then
-    echo "@${BRANCH_NAME} ${TARGET_DIR}" >> repos.list
+    printf '@%s %s\n' "${BRANCH_NAME}" "${TARGET_DIR}" >> repos.list
   else
-    echo "@${BRANCH_NAME}" >> repos.list
+    printf '@%s\n' "${BRANCH_NAME}" >> repos.list
   fi
-  echo "  ✓ Added @${BRANCH_NAME} to repos.list"
+  printf '  ✓ Added @%s to repos.list\n' "${BRANCH_NAME}"
 fi
 
 # --- Update workspace ---
