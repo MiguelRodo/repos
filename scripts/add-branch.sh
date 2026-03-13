@@ -87,6 +87,12 @@ if [ -z "$BRANCH_NAME" ]; then
   exit 1
 fi
 
+# Validate branch name
+if ! git check-ref-format --allow-onelevel "$BRANCH_NAME"; then
+  echo "Error: '$BRANCH_NAME' is not a valid Git branch name." >&2
+  exit 1
+fi
+
 # --- Validate we're in a git repo ---
 cd "$PROJECT_ROOT"
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -119,9 +125,9 @@ else
   DEST="$PARENT_DIR/${REPO_NAME}-${SAFE_BRANCH_NAME}"
 fi
 
-echo "Creating worktree: $DEST"
-echo "  Branch: $BRANCH_NAME"
-echo "  Base repo: $PROJECT_ROOT"
+printf 'Creating worktree: %s\n' "$DEST"
+printf '  Branch: %s\n' "$BRANCH_NAME"
+printf '  Base repo: %s\n' "$PROJECT_ROOT"
 
 # --- Check if destination already exists ---
 if [ -e "$DEST" ]; then
@@ -136,12 +142,12 @@ if [ "$USE_BRANCH" = true ]; then
 fi
 
 # Check if branch exists on origin
-git fetch origin >/dev/null 2>&1 || true
+git fetch -- origin >/dev/null 2>&1 || true
 
 if git ls-remote --exit-code --heads origin -- "$BRANCH_NAME" >/dev/null 2>&1; then
   echo "Branch exists on origin, creating tracking worktree..."
   # Ensure we have the remote tracking branch
-  git fetch origin "refs/heads/$BRANCH_NAME:refs/remotes/origin/$BRANCH_NAME" 2>/dev/null || true
+  git fetch -- origin "refs/heads/$BRANCH_NAME:refs/remotes/origin/$BRANCH_NAME" 2>/dev/null || true
   git worktree add -b "$BRANCH_NAME" -- "$DEST" "origin/$BRANCH_NAME" || \
     git worktree add -- "$DEST" "$BRANCH_NAME"
 else
@@ -241,8 +247,8 @@ fi
 
 # --- Commit the changes ---
 echo "Committing infrastructure changes..."
-git add -A
-git commit -m "Initialize ${BRANCH_NAME} branch with minimal infrastructure" || true
+git add -A --
+git commit -m "Initialize ${BRANCH_NAME} branch with minimal infrastructure" -- || true
 git push origin -- "$BRANCH_NAME" || true
 
 # --- Update repos.list ---
@@ -250,16 +256,16 @@ cd "$PROJECT_ROOT"
 echo "Adding branch to repos.list..."
 
 # Check if @branch line already exists
-if grep -q "^@${BRANCH_NAME}" repos.list 2>/dev/null; then
+if grep -q -e "^@${BRANCH_NAME}" repos.list 2>/dev/null; then
   echo "  Branch already in repos.list"
 else
   # Add after the current repo (first line or after any existing @branch lines from current repo)
   if [ -n "$TARGET_DIR" ]; then
-    echo "@${BRANCH_NAME} ${TARGET_DIR}" >> repos.list
+    printf '@%s %s\n' "$BRANCH_NAME" "$TARGET_DIR" >> repos.list
   else
-    echo "@${BRANCH_NAME}" >> repos.list
+    printf '@%s\n' "$BRANCH_NAME" >> repos.list
   fi
-  echo "  ✓ Added @${BRANCH_NAME} to repos.list"
+  printf '  ✓ Added @%s to repos.list\n' "$BRANCH_NAME"
 fi
 
 # --- Update workspace ---

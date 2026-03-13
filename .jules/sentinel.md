@@ -40,3 +40,8 @@
 **Vulnerability:** Use of `set -- $variable` without disabling glob expansion and `echo "$variable"` for user-provided input.
 **Learning:** Shell scripts that parse external configuration files by word-splitting into positional parameters (`set -- $line`) will unintentionally expand glob characters (`*`, `?`) if they match local files. Additionally, `echo` can interpret leading hyphens in variable values as command flags.
 **Prevention:** Use `set -f` and `set +f` around `set -- $variable` to disable glob expansion during word-splitting. Replace `echo "$variable"` with `printf '%s\n' "$variable"` to ensure the string is treated literally and not as an option.
+
+## 2029-05-15 - [High] Incomplete Hardening of Secondary Scripts
+**Vulnerability:** While core scripts like `clone-repos.sh` were hardened against argument injection and path traversal, secondary utility scripts like `add-branch.sh` were missing similar protections (specifically `git check-ref-format` validation and `--` separators), creating weak points in the system.
+**Learning:** Security hardening must be applied comprehensively across all entry points that handle user-provided strings. Utility scripts that modify the repository or filesystem are just as critical as primary tools.
+**Prevention:** Maintain a checklist of standard shell hardening patterns (validation, separators, safe output) and ensure every script that handles external input adheres to them. Use `git check-ref-format --allow-onelevel` consistently for all branch name inputs.
