@@ -142,7 +142,7 @@ with open(os.environ['TMP_DEST'], 'w') as f:
   fi
   
   # Move the temp file to destination
-  mv "$TMP_DEST" "$DEST_FILE"
+  mv -- "$TMP_DEST" "$DEST_FILE"
   
   echo "    ✓ Updated devcontainer.json"
   
