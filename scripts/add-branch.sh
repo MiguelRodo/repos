@@ -256,7 +256,7 @@ cd "$PROJECT_ROOT"
 echo "Adding branch to repos.list..."
 
 # Check if @branch line already exists
-if grep -q -e "^@${BRANCH_NAME}" repos.list 2>/dev/null; then
+if [ -f repos.list ] && awk -v branch="@${BRANCH_NAME}" '$1 == branch { found=1; exit 0 } END { if (found) exit 0; else exit 1 }' repos.list; then
   echo "  Branch already in repos.list"
 else
   # Add after the current repo (first line or after any existing @branch lines from current repo)
