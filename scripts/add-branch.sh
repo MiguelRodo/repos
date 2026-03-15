@@ -115,7 +115,7 @@ if [ -n "$TARGET_DIR" ]; then
   # Validate TARGET_DIR to prevent path traversal
   case "$TARGET_DIR" in
     /*|*..*)
-      echo "Error: target directory cannot be absolute or contain '..': $TARGET_DIR" >&2
+      printf "Error: target directory cannot be absolute or contain '..': %s\n" "$TARGET_DIR" >&2
       exit 1
       ;;
   esac

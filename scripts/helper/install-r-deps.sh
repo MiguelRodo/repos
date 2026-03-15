@@ -23,19 +23,33 @@ INVOKE_DIR="$PWD"
 # 2. Where this script lives (to locate the workspace file)
 SCRIPT_DIR="$(cd "$(dirname "$0")" >/dev/null 2>&1 && pwd)"
 
-# 3. Locate the workspace JSON (one level up)
-WS1="$SCRIPT_DIR/../entire-project.code-workspace"
-WS2="$SCRIPT_DIR/../EntireProject.code-workspace"
+# 3. Locate the workspace JSON (two levels up from scripts/helper/)
+WS1="$SCRIPT_DIR/../../entire-project.code-workspace"
+WS2="$SCRIPT_DIR/../../EntireProject.code-workspace"
 if   [ -f "$WS1" ]; then WORKSPACE_FILE="$WS1"
 elif [ -f "$WS2" ]; then WORKSPACE_FILE="$WS2"
 else
-  echo "❌ No .code‑workspace file found in $(dirname \"\$SCRIPT_DIR\")" >&2
+  printf "❌ No .code‑workspace file found in %s\n" "$(cd "$SCRIPT_DIR/../.." && pwd)" >&2
   exit 1
 fi
 
 # 4. Parse all the "path" entries into a Bash array
 FOLDERS=()
 while IFS= read -r folder; do
+  # Validate folder path to prevent traversal
+  case "$folder" in
+    /*|*../*..*)
+      printf "⚠️ Skipping invalid workspace folder path (absolute or too many '..'): %s\n" "$folder" >&2
+      continue
+      ;;
+    ../*)
+      # Legitimate sibling repo path (exactly one leading ..)
+      if [[ "${folder#../}" == *..* ]]; then
+        printf "⚠️ Skipping invalid workspace folder path (contains '..'): %s\n" "$folder" >&2
+        continue
+      fi
+      ;;
+  esac
   FOLDERS+=("$folder")
 done < <(jq -r '.folders[].path' "$WORKSPACE_FILE")
 
@@ -44,53 +58,53 @@ restore_renv() {
   local rel="$1"
   local tgt="$INVOKE_DIR/$rel"
 
-  echo "🔄 [$rel] Found renv.lock – restoring with renv…"
+  printf "🔄 [%s] Found renv.lock – restoring with renv…\n" "$rel"
   # run everything *inside* that folder
-  cd "$tgt" || { echo "⚠️ cannot cd to $tgt"; return 1; }
+  cd -- "$tgt" || { printf "⚠️ cannot cd to %s\n" "$tgt" >&2; return 1; }
 
-  echo "⚙️  Checking for renv…"
-  cd ".." || exit 1
-  Rscript -e '
+  printf "⚙️  Checking for renv…\n"
+  cd -- ".." || exit 1
+  Rscript --vanilla -e '
     if (!requireNamespace("renv", quietly=TRUE))
       install.packages("renv", repos="https://cloud.r-project.org")
   '
-  cd "$tgt" || exit 1
+  cd -- "$tgt" || exit 1
 
-  echo "⚙️ Upgrade renv…"
-  Rscript -e 'renv::upgrade()'
+  printf "⚙️ Upgrade renv…\n"
+  Rscript --vanilla -e 'renv::upgrade()'
 
-  echo "⚙️  Checking for gitcreds…"
-  Rscript -e '
+  printf "⚙️  Checking for gitcreds…\n"
+  Rscript --vanilla -e '
     if (!requireNamespace("gitcreds", quietly=TRUE))
       renv::install("gitcreds")
   '
 
-  echo "🔗  Installing UtilsProjrMR…"
-  Rscript -e 'renv::install("MiguelRodo/UtilsProjrMR")'
+  printf "🔗  Installing UtilsProjrMR…\n"
+  Rscript --vanilla -e 'renv::install("MiguelRodo/UtilsProjrMR")'
 
-  echo "🔄  Updating & restoring project via UtilsProjrMR…"
-  Rscript -e 'UtilsProjrMR::projr_renv_restore_and_update()'
+  printf "🔄  Updating & restoring project via UtilsProjrMR…\n"
+  Rscript --vanilla -e 'UtilsProjrMR::projr_renv_restore_and_update()'
 
-  echo "✅ [$rel] Done."
+  printf "✅ [%s] Done.\n" "$rel"
   # back to where we started
-  cd "$INVOKE_DIR" || exit 1
+  cd -- "$INVOKE_DIR" || exit 1
 }
 
 restore_pak_desc() {
   local rel="$1"
   local tgt="$INVOKE_DIR/$rel"
 
-  echo "🔄 [$rel] Found DESCRIPTION – installing via pak…"
-  cd "$tgt" || { echo "⚠️ cannot cd to $tgt"; return 1; }
+  printf "🔄 [%s] Found DESCRIPTION – installing via pak…\n" "$rel"
+  cd -- "$tgt" || { printf "⚠️ cannot cd to %s\n" "$tgt" >&2; return 1; }
 
-  Rscript -e '
+  Rscript --vanilla -e '
     if (!requireNamespace("pak", quietly=TRUE))
       install.packages("pak", repos="https://cloud.r-project.org");
     pak::local_install_dev_deps()
   ' || return 1
 
-  echo "✅ [$rel] pak install done."
-  cd "$INVOKE_DIR" || exit 1
+  printf "✅ [%s] pak install done.\n" "$rel"
+  cd -- "$INVOKE_DIR" || exit 1
 }
 
 # 6. Loop over each folder and try restoring
@@ -98,18 +112,18 @@ for rel in "${FOLDERS[@]}"; do
   TARGET="$INVOKE_DIR/$rel"
 
   if [ ! -d "$TARGET" ]; then
-    echo "⚠️ [$rel] Folder not found – skipping"
+    printf "⚠️ [%s] Folder not found – skipping\n" "$rel"
     continue
   fi
 
   if [ -f "$TARGET/renv.lock" ]; then
     restore_renv "$rel" \
-      || echo "⚠️ [$rel] renv restore failed – moving on"
+      || printf "⚠️ [%s] renv restore failed – moving on\n" "$rel"
   elif [ -f "$TARGET/DESCRIPTION" ]; then
     restore_pak_desc "$rel" \
-      || echo "⚠️ [$rel] pak install failed – moving on"
+      || printf "⚠️ [%s] pak install failed – moving on\n" "$rel"
   else
-    echo "ℹ️ [$rel] No renv.lock or DESCRIPTION – skipping"
+    printf "ℹ️ [%s] No renv.lock or DESCRIPTION – skipping\n" "$rel"
   fi
 done
 

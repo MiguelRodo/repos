@@ -69,6 +69,7 @@ CREATE_SCRIPT="./scripts/helper/create-repos.sh"
 WORKSPACE_SCRIPT="./scripts/helper/vscode-workspace-add.sh"
 CODESPACES_SCRIPT="./scripts/helper/codespaces-auth-add.sh"
 PIPELINE_SCRIPT="./scripts/run-pipeline.sh"
+INSTALL_R_DEPS_SCRIPT="./scripts/helper/install-r-deps.sh"
 
 # Mock Rscript and jq (to ensure they are found in PATH if needed)
 mkdir -p bin
@@ -130,6 +131,10 @@ rm "$TEST_ROOT/pwned.list"
 # ============================================
 print_test "Path traversal in vscode-workspace-add.sh"
 
+cat > repos.list <<EOF
+owner/repo/../../traversed
+EOF
+
 # Note: vscode-workspace-add.sh handles repos.list differently
 if "$WORKSPACE_SCRIPT" -f repos.list 2>error.log; then
   print_fail "vscode-workspace-add.sh should have failed for traversal"
@@ -147,6 +152,10 @@ fi
 # ============================================
 print_test "Path traversal in codespaces-auth-add.sh"
 
+cat > repos.list <<EOF
+owner/repo/../../traversed
+EOF
+
 if "$CODESPACES_SCRIPT" -f repos.list -d devcontainer.json 2>error.log; then
   # It might skip if devcontainer.json doesn't exist, but it should fail validation first
   print_fail "codespaces-auth-add.sh should have failed for traversal"
@@ -163,6 +172,10 @@ fi
 # Test 4: Path Traversal in create-repos.sh
 # ============================================
 print_test "Path traversal in create-repos.sh"
+
+cat > repos.list <<EOF
+owner/repo/../../traversed
+EOF
 
 if "$CREATE_SCRIPT" -f repos.list 2>error.log; then
   print_fail "create-repos.sh should have failed for traversal"
@@ -242,6 +255,32 @@ else
     print_fail "run-pipeline.sh failed but with wrong error message"
     cat error.log
   fi
+fi
+
+# ============================================
+# Test 8: Path Traversal in install-r-deps.sh
+# ============================================
+print_test "Path traversal in install-r-deps.sh"
+
+# Create a malicious workspace file
+cat > entire-project.code-workspace <<EOF
+{
+  "folders": [
+    { "path": "../../etc" }
+  ]
+}
+EOF
+
+# install-r-deps.sh should skip the invalid path and print a warning to stderr
+if "$INSTALL_R_DEPS_SCRIPT" 2>error.log >/dev/null; then
+  :
+fi
+
+if grep -q "Skipping invalid workspace folder path" error.log; then
+  print_pass "install-r-deps.sh blocked path traversal"
+else
+  print_fail "install-r-deps.sh did not block path traversal or didn't log warning"
+  cat error.log
 fi
 
 # ============================================
