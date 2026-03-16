@@ -458,6 +458,10 @@ build_paths_list() {
       @*)
         # @branch line: @branch [target_dir] [--worktree|-w]
         branch="${first#@}"
+        if [ -z "$branch" ] || [[ "$branch" == -* ]] || ! git check-ref-format --allow-onelevel "$branch"; then
+          echo "Error: '$branch' is not a valid Git branch name." >&2
+          set +f; return 1
+        fi
         while [ "$#" -gt 0 ]; do
           case "$1" in
             -w|--worktree) use_worktree=1 ;;
@@ -523,6 +527,11 @@ build_paths_list() {
           *@*) repo_no_ref="${repo_spec%@*}"; ref="${repo_spec##*@}" ;;
           *)   repo_no_ref="$repo_spec"; ref="" ;;
         esac
+
+        if [ -n "$ref" ] && ( [[ "$ref" == -* ]] || ! git check-ref-format --allow-onelevel "$ref" ); then
+          echo "Error: '$ref' is not a valid Git branch name." >&2
+          set +f; return 1
+        fi
 
         # Validate repo_no_ref to prevent path traversal
         case "$repo_no_ref" in

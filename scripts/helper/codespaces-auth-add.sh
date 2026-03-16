@@ -232,6 +232,11 @@ normalise(){
   case "$first" in
     @*)
       # This is a @branch line - use fallback repo
+      local branch="${first#@}"
+      if [ -z "$branch" ] || [[ "$branch" == -* ]] || ! git check-ref-format --allow-onelevel "$branch"; then
+        echo "Error: '$branch' is not a valid Git branch name." >&2
+        return 1
+      fi
       if [ -z "$fallback_repo_https" ]; then
         echo "Warning: @branch line without fallback repo: $line" >&2
         return 1
@@ -314,6 +319,14 @@ build_raw_list(){
           ;;
         *)
           # Regular repo line - extract and update fallback
+          # Check for branch in repo spec
+          local branch_part=""
+          case "$first" in *@*) branch_part="${first##*@}" ;; esac
+          if [ -n "$branch_part" ] && ( [[ "$branch_part" == -* ]] || ! git check-ref-format --allow-onelevel "$branch_part" ); then
+            echo "Error: '$branch_part' is not a valid Git branch name." >&2
+            exit 1
+          fi
+
           # Validate repo_spec to prevent path traversal
           case "${first%@*}" in
             *..*)
