@@ -339,6 +339,10 @@ while IFS= read -r line || [ -n "$line" ]; do
       branch=${repo_spec#@}
       # Extract branch name, removing any options like --no-worktree
       branch=${branch%%[[:space:]]*}
+      if [ -z "$branch" ] || [[ "$branch" == -* ]] || ! git check-ref-format --allow-onelevel "$branch"; then
+        echo "Error: '$branch' is not a valid Git branch name." >&2
+        continue
+      fi
       debug "Line $line_num: @branch detected: $branch"
       
       if [ -z "$fallback_owner" ] || [ -z "$fallback_repo" ]; then
@@ -429,6 +433,14 @@ while IFS= read -r line || [ -n "$line" ]; do
   repo=${repo_path##*/}
   case "$repo_spec" in *@*) branch=${repo_spec##*@} ;; *) branch="" ;; esac
   
+  if [ -n "$branch" ] && ( [[ "$branch" == -* ]] || ! git check-ref-format --allow-onelevel "$branch" ); then
+    echo "Error: '$branch' is not a valid Git branch name." >&2
+    # Still update fallback repo for subsequent @branch lines
+    fallback_owner="$owner"
+    fallback_repo="$repo"
+    continue
+  fi
+
   debug "Line $line_num: Parsed - owner: $owner, repo: $repo, branch: ${branch:-<none>}"
 
   # Get credentials only when we need them (for GitHub repos)

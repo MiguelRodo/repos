@@ -526,7 +526,7 @@ ensure_wildcard_fetch_refspec() {
 
 find_worktree_for_branch() {
   local base="$1" branch="$2" line=""
-  if line="$(git -C "$base" worktree list 2>/dev/null | grep " \[$branch\]" | head -n1)"; then
+  if line="$(git -C "$base" worktree list 2>/dev/null | grep -F -e " [$branch]" | head -n1)"; then
     printf '%s\n' "${line%% *}"
   fi
 }
@@ -545,6 +545,10 @@ parse_effective_line() {
   case "$first" in
     @*)
       local branch="${first#@}"
+      if [ -z "$branch" ] || [[ "$branch" == -* ]] || ! git check-ref-format --allow-onelevel "$branch"; then
+        echo "Error: '$branch' is not a valid Git branch name." >&2
+        set +f; return 1
+      fi
       while [ "$#" -gt 0 ]; do
         case "$1" in
           -w|--worktree) use_worktree=1 ;;
@@ -627,6 +631,11 @@ clone_one_repo() {
     *@*) repo_url_no_ref="${repo_spec%@*}"; ref="${repo_spec##*@}" ;;
     *)   repo_url_no_ref="$repo_spec"; ref="" ;;
   esac
+
+  if [ -n "$ref" ] && ( [[ "$ref" == -* ]] || ! git check-ref-format --allow-onelevel "$ref" ); then
+    echo "Error: '$ref' is not a valid Git branch name." >&2
+    return 1
+  fi
   [[ "$debug" == true ]] && echo "clone_one_repo: parsed repo_url_no_ref='$repo_url_no_ref' ref='$ref'" >&2
 
   local repo_url repo_dir
