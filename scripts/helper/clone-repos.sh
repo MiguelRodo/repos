@@ -1066,7 +1066,16 @@ plan_forward() {
         if [ "$#" -gt 0 ]; then
           tok2="$1"
           case "$tok2" in -*) is_opt=1 ;; *) is_opt=0 ;; esac
-          [ "$is_opt" -eq 0 ] && target="$tok2"
+          if [ "$is_opt" -eq 0 ]; then
+            # Validate target_dir to prevent path traversal in plan
+            case "$tok2" in
+              /*|*..*)
+                echo "Error: target directory cannot be absolute or contain '..': $tok2" >&2
+                continue
+                ;;
+            esac
+            target="$tok2"
+          fi
         fi
 
         if [ -z "$ref" ]; then
