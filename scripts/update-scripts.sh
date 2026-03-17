@@ -190,12 +190,12 @@ copy_scripts() {
     
     if [ -d "$item" ]; then
       # Create directory if needed
-      mkdir -p "$dst_dir/$item_name"
+      mkdir -p -- "$dst_dir/$item_name"
       # Recursively copy subdirectories
       copy_scripts "$item" "$dst_dir/$item_name" "$rel_item"
     elif [ -f "$item" ]; then
       # Copy file and preserve permissions
-      cp "$item" "$dst_dir/$item_name"
+      cp -- "$item" "$dst_dir/$item_name"
       chmod +x -- "$dst_dir/$item_name"
       echo "  ✓ Updated $rel_item"
     fi
