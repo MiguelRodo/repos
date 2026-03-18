@@ -38,14 +38,19 @@ FOLDERS=()
 while IFS= read -r folder; do
   # Validate folder path to prevent traversal
   case "$folder" in
-    /*|*../*..*)
-      printf "⚠️ Skipping invalid workspace folder path (absolute or too many '..'): %s\n" "$folder" >&2
-      continue
-      ;;
-    ../*)
-      # Legitimate sibling repo path (exactly one leading ..)
-      if [[ "${folder#../}" == *..* ]]; then
-        printf "⚠️ Skipping invalid workspace folder path (contains '..'): %s\n" "$folder" >&2
+    /*|..|*/..|../*|*/../*)
+      # If absolute or contains ".." anywhere, only allow exactly one leading "../"
+      # followed by a single directory name (no further traversal)
+      is_valid=false
+      if [[ "$folder" == ../* ]]; then
+        remainder="${folder#../}"
+        if [[ "$remainder" != */* && "$remainder" != *..* && "$remainder" != "" ]]; then
+          is_valid=true
+        fi
+      fi
+
+      if [ "$is_valid" = false ]; then
+        printf "⚠️ Skipping invalid workspace folder path (unauthorized '..' or absolute): %s\n" "$folder" >&2
         continue
       fi
       ;;

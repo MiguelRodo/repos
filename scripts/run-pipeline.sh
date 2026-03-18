@@ -375,17 +375,19 @@ main() {
     while IFS= read -r folder_path; do
       # Validate folder_path to prevent path traversal
       case "$folder_path" in
-        /*|*../*..*)
-          echo "Error: invalid workspace folder path (too many '..'): $folder_path" >&2
-          record_fail "$folder_path" "$RUN_SCRIPT" "1"
-          if [ "$STOP_ON_ERROR" = true ]; then print_summary; exit 1; fi
-          continue
-          ;;
-        ../*)
-          # Legitimate sibling repo path (exactly one leading ..)
-          # Check if there are any MORE .. components
-          if [[ "${folder_path#../}" == *..* ]]; then
-            echo "Error: invalid workspace folder path (contains '..'): $folder_path" >&2
+        /*|..|*/..|../*|*/../*)
+          # If absolute or contains ".." anywhere, only allow exactly one leading "../"
+          # followed by a single directory name (no further traversal)
+          is_valid=false
+          if [[ "$folder_path" == ../* ]]; then
+            remainder="${folder_path#../}"
+            if [[ "$remainder" != */* && "$remainder" != *..* && "$remainder" != "" ]]; then
+              is_valid=true
+            fi
+          fi
+
+          if [ "$is_valid" = false ]; then
+            echo "Error: invalid workspace folder path (unauthorized '..' or absolute): $folder_path" >&2
             record_fail "$folder_path" "$RUN_SCRIPT" "1"
             if [ "$STOP_ON_ERROR" = true ]; then print_summary; exit 1; fi
             continue
