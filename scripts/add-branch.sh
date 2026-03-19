@@ -10,7 +10,7 @@
 # 5. Adds the new branch to repos.list
 # 6. Updates the workspace file
 
-set -Eeo pipefail
+set -Eeuo pipefail
 
 # --- Paths ---
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -65,8 +65,17 @@ while [ "$#" -gt 0 ]; do
       USE_BRANCH=true; shift ;;
     -h|--help)
       usage; exit 0 ;;
+    --)
+      shift; break ;;
     -*)
-      echo "Error: Unknown option: $1" >&2
+      # If it starts with - and isn't a known flag or after --, it's an error.
+      # But we need to distinguish between an actual flag and a positional
+      # argument that *could* be a branch name but starts with -.
+      # Standard practice is that everything after the first non-option is a positional
+      # argument, unless options are allowed anywhere.
+      # In our case, we'll be strict: if it starts with -, it's an option.
+      # If you want a branch name starting with -, you MUST use --.
+      printf "Error: Unknown option: %s\n" "$1" >&2
       usage; exit 1 ;;
     *)
       if [ -z "$BRANCH_NAME" ]; then
@@ -74,22 +83,35 @@ while [ "$#" -gt 0 ]; do
       elif [ -z "$TARGET_DIR" ]; then
         TARGET_DIR="$1"
       else
-        echo "Error: Too many arguments" >&2
+        printf "Error: Too many arguments: %s\n" "$1" >&2
         usage; exit 1
       fi
       shift ;;
   esac
 done
 
+# Process remaining positional arguments after --
+while [ "$#" -gt 0 ]; do
+  if [ -z "$BRANCH_NAME" ]; then
+    BRANCH_NAME="$1"
+  elif [ -z "$TARGET_DIR" ]; then
+    TARGET_DIR="$1"
+  else
+    printf "Error: Too many arguments: %s\n" "$1" >&2
+    usage; exit 1
+  fi
+  shift
+done
+
 if [ -z "$BRANCH_NAME" ]; then
-  echo "Error: branch-name is required" >&2
+  printf "Error: branch-name is required\n" >&2
   usage
   exit 1
 fi
 
 # Validate branch name
-if ! git check-ref-format --allow-onelevel "$BRANCH_NAME"; then
-  echo "Error: '$BRANCH_NAME' is not a valid Git branch name." >&2
+if ! git check-ref-format --allow-onelevel "$BRANCH_NAME" || [[ "$BRANCH_NAME" == -* ]]; then
+  printf "Error: '%s' is not a valid Git branch name.\n" "$BRANCH_NAME" >&2
   exit 1
 fi
 
@@ -131,7 +153,7 @@ printf '  Base repo: %s\n' "$PROJECT_ROOT"
 
 # --- Check if destination already exists ---
 if [ -e "$DEST" ]; then
-  echo "Error: destination already exists: $DEST" >&2
+  printf "Error: destination already exists: %s\n" "$DEST" >&2
   exit 1
 fi
 
@@ -214,7 +236,7 @@ if [ -f ".devcontainer/prebuild/devcontainer.json" ]; then
   echo "  Moving prebuild devcontainer to main location..."
   
   # Read the prebuild devcontainer
-  PREBUILD_CONTENT="$(cat .devcontainer/prebuild/devcontainer.json)"
+  PREBUILD_CONTENT="$(cat -- .devcontainer/prebuild/devcontainer.json)"
   
   # Remove the repositories section if it exists (using multiple approaches for portability)
   if command -v jq >/dev/null 2>&1; then
@@ -233,7 +255,7 @@ print(json.dumps(data, indent=2))
   else
     # Fallback: just copy it (will have repositories section but still works)
     echo "  Warning: jq and python3 not found; copying devcontainer as-is"
-    cp .devcontainer/prebuild/devcontainer.json .devcontainer/devcontainer.json
+    cp -- .devcontainer/prebuild/devcontainer.json .devcontainer/devcontainer.json
   fi
   
   # Remove prebuild directory
@@ -277,12 +299,12 @@ else
   echo "  Warning: vscode-workspace-add.sh not found; run it manually to update workspace"
 fi
 
-echo ""
-echo "✅ Worktree created successfully!"
-echo "   Location: $DEST"
-echo "   Branch: $BRANCH_NAME"
-echo ""
-echo "Next steps:"
-echo "  - Open in VS Code: code \"$DEST\""
-echo "  - Or open workspace: code \"$PROJECT_ROOT/entire-project.code-workspace\""
-echo "  - To remove: git worktree remove \"$DEST\""
+printf "\n"
+printf "✅ Worktree created successfully!\n"
+printf "   Location: %s\n" "$DEST"
+printf "   Branch: %s\n" "$BRANCH_NAME"
+printf "\n"
+printf "Next steps:\n"
+printf "  - Open in VS Code: code \"%s\"\n" "$DEST"
+printf "  - Or open workspace: code \"%s/entire-project.code-workspace\"\n" "$PROJECT_ROOT"
+printf "  - To remove: git worktree remove \"%s\"\n" "$DEST"

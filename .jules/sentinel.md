@@ -51,6 +51,11 @@
 **Learning:** `git check-ref-format --allow-onelevel` is excellent for validating branch name structure but does not always reject leading hyphens (which can be interpreted as flags by other commands). Explicitly blocking hyphens at the start of branch names is a necessary additional layer of defense.
 **Prevention:** Always combine `git check-ref-format --allow-onelevel` with a check for leading hyphens (`[[ "$branch" == -* ]]`). Use `grep -F -e` when searching for literal strings that may contain user-provided data.
 
+## 2029-05-17 - [Medium] Regression Risk with set -u in Hardened Shell Scripts
+**Vulnerability:** Applying `set -u` (nounset) for security hardening can cause scripts to crash if variables are used in conditional checks or case statements before being explicitly initialized.
+**Learning:** While `set -u` is a valuable security measure to prevent issues with uninitialized variables, it requires proactive initialization of all variables that may be evaluated, even if they start as empty.
+**Prevention:** Ensure all variables (e.g., `BRANCH_NAME`, `TARGET_DIR`, `USE_BRANCH`) are initialized to safe default values at the beginning of the script before any logic or argument parsing that might evaluate them.
+
 ## 2025-05-24 - [High] Path Traversal in Planning Phase of Repository Management
 **Vulnerability:** `scripts/helper/clone-repos.sh` implemented a "planning phase" to pre-calculate repository names and locations but failed to validate user-provided target directories in this phase. An attacker could provide a malicious target directory that would be rejected in the execution phase but remained in the "plan", allowing a subsequent worktree or branch clone to use that unvalidated path as its base directory.
 **Learning:** Security validation must be applied at every stage where user-controlled data is processed, especially if that data is stored and reused later. Validating only at the point of final use (execution) can be bypassed if earlier stages (planning/parsing) lack consistent checks.
