@@ -274,10 +274,12 @@ build_raw_list(){
   if [ -n "$REPOS_OVERRIDE" ]; then
     # For override mode, no @branch syntax is expected
     local IFS=','
+    set -f
     for repo in $REPOS_OVERRIDE; do
       local normalized
       normalized=$(normalise "$repo" "") && RAW_LIST+="$normalized"$'\n'
     done
+    set +f
   else
     [ -f "$REPOS_FILE" ] || { echo "Error: File not found: $REPOS_FILE" >&2; exit 1; }
     
@@ -425,7 +427,7 @@ update_with_jq(){
     jq --argjson repos "$repos_obj" '
       .customizations.codespaces.repositories
         |= ( (. // {}) + $repos )
-    ' "$file" >"$tmp" && mv "$tmp" "$file"
+    ' -- "$file" >"$tmp" && mv -- "$tmp" "$file"
   fi
 
   echo "Updated '$file' with jq."
@@ -446,6 +448,7 @@ update_with_python(){
   export REPOS_JSON="$repos_obj"
 
   # 3) Run Python: strip comments & trailing commas, parse, merge, emit JSON
+  # Using -- after the interpreter or - ensures that $file is not interpreted as a flag
   "$py_cmd" - "$file" <<'PYCODE'
 import sys, json, re, os
 
@@ -562,7 +565,7 @@ update_devfile(){
         # Safely write via a temporary file, then move into place
         tmp="$(mktemp "$(get_temp_dir)/repos-auth-XXXXXX")"
         update_with_python "$devfile" "$tool" > "$tmp"
-        mv "$tmp" "$devfile"
+        mv -- "$tmp" "$devfile"
         echo "Updated '$devfile' with $tool."
       fi
       ;;
