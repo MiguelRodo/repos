@@ -19,7 +19,7 @@
 #   @tweak                               # clone path on SATVILab/Analysis
 #   @dev-2 --worktree                    # worktree path on SATVILab/Analysis
 
-set -e
+set -euo pipefail
 
 # — Debug support —
 DEBUG=false
@@ -97,6 +97,7 @@ update_with_jq() {
   local workspace_file="$1"
   local paths_list="$2"
   local folders_json
+  local tmp
 
   # build an array of {path: "..."} objects
   folders_json=$(printf '%s\n' "$paths_list" \
@@ -106,16 +107,16 @@ update_with_jq() {
 
   if [ ! -f "$workspace_file" ]; then
     # create a brand-new workspace file
-    jq --null-input --argjson folders "$folders_json" \
+    jq -n --argjson folders "$folders_json" \
       '{ folders: $folders }' \
       > "$workspace_file"
   else
     # merge into existing file: set .folders = $folders
-    tmp="$(mktemp)"
+    tmp="$(mktemp "$(get_temp_dir)/repos-workspace-XXXXXX")"
     jq --argjson folders "$folders_json" \
        '.folders = $folders' \
-       "$workspace_file" > "$tmp" \
-      && mv "$tmp" "$workspace_file"
+       -- "$workspace_file" > "$tmp" \
+      && mv -- "$tmp" "$workspace_file"
   fi
 
   echo "Updated '$workspace_file' with jq."
@@ -141,6 +142,7 @@ PYCODE
 update_with_python() {
   local workspace_file="$1"
   local paths_list="$2"
+  # Use - and passing filename as argument, without redundant -- which can break indexing
   PATHS_LIST="$paths_list" python - "$workspace_file" <<<"$PYTHON_UPDATE_SCRIPT"
   echo "Updated '$workspace_file' with Python."
 }
@@ -161,7 +163,10 @@ update_with_py() {
 
 
 # --- Update workspace with Rscript (jsonlite) ---
-RSCRIPT_UPDATE=$(cat <<'ENDRSCRIPT'
+update_with_rscript() {
+  local workspace_file="$1"
+  local paths_list="$2"
+  PATHS_LIST="$paths_list" Rscript --vanilla - "$workspace_file" <<'RSCRIPT'
 args <- commandArgs(trailingOnly=TRUE)
 ws <- args[1]
 
@@ -204,13 +209,7 @@ jsonlite::write_json(
   pretty      = TRUE,
   auto_unbox  = TRUE
 )
-ENDRSCRIPT
-)
-
-update_with_rscript() {
-  local workspace_file="$1"
-  local paths_list="$2"
-  PATHS_LIST="$paths_list" Rscript -e "$RSCRIPT_UPDATE" "$workspace_file"
+RSCRIPT
   echo "Updated '$workspace_file' with Rscript."
 }
 
@@ -238,7 +237,7 @@ spec_to_repo_name() {
   case "$spec" in
     https://*)
       spec="${spec%.git}"
-      basename "$spec"
+      basename -- "$spec"
       ;;
     */*)
       spec="${spec%.git}"
@@ -276,7 +275,7 @@ build_paths_list() {
   local current_dir="$2"
   local debug="${3:-false}"
   local parent_dir
-  parent_dir="$(dirname "$current_dir")"
+  parent_dir="$(dirname -- "$current_dir")"
   
   local paths_list="."
   local line trimmed first target_dir branch repo_spec repo_no_ref ref
@@ -286,10 +285,10 @@ build_paths_list() {
   declare -a plan_repo_names=()
   declare -a plan_ref_counts=()
   
-  local plan_repo_idx plan_repo_name plan_fallback_name no_worktree
+  local plan_repo_idx plan_repo_name plan_fallback_name no_worktree use_worktree target_dir repo_path
   
   # Initialize fallback to current repo
-  plan_fallback_name="$(basename "$current_dir")"
+  plan_fallback_name="$(basename -- "$current_dir")"
   
   [[ "$debug" == true ]] && echo "[DEBUG] Planning phase: counting references" >&2
   [[ "$debug" == true ]] && echo "[DEBUG] Planning fallback starts as: $plan_fallback_name" >&2
@@ -420,7 +419,7 @@ build_paths_list() {
   
   # --- Main processing: build paths ---
   # Initialize fallback to current repo (the one containing repos.list)
-  fallback_repo_name="$(basename "$current_dir")"
+  fallback_repo_name="$(basename -- "$current_dir")"
   [[ "$debug" == true ]] && echo "[DEBUG] Initial fallback repo: $fallback_repo_name" >&2
 
   while IFS= read -r line || [ -n "$line" ]; do
@@ -586,12 +585,12 @@ build_paths_list() {
 
     # Calculate relative path from current_dir to repo_path
     if command -v realpath >/dev/null 2>&1 && realpath --help 2>&1 | grep -q -- --relative-to; then
-      relative_repo_path="$(realpath --relative-to="$current_dir" "$repo_path" 2>/dev/null || printf '%s\n' "$repo_path")"
+      relative_repo_path="$(realpath --relative-to="$current_dir" -- "$repo_path" 2>/dev/null || printf '%s\n' "$repo_path")"
     else
       # Manual relative path calculation (for systems without realpath)
       # Since repo_path is in parent_dir and current_dir is inside parent_dir,
       # the relative path is always ../basename
-      relative_repo_path="../$(basename "$repo_path")"
+      relative_repo_path="../$(basename -- "$repo_path")"
     fi
 
     [ "$relative_repo_path" = "." ] && continue
@@ -625,7 +624,7 @@ update_workspace_file() {
 }
 
 main() {
-  local repos_list_file DEBUG
+  local repos_list_file DEBUG DEBUG_FILE TEMP_DIR
   if [ ! -f "repos.list" ] && [ -f "repos-to-clone.list" ]; then
     repos_list_file="repos-to-clone.list"
   else
@@ -633,6 +632,7 @@ main() {
   fi
   DEBUG=false
   DEBUG_FILE=""
+  TEMP_DIR=""
   
   # Argument parsing
   while [ "$#" -gt 0 ]; do
