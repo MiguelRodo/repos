@@ -5,7 +5,7 @@
 # This script updates .devcontainer/devcontainer.json in all worktrees
 # with the content from .devcontainer/prebuild/devcontainer.json in the base repo
 
-set -Eeo pipefail
+set -Eeuo pipefail
 
 # --- Paths ---
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -45,6 +45,7 @@ EOF
 
 # --- Parse arguments ---
 DRY_RUN=false
+JSON_TOOL=""
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -53,13 +54,13 @@ while [ "$#" -gt 0 ]; do
     -h|--help)
       usage; exit 0 ;;
     *)
-      echo "Error: Unknown option: $1" >&2
+      printf "Error: Unknown option: %s\n" "$1" >&2
       usage; exit 1 ;;
   esac
 done
 
 # --- Validate ---
-cd "$PROJECT_ROOT"
+cd -- "$PROJECT_ROOT"
 
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "Error: not inside a Git working tree" >&2
@@ -104,8 +105,8 @@ while IFS= read -r line; do
   WORKTREE_COUNT=$((WORKTREE_COUNT + 1))
   
   echo ""
-  echo "[$WORKTREE_COUNT] $(basename "$WORKTREE_PATH")"
-  echo "    Path: $WORKTREE_PATH"
+  printf ' [%d] %s\n' "$WORKTREE_COUNT" "$(basename -- "$WORKTREE_PATH")"
+  printf '    Path: %s\n' "$WORKTREE_PATH"
   
   # Check if worktree has .devcontainer directory
   if [ ! -d "$WORKTREE_PATH/.devcontainer" ]; then
@@ -117,15 +118,15 @@ while IFS= read -r line; do
   DEST_FILE="$WORKTREE_PATH/.devcontainer/devcontainer.json"
   
   if $DRY_RUN; then
-    echo "    DRY-RUN: Would update $DEST_FILE"
+    printf "    DRY-RUN: Would update %s\n" "$DEST_FILE"
     UPDATED_COUNT=$((UPDATED_COUNT + 1))
     continue
   fi
   
   # Read and process the prebuild file securely
-  TMP_DEST=$(mktemp "$DEST_FILE.XXXXXX")
+  TMP_DEST=$(mktemp -- "$DEST_FILE.XXXXXX")
   if [ "$JSON_TOOL" = "jq" ]; then
-    jq 'del(.customizations.codespaces.repositories)' "$PREBUILD_FILE" > "$TMP_DEST"
+    jq 'del(.customizations.codespaces.repositories)' -- "$PREBUILD_FILE" > "$TMP_DEST"
   else
     export PREBUILD_FILE DEST_FILE TMP_DEST
     python3 -c "
@@ -147,7 +148,7 @@ with open(os.environ['TMP_DEST'], 'w') as f:
   echo "    ✓ Updated devcontainer.json"
   
   # Commit and push
-  cd "$WORKTREE_PATH"
+  cd -- "$WORKTREE_PATH"
   
   if git diff --quiet "$DEST_FILE"; then
     echo "    ℹ️  No changes to commit"
@@ -158,13 +159,13 @@ with open(os.environ['TMP_DEST'], 'w') as f:
     
     # Get current branch
     BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-    git push origin -- "$BRANCH" || echo "    ⚠️  Push failed (you may need to push manually)"
+    git push origin -- "$BRANCH" || printf "    ⚠️  Push failed (you may need to push manually)\n"
     
     echo "    ✓ Committed and pushed"
     UPDATED_COUNT=$((UPDATED_COUNT + 1))
   fi
   
-  cd "$PROJECT_ROOT"
+  cd -- "$PROJECT_ROOT"
   
 done < <(git worktree list --porcelain | grep '^worktree' | sed 's/^worktree //')
 
