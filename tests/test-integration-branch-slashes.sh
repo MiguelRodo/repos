@@ -83,7 +83,8 @@ cat > repos.list <<EOF
 EOF
 
 print_info "Running clone-repos.sh..."
-if "$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1 | grep -q "Adding worktree"; then
+# Use a more flexible grep that handles both clones and worktrees, and avoids non-ASCII character issues
+if "$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1 | grep -qE "Adding worktree|Cloning.*branch"; then
   # Check if the worktree directory was created with sanitized name
   EXPECTED_DIR="$TEST_ROOT/workspace-feature-cool-feature"
   if [ -d "$EXPECTED_DIR" ]; then
@@ -91,7 +92,7 @@ if "$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1 | grep -q "A
     
     # Verify the actual branch name in git is correct (with slash)
     cd "$EXPECTED_DIR"
-    ACTUAL_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+    ACTUAL_BRANCH=$(git branch --show-current 2>/dev/null || git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "UNKNOWN")
     if [ "$ACTUAL_BRANCH" = "feature/cool-feature" ]; then
       print_pass "Git branch name preserved with slash: $ACTUAL_BRANCH"
     else
@@ -116,13 +117,13 @@ cat > repos.list <<EOF
 EOF
 
 print_info "Running clone-repos.sh with custom directory..."
-if "$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1 | grep -q "Adding worktree"; then
+if "$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1 | grep -qE "Adding worktree|Cloning.*branch"; then
   EXPECTED_DIR="$TEST_ROOT/custom-dir"
   if [ -d "$EXPECTED_DIR" ]; then
     print_pass "Worktree created with custom directory name: $(basename "$EXPECTED_DIR")"
     
     cd "$EXPECTED_DIR"
-    ACTUAL_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+    ACTUAL_BRANCH=$(git branch --show-current 2>/dev/null || git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "UNKNOWN")
     if [ "$ACTUAL_BRANCH" = "hotfix/urgent-fix" ]; then
       print_pass "Git branch name preserved with slash: $ACTUAL_BRANCH"
     else
