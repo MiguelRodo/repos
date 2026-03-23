@@ -1,0 +1,1823 @@
+==> tests/test-add-branch-security.sh
+Setting up test environment...
+Running security tests for add-branch.sh...
+  Testing hyphenated branch name WITHOUT --
+[0;32m✓ PASS: Correctly rejected hyphenated branch name as unknown option[0m
+  Testing hyphenated branch name WITH --
+[0;32m✓ PASS: Correctly rejected hyphenated branch name even with --[0m
+  Testing argument parser with --
+[0;32m✓ PASS: Successfully used -- to treat --help as branch name[0m
+  Testing path traversal in target-directory
+[0;32m✓ PASS: Correctly rejected path traversal in target-directory[0m
+
+✅ All add-branch.sh security tests passed!
+==> tests/test-auth-check.sh
+
+============================================
+Authentication Check Test Suite
+============================================
+ℹ️  Test directory: /tmp/tmp.YAyju4PWtZ
+ℹ️  Project root: /app
+
+[1;33mTEST: Auth check fails when no credentials are available[0m
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+Initialized empty Git repository in /tmp/tmp.YAyju4PWtZ/test-repo/.git/
+[master (root-commit) c5116cc] Initial commit
+ 1 file changed, 1 insertion(+)
+ create mode 100644 README.md
+ℹ️  Cleared all authentication environment variables
+ℹ️  Exit code: 1
+ℹ️  Script failed as expected (exit code: 1)
+[0;32m✓ PASS: Error message mentions authentication issue[0m
+[0;32m✓ PASS: Error message mentions GH_TOKEN[0m
+
+[1;33mTEST: Auth check passes when GH_TOKEN is set[0m
+ℹ️  Set GH_TOKEN environment variable
+ℹ️  Exit code: 0
+[0;32m✓ PASS: Script passed auth check with GH_TOKEN set[0m
+
+[1;33mTEST: Auth check detects gh CLI authentication[0m
+ℹ️  gh CLI not available (skipping gh auth test)
+
+============================================
+[0;32mAll authentication tests passed![0m
+============================================
+==> tests/test-branch-hardening.sh
+Testing malicious branch names...
+Testing branch: ''
+  ✓ Correcty rejected: ''
+Testing branch: '-h'
+  ✓ Correcty rejected: '-h'
+Testing branch: '--help'
+  ✓ Correcty rejected: '--help'
+Testing branch: '../traversal'
+  ✓ Correcty rejected: '../traversal'
+Test script finished.
+==> tests/test-branch-with-slashes.sh
+
+============================================
+Branch with Slashes Test Suite
+============================================
+
+[1;33mTEST: sanitize_branch_name function in clone-repos.sh[0m
+ℹ️    Found sanitize_branch_name in clone-repos.sh
+[0;32m✓ PASS: Sanitize function converts slashes to dashes[0m
+
+[1;33mTEST: sanitize_branch_name function in vscode-workspace-add.sh[0m
+ℹ️    Found sanitize_branch_name in vscode-workspace-add.sh
+[0;32m✓ PASS: Sanitize function converts slashes to dashes[0m
+
+[1;33mTEST: sanitize_branch_name function in add-branch.sh[0m
+ℹ️    Found sanitize_branch_name in add-branch.sh
+[0;32m✓ PASS: Sanitize function converts slashes to dashes[0m
+
+[1;33mTEST: clone-repos.sh uses sanitize when constructing paths[0m
+[0;32m✓ PASS: clone-repos.sh sanitizes ref in single-branch clone paths[0m
+[0;32m✓ PASS: clone-repos.sh sanitizes branch in worktree paths[0m
+
+[1;33mTEST: vscode-workspace-add.sh uses sanitize when constructing paths[0m
+[0;32m✓ PASS: vscode-workspace-add.sh sanitizes branch in paths[0m
+[0;32m✓ PASS: vscode-workspace-add.sh sanitizes ref in paths[0m
+
+[1;33mTEST: add-branch.sh uses sanitize when constructing paths[0m
+[0;32m✓ PASS: add-branch.sh sanitizes BRANCH_NAME in paths[0m
+
+[1;33mTEST: Complex branch names are sanitized correctly[0m
+ℹ️    ✓ 'feature/cool-feature' → 'feature-cool-feature'
+ℹ️    ✓ 'hotfix/urgent/fix' → 'hotfix-urgent-fix'
+ℹ️    ✓ 'release/1.0/final' → 'release-1.0-final'
+ℹ️    ✓ 'user/john/dev' → 'user-john-dev'
+[0;32m✓ PASS: All complex branch names sanitized correctly[0m
+
+[1;33mTEST: Git branch names are used as-is (not sanitized)[0m
+[0;32m✓ PASS: Git commands use original (unsanitized) branch names[0m
+[0;32m✓ PASS: add-branch.sh git commands use original BRANCH_NAME[0m
+
+============================================
+Test Summary
+============================================
+Tests run:    8
+Tests passed: [0;32m11[0m
+
+[0;32mAll tests passed![0m
+
+The scripts now properly handle branch names with slashes.
+Slashes are converted to dashes in directory names while
+preserving the original branch name for git operations.
+==> tests/test-clone-repos-flags.sh
+
+============================================
+clone-repos.sh Flags Handling Test
+============================================
+ℹ️  Test directory: /tmp/tmp.qiIDtVGXZH
+ℹ️  Project root: /app
+
+[1;33mTEST: Ignore --public/--private/--codespaces flags without warning[0m
+[0;32m✓ PASS: Script ignored flags silently[0m
+
+============================================
+Test Summary
+============================================
+Tests run:    1
+Tests passed: [0;32m1[0m
+
+[0;32mAll tests passed![0m
+==> tests/test-clone-variations-comprehensive.sh
+
+============================================
+Comprehensive Clone Variations Test Suite
+============================================
+[0;34mINFO: Test root: /tmp/tmp.qcFL9nUb1W[0m
+[0;34mINFO: Testing all clone-repos.sh variations with existing repos/branches[0m
+
+[1;33mTEST: Setting up local bare repositories[0m
+warning: You appear to have cloned an empty repository.
+warning: You appear to have cloned an empty repository.
+warning: You appear to have cloned an empty repository.
+[0;32m✓ PASS: Created 3 bare repositories with branches[0m
+[0;34mINFO:   - repo1: main, dev, feature/test, release/v1.0[0m
+[0;34mINFO:   - repo2: main, staging, hotfix/urgent[0m
+[0;34mINFO:   - repo3: main, experimental[0m
+
+[1;33mTEST: Full repo clone: owner/repo[0m
+[0;32m✓ PASS: Cloned repo1 to ../repo1[0m
+[0;32m✓ PASS: Default clone fetched default branch[0m
+
+[1;33mTEST: Full repo clone with custom target: owner/repo custom-dir[0m
+[0;32m✓ PASS: Cloned repo2 to ../my-custom-repo[0m
+
+[1;33mTEST: Full repo clone with -a flag: owner/repo -a[0m
+[0;32m✓ PASS: Cloned repo3 with -a flag[0m
+[0;32m✓ PASS: All branches fetched with -a flag[0m
+
+[1;33mTEST: Single-branch clone: owner/repo@branch[0m
+[0;32m✓ PASS: Single-branch clone created ../repo2 (single ref, no suffix)[0m
+[0;32m✓ PASS: Checked out correct branch: hotfix/urgent[0m
+
+[1;33mTEST: Single-branch clone with custom target: owner/repo@branch custom-dir[0m
+[0;32m✓ PASS: Single-branch clone to custom directory: ../my-staging[0m
+[0;32m✓ PASS: Checked out correct branch: staging[0m
+
+[1;33mTEST: Clone from current repo: @branch[0m
+[0;32m✓ PASS: Created clone ../workspace6-dev[0m
+[0;32m✓ PASS: Clone on correct branch: dev[0m
+[0;32m✓ PASS: Confirmed it's a clone, not a worktree[0m
+
+[1;33mTEST: Clone with custom target: @branch custom-dir[0m
+[0;32m✓ PASS: Created clone to custom directory: ../my-clone[0m
+[0;32m✓ PASS: Clone on correct branch: staging[0m
+
+[1;33mTEST: Clone with --worktree flag: @branch --worktree[0m
+warning: You appear to have cloned an empty repository.
+[0;32m✓ PASS: Created worktree with --worktree: ../workspace8-feature-test[0m
+[0;32m✓ PASS: Worktree on correct branch: feature/test[0m
+[0;32m✓ PASS: Confirmed it's a worktree, not a clone[0m
+
+[1;33mTEST: Fallback repo tracking across multiple clone lines[0m
+[0;32m✓ PASS: First @branch used workspace9 (repo1) as fallback[0m
+[0;32m✓ PASS: Second @branch used repo2 as fallback (fallback updated)[0m
+
+[1;33mTEST: Branch name sanitization: feature/test → feature-test[0m
+[0;32m✓ PASS: Sanitized feature/test → workspace10-feature-test[0m
+[0;32m✓ PASS: Branch name preserved in git: feature/test[0m
+[0;32m✓ PASS: Sanitized release/v1.0 → workspace10-release-v1.0[0m
+
+[1;33mTEST: Multiple references to same repo: branch suffix logic[0m
+[0;32m✓ PASS: Multiple refs: created repo3-main[0m
+[0;32m✓ PASS: Multiple refs: created repo3-experimental[0m
+
+[1;33mTEST: Single reference to repo: no branch suffix[0m
+warning: You appear to have cloned an empty repository.
+[0;32m✓ PASS: Single ref: created repo4 (no suffix)[0m
+[0;32m✓ PASS: On correct branch: special[0m
+
+[1;33mTEST: Absolute path cloning[0m
+warning: You appear to have cloned an empty repository.
+[0;32m✓ PASS: Cloned from absolute path[0m
+[0;32m✓ PASS: Created clone from repo cloned via absolute path[0m
+
+[1;33mTEST: file:// URL cloning[0m
+warning: You appear to have cloned an empty repository.
+[0;32m✓ PASS: Cloned from file:// URL[0m
+[0;32m✓ PASS: Created clone from repo cloned via file:// URL[0m
+
+[1;33mTEST: Error handling: non-empty directory[0m
+[0;32m✓ PASS: Handled non-empty directory gracefully (skipped)[0m
+
+============================================
+Test Summary
+============================================
+Tests run:    16
+Tests passed: [0;32m32[0m
+Tests failed: [0;32m0[0m
+
+[0;32mAll tests passed![0m
+
+Coverage summary:
+  ✓ Full repo clone variations
+  ✓ Single-branch clone variations
+  ✓ Clone and worktree variations
+  ✓ Fallback repo tracking
+  ✓ Branch name sanitization
+  ✓ Multiple/single reference logic
+  ✓ file:// URLs and absolute paths
+  ✓ Error handling
+==> tests/test-codespaces-auth.sh
+
+============================================
+Codespaces Authentication Test Suite
+============================================
+ℹ️  Test directory: /tmp/tmp.mp5q95Udh0
+ℹ️  Project root: /app
+
+[1;33mTEST: Script exits gracefully when no devcontainer paths specified (opt-in)[0m
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+Initialized empty Git repository in /tmp/tmp.mp5q95Udh0/test-project/.git/
+[0;32m✓ PASS: Script exits gracefully without devcontainer paths[0m
+
+[1;33mTEST: Script updates single devcontainer.json when path specified[0m
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+Initialized empty Git repository in /tmp/tmp.mp5q95Udh0/test-project/.git/
+[0;32m✓ PASS: Script successfully updates devcontainer.json with repositories[0m
+
+[1;33mTEST: Script updates multiple devcontainer.json files when multiple paths specified[0m
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+Initialized empty Git repository in /tmp/tmp.mp5q95Udh0/test-project/.git/
+[0;32m✓ PASS: Script successfully updates multiple devcontainer.json files[0m
+
+[1;33mTEST: Script reports error for non-existent devcontainer path[0m
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+Initialized empty Git repository in /tmp/tmp.mp5q95Udh0/test-project/.git/
+[0;32m✓ PASS: Script correctly reports error for non-existent path[0m
+
+[1;33mTEST: Script correctly resolves relative paths[0m
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+Initialized empty Git repository in /tmp/tmp.mp5q95Udh0/test-project/.git/
+[0;32m✓ PASS: Script correctly handles relative paths[0m
+
+[1;33mTEST: setup-repos.sh does NOT run codespaces auth by default[0m
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+Initialized empty Git repository in /tmp/tmp.mp5q95Udh0/test-project/.git/
+[0;32m✓ PASS: setup-repos.sh skips codespaces auth by default[0m
+
+[1;33mTEST: setup-repos.sh runs codespaces auth with --codespaces flag[0m
+[0;32m✓ PASS: setup-repos.sh accepts --codespaces flag[0m
+
+[1;33mTEST: setup-repos.sh accepts -d/--devcontainer flag[0m
+[0;32m✓ PASS: setup-repos.sh accepts -d/--devcontainer flag[0m
+
+============================================
+Test Summary
+============================================
+Tests run:    8
+Tests passed: [0;32m8[0m
+
+[0;32mAll tests passed![0m
+==> tests/test-codespaces-path-resolution.sh
+
+============================================
+Codespaces Auth Path Resolution Test Suite
+============================================
+ℹ️  Test directory: /tmp/tmp.tjNu3Ejk8L
+ℹ️  Project root: /app
+
+[1;33mTEST: codespaces-auth-add.sh calculates PROJECT_ROOT correctly[0m
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+Initialized empty Git repository in /tmp/tmp.tjNu3Ejk8L/test-project/.git/
+[master (root-commit) c0252a5] Initial commit
+ 3 files changed, 6 insertions(+)
+ create mode 100644 .devcontainer/devcontainer.json
+ create mode 100644 README.md
+ create mode 100644 repos.list
+ℹ️  Created test project structure
+ℹ️    - test-project/
+ℹ️      - scripts/helper/codespaces-auth-add.sh
+ℹ️      - .devcontainer/devcontainer.json
+ℹ️      - repos.list
+
+[1;33mTEST: Script finds devcontainer.json at correct path when specified with -d[0m
+ℹ️  Exit code: 0
+[0;32m✓ PASS: Script finds devcontainer.json at correct path[0m
+
+[1;33mTEST: Verify DEVFILE variable resolves to correct path[0m
+ℹ️  Path resolution:
+ℹ️    SCRIPT_DIR=/tmp/tmp.tjNu3Ejk8L/test-project/scripts/helper
+ℹ️    PROJECT_ROOT=/tmp/tmp.tjNu3Ejk8L/test-project
+ℹ️    DEVFILE=/tmp/tmp.tjNu3Ejk8L/test-project/.devcontainer/devcontainer.json
+[0;32m✓ PASS: PROJECT_ROOT resolves to project root (not scripts/)[0m
+[0;32m✓ PASS: DEVFILE resolves to .devcontainer/devcontainer.json (not scripts/.devcontainer/)[0m
+[0;32m✓ PASS: devcontainer.json exists at the resolved path[0m
+
+[1;33mTEST: Script executes successfully with the correct devcontainer.json path[0m
+[0;32m✓ PASS: Script executed successfully with jq[0m
+
+============================================
+[0;32mAll path resolution tests passed![0m
+============================================
+==> tests/test-comprehensive-flags.sh
+
+============================================
+Comprehensive Flag Features Demo
+============================================
+[1;33mℹ️  Test root: /tmp/tmp.VdqSeY00Kg[0m
+warning: You appear to have cloned an empty repository.
+
+============================================
+Test 1: repos.list with Multiple Global Flags
+============================================
+[1;33mℹ️  repos.list contents:[0m
+# Global flags demonstration
+--worktree
+--private
+
+# Clone main repo as worktree branches
+@dev
+@feature
+[1;33mℹ️  Running setup-repos.sh with global flags...[0m
+Adding worktree /tmp/tmp.VdqSeY00Kg/test1-dev (tracking origin/dev)
+Preparing worktree (new branch 'dev')
+Adding worktree /tmp/tmp.VdqSeY00Kg/test1-feature (tracking origin/feature)
+Preparing worktree (new branch 'feature')
+[0;32m✓ Test 1: Global flags processed successfully[0m
+
+============================================
+Test 2: Per-Line Flag Override (--public on specific repo)
+============================================
+[1;33mℹ️  repos.list with per-line override:[0m
+# Default to private
+--private
+
+# This repo would be public (if not local)
+file:///tmp/tmp.VdqSeY00Kg/bare-repo.git --public
+
+# This repo uses default (private)
+file:///tmp/tmp.VdqSeY00Kg/bare-repo.git
+[1;33mℹ️  Running setup-repos.sh...[0m
+[DEBUG] Public flag: false
+[DEBUG] Found --private flag in repos.list
+[DEBUG] Worktree flag from repos.list: false
+[DEBUG create-repos.sh] Private flag: true
+[DEBUG create-repos.sh] Line 2: Processing: --private
+[DEBUG create-repos.sh] Line 2: Skipping global flag line: --private
+[DEBUG create-repos.sh] Line 5: Processing: file:///tmp/tmp.VdqSeY00Kg/bare-repo.git --public
+[DEBUG create-repos.sh] Line 5: Found --public flag on this line
+Planning line: # Default to private
+Planning line: --private
+[0;32m✓ Test 2: Per-line flags override global settings[0m
+
+============================================
+Test 3: Mixed Configuration (codespaces + worktree + visibility)
+============================================
+[1;33mℹ️  repos.list with mixed flags:[0m
+# Enable all features
+--codespaces
+--worktree
+--public
+
+# Repos
+file:///tmp/tmp.VdqSeY00Kg/bare-repo.git
+@dev
+@feature
+[1;33mℹ️  Running setup-repos.sh...[0m
+[DEBUG] Found --codespaces flag in repos.list
+[DEBUG] Found --worktree flag in repos.list
+[DEBUG] Found --public flag in repos.list
+[DEBUG] Enabled --codespaces from repos.list
+[DEBUG] Enabled --public from repos.list
+[DEBUG create-repos.sh] Line 2: Processing: --codespaces
+[DEBUG create-repos.sh] Line 2: Skipping global flag line: --codespaces
+[DEBUG create-repos.sh] Line 3: Processing: --worktree
+[DEBUG create-repos.sh] Line 3: Skipping global flag line: --worktree
+[DEBUG create-repos.sh] Line 4: Processing: --public
+[DEBUG create-repos.sh] Line 4: Skipping global flag line: --public
+[DEBUG] Adding --worktree flag to clone-repos.sh
+Planning line: --codespaces
+Planning: skipping global flag line: --codespaces
+Planning line: --worktree
+[0;32m✓ Test 3: Mixed configuration works correctly[0m
+
+============================================
+Comprehensive Flag Features Demo Complete
+============================================
+
+[0;32mAll flag features demonstrated:[0m
+  ✓ Global flags in repos.list (--codespaces, --public, --private, --worktree)
+  ✓ Per-line flag overrides (--public/--private on repo lines)
+  ✓ Flag precedence (per-line > global > defaults)
+  ✓ Mixed configurations work correctly
+
+The implementation is complete and working as expected!
+==> tests/test-create-repos-fallback.sh
+
+============================================
+Test create-repos.sh Fallback Repo Branch Checking
+============================================
+
+[1;33mTEST: Script exists and is executable[0m
+[0;32m✓ PASS: create-repos.sh is executable[0m
+
+[1;33mTEST: Script implements fallback repo tracking[0m
+[0;32m✓ PASS: Script has fallback repo variables[0m
+
+[1;33mTEST: Script processes @branch lines[0m
+[0;32m✓ PASS: Script no longer skips @branch lines unconditionally[0m
+
+[1;33mTEST: Script checks branch existence on fallback repo for @branch lines[0m
+[0;32m✓ PASS: Script checks branch on fallback repo[0m
+
+[1;33mTEST: Script updates fallback after processing owner/repo lines[0m
+[0;32m✓ PASS: Script updates fallback repo[0m
+
+[1;33mTEST: Script initializes fallback from current repo[0m
+[0;32m✓ PASS: Script can initialize fallback from current repo[0m
+
+[1;33mTEST: Dry run validation (checking logic flow)[0m
+ℹ️  Created test repos.list:
+# This simulates the user's scenario:
+MiguelRodo/lectures@slides-2026-sta5069z slides
+@data-2026-sta5069z data
+MiguelRodo/eval@2026-sta5069z eval
+ℹ️
+ℹ️  Note: If you have GitHub credentials configured, you could test this with:
+ℹ️    scripts/helper/create-repos.sh -f /tmp/tmp.Ry9Nlqoyys/test-repos.list
+ℹ️
+ℹ️  Expected behavior:
+ℹ️    1. Check if MiguelRodo/lectures exists
+ℹ️    2. Check if slides-2026-sta5069z branch exists on MiguelRodo/lectures
+ℹ️    3. Check if data-2026-sta5069z branch exists on MiguelRodo/lectures (fallback)
+ℹ️    4. Check if MiguelRodo/eval exists
+ℹ️    5. Check if 2026-sta5069z branch exists on MiguelRodo/eval
+[0;32m✓ PASS: Test data created (manual testing possible)[0m
+
+============================================
+Test Summary
+============================================
+
+[0;32mAll automated tests passed![0m
+
+The fix correctly implements:
+  ✓ Fallback repo tracking
+  ✓ Processing @branch lines instead of skipping them
+  ✓ Checking branch existence on the fallback repo
+  ✓ Updating fallback repo after each owner/repo line
+  ✓ Initializing fallback from current repo
+==> tests/test-create-repos-security.sh
+
+=== Running security validation tests for create-repos.sh ===
+Testing: Leading hyphen in owner (-owner/repo)
+  [0;32mPASS[0m: Correctly rejected with error: invalid owner name
+Testing: Leading hyphen in repository (owner/-repo)
+  [0;32mPASS[0m: Correctly rejected with error: invalid repository name
+Testing: Multiple slashes (owner/repo/extra)
+  [0;32mPASS[0m: Correctly rejected with error: owner/repo
+Testing: Path traversal (owner/../repo)
+  [0;32mPASS[0m: Correctly rejected with error: owner/repo
+Testing: Missing slash (owner)
+  [0;32mPASS[0m: Correctly rejected with error: owner/repo
+Testing: Trailing slash (owner/)
+  [0;32mPASS[0m: Correctly rejected with error: owner/repo
+Testing: Leading slash (/repo) - should be skipped
+  [0;32mPASS[0m: Leading slash correctly skipped as local remote
+Testing: Special characters in repository (owner/repo!!)
+  [0;32mPASS[0m: Correctly rejected with error: invalid repository name
+Testing: Special characters in owner (owner^/repo)
+  [0;32mPASS[0m: Correctly rejected with error: invalid owner name
+Validating that it gets past initial parsing for a valid spec...
+  [0;32mPASS[0m: Valid spec 'owner/repo' passed initial validation
+
+[0;32mAll security validation tests passed![0m
+==> tests/test-credential-crlf.sh
+
+============================================
+Credential Parsing CRLF Test Suite
+============================================
+
+[1;33mTEST: Credential extraction handles CRLF line endings[0m
+ℹ️  Simulating Windows Git Credential Manager output with CRLF
+ℹ️  Extracted GH_USER: 'testuser'
+ℹ️  Extracted GH_TOKEN: 'ghp_testtoken123'
+[0;32m✓ PASS: Username extracted correctly from CRLF credentials[0m
+[0;32m✓ PASS: Token extracted correctly from CRLF credentials[0m
+[0;32m✓ PASS: No carriage returns in extracted values[0m
+
+[1;33mTEST: Credential extraction still works with Unix LF line endings[0m
+ℹ️  Testing with Unix-style LF line endings
+ℹ️  Extracted GH_USER: 'unixuser'
+ℹ️  Extracted GH_TOKEN: 'ghp_unixtoken456'
+[0;32m✓ PASS: Username extracted correctly from LF credentials[0m
+[0;32m✓ PASS: Token extracted correctly from LF credentials[0m
+
+============================================
+[0;32mAll CRLF credential parsing tests passed![0m
+============================================
+==> tests/test-fallback-repo-worktree.sh
+
+============================================
+Fallback Repo & Worktree Test
+============================================
+ℹ️  Test root: /tmp/tmp.lRbDZcsSry
+ℹ️  Purpose: Verify fallback repo logic and branch existence messages
+
+============================================
+Setup: Creating local test repositories
+============================================
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+Initialized empty Git repository in /tmp/tmp.lRbDZcsSry/remotes/lectures.git/
+Cloning into '/tmp/tmp.lRbDZcsSry/temp-clone'...
+warning: You appear to have cloned an empty repository.
+done.
+[master (root-commit) e3782f7] Initial commit
+ 1 file changed, 1 insertion(+)
+ create mode 100644 README.md
+To /tmp/tmp.lRbDZcsSry/remotes/lectures.git
+ * [new branch]      HEAD -> master
+Switched to a new branch 'slides-2026-sta5069z'
+[slides-2026-sta5069z b9623ac] Add slides
+ 1 file changed, 1 insertion(+)
+ create mode 100644 slides.md
+To /tmp/tmp.lRbDZcsSry/remotes/lectures.git
+ * [new branch]      slides-2026-sta5069z -> slides-2026-sta5069z
+[0;32m✓ PASS: Created upstream repo with branches: master, slides-2026-sta5069z[0m
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+Initialized empty Git repository in /tmp/tmp.lRbDZcsSry/remotes/eval.git/
+Cloning into '/tmp/tmp.lRbDZcsSry/temp-clone'...
+warning: You appear to have cloned an empty repository.
+done.
+[master (root-commit) 42add5b] Initial commit
+ 1 file changed, 1 insertion(+)
+ create mode 100644 README.md
+To /tmp/tmp.lRbDZcsSry/remotes/eval.git
+ * [new branch]      HEAD -> master
+[0;32m✓ PASS: Created eval repo with master branch only[0m
+
+[1;33mTEST: Clone owner/repo@branch with custom target, then create worktree[0m
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+Initialized empty Git repository in /tmp/tmp.lRbDZcsSry/work1/sta5069z/.git/
+[master (root-commit) a6138fc] Initial project
+ 1 file changed, 1 insertion(+)
+ create mode 100644 README.md
+ℹ️  repos.list content:
+file:///tmp/tmp.lRbDZcsSry/remotes/lectures.git@slides-2026-sta5069z slides
+@data-2026-sta5069z data --worktree
+file:///tmp/tmp.lRbDZcsSry/remotes/eval.git@2026-sta5069z eval
+ℹ️  clone-repos.sh output:
+▶ file:///tmp/tmp.lRbDZcsSry/remotes/lectures.git@slides-2026-sta5069z slides
+Cloning file:///tmp/tmp.lRbDZcsSry/remotes/lectures.git → /tmp/tmp.lRbDZcsSry/work1/slides (branch slides-2026-sta5069z)
+Cloning into '/tmp/tmp.lRbDZcsSry/work1/slides'...
+▶ @data-2026-sta5069z data --worktree
+Branch not found: data-2026-sta5069z (on remote, creating new)
+Adding worktree /tmp/tmp.lRbDZcsSry/work1/data (new branch 'data-2026-sta5069z' from HEAD)
+Preparing worktree (new branch 'data-2026-sta5069z')
+HEAD is now at b9623ac Add slides
+To file:///tmp/tmp.lRbDZcsSry/remotes/lectures.git
+ * [new branch]      HEAD -> data-2026-sta5069z
+branch 'data-2026-sta5069z' set up to track 'origin/data-2026-sta5069z'.
+▶ file:///tmp/tmp.lRbDZcsSry/remotes/eval.git@2026-sta5069z eval
+Remote branch '2026-sta5069z' not found on file:///tmp/tmp.lRbDZcsSry/remotes/eval.git; creating it.
+Cloning default branch of file:///tmp/tmp.lRbDZcsSry/remotes/eval.git → /tmp/tmp.lRbDZcsSry/work1/eval
+Cloning into '/tmp/tmp.lRbDZcsSry/work1/eval'...
+Switched to a new branch '2026-sta5069z'
+To file:///tmp/tmp.lRbDZcsSry/remotes/eval.git
+ * [new branch]      HEAD -> 2026-sta5069z
+branch '2026-sta5069z' set up to track 'origin/2026-sta5069z'.
+
+Summary:
+  Instructions processed : 3
+  Skipped (already present): 0
+  Cloned (full)           : 0
+  Cloned (single-branch)  : 2
+  Worktrees added         : 1
+  Errors                  : 0
+[0;32m✓ PASS: slides directory exists[0m
+[0;32m✓ PASS: data directory exists[0m
+[0;32m✓ PASS: lectures directory does not exist (correct)[0m
+[0;32m✓ PASS: Output shows branch existence/creation message for data-2026-sta5069z[0m
+[0;32m✓ PASS: eval directory exists[0m
+[0;32m✓ PASS: Output shows branch existence/creation message for 2026-sta5069z[0m
+
+[1;33mTEST: Verify worktree branches are on correct branches[0m
+[0;32m✓ PASS: slides is on slides-2026-sta5069z branch[0m
+[0;32m✓ PASS: data is on data-2026-sta5069z branch[0m
+[0;32m✓ PASS: eval is on 2026-sta5069z branch[0m
+
+[1;33mTEST: Verify no errors in clone-repos.sh output[0m
+[0;32m✓ PASS: No errors reported in summary[0m
+
+[1;33mTEST: Global --worktree flag causes @branch lines to use worktrees[0m
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+Initialized empty Git repository in /tmp/tmp.lRbDZcsSry/work2/sta5069z/.git/
+[master (root-commit) a6138fc] Initial project
+ 1 file changed, 1 insertion(+)
+ create mode 100644 README.md
+ℹ️  clone-repos.sh output (global --worktree):
+▶ file:///tmp/tmp.lRbDZcsSry/remotes/lectures.git@slides-2026-sta5069z slides
+Cloning file:///tmp/tmp.lRbDZcsSry/remotes/lectures.git → /tmp/tmp.lRbDZcsSry/work2/slides (branch slides-2026-sta5069z)
+Cloning into '/tmp/tmp.lRbDZcsSry/work2/slides'...
+▶ @data-2026-sta5069z data
+Branch exists: data-2026-sta5069z (on remote)
+Adding worktree /tmp/tmp.lRbDZcsSry/work2/data (tracking origin/data-2026-sta5069z)
+From file:///tmp/tmp.lRbDZcsSry/remotes/lectures
+ * [new branch]      data-2026-sta5069z -> origin/data-2026-sta5069z
+Preparing worktree (new branch 'data-2026-sta5069z')
+HEAD is now at b9623ac Add slides
+branch 'data-2026-sta5069z' set up to track 'origin/data-2026-sta5069z'.
+▶ file:///tmp/tmp.lRbDZcsSry/remotes/eval.git@2026-sta5069z eval
+Cloning file:///tmp/tmp.lRbDZcsSry/remotes/eval.git → /tmp/tmp.lRbDZcsSry/work2/eval (branch 2026-sta5069z)
+Cloning into '/tmp/tmp.lRbDZcsSry/work2/eval'...
+
+Summary:
+  Instructions processed : 3
+  Skipped (already present): 0
+  Cloned (full)           : 0
+  Cloned (single-branch)  : 2
+  Worktrees added         : 1
+  Errors                  : 0
+[0;32m✓ PASS: data is a worktree (global --worktree applied to @branch line)[0m
+[0;32m✓ PASS: slides is a full clone (repo@branch lines unaffected by global --worktree)[0m
+
+[1;33mTEST: Failed clone is reported as an error, not silently ignored[0m
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+Initialized empty Git repository in /tmp/tmp.lRbDZcsSry/work3/sta5069z/.git/
+[master (root-commit) a6138fc] Initial project
+ 1 file changed, 1 insertion(+)
+ create mode 100644 README.md
+ℹ️  clone-repos.sh output (with failing clone):
+▶ file:///tmp/tmp.lRbDZcsSry/remotes/lectures.git@slides-2026-sta5069z slides
+Cloning file:///tmp/tmp.lRbDZcsSry/remotes/lectures.git → /tmp/tmp.lRbDZcsSry/work3/slides (branch slides-2026-sta5069z)
+Cloning into '/tmp/tmp.lRbDZcsSry/work3/slides'...
+▶ @data-2026-sta5069z data --worktree
+Branch exists: data-2026-sta5069z (on remote)
+Adding worktree /tmp/tmp.lRbDZcsSry/work3/data (tracking origin/data-2026-sta5069z)
+From file:///tmp/tmp.lRbDZcsSry/remotes/lectures
+ * [new branch]      data-2026-sta5069z -> origin/data-2026-sta5069z
+Preparing worktree (new branch 'data-2026-sta5069z')
+HEAD is now at b9623ac Add slides
+branch 'data-2026-sta5069z' set up to track 'origin/data-2026-sta5069z'.
+▶ file:///nonexistent/path/missing.git@some-branch missing
+Remote branch 'some-branch' not found on file:///nonexistent/path/missing.git; creating it.
+Cloning default branch of file:///nonexistent/path/missing.git → /tmp/tmp.lRbDZcsSry/work3/missing
+Cloning into '/tmp/tmp.lRbDZcsSry/work3/missing'...
+fatal: '/nonexistent/path/missing.git' does not appear to be a git repository
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+✖ line failed (rc=1): file:///nonexistent/path/missing.git@some-branch missing
+
+Summary:
+  Instructions processed : 3
+  Skipped (already present): 0
+  Cloned (full)           : 0
+  Cloned (single-branch)  : 1
+  Worktrees added         : 1
+  Errors                  : 1
+[0;32m✓ PASS: Failed clone is correctly counted as an error[0m
+[0;32m✓ PASS: Only the successful clone is counted in Cloned (single-branch)[0m
+[0;32m✓ PASS: No spurious 'fatal: not a git repository' errors after failed clone[0m
+
+============================================
+Test Summary
+============================================
+Tests run:    5
+[0;32mTests passed: 17[0m
+[0;32mTests failed: 0[0m
+==> tests/test-git-hardening.sh
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+Initialized empty Git repository in /tmp/tmp.ei5VRmFwo2/remote/repo/.git/
+[master (root-commit) 59034b0] Initial commit
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+Initialized empty Git repository in /tmp/tmp.ei5VRmFwo2/work/base-repo/.git/
+[master (root-commit) 59034b0] Initial commit
+Testing if @-h branch name triggers argument injection in git worktree add...
+Output was:
+[DEBUG clone-repos.sh] === clone-repos.sh Debug Session Started ===
+[DEBUG clone-repos.sh] Using repo list file: repos.list
+[DEBUG clone-repos.sh] Argument parsing complete.
+Checking prerequisites...
+All prerequisites met.
+All remotes are local; skipping authentication check.
+Planning from file: repos.list
+Parent dir for clones: /tmp/tmp.ei5VRmFwo2/work
+Planning fallback starts as: /tmp/tmp.ei5VRmFwo2/remote/repo
+Planning line: @-h
+Planning: worktree on fallback /tmp/tmp.ei5VRmFwo2/remote/repo
+Planning complete.
+Initial fallback repo: /tmp/tmp.ei5VRmFwo2/remote/repo → /tmp/tmp.ei5VRmFwo2/work/base-repo
+Processing line: @-h
+Current line to process: @-h
+▶ @-h
+Parsing line: @-h
+Error: '-h' is not a valid Git branch name.
+Finished processing line: @-h
+Line result code: 1
+Updating counters.
+CNT_TOTAL=1
+Providing feedback
+✖ line failed (rc=1): @-h
+Moving to next line.
+
+Summary:
+  Instructions processed : 1
+  Skipped (already present): 0
+  Cloned (full)           : 0
+  Cloned (single-branch)  : 0
+  Worktrees added         : 0
+  Errors                  : 1
+[0;32mPASS: Hardening appears successful (no help message found), though branch creation might have failed for other reasons.[0m
+==> tests/test-integration-branch-slashes.sh
+
+============================================
+Integration Test: Branches with Slashes
+============================================
+ℹ️  Test root: /tmp/tmp.mecm2xcwtS
+ℹ️  Creating test git repository...
+ℹ️  Creating branches with slashes...
+ℹ️
+ℹ️  Test 1: Testing clone-repos.sh with @branch for branches with slashes
+ℹ️  Running clone-repos.sh...
+[0;32m✓ Worktree created with sanitized directory name: workspace-feature-cool-feature[0m
+[0;31m✗ Git branch name incorrect: UNKNOWN (expected: feature/cool-feature)[0m
+ℹ️
+ℹ️  Test 2: Testing with explicit target directory
+ℹ️  Running clone-repos.sh with custom directory...
+[0;32m✓ Worktree created with custom directory name: custom-dir[0m
+[0;31m✗ Git branch name incorrect: UNKNOWN[0m
+ℹ️
+ℹ️  Test 3: Testing vscode-workspace-add.sh path generation
+ℹ️  Running vscode-workspace-add.sh...
+[0;32m✓ Workspace file created[0m
+[0;32m✓ Workspace contains sanitized path: ../workspace-feature-cool-feature[0m
+[0;32m✓ Workspace contains custom directory path: ../custom-dir[0m
+
+============================================
+Integration Test Summary
+============================================
+[0;32mIntegration tests completed successfully![0m
+
+Key findings:
+  • Branches with slashes are handled correctly
+  • Directory names use sanitized names (slashes → dashes)
+  • Git operations use original branch names (with slashes)
+  • Workspace file generation works correctly
+  • Custom directory names work as expected
+==> tests/test-invalid-token.sh
+
+============================================
+Invalid Token Detection Test Suite
+============================================
+
+[1;33mTEST: Script has validate_token function[0m
+[0;32m✓ PASS: validate_token function exists[0m
+
+[1;33mTEST: validate_token checks for 'Bad credentials' error[0m
+[0;32m✓ PASS: Checks for 'Bad credentials' message[0m
+
+[1;33mTEST: validate_token is called after AUTH_HDR is set[0m
+[0;32m✓ PASS: validate_token is called after setting AUTH_HDR[0m
+
+[1;33mTEST: Error messages inform user about invalid token[0m
+[0;32m✓ PASS: Error message informs user about invalid token[0m
+
+[1;33mTEST: Functional test with invalid token (if safe to run)[0m
+ℹ️  Testing with invalid token: ghp_invalid_token_12345
+ℹ️  Script output:
+Error: Invalid GitHub token. Please check your credentials.
+The provided token does not have valid GitHub API access.
+Skipping repository creation/verification for test-user/test-repo (invalid credentials)
+[0;32m✓ PASS: Script detected invalid token and reported it to user[0m
+
+============================================
+[0;32mAll token validation tests passed![0m
+============================================
+
+The implementation correctly:
+  ✓ Defines validate_token function
+  ✓ Checks for 'Bad credentials' error
+  ✓ Calls validation after setting AUTH_HDR
+  ✓ Provides informative error messages
+==> tests/test-local-remotes-simple.sh
+
+============================================
+Simple Local Git Remote Test
+============================================
+ℹ️  Test root: /tmp/tmp.7zEpmCVkY2
+ℹ️  Purpose: Verify setup-repos.sh works with local git remotes for offline testing
+
+[1;33mTEST: create-repos.sh skips local file:// URLs without calling GitHub API[0m
+[0;32m✓ PASS: Correctly skips file:// and absolute path remotes[0m
+[0;32m✓ PASS: Did not attempt GitHub API calls for local remotes[0m
+
+[1;33mTEST: create-repos.sh still processes GitHub owner/repo format[0m
+[0;32m✓ PASS: Correctly attempts to process GitHub owner/repo format[0m
+
+[1;33mTEST: create-repos.sh handles mixed local and GitHub remotes[0m
+[0;32m✓ PASS: Skipped exactly 2 local remotes[0m
+
+[1;33mTEST: clone-repos.sh recognizes file:// URLs as valid remotes[0m
+warning: You appear to have cloned an empty repository.
+[0;32m✓ PASS: Successfully cloned from file:// URL[0m
+
+[1;33mTEST: clone-repos.sh recognizes absolute paths as valid remotes[0m
+[0;32m✓ PASS: Successfully cloned from absolute path[0m
+
+============================================
+Test Summary
+============================================
+Tests run:    5
+Tests passed: [0;32m6[0m
+
+[0;32mAll tests passed![0m
+
+✓ Local git remotes work for offline testing
+✓ setup-repos.sh skips GitHub API for local remotes
+✓ clone-repos.sh handles file:// URLs and absolute paths
+==> tests/test-local-repo-comprehensive.sh
+
+============================================
+Comprehensive Local Git Repo Creation Test Suite
+============================================
+[0;34mINFO: Test root: /tmp/tmp.a8Oc3quWo7[0m
+[0;34mINFO: Testing clone-repos.sh and setup-repos.sh with local git remotes[0m
+[0;34mINFO: Setting up test bare repositories...[0m
+warning: You appear to have cloned an empty repository.
+warning: You appear to have cloned an empty repository.
+warning: You appear to have cloned an empty repository.
+[0;34mINFO: Created 3 bare repos with multiple branches[0m
+
+[1;33mTEST: Clone non-existing local repo (full clone)[0m
+[0;32m✓ PASS: Full clone of non-existing repo succeeded[0m
+
+[1;33mTEST: Clone non-existing local repo (single-branch)[0m
+[0;32m✓ PASS: Single-branch clone succeeded with correct branch[0m
+
+[1;33mTEST: Attempt to clone pre-existing local repo (should skip)[0m
+[0;32m✓ PASS: Pre-existing repo preserved (marker file still exists)[0m
+[0;32m✓ PASS: Clone script reported existing repo[0m
+
+[1;33mTEST: Create worktree from pre-existing repo (with --worktree flag)[0m
+[0;32m✓ PASS: Worktree created with correct branch[0m
+[0;32m✓ PASS: Created directory is a valid git worktree[0m
+
+[1;33mTEST: Attempt to create existing worktree (should skip or handle gracefully)[0m
+[0;32m✓ PASS: Existing worktree preserved[0m
+
+[1;33mTEST: Clone with absolute path (no file:// prefix)[0m
+[0;32m✓ PASS: Clone with absolute path succeeded[0m
+
+[1;33mTEST: Clone with custom target directory[0m
+[0;32m✓ PASS: Clone to custom directory succeeded[0m
+[0;32m✓ PASS: Worktree to custom directory succeeded with correct branch[0m
+
+[1;33mTEST: Multiple branch clones from same repo[0m
+[0;32m✓ PASS: Multiple worktrees from same repo created (found 3)[0m
+[0;32m✓ PASS: Branch with slash preserved correctly in git (feature/test)[0m
+
+[1;33mTEST: Worktree inherits fallback repo correctly[0m
+▶ @dev
+Cloning /tmp/tmp.a8Oc3quWo7/bare-repos/repo1 → /tmp/tmp.a8Oc3quWo7/ws8-dev (branch dev)
+Cloning into '/tmp/tmp.a8Oc3quWo7/ws8-dev'...
+▶ file:///tmp/tmp.a8Oc3quWo7/bare-repos/repo2.git
+▶ @staging
+Cloning /tmp/tmp.a8Oc3quWo7/bare-repos/repo2 → /tmp/tmp.a8Oc3quWo7/repo2-staging (branch staging)
+Cloning into '/tmp/tmp.a8Oc3quWo7/repo2-staging'...
+Summary:
+[0;32m✓ PASS: First @branch used initial fallback (repo1)[0m
+[0;32m✓ PASS: Second @branch used updated fallback (repo2)[0m
+
+[1;33mTEST: Full setup-repos.sh workflow with local remotes[0m
+[0;32m✓ PASS: Correctly says 'Creating repos' (not 'on GitHub')[0m
+[0;32m✓ PASS: All repos cloned via setup-repos.sh[0m
+[0;32m✓ PASS: Workspace file created[0m
+
+[1;33mTEST: Branch names with slashes are sanitized for directory names[0m
+[0;32m✓ PASS: Branch with slash sanitized for directory name (ws10-feature-test)[0m
+[0;32m✓ PASS: Git branch name preserved with slash: feature/test[0m
+
+[1;33mTEST: create-repos.sh skips local remotes without GitHub API calls[0m
+[0;32m✓ PASS: create-repos.sh skipped local remotes (2 found)[0m
+[0;32m✓ PASS: No GitHub API calls for local remotes[0m
+
+============================================
+Test Summary
+============================================
+Tests run:    12
+Tests passed: [0;32m21[0m
+
+[0;32mAll tests passed![0m
+
+✓ Non-existing repos can be cloned
+✓ Pre-existing repos are preserved
+✓ Worktrees can be created from pre-existing repos
+✓ Existing worktrees are preserved
+✓ Various repos.list formats work (file://, absolute paths, custom dirs)
+✓ Multiple references to same repo work correctly
+✓ Worktree fallback behavior works as expected
+✓ Branch names with slashes are handled correctly
+✓ setup-repos.sh works end-to-end with local remotes
+✓ create-repos.sh skips local remotes appropriately
+==> tests/test-pipeline-traversal.sh
+Testing Case 1: --script flag traversal...
+Error: script path cannot be absolute or contain '..': ../../../../../../../../../../../../../../../../../tmp/malicious_pipeline.sh
+[0;32mPASS: --script flag path traversal prevented (or script not found).[0m
+Testing Case 2: Concise repo list traversal...
+=== 1) Skipping setup step (default; use --ensure-setup to run) ===
+=== 3) Executing run.sh in repositories ===
+
+=== Pipeline Summary ===
+⏭  dummy-repo — no run.sh found
+
+Total: 1 repositories | 0 succeeded | 0 failed | 1 skipped
+[0;32mPASS: Concise repo list path traversal prevented.[0m
+[0;32mPASS: Test complete.[0m
+==> tests/test-repos-list-flags.sh
+
+============================================
+repos.list Flags Parsing Test
+============================================
+ℹ️  Test root: /tmp/tmp.jk5lNFcum5
+ℹ️  Project root: /app
+
+[1;33mTEST: Parsing global --worktree flag from repos.list[0m
+[0;32m✓ PASS: Global --worktree flag was processed[0m
+
+[1;33mTEST: Parsing global --codespaces flag from repos.list[0m
+[0;32m✓ PASS: Global --codespaces flag detected[0m
+
+[1;33mTEST: Parsing global --public flag from repos.list[0m
+[0;32m✓ PASS: Global --public flag detected[0m
+
+[1;33mTEST: Global flags with comments and blank space[0m
+[0;32m✓ PASS: Global flags with comments/whitespace parsed correctly[0m
+
+============================================
+Test Summary
+============================================
+Tests run: 4
+[0;32mPassed: 4[0m
+All tests passed! ✓
+==> tests/test-reproduce-traversal-v2.sh
+Running run-pipeline.sh with malicious workspace...
+=== 1) Skipping setup step (default; use --ensure-setup to run) ===
+Note: install-r-deps.sh not found; skipping dependency installation.
+=== 3) Executing i-do-not-exist.sh in repositories ===
+⏭ .: no i-do-not-exist.sh
+Error: invalid workspace folder path (unauthorized '..' or absolute): ..
+Error: invalid workspace folder path (unauthorized '..' or absolute): repo/..
+⚠️  Folder not found: /tmp/tmp.8ijWD1pPXu/../repo
+Error: invalid workspace folder path (unauthorized '..' or absolute): ../repo/..
+
+=== Pipeline Summary ===
+⏭  . — no i-do-not-exist.sh found
+❌ ../i-do-not-exist.sh — failed (exit code 1)
+❌ repo/../i-do-not-exist.sh — failed (exit code 1)
+⏭  repo — no i-do-not-exist.sh found
+❌ ../repo/../i-do-not-exist.sh — failed (exit code 1)
+
+Total: 5 repositories | 0 succeeded | 3 failed | 2 skipped
+--- VALIDATION RESULTS ---
+PASS: rejected '..'
+PASS: rejected 'repo/..'
+PASS: rejected '../repo/..'
+PASS: processed '../repo'
+VERIFICATION SUCCESSFUL
+==> tests/test-reproduce-traversal.sh
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+Initialized empty Git repository in /tmp/tmp.gfS9PyG4hj/work/main-repo/.git/
+[master (root-commit) 95514f8] initial
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 a
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+Initialized empty Git repository in /tmp/tmp.gfS9PyG4hj/work/remote/other-repo/.git/
+[master (root-commit) b97599a] initial
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 b
+✅ Path traversal not detected in /tmp/tmp.gfS9PyG4hj/traversal
+==> tests/test-run-pipeline.sh
+
+============================================
+CompTemplate run-pipeline.sh Automated Test Suite
+============================================
+ℹ️  Test directory: /tmp/tmp.YylJAOPvGD
+ℹ️  Project root: /app
+
+[1;33mTEST: Script exists and is executable[0m
+[0;32m✓ PASS: run-pipeline.sh is executable[0m
+
+[1;33mTEST: Help message displays correctly[0m
+[0;32m✓ PASS: Help message displays[0m
+
+[1;33mTEST: Dry-run mode (--dry-run)[0m
+[0;32m✓ PASS: Dry-run mode works[0m
+
+[1;33mTEST: Ensure setup flag (--ensure-setup)[0m
+[0;32m✓ PASS: Ensure setup flag works[0m
+
+[1;33mTEST: Skip deps flag (--skip-deps)[0m
+[0;32m✓ PASS: Skip deps flag works[0m
+
+[1;33mTEST: Execute run.sh scripts in repositories[0m
+=== 1) Skipping setup step (default; use --ensure-setup to run) ===
+=== 2) Skipping R dependencies (--skip-deps) ===
+=== 3) Executing run.sh in repositories ===
+⏵ test-repo1: run.sh found
+Running test-repo1
+⏵ test-repo2: run.sh found
+Running test-repo2
+
+=== Pipeline Summary ===
+✅ test-repo1/run.sh — success
+✅ test-repo2/run.sh — success
+
+Total: 2 repositories | 2 succeeded | 0 failed | 0 skipped
+[0;32m✓ PASS: run.sh scripts executed in all repos[0m
+
+[1;33mTEST: Include filter (--include)[0m
+=== 1) Skipping setup step (default; use --ensure-setup to run) ===
+=== 2) Skipping R dependencies (--skip-deps) ===
+=== 3) Executing run.sh in repositories ===
+⏵ test-repo1: run.sh found
+Running test-repo1
+
+=== Pipeline Summary ===
+✅ test-repo1/run.sh — success
+
+Total: 1 repositories | 1 succeeded | 0 failed | 0 skipped
+[0;32m✓ PASS: Include filter works correctly[0m
+
+[1;33mTEST: Exclude filter (--exclude)[0m
+=== 1) Skipping setup step (default; use --ensure-setup to run) ===
+=== 2) Skipping R dependencies (--skip-deps) ===
+=== 3) Executing run.sh in repositories ===
+⏵ test-repo2: run.sh found
+Running test-repo2
+
+=== Pipeline Summary ===
+✅ test-repo2/run.sh — success
+
+Total: 1 repositories | 1 succeeded | 0 failed | 0 skipped
+[0;32m✓ PASS: Exclude filter works correctly[0m
+
+[1;33mTEST: Missing workspace file handling (fully-specified format)[0m
+[0;32m✓ PASS: Handles missing workspace file gracefully[0m
+
+[1;33mTEST: Handling repositories without run.sh[0m
+[0;32m✓ PASS: Handles repos without run.sh[0m
+
+[1;33mTEST: --script flag runs a custom script[0m
+=== 1) Skipping setup step (default; use --ensure-setup to run) ===
+=== 2) Skipping R dependencies (--skip-deps) ===
+=== 3) Executing pipeline.sh in repositories ===
+⏵ test-repo1: pipeline.sh found
+Running pipeline.sh in test-repo1
+
+=== Pipeline Summary ===
+✅ test-repo1/pipeline.sh — success
+⏭  test-repo2 — no pipeline.sh found
+
+Total: 2 repositories | 1 succeeded | 0 failed | 1 skipped
+[0;32m✓ PASS: --script flag runs the correct script[0m
+
+[1;33mTEST: --continue-on-error continues past failures[0m
+[0;32m✓ PASS: --continue-on-error continues and reports failures[0m
+
+[1;33mTEST: Concise format list file[0m
+=== 1) Skipping setup step (default; use --ensure-setup to run) ===
+=== 2) Skipping R dependencies (--skip-deps) ===
+=== 3) Executing run.sh in repositories ===
+⏵ test-repo1: run.sh found
+Running test-repo1
+⏵ test-repo2: run.sh found
+Running test-repo2
+
+=== Pipeline Summary ===
+✅ test-repo1/run.sh — success
+✅ test-repo2/run.sh — success
+
+Total: 2 repositories | 2 succeeded | 0 failed | 0 skipped
+[0;32m✓ PASS: Concise format list file works[0m
+
+[1;33mTEST: Concise format with per-line script name[0m
+=== 1) Skipping setup step (default; use --ensure-setup to run) ===
+=== 2) Skipping R dependencies (--skip-deps) ===
+=== 3) Executing run.sh in repositories ===
+⏵ test-repo1: custom.sh found
+Running custom.sh in test-repo1
+⏵ test-repo2: run.sh found
+Running test-repo2
+
+=== Pipeline Summary ===
+✅ test-repo1/custom.sh — success
+✅ test-repo2/run.sh — success
+
+Total: 2 repositories | 2 succeeded | 0 failed | 0 skipped
+[0;32m✓ PASS: Concise format per-line script name works[0m
+
+[1;33mTEST: Pipeline summary output format[0m
+[0;32m✓ PASS: Pipeline summary is printed[0m
+
+============================================
+Test Summary
+============================================
+Tests run:    15
+Tests passed: [0;32m15[0m
+
+[0;32m✅ All tests passed![0m
+
+The run-pipeline.sh script is working correctly.
+==> tests/test-security-hardening.sh
+
+============================================
+Security Hardening Test Suite
+============================================
+
+[1;33mTEST: Path traversal in clone-repos.sh[0m
+
+Summary:
+  Instructions processed : 1
+  Skipped (already present): 0
+  Cloned (full)           : 0
+  Cloned (single-branch)  : 0
+  Worktrees added         : 0
+  Errors                  : 1
+[0;32m✓ PASS: clone-repos.sh blocked path traversal[0m
+
+[1;33mTEST: Glob expansion in repos.list[0m
+[0;32m✓ PASS: Glob expansion was disabled[0m
+
+[1;33mTEST: Path traversal in vscode-workspace-add.sh[0m
+[0;32m✓ PASS: vscode-workspace-add.sh blocked path traversal[0m
+
+[1;33mTEST: Path traversal in codespaces-auth-add.sh[0m
+[0;32m✓ PASS: codespaces-auth-add.sh blocked path traversal[0m
+
+[1;33mTEST: Path traversal in create-repos.sh[0m
+[0;31m✗ FAIL: create-repos.sh failed but with wrong error message[0m
+Error: repository spec must be in 'owner/repo' format: owner/repo/../../traversed
+
+[1;33mTEST: JSON injection mitigation (unit test)[0m
+[0;32m✓ PASS: Constructed valid JSON even with malicious input[0m
+[0;32m✓ PASS: Malicious repo name was properly escaped[0m
+[0;32m✓ PASS: Private flag was preserved[0m
+
+[1;33mTEST: Path traversal in run-pipeline.sh (workspace folder)[0m
+=== 1) Skipping setup step (default; use --ensure-setup to run) ===
+=== 2) Installing R dependencies ===
+Warning: install-r-deps.sh failed; continuing...
+=== 3) Executing test.sh in repositories ===
+Warning: No workspace file or jq not available. Cannot execute scripts.
+Run 'repos setup' first to generate the workspace file.
+=== 1) Skipping setup step (default; use --ensure-setup to run) ===
+=== 2) Installing R dependencies ===
+✅ All done across all folders!
+=== 3) Executing test.sh in repositories ===
+
+=== Pipeline Summary ===
+❌ ../../etc/test.sh — failed (exit code 1)
+
+Total: 1 repositories | 0 succeeded | 1 failed | 0 skipped
+[0;32m✓ PASS: run-pipeline.sh blocked path traversal in workspace[0m
+
+[1;33mTEST: Path traversal in install-r-deps.sh[0m
+[0;32m✓ PASS: install-r-deps.sh blocked path traversal[0m
+
+============================================
+Test Summary
+============================================
+Tests run:    8
+Tests passed: [0;32m9[0m
+Tests failed: [0;31m1[0m
+!!! FAILED: tests/test-security-hardening.sh
+==> tests/test-setup-repos-local.sh
+
+============================================
+Local Git Remote Integration Test for setup-repos.sh
+============================================
+ℹ️  Test root: /tmp/tmp.SHGimFn8yZ
+ℹ️  Project root: /app
+
+[1;33mTEST: Creating local bare git repositories[0m
+warning: You appear to have cloned an empty repository.
+warning: You appear to have cloned an empty repository.
+[0;32m✓ PASS: Created local bare repositories with branches[0m
+ℹ️    - /tmp/tmp.SHGimFn8yZ/bare-repos/testrepo1.git (main, dev, feature/test)
+ℹ️    - /tmp/tmp.SHGimFn8yZ/bare-repos/testrepo2.git (main, release/v1.0)
+
+[1;33mTEST: clone-repos.sh handles file:// URLs[0m
+ℹ️  Running clone-repos.sh with file:// URLs...
+[0;32m✓ PASS: Cloned testrepo1 and created dev worktree[0m
+[0;32m✓ PASS: Cloned testrepo2 and created release/v1.0 worktree[0m
+
+[1;33mTEST: clone-repos.sh handles absolute paths[0m
+ℹ️  Running clone-repos.sh with absolute paths...
+[0;32m✓ PASS: Cloned with absolute path and created worktree with sanitized name[0m
+[0;32m✓ PASS: Git branch name preserved with slash: feature/test[0m
+
+[1;33mTEST: setup-repos.sh skips GitHub API for local remotes[0m
+ℹ️  Running setup-repos.sh with local remotes...
+[0;32m✓ PASS: setup-repos.sh completed without errors[0m
+[0;32m✓ PASS: Local repos were cloned successfully[0m
+
+[1;33mTEST: vscode-workspace-add.sh works with local remotes[0m
+[0;32m✓ PASS: Workspace file created for local remotes[0m
+[0;32m✓ PASS: Workspace contains correct paths for local repos[0m
+
+[1;33mTEST: Single-branch clone from local remote[0m
+ℹ️  Running clone-repos.sh for single-branch from local remote...
+[0;32m✓ PASS: Single-branch clone from local remote succeeded[0m
+[0;32m✓ PASS: Checked out correct branch: dev[0m
+
+============================================
+Test Summary
+============================================
+Tests run:    6
+Tests passed: [0;32m11[0m
+
+[0;32mAll tests passed![0m
+
+✓ Local git remotes work for offline testing
+✓ setup-repos.sh skips GitHub API for local remotes
+✓ clone-repos.sh handles file:// URLs and absolute paths
+✓ Workspace generation works with local remotes
+==> tests/test-setup-repos.sh
+
+============================================
+CompTemplate setup-repos.sh Manual Test Suite
+============================================
+ℹ️  Test directory: /tmp/tmp.kz7FDQVi3V
+ℹ️  Project root: /app
+
+[1;33mTEST: Script exists and is executable[0m
+[0;32m✓ PASS: setup-repos.sh is executable[0m
+
+[1;33mTEST: Help message displays correctly[0m
+[0;32m✓ PASS: Help message displays[0m
+
+[1;33mTEST: Helper scripts exist[0m
+ℹ️    ✓ helper/clone-repos.sh exists
+ℹ️    ✓ helper/vscode-workspace-add.sh exists
+ℹ️    ✓ helper/codespaces-auth-add.sh exists
+ℹ️    ✓ helper/create-repos.sh exists
+[0;32m✓ PASS: All helper scripts exist[0m
+
+[1;33mTEST: repos.list format validation[0m
+ℹ️  Created test repos.list with various formats
+[0;32m✓ PASS: repos.list format test data created[0m
+
+[1;33mTEST: clone-repos.sh follows documented path logic[0m
+[0;32m✓ PASS: clone-repos.sh documents path logic[0m
+
+[1;33mTEST: vscode-workspace-add.sh tool compatibility[0m
+[0;32m✓ PASS: Workspace script checks for multiple tools[0m
+
+[1;33mTEST: codespaces-auth-add.sh handles fallback repo logic[0m
+[0;32m✓ PASS: Codespaces script implements fallback repo logic[0m
+
+[1;33mTEST: setup-repos.sh error handling[0m
+[0;32m✓ PASS: Handles missing repos.list[0m
+
+[1;33mTEST: Scripts use portable bash constructs[0m
+[0;32m✓ PASS: Scripts use portable constructs[0m
+
+[1;33mTEST: Documentation consistency[0m
+[0;32m✓ PASS: README documents setup-repos.sh[0m
+[0;32m✓ PASS: Copilot instructions document path logic[0m
+
+============================================
+Test Summary
+============================================
+Tests run:    10
+Tests passed: [0;32m11[0m
+
+[0;32mAll tests passed![0m
+
+Manual testing checklist:
+  [ ] Create a test repos.list with real repositories
+  [ ] Run scripts/setup-repos.sh
+  [ ] Verify repositories are cloned to parent directory
+  [ ] Verify workspace file is created
+  [ ] Verify devcontainer.json is updated (if it exists)
+  [ ] Test on Linux, macOS, and Windows (Git Bash)
+
+For interactive testing:
+  1. Create test repos.list: cp repos.list.example test-repos.list
+  2. Run: scripts/setup-repos.sh -f test-repos.list
+  3. Verify output and file structure
+==> tests/test-stale-worktree.sh
+
+============================================
+Stale Worktree Test Suite
+============================================
+ℹ️  Test directory: /tmp/tmp.IQlfeec64h
+ℹ️  Project root: /app
+
+[1;33mTEST: Stale worktree can be recovered[0m
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+Initialized empty Git repository in /tmp/tmp.IQlfeec64h/test-repo/.git/
+[master (root-commit) c6bdaab] Initial commit
+ 1 file changed, 1 insertion(+)
+ create mode 100644 README.md
+Preparing worktree (new branch 'test-branch')
+HEAD is now at c6bdaab Initial commit
+ℹ️  Created worktree at ../worktrees/test-branch
+ℹ️  Worktree is registered in git
+ℹ️  Manually deleted worktree directory
+ℹ️  Git still has stale worktree reference (expected)
+ℹ️  Worktree add failed as expected (stale reference)
+ℹ️  Ran git worktree prune
+ℹ️  Stale worktree reference removed by prune
+Preparing worktree (checking out 'test-branch')
+HEAD is now at c6bdaab Initial commit
+ℹ️  Successfully added worktree after prune
+[0;32m✓ PASS: Worktree recovered successfully[0m
+
+[1;33mTEST: clone-repos.sh handles stale worktree automatically[0m
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+Initialized empty Git repository in /tmp/tmp.IQlfeec64h/main-repo/.git/
+[master (root-commit) 208576e] Initial commit
+ 1 file changed, 1 insertion(+)
+ create mode 100644 README.md
+▶ @test-branch --worktree
+error: unable to read askpass response from '/bin/false'
+fatal: could not read Username for 'https://github.com': terminal prompts disabled
+Branch not found: test-branch (on remote, creating new)
+Adding worktree /tmp/tmp.IQlfeec64h/main-repo-test-branch (new branch 'test-branch' from HEAD)
+Preparing worktree (new branch 'test-branch')
+HEAD is now at 208576e Initial commit
+error: unable to read askpass response from '/bin/false'
+fatal: could not read Username for 'https://github.com': terminal prompts disabled
+
+Summary:
+  Instructions processed : 1
+  Skipped (already present): 0
+  Cloned (full)           : 0
+  Cloned (single-branch)  : 0
+  Worktrees added         : 1
+  Errors                  : 0
+ℹ️  First run: created worktree
+ℹ️  Worktree created at ../main-repo-test-branch
+ℹ️  Manually deleted worktree directory
+▶ @test-branch --worktree
+error: unable to read askpass response from '/bin/false'
+fatal: could not read Username for 'https://github.com': terminal prompts disabled
+Adding worktree /tmp/tmp.IQlfeec64h/main-repo-test-branch (existing local branch 'test-branch')
+Preparing worktree (checking out 'test-branch')
+HEAD is now at 208576e Initial commit
+error: unable to read askpass response from '/bin/false'
+fatal: could not read Username for 'https://github.com': terminal prompts disabled
+
+Summary:
+  Instructions processed : 1
+  Skipped (already present): 0
+  Cloned (full)           : 0
+  Cloned (single-branch)  : 0
+  Worktrees added         : 1
+  Errors                  : 0
+ℹ️  clone-repos.sh completed successfully
+[0;32m✓ PASS: clone-repos.sh recovered from stale worktree[0m
+
+============================================
+[0;32mAll tests passed![0m
+============================================
+==> tests/test-token-validation-unit.sh
+
+============================================
+Token Validation Function Unit Tests
+============================================
+
+[1;33mTEST: validate_token detects 'Bad credentials' error[0m
+[0;32m✓ PASS: validate_token correctly reports 'Bad credentials' error[0m
+
+[1;33mTEST: validate_token handles empty response gracefully[0m
+[0;32m✓ PASS: validate_token handles empty response (assumes network issue, allows retry)[0m
+
+[1;33mTEST: validate_token accepts valid response with 'login' field[0m
+[0;32m✓ PASS: validate_token accepts responses with 'login' field[0m
+
+[1;33mTEST: validate_token handles generic API error messages[0m
+[0;32m✓ PASS: validate_token reports generic API errors[0m
+
+[1;33mTEST: Error messages are sent to stderr (>&2)[0m
+[0;32m✓ PASS: Error messages correctly sent to stderr[0m
+
+[1;33mTEST: Token validation integrated into processing flow[0m
+[0;32m✓ PASS: Token validation called in both main and @branch sections[0m
+
+============================================
+[0;32mAll unit tests passed![0m
+============================================
+
+Token validation implementation:
+  ✓ Detects 'Bad credentials' errors
+  ✓ Handles empty responses gracefully
+  ✓ Accepts valid API responses
+  ✓ Reports generic API errors
+  ✓ Sends errors to stderr
+  ✓ Integrated into processing flow
+==> tests/test-update-scripts.sh
+
+============================================
+CompTemplate update-scripts.sh Test Suite
+============================================
+ℹ️  Test directory: /tmp/tmp.QiABhfzNGW
+ℹ️  Project root: /app
+
+[1;33mTEST: Script exists and is executable[0m
+[0;32m✓ PASS: update-scripts.sh is executable[0m
+
+[1;33mTEST: Help message displays correctly[0m
+[0;32m✓ PASS: Help message displays[0m
+
+[1;33mTEST: Help text reflects updating all scripts[0m
+[0;32m✓ PASS: Help mentions updating all scripts[0m
+[0;32m✓ PASS: Help mentions helper subdirectory[0m
+[0;32m✓ PASS: Help does not say 'only helper'[0m
+
+[1;33mTEST: Dry-run mode works without making changes[0m
+[0;32m✓ PASS: Dry-run mode executes and shows message[0m
+[0;32m✓ PASS: Dry-run does not modify files[0m
+
+[1;33mTEST: Script detects uncommitted changes[0m
+[0;32m✓ PASS: Detects uncommitted changes[0m
+[0;32m✓ PASS: --force bypasses uncommitted changes check[0m
+
+[1;33mTEST: Lists both main scripts and helper scripts[0m
+ℹ️    ✓ Found main script: add-branch.sh
+ℹ️    ✓ Found main script: run-pipeline.sh
+ℹ️    ✓ Found main script: setup-repos.sh
+ℹ️    ✓ Found main script: update-branches.sh
+ℹ️    ✓ Found main script: update-scripts.sh
+[0;32m✓ PASS: All main scripts are listed[0m
+ℹ️    ✓ Found helper script: helper/clone-repos.sh
+ℹ️    ✓ Found helper script: helper/vscode-workspace-add.sh
+ℹ️    ✓ Found helper script: helper/codespaces-auth-add.sh
+[0;32m✓ PASS: Helper scripts are listed with subdirectory path[0m
+
+[1;33mTEST: Invalid options are rejected[0m
+[0;32m✓ PASS: Invalid options are rejected[0m
+
+[1;33mTEST: Branch option is accepted[0m
+[0;32m✓ PASS: Branch option is accepted[0m
+
+============================================
+Test Summary
+============================================
+Tests run:    8
+Tests passed: [0;32m13[0m
+
+[0;32mAll tests passed![0m
+==> tests/test-vscode-workspace-unit.sh
+
+============================================
+vscode-workspace-add.sh Unit Tests
+============================================
+
+============================================
+Testing validate_target_dir
+============================================
+
+[1;33mTEST: Valid simple directory (input: 'my-repo')[0m
+[0;32m✓ PASS: Result matches expected (0)[0m
+
+[1;33mTEST: Valid nested directory (input: 'repos/my-repo')[0m
+[0;32m✓ PASS: Result matches expected (0)[0m
+
+[1;33mTEST: Valid directory with dot (input: 'repo.name')[0m
+[0;32m✓ PASS: Result matches expected (0)[0m
+
+[1;33mTEST: Empty directory (allowed) (input: '')[0m
+[0;32m✓ PASS: Result matches expected (0)[0m
+
+[1;33mTEST: Invalid absolute path (input: '/absolute/path')[0m
+[0;32m✓ PASS: Result matches expected (1)[0m
+
+[1;33mTEST: Invalid root path (input: '/')[0m
+[0;32m✓ PASS: Result matches expected (1)[0m
+
+[1;33mTEST: Invalid double dot (input: '..')[0m
+[0;32m✓ PASS: Result matches expected (1)[0m
+
+[1;33mTEST: Invalid parent traversal (input: '../outside')[0m
+[0;32m✓ PASS: Result matches expected (1)[0m
+
+[1;33mTEST: Invalid nested traversal (input: 'repo/../outside')[0m
+[0;32m✓ PASS: Result matches expected (1)[0m
+
+[1;33mTEST: Invalid trailing traversal (input: 'path/..')[0m
+[0;32m✓ PASS: Result matches expected (1)[0m
+
+[1;33mTEST: Invalid path containing .. (input: 'some..thing')[0m
+[0;32m✓ PASS: Result matches expected (1)[0m
+
+============================================
+Unit Test Summary
+============================================
+Tests run:    11
+Tests passed: [0;32m11[0m
+
+[0;32mAll unit tests passed![0m
+==> tests/test-vscode-workspace.sh
+
+============================================
+VS Code Workspace Generation Test Suite
+============================================
+ℹ️  Test directory: /tmp/tmp.KgyxMMcHJH
+ℹ️  Project root: /app
+
+[1;33mTEST: Generate workspace from simple repos.list[0m
+[0;32m✓ PASS: Workspace file created[0m
+[0;32m✓ PASS: Workspace contains correct paths[0m
+
+[1;33mTEST: Handle custom directories and worktrees[0m
+[0;32m✓ PASS: Complex paths handled correctly[0m
+
+[1;33mTEST: Global flags ignored[0m
+[0;32m✓ PASS: Global flags ignored correctly[0m
+
+[1;33mTEST: Mixed flags on lines ignored[0m
+[0;32m✓ PASS: Mixed flags handled correctly[0m
+
+============================================
+Test Summary
+============================================
+Tests run:    4
+Tests passed: [0;32m5[0m
+
+[0;32mAll tests passed![0m
+==> tests/test-worktree-custom-base-dir.sh
+[1;33mTEST:[0m Setting up test repository with branches
+  [0;32m✓[0m Created bare repo with main, branch1, and branch2
+[1;33mTEST:[0m Testing: MiguelRodo/lectures@branch1 slides + @branch2 data
+  [0;32m✓[0m slides directory exists and is on branch1
+  [0;32m✓[0m data is a worktree (.git is a file)
+  [0;32m✓[0m data worktree correctly points to slides base repo
+  [0;32m✓[0m No unnecessary 'lectures' base clone was created
+
+[0;32m✓ All tests passed![0m
+  ✓ slides correctly cloned as single-branch
+  ✓ data correctly created as worktree from slides
+  ✓ No unnecessary base clone created
+
+==> tests/test-worktree-tracking.sh
+============================================
+Worktree Tracking Setup Test
+============================================
+[1;33mℹ️   [0m Test directory: /tmp/tmp.gEcAX0cecC
+
+TEST: Setting up test repository with remote branches
+[0;32m✓ PASS:[0m Created test repository with branches: main, slides-branch, data-branch
+
+TEST: Single-branch clone and worktree creation
+[0;32m✓ PASS:[0m Confirmed single-branch clone (refspec: +refs/heads/slides-branch:refs/remotes/origin/slides-branch)
+
+TEST: Create worktree with clone-repos.sh logic
+[0;32m✓ PASS:[0m clone-repos.sh completed successfully
+[0;32m✓ PASS:[0m No fatal tracking errors in output
+[0;32m✓ PASS:[0m Worktree created successfully in parent directory
+
+TEST: Verify worktree tracking configuration
+[0;32m✓ PASS:[0m Worktree is on correct branch: data-branch
+[0;32m✓ PASS:[0m Branch tracking is configured: refs/heads/data-branch
+[1;33mℹ️   [0m Tracking remote: origin
+
+TEST: Verify wildcard fetch refspec was added
+[0;32m✓ PASS:[0m Wildcard fetch refspec added: +refs/heads/*:refs/remotes/origin/*
+
+TEST: Worktree can perform git operations
+[0;32m✓ PASS:[0m Worktree can execute git status
+[0;32m✓ PASS:[0m Worktree can execute git fetch
+
+============================================
+Test Summary
+============================================
+Test blocks run: 6
+Assertions passed: 9
+
+[0;32mAll test blocks passed![0m

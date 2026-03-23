@@ -455,7 +455,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   case "$repo_spec" in *@*) branch=${repo_spec##*@} ;; *) branch="" ;; esac
   
   if [ -n "$branch" ] && ( [[ "$branch" == -* ]] || ! git check-ref-format --allow-onelevel "$branch" ); then
-    printf "Error: '%s' is not a Git branch name.\n" "$branch" >&2
+    printf "Error: '%s' is not a valid Git branch name.\n" "$branch" >&2
     # Still update fallback repo for subsequent @branch lines
     fallback_owner="$owner"
     fallback_repo="$repo"
