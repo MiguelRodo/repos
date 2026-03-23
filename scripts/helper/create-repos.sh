@@ -9,7 +9,7 @@ set -o pipefail
 # — Prerequisites —
 for cmd in curl git jq mktemp; do
   if ! command -v "$cmd" >/dev/null 2>&1; then
-    echo "Error: '$cmd' is required but not found in PATH." >&2
+    printf "Error: '%s' is required but not found in PATH.\n" "$cmd" >&2
     exit 1
   fi
 done
@@ -21,7 +21,7 @@ DEBUG_FD=3  # Use FD 3 for debug output (compatible with Bash 3.2+)
 
 debug() {
   if $DEBUG; then
-    echo "[DEBUG create-repos.sh] $*" >&$DEBUG_FD
+    printf "[DEBUG create-repos.sh] %s\n" "$*" >&$DEBUG_FD
   fi
 }
 
@@ -91,14 +91,14 @@ while [ $# -gt 0 ]; do
       fi
       ;;
     -h|--help)    usage 0 ;;
-    *)            echo "Unknown argument: $1" >&2; usage ;;
+    *)            printf "Unknown argument: %s\n" "$1" >&2; usage ;;
   esac
 done
 
 # Set up debug file descriptor if needed
 if [ -n "$DEBUG_FILE" ]; then
   exec 3>>"$DEBUG_FILE"
-  echo "create-repos.sh debug output will be appended to: $DEBUG_FILE" >&2
+  printf "create-repos.sh debug output will be appended to: %s\n" "$DEBUG_FILE" >&2
 else
   # Redirect FD 3 to stderr by default
   exec 3>&2
@@ -108,7 +108,7 @@ debug "=== create-repos.sh Debug Session Started ==="
 debug "Repos file: $REPOS_FILE"
 debug "Private flag: $PRIVATE_FLAG"
 
-[ -f "$REPOS_FILE" ] || { echo "Error: '$REPOS_FILE' not found." >&2; exit 1; }
+[ -f "$REPOS_FILE" ] || { printf "Error: '%s' not found.\n" "$REPOS_FILE" >&2; exit 1; }
 
 # ── CREDENTIALS WITH FALLBACK (will be retrieved only if needed) ────────────────
 # Returns 0 if credentials are available, 1 if not
@@ -176,14 +176,14 @@ validate_token() {
 
   if [ "$message" = "Bad credentials" ]; then
     debug "Token validation failed: Bad credentials"
-    echo "Error: Invalid GitHub token. Please check your credentials." >&2
-    echo "The provided token does not have valid GitHub API access." >&2
+    printf "Error: Invalid GitHub token. Please check your credentials.\n" >&2
+    printf "The provided token does not have valid GitHub API access.\n" >&2
     return 1
   fi
   
   if [ "$message" = "Requires authentication" ]; then
     debug "Token validation failed: Requires authentication"
-    echo "Error: GitHub authentication required. Please check your credentials." >&2
+    printf "Error: GitHub authentication required. Please check your credentials.\n" >&2
     return 1
   fi
   
@@ -196,7 +196,7 @@ validate_token() {
   # If there's any other message, report it
   if [ -n "$message" ]; then
     debug "Token validation failed: $message"
-    echo "Error: GitHub API error: $message" >&2
+    printf "Error: GitHub API error: %s\n" "$message" >&2
     return 1
   fi
   
@@ -340,14 +340,14 @@ while IFS= read -r line || [ -n "$line" ]; do
       # Extract branch name, removing any options like --no-worktree
       branch=${branch%%[[:space:]]*}
       if [ -z "$branch" ] || [[ "$branch" == -* ]] || ! git check-ref-format --allow-onelevel "$branch"; then
-        echo "Error: '$branch' is not a valid Git branch name." >&2
+        printf "Error: '%s' is not a valid Git branch name.\n" "$branch" >&2
         continue
       fi
       debug "Line $line_num: @branch detected: $branch"
       
       if [ -z "$fallback_owner" ] || [ -z "$fallback_repo" ]; then
         debug "Line $line_num: No fallback repo available for @$branch"
-        echo "Warning: @$branch cannot be processed - no previous owner/repo line found to use as fallback repository; skipping branch check."
+        printf "Warning: @%s cannot be processed - no previous owner/repo line found to use as fallback repository; skipping branch check.\n" "$branch"
         continue
       fi
       
@@ -356,7 +356,7 @@ while IFS= read -r line || [ -n "$line" ]; do
       # Get credentials if needed
       if ! get_credentials; then
         debug "Line $line_num: No credentials available, skipping branch check"
-        echo "Skipping branch check for @$branch (no credentials)"
+        printf "Skipping branch check for @%s (no credentials)\n" "$branch"
         continue
       fi
       AUTH_HDR="Authorization: token $GH_TOKEN"
@@ -364,7 +364,7 @@ while IFS= read -r line || [ -n "$line" ]; do
       # Validate token
       if ! validate_token "$AUTH_HDR"; then
         debug "Line $line_num: Token validation failed, skipping branch check"
-        echo "Skipping branch check for @$branch on $fallback_owner/$fallback_repo (invalid credentials)" >&2
+        printf "Skipping branch check for @%s on %s/%s (invalid credentials)\n" "$branch" "$fallback_owner" "$fallback_repo" >&2
         continue
       fi
       
@@ -377,7 +377,7 @@ while IFS= read -r line || [ -n "$line" ]; do
       )
       debug "Line $line_num: Branch check returned HTTP $ref_status"
       if [ "$ref_status" -eq 200 ]; then
-        echo "Branch exists: $branch"
+        printf "Branch exists: %s\n" "$branch"
       elif [ "$ref_status" -eq 404 ]; then
         printf "Creating branch %s on %s/%s ... " "$branch" "$fallback_owner" "$fallback_repo"
         debug "Line $line_num: Creating branch $branch"
@@ -389,7 +389,7 @@ while IFS= read -r line || [ -n "$line" ]; do
           echo "failed (HTTP $code)."
         fi
       else
-        echo "Error checking branch $branch on $fallback_owner/$fallback_repo (HTTP $ref_status)."
+        printf "Error checking branch %s on %s/%s (HTTP %s).\n" "$branch" "$fallback_owner" "$fallback_repo" "$ref_status"
       fi
       
       # @branch lines don't change the fallback
@@ -402,7 +402,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   case "$repo_spec" in
     file://*|/*)
       debug "Line $line_num: Skipping local remote: $repo_spec"
-      echo "Skipping local remote: $repo_spec"
+      printf "Skipping local remote: %s\n" "$repo_spec"
       continue
       ;;
   esac
@@ -416,25 +416,46 @@ while IFS= read -r line || [ -n "$line" ]; do
     https://*|git@*|ssh://*)
       # This is a non-GitHub remote URL
       debug "Line $line_num: Skipping non-GitHub remote: $repo_spec"
-      echo "Skipping non-GitHub remote: $repo_spec"
+      printf "Skipping non-GitHub remote: %s\n" "$repo_spec"
       continue
       ;;
   esac
   
   repo_path=${repo_spec%@*}
+  # Validate repo_path format (must be owner/repo)
+  if [[ ! "$repo_path" =~ ^[^/]+/[^/]+$ ]]; then
+    printf "Error: repository spec must be in 'owner/repo' format: %s\n" "$repo_spec" >&2
+    exit 1
+  fi
+
   # Validate repo_path to prevent path traversal
   case "$repo_path" in
     *..*)
-      echo "Error: repository spec cannot contain '..': $repo_spec" >&2
+      printf "Error: repository spec cannot contain '..': %s\n" "$repo_spec" >&2
       exit 1
       ;;
   esac
+
   owner=${repo_path%%/*}
   repo=${repo_path##*/}
+
+  # Validate owner and repo names
+  # - Must not start with a hyphen (prevents argument injection)
+  # - Must only contain alphanumeric characters, hyphens, underscores, or dots
+  # - Following GitHub conventions (mostly)
+  VALID_PATTERN="^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
+  if [[ ! "$owner" =~ $VALID_PATTERN ]]; then
+    printf "Error: invalid owner name: %s\n" "$owner" >&2
+    exit 1
+  fi
+  if [[ ! "$repo" =~ $VALID_PATTERN ]]; then
+    printf "Error: invalid repository name: %s\n" "$repo" >&2
+    exit 1
+  fi
   case "$repo_spec" in *@*) branch=${repo_spec##*@} ;; *) branch="" ;; esac
   
   if [ -n "$branch" ] && ( [[ "$branch" == -* ]] || ! git check-ref-format --allow-onelevel "$branch" ); then
-    echo "Error: '$branch' is not a valid Git branch name." >&2
+    printf "Error: '%s' is not a valid Git branch name.\n" "$branch" >&2
     # Still update fallback repo for subsequent @branch lines
     fallback_owner="$owner"
     fallback_repo="$repo"
@@ -446,7 +467,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   # Get credentials only when we need them (for GitHub repos)
   if ! get_credentials; then
     debug "Line $line_num: No credentials, skipping repo $repo_spec"
-    echo "Skipping repository creation/verification for $repo_spec (no credentials)"
+    printf "Skipping repository creation/verification for %s (no credentials)\n" "$repo_spec"
     # Still update fallback repo for subsequent @branch lines
     fallback_owner="$owner"
     fallback_repo="$repo"
@@ -458,7 +479,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   # Validate token before making API calls
   if ! validate_token "$AUTH_HDR"; then
     debug "Line $line_num: Token validation failed, skipping repo $repo_spec"
-    echo "Skipping repository creation/verification for $repo_spec (invalid credentials)" >&2
+    printf "Skipping repository creation/verification for %s (invalid credentials)\n" "$repo_spec" >&2
     # Still update fallback repo for subsequent @branch lines
     fallback_owner="$owner"
     fallback_repo="$repo"
@@ -481,7 +502,7 @@ while IFS= read -r line || [ -n "$line" ]; do
       create_url="$API_URL/user/repos"
       ;;
     *)
-      echo "Error: could not determine owner type for '$owner'." 
+      printf "Error: could not determine owner type for '%s'.\n" "$owner"
       continue
       ;;
   esac
@@ -493,7 +514,7 @@ while IFS= read -r line || [ -n "$line" ]; do
       "$API_URL/repos/$owner/$repo"
   )
   if [ "$status" -eq 200 ]; then
-    echo "Exists: $owner/$repo"
+    printf "Exists: %s/%s\n" "$owner" "$repo"
   elif [ "$status" -eq 404 ]; then
     # build payload (auto_init if we’ll push a branch later)
     # Determine if this repo should be private or public
@@ -536,7 +557,7 @@ while IFS= read -r line || [ -n "$line" ]; do
       continue
     fi
   else
-    echo "Error checking $owner/$repo (HTTP $status)."
+    printf "Error checking %s/%s (HTTP %s).\n" "$owner" "$repo" "$status"
     continue
   fi
 
@@ -548,7 +569,7 @@ while IFS= read -r line || [ -n "$line" ]; do
         "$API_URL/repos/$owner/$repo/git/refs/heads/$branch"
     )
     if [ "$ref_status" -eq 200 ]; then
-      echo "Branch exists: $branch"
+      printf "Branch exists: %s\n" "$branch"
     elif [ "$ref_status" -eq 404 ]; then
       printf "Creating branch %s ... " "$branch"
       code=$( create_branch "$owner" "$repo" "$branch" )
@@ -558,7 +579,7 @@ while IFS= read -r line || [ -n "$line" ]; do
         echo "failed (HTTP $code)."
       fi
     else
-      echo "Error checking branch $branch (HTTP $ref_status)."
+      printf "Error checking branch %s (HTTP %s).\n" "$branch" "$ref_status"
     fi
   fi
   

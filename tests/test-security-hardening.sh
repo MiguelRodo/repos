@@ -180,7 +180,7 @@ EOF
 if "$CREATE_SCRIPT" -f repos.list 2>error.log; then
   print_fail "create-repos.sh should have failed for traversal"
 else
-  if grep -q "Error: repository spec cannot contain '..'" error.log; then
+  if grep -qE "Error: repository spec (cannot contain '..'|must be in 'owner/repo' format)" error.log; then
     print_pass "create-repos.sh blocked path traversal"
   else
     print_fail "create-repos.sh failed but with wrong error message"
