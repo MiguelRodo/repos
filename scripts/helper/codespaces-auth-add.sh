@@ -9,6 +9,20 @@ set -o nounset   # same as -u
 set -o pipefail
 
 # ——— Defaults ———————————————————————————————————————————————
+# Validate devcontainer path to prevent path traversal
+validate_devcontainer_path() {
+  local path="$1"
+  if [ -n "$path" ]; then
+    case "$path" in
+      /*|*..*)
+        echo "Error: devcontainer path cannot be absolute or contain '..': $path" >&2
+        return 1
+        ;;
+    esac
+  fi
+  return 0
+}
+
 # Get platform-independent temp directory
 get_temp_dir() {
   # Try various temp directory variables in order of preference
@@ -106,6 +120,7 @@ parse_args(){
         ;;
       -d|--devcontainer)
         shift; [ $# -gt 0 ] || { echo "Error: Missing devcontainer path" >&2; usage; }
+        validate_devcontainer_path "$1" || exit 1
         DEVCONTAINER_PATHS+=("$1"); shift
         ;;
       --permissions)
@@ -262,11 +277,32 @@ normalise(){
 
 # ——— Validate owner/repo (no datasets/ and no ..) ————————————————
 validate(){
-  case "$1" in
-    *..*)       return 1 ;;            # no path traversal
-    [!d]*/*)    printf '%s\n' "$1" ;;  # any owner/repo not starting datasets/
-    *)          return 1 ;;
+  local repo_spec="$1"
+  # 1. No path traversal
+  case "$repo_spec" in
+    *..*) return 1 ;;
   esac
+
+  # 2. Must be in owner/repo format
+  if [[ ! "$repo_spec" =~ ^[^/]+/[^/]+$ ]]; then
+    return 1
+  fi
+
+  # 3. Specifically exclude the "datasets" owner
+  local owner="${repo_spec%%/*}"
+  if [ "$owner" = "datasets" ]; then
+    return 1
+  fi
+
+  # 4. Valid characters (alphanumeric, hyphen, underscore, dot)
+  # and doesn't start with hyphen (prevent arg injection)
+  local VALID_PATTERN="^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
+  local repo="${repo_spec#*/}"
+  if [[ ! "$owner" =~ $VALID_PATTERN ]] || [[ ! "$repo" =~ $VALID_PATTERN ]]; then
+    return 1
+  fi
+
+  printf '%s\n' "$repo_spec"
 }
 
 # ——— Build RAW_LIST from override or file ————————————————————————
@@ -455,8 +491,8 @@ import sys, json, re, os
 fname = sys.argv[1]
 text = open(fname, 'r').read()
 
-# Remove // line comments
-text = re.sub(r'//.*$', '', text, flags=re.MULTILINE)
+# Remove // line comments (but not inside URLs)
+text = re.sub(r'(?<!:)\/\/.*$', '', text, flags=re.MULTILINE)
 # Remove /* ... */ block comments
 text = re.sub(r'/\*.*?\*/', '', text, flags=re.DOTALL)
 # Remove trailing commas before } or ]

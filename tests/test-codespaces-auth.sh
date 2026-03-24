@@ -232,8 +232,8 @@ output=$("$CODESPACES_SCRIPT" -f repos.list -d /nonexistent/devcontainer.json 2>
 exit_code=$?
 set -e
 
-if [ "$exit_code" -ne 0 ] && echo "$output" | grep -q "not found"; then
-  print_pass "Script correctly reports error for non-existent path"
+if [ "$exit_code" -ne 0 ] && (echo "$output" | grep -q "not found" || echo "$output" | grep -q "cannot be absolute"); then
+  print_pass "Script correctly reports error for non-existent or absolute path"
 else
   print_fail "Script should report error for non-existent path"
 fi
