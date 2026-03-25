@@ -154,7 +154,7 @@ with open(os.environ['TMP_DEST'], 'w') as f:
     echo "    ℹ️  No changes to commit"
     SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
   else
-    git add ".devcontainer/devcontainer.json"
+    git add -- ".devcontainer/devcontainer.json"
     git commit -m "Update devcontainer from latest prebuild"
     
     # Get current branch

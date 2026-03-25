@@ -25,7 +25,7 @@
 #       - Otherwise the first single-branch clone becomes the base.
 #     No side “-base” directories are created.
 
-set -Eeo pipefail
+set -Eeuo pipefail
 # Never prompt for credentials (prevents stdin reads that can kill the loop)
 export GIT_TERMINAL_PROMPT=0
 export GIT_ASKPASS=/bin/false
@@ -642,15 +642,15 @@ clone_one_repo() {
   case "$repo_url_no_ref" in
     file://*)
       repo_url="$repo_url_no_ref"
-      repo_dir=$(basename "${repo_url_no_ref%.git}")
+      repo_dir=$(basename -- "${repo_url_no_ref%.git}")
       ;;
     /*)
       repo_url="$repo_url_no_ref"
-      repo_dir=$(basename "${repo_url_no_ref%.git}")
+      repo_dir=$(basename -- "${repo_url_no_ref%.git}")
       ;;
     https://*)
       repo_url="$repo_url_no_ref"
-      repo_dir=$(basename "${repo_url_no_ref%.git}")
+      repo_dir=$(basename -- "${repo_url_no_ref%.git}")
       ;;
     */*)
       # Only convert to GitHub URL if it looks like owner/repo (not a path)
@@ -660,7 +660,7 @@ clone_one_repo() {
       else
         # Looks like a path with multiple slashes
         repo_url="$repo_url_no_ref"
-        repo_dir=$(basename "${repo_url_no_ref%.git}")
+        repo_dir=$(basename -- "${repo_url_no_ref%.git}")
       fi
       ;;
     *)
@@ -825,7 +825,7 @@ create_worktree_for_branch() {
     return 2
   fi
 
-  local repo_base; repo_base="$(basename "$base")"
+  local repo_base; repo_base="$(basename -- "$base")"
   local dest
   if [ -n "$target_dir" ]; then
     dest="$parent_dir/$target_dir"
@@ -1204,11 +1204,11 @@ main() {
           if [ "$is_at_branch" -eq 1 ] && [ "$is_branch_clone" -eq 1 ] && [ -z "$target_dir" ]; then
             local fallback_local_name
             if [ "$fallback_repo_https" = "$current_repo_https" ]; then
-              fallback_local_name="$(basename "$start_dir")"
+              fallback_local_name="$(basename -- "$start_dir")"
             else
               local idx; idx="$(remote_index "$fallback_repo_https")"
               if [ "$idx" -ge 0 ] && [ -n "${REMOTE_LOCAL_PATH[$idx]}" ]; then
-                fallback_local_name="$(basename "${REMOTE_LOCAL_PATH[$idx]}")"
+                fallback_local_name="$(basename -- "${REMOTE_LOCAL_PATH[$idx]}")"
               else
                 fallback_local_name="$(plan_base_name "$fallback_repo_https")"
               fi

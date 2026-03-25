@@ -9,7 +9,7 @@
 #
 # Path logic follows clone-repos.sh conventions
 
-set -Eeo pipefail
+set -Eeuo pipefail
 
 # --- Paths ---
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -396,7 +396,7 @@ main() {
       esac
       local full_path="$PROJECT_ROOT/$folder_path"
       local repo_name
-      repo_name="$(basename "$full_path")"
+      repo_name="$(basename -- "$full_path")"
       run_in_repo "$full_path" "$repo_name" "$RUN_SCRIPT"
     done < <(jq -r '.folders[].path' "$workspace_file")
 
