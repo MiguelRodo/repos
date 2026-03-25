@@ -74,3 +74,8 @@
 **Vulnerability:** The `-d/--devcontainer` argument in `codespaces-auth-add.sh` allowed arbitrary paths (absolute or `..`), enabling overwriting of system files. Additionally, a regex intended to strip JSONC comments (`//`) incorrectly matched `//` inside URLs (e.g. `https://`), corrupting data.
 **Learning:** Argument parsing for file paths must always be hardened with validation logic, even in internal helpers. Heuristic-based parsing (like regex for JSONC) is dangerous and must account for common edge cases like protocol prefixes in URLs.
 **Prevention:** Always validate user-provided paths for `-d` arguments using a strict check against `/*|*..*`. Use negative lookbehind in regex (e.g. `(?<!:)\/\/`) to avoid matching protocol separators when stripping comments.
+
+## 2025-06-10 - [Medium] Pervasive Missing Nounset and Option Terminators in Shell Tooling
+**Vulnerability:** Multiple secondary and helper scripts (e.g., `run-pipeline.sh`, `update-scripts.sh`) were missing `set -u` (nounset) and the `--` option terminator for common commands like `basename` and `git add`.
+**Learning:** While core scripts were hardened, utility scripts often trailed behind in security standards. `basename` is particularly susceptible to argument injection if a path component starts with a hyphen.
+**Prevention:** Enforce `set -u` across all scripts to catch uninitialized variables. Consistently use the `--` separator for *all* commands that accept variable-based positional arguments, including standard utilities like `basename`, `dirname`, and `git add`.

@@ -4,7 +4,7 @@
 #
 # This script pulls the latest scripts from the CompTemplate repository
 
-set -Eeo pipefail
+set -Eeuo pipefail
 
 # --- Configuration ---
 UPSTREAM_REPO="https://github.com/MiguelRodo/CompTemplate.git"
@@ -58,7 +58,7 @@ FORCE=false
 while [ "$#" -gt 0 ]; do
   case "$1" in
     -b|--branch)
-      shift; UPSTREAM_BRANCH="$1"; shift ;;
+      shift; [ $# -gt 0 ] || usage; UPSTREAM_BRANCH="$1"; shift ;;
     -n|--dry-run)
       DRY_RUN=true; shift ;;
     -f|--force)
@@ -70,6 +70,12 @@ while [ "$#" -gt 0 ]; do
       usage; exit 1 ;;
   esac
 done
+
+# Validate upstream branch name
+if ! git check-ref-format --allow-onelevel "$UPSTREAM_BRANCH" || [[ "$UPSTREAM_BRANCH" == -* ]]; then
+  echo "Error: '$UPSTREAM_BRANCH' is not a valid Git branch name." >&2
+  exit 1
+fi
 
 # --- Validate environment ---
 cd "$PROJECT_ROOT"
@@ -124,7 +130,7 @@ list_scripts() {
   for item in "$src_dir"/*; do
     [ ! -e "$item" ] && continue
     
-    local item_name="$(basename "$item")"
+    local item_name="$(basename -- "$item")"
     local rel_item="${rel_path:+$rel_path/}$item_name"
     
     if [ -d "$item" ]; then
@@ -185,7 +191,7 @@ copy_scripts() {
   for item in "$src_dir"/*; do
     [ ! -e "$item" ] && continue
     
-    local item_name="$(basename "$item")"
+    local item_name="$(basename -- "$item")"
     local rel_item="${rel_path:+$rel_path/}$item_name"
     
     if [ -d "$item" ]; then
@@ -208,7 +214,7 @@ copy_scripts "$UPSTREAM_SCRIPTS" "$TARGET_DIR" ""
 echo ""
 echo "Committing changes..."
 
-git add "$TARGET_DIR"
+git add -- "$TARGET_DIR"
 
 if git diff --staged --quiet; then
   echo "No changes to commit (files may be identical)."
