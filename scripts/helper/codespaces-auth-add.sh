@@ -213,7 +213,18 @@ get_current_repo_remote_https() {
   fi
 
   [ -z "$url" ] && { echo "Error: no Git remotes found in the current repository." >&2; return 1; }
-  normalise_remote_to_https "$url"
+  local normalized
+  normalized="$(normalise_remote_to_https "$url")" || return $?
+
+  # Validate for path traversal
+  case "$normalized" in
+    *..*)
+      echo "Error: current repository remote contains path traversal: $normalized" >&2
+      return 1
+      ;;
+  esac
+
+  printf '%s\n' "$normalized"
 }
 
 # ——— Extract owner/repo from https URL —————————————————————————————

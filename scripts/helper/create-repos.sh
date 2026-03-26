@@ -262,11 +262,26 @@ get_current_repo_info() {
     
     # Remove .git suffix
     origin_url=${origin_url%.git}
+
+    # Validate for path traversal
+    case "$origin_url" in
+      *..*)
+        return 1
+        ;;
+    esac
     
     # Extract owner and repo
     local owner repo
     owner=${origin_url%%/*}
     repo=${origin_url#*/}
+
+    # Validate owner and repo names
+    # - Must only contain alphanumeric characters, hyphens, underscores, or dots
+    # - Must not start with a hyphen (prevents argument injection)
+    local VALID_PATTERN="^[a-zA-Z0-9._][a-zA-Z0-9._-]*$"
+    if [[ ! "$owner" =~ $VALID_PATTERN ]] || [[ ! "$repo" =~ $VALID_PATTERN ]]; then
+      return 1
+    fi
     
     # Set global fallback variables
     fallback_owner="$owner"
