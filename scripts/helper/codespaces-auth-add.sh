@@ -27,16 +27,16 @@ validate_devcontainer_path() {
 get_temp_dir() {
   # Try various temp directory variables in order of preference
   if [ -n "${TMPDIR:-}" ] && [ -d "${TMPDIR}" ]; then
-    echo "${TMPDIR%/}"  # Remove trailing slash if present
+    printf '%s\n' "${TMPDIR%/}"  # Remove trailing slash if present
   elif [ -n "${TEMP:-}" ] && [ -d "${TEMP}" ]; then
-    echo "${TEMP%/}"
+    printf '%s\n' "${TEMP%/}"
   elif [ -n "${TMP:-}" ] && [ -d "${TMP}" ]; then
-    echo "${TMP%/}"
+    printf '%s\n' "${TMP%/}"
   elif [ -d "/tmp" ]; then
-    echo "/tmp"
+    printf '%s\n' "/tmp"
   else
     # Fallback to current directory
-    echo "."
+    printf '%s\n' "."
   fi
 }
 
@@ -470,7 +470,7 @@ update_with_jq(){
       { customizations:{ codespaces:{ repositories:$repos } } }
     ' >"$file"
   else
-    tmp="$(mktemp "$(get_temp_dir)/repos-auth-XXXXXX")"
+    tmp="$(mktemp -- "$(get_temp_dir)/repos-auth-XXXXXX")"
     jq --argjson repos "$repos_obj" '
       .customizations.codespaces.repositories
         |= ( (. // {}) + $repos )
@@ -610,7 +610,7 @@ update_devfile(){
         update_with_python "$devfile" "$tool"
       else
         # Safely write via a temporary file, then move into place
-        tmp="$(mktemp "$(get_temp_dir)/repos-auth-XXXXXX")"
+        tmp="$(mktemp -- "$(get_temp_dir)/repos-auth-XXXXXX")"
         update_with_python "$devfile" "$tool" > "$tmp"
         mv -- "$tmp" "$devfile"
         echo "Updated '$devfile' with $tool."

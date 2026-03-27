@@ -97,7 +97,7 @@ fi
 
 # --- Create temp directory ---
 TEMP_DIR="$(mktemp -d)"
-trap 'rm -rf "$TEMP_DIR"' EXIT
+trap 'rm -rf -- "$TEMP_DIR"' EXIT
 
 echo "Fetching scripts from $UPSTREAM_REPO (branch: $UPSTREAM_BRANCH)..."
 
@@ -203,7 +203,7 @@ copy_scripts() {
       # Copy file and preserve permissions
       cp -- "$item" "$dst_dir/$item_name"
       chmod +x -- "$dst_dir/$item_name"
-      echo "  ✓ Updated $rel_item"
+      printf '  ✓ Updated %s\n' "$rel_item"
     fi
   done
 }

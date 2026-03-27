@@ -36,16 +36,16 @@ debug() {
 get_temp_dir() {
   # Try various temp directory variables in order of preference
   if [ -n "${TMPDIR:-}" ] && [ -d "${TMPDIR}" ]; then
-    echo "${TMPDIR%/}"  # Remove trailing slash if present
+    printf '%s\n' "${TMPDIR%/}"  # Remove trailing slash if present
   elif [ -n "${TEMP:-}" ] && [ -d "${TEMP}" ]; then
-    echo "${TEMP%/}"
+    printf '%s\n' "${TEMP%/}"
   elif [ -n "${TMP:-}" ] && [ -d "${TMP}" ]; then
-    echo "${TMP%/}"
+    printf '%s\n' "${TMP%/}"
   elif [ -d "/tmp" ]; then
-    echo "/tmp"
+    printf '%s\n' "/tmp"
   else
     # Fallback to current directory
-    echo "."
+    printf '%s\n' "."
   fi
 }
 
@@ -112,7 +112,7 @@ update_with_jq() {
       > "$workspace_file"
   else
     # merge into existing file: set .folders = $folders
-    tmp="$(mktemp "$(get_temp_dir)/repos-workspace-XXXXXX")"
+    tmp="$(mktemp -- "$(get_temp_dir)/repos-workspace-XXXXXX")"
     jq --argjson folders "$folders_json" \
        '.folders = $folders' \
        -- "$workspace_file" > "$tmp" \
@@ -655,7 +655,7 @@ main() {
         else
           # Auto-generate debug file securely
           TEMP_DIR=$(get_temp_dir)
-          DEBUG_FILE=$(mktemp "${TEMP_DIR}/repos-workspace-debug-XXXXXX")
+          DEBUG_FILE=$(mktemp -- "${TEMP_DIR}/repos-workspace-debug-XXXXXX")
         fi
         ;;
       -h|--help)

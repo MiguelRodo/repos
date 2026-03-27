@@ -50,16 +50,16 @@ debug() {
 get_temp_dir() {
   # Try various temp directory variables in order of preference
   if [ -n "${TMPDIR:-}" ] && [ -d "${TMPDIR}" ]; then
-    echo "${TMPDIR%/}"  # Remove trailing slash if present
+    printf '%s\n' "${TMPDIR%/}"  # Remove trailing slash if present
   elif [ -n "${TEMP:-}" ] && [ -d "${TEMP}" ]; then
-    echo "${TEMP%/}"
+    printf '%s\n' "${TEMP%/}"
   elif [ -n "${TMP:-}" ] && [ -d "${TMP}" ]; then
-    echo "${TMP%/}"
+    printf '%s\n' "${TMP%/}"
   elif [ -d "/tmp" ]; then
-    echo "/tmp"
+    printf '%s\n' "/tmp"
   else
     # Fallback to current directory
-    echo "."
+    printf '%s\n' "."
   fi
 }
 
@@ -166,7 +166,7 @@ ensure_base_exists() { # remote https, base_abs_path, debug
   fi
 
   # If the path exists and is non-empty but not a git repo, signal a benign per-line failure
-  if [ -e "$base" ] && [ -n "$(ls -A "$base" 2>/dev/null)" ]; then
+  if [ -e "$base" ] && [ -n "$(ls -A -- "$base" 2>/dev/null)" ]; then
     echo "Error: intended base '$base' exists and is not a Git repo (non-empty). Skipping." >&2
     [[ "$debug" == true ]] && echo "ensure_base_exists: returning error code 2" >&2
     return 2
@@ -174,7 +174,7 @@ ensure_base_exists() { # remote https, base_abs_path, debug
 
   # Create dir if needed and clone a proper base
   [[ "$debug" == true ]] && echo "ensure_base_exists: creating base directory and cloning" >&2
-  mkdir -p "$base"
+  mkdir -p -- "$base"
   echo "Priming base clone for $remote → $base"
   if ! git clone -- "$remote" "$base" </dev/null; then
     echo "Error: failed to clone '$remote' into '$base'." >&2
@@ -733,10 +733,10 @@ clone_one_repo() {
   fi
   # 1) Create the destination dir if needed
   [[ "$debug" == true ]] && echo "clone_one_repo: creating destination directory '$dest'" >&2
-  mkdir -p "$dest"
+  mkdir -p -- "$dest"
 
   # 2) If the destination exists and is non-empty but not a Git repo, skip (don't abort the whole run)
-  if [ -n "$(ls -A "$dest" 2>/dev/null)" ]; then
+  if [ -n "$(ls -A -- "$dest" 2>/dev/null)" ]; then
     [[ "$debug" == true ]] && echo "clone_one_repo: destination is non-empty, checking if it's a git repo" >&2
     if [ -d "$dest/.git" ]; then
       echo "Already exists: $dest"
@@ -868,8 +868,8 @@ create_worktree_for_branch() {
   git -C "$base" fetch --prune origin </dev/null
 
   [[ "$debug" == true ]] && echo "create_worktree_for_branch: creating destination directory" >&2
-  mkdir -p "$dest"
-  if [ -n "$(ls -A "$dest" 2>/dev/null)" ]; then
+  mkdir -p -- "$dest"
+  if [ -n "$(ls -A -- "$dest" 2>/dev/null)" ]; then
     echo "Skip: destination '$dest' exists and is not empty; not touching it." >&2
     [[ "$debug" == true ]] && echo "create_worktree_for_branch: destination non-empty, skipping" >&2
     CNT_SKIPPED=$((CNT_SKIPPED + 1))
@@ -961,7 +961,7 @@ parse_args() {
         else
           # Auto-generate debug file securely
           TEMP_DIR=$(get_temp_dir)
-          DEBUG_FILE_ARG=$(mktemp "${TEMP_DIR}/repos-clone-debug-XXXXXX")
+          DEBUG_FILE_ARG=$(mktemp -- "${TEMP_DIR}/repos-clone-debug-XXXXXX")
         fi
         ;;
       -h|--help) usage; exit 0 ;;
