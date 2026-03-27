@@ -398,7 +398,7 @@ main() {
       local repo_name
       repo_name="$(basename -- "$full_path")"
       run_in_repo "$full_path" "$repo_name" "$RUN_SCRIPT"
-    done < <(jq -r '.folders[].path' "$workspace_file")
+    done < <(jq -r '.folders[].path' -- "$workspace_file")
 
     print_summary
     [ $FAIL_COUNT -gt 0 ] && exit 1

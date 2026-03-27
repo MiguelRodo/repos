@@ -29,16 +29,16 @@ debug() {
 get_temp_dir() {
   # Try various temp directory variables in order of preference
   if [ -n "${TMPDIR:-}" ] && [ -d "${TMPDIR}" ]; then
-    echo "${TMPDIR%/}"  # Remove trailing slash if present
+    printf '%s\n' "${TMPDIR%/}"  # Remove trailing slash if present
   elif [ -n "${TEMP:-}" ] && [ -d "${TEMP}" ]; then
-    echo "${TEMP%/}"
+    printf '%s\n' "${TEMP%/}"
   elif [ -n "${TMP:-}" ] && [ -d "${TMP}" ]; then
-    echo "${TMP%/}"
+    printf '%s\n' "${TMP%/}"
   elif [ -d "/tmp" ]; then
-    echo "/tmp"
+    printf '%s\n' "/tmp"
   else
     # Fallback to current directory
-    echo "."
+    printf '%s\n' "."
   fi
 }
 
@@ -87,7 +87,7 @@ while [ $# -gt 0 ]; do
       else
         # Auto-generate debug file securely
         TEMP_DIR=$(get_temp_dir)
-        DEBUG_FILE=$(mktemp "${TEMP_DIR}/repos-create-debug-XXXXXX")
+        DEBUG_FILE=$(mktemp -- "${TEMP_DIR}/repos-create-debug-XXXXXX")
       fi
       ;;
     -h|--help)    usage 0 ;;

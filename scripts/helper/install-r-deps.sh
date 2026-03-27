@@ -56,7 +56,7 @@ while IFS= read -r folder; do
       ;;
   esac
   FOLDERS+=("$folder")
-done < <(jq -r '.folders[].path' "$WORKSPACE_FILE")
+done < <(jq -r '.folders[].path' -- "$WORKSPACE_FILE")
 
 # 5. Your provided helpers, tweaked to operate per‑folder
 restore_renv() {
