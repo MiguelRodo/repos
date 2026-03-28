@@ -197,17 +197,19 @@ get_current_repo_remote_https() {
   local url="" first="" remotes
   remotes="$(git remote 2>/dev/null || true)"
   
-  if echo "$remotes" | grep -qx 'origin'; then
-    if ! url="$(git remote get-url --push origin 2>/dev/null)"; then
-      url="$(git remote get-url origin 2>/dev/null || true)"
+  # Use printf, grep -e, and git remote get-url -- to prevent argument injection
+  # and misinterpretation of variables starting with a hyphen
+  if printf '%s\n' "$remotes" | grep -qx -e 'origin'; then
+    if ! url="$(git remote get-url --push -- origin 2>/dev/null)"; then
+      url="$(git remote get-url -- origin 2>/dev/null || true)"
     fi
   fi
 
   if [ -z "$url" ] && [ -n "$remotes" ]; then
-    first="$(echo "$remotes" | head -n1)"
+    first="$(printf '%s\n' "$remotes" | head -n1)"
     if [ -n "$first" ]; then
-      if ! url="$(git remote get-url --push "$first" 2>/dev/null)"; then
-        url="$(git remote get-url "$first" 2>/dev/null || true)"
+      if ! url="$(git remote get-url --push -- "$first" 2>/dev/null)"; then
+        url="$(git remote get-url -- "$first" 2>/dev/null || true)"
       fi
     fi
   fi

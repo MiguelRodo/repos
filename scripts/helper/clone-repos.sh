@@ -479,16 +479,18 @@ get_current_repo_remote_https() {
   }
 
   local url="" first=""
-  if git remote | grep -qx 'origin'; then
-    if ! url="$(git remote get-url --push origin 2>/dev/null)"; then
-      url="$(git remote get-url origin 2>/dev/null || true)"
+  # Use grep -e and git remote get-url -- to prevent argument injection
+  # from remote names starting with a hyphen
+  if git remote | grep -qx -e 'origin'; then
+    if ! url="$(git remote get-url --push -- origin 2>/dev/null)"; then
+      url="$(git remote get-url -- origin 2>/dev/null || true)"
     fi
   fi
 
   if [ -z "$url" ]; then
     if first="$(git remote 2>/dev/null | head -n1)"; then
-      if ! url="$(git remote get-url --push "$first" 2>/dev/null)"; then
-        url="$(git remote get-url "$first" 2>/dev/null || true)"
+      if ! url="$(git remote get-url --push -- "$first" 2>/dev/null)"; then
+        url="$(git remote get-url -- "$first" 2>/dev/null || true)"
       fi
     fi
   fi
@@ -527,7 +529,8 @@ ensure_wildcard_fetch_refspec() {
   local wildcard_refspec="+refs/heads/*:refs/remotes/origin/*"
   
   # Check if wildcard refspec already exists
-  if git -C "$base" config --get-all remote.origin.fetch | grep -qF "$wildcard_refspec"; then
+  # Use grep -e to handle patterns starting with a hyphen literally
+  if git -C "$base" config --get-all remote.origin.fetch | grep -qF -e "$wildcard_refspec"; then
     return 0
   fi
   
