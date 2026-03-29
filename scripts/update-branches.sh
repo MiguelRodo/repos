@@ -7,6 +7,13 @@
 
 set -Eeuo pipefail
 
+# Never prompt for credentials (prevents stdin reads that can kill the loop)
+export GIT_TERMINAL_PROMPT=0
+export GIT_ASKPASS=/bin/false
+export GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh -oBatchMode=yes}"
+
+git() { command git "$@" </dev/null; }
+
 # --- Paths ---
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"

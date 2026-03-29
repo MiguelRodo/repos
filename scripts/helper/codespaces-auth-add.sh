@@ -8,6 +8,13 @@ set -o errexit   # same as -e
 set -o nounset   # same as -u
 set -o pipefail
 
+# Never prompt for credentials (prevents stdin reads that can kill the loop)
+export GIT_TERMINAL_PROMPT=0
+export GIT_ASKPASS=/bin/false
+export GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh -oBatchMode=yes}"
+
+git() { command git "$@" </dev/null; }
+
 # ——— Defaults ———————————————————————————————————————————————
 # Validate devcontainer path to prevent path traversal
 validate_devcontainer_path() {

@@ -12,6 +12,13 @@
 
 set -Eeuo pipefail
 
+# Never prompt for credentials (prevents stdin reads that can kill the loop)
+export GIT_TERMINAL_PROMPT=0
+export GIT_ASKPASS=/bin/false
+export GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh -oBatchMode=yes}"
+
+git() { command git "$@" </dev/null; }
+
 # --- Paths ---
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -235,27 +242,31 @@ echo "Setting up devcontainer..."
 if [ -f ".devcontainer/prebuild/devcontainer.json" ]; then
   echo "  Moving prebuild devcontainer to main location..."
   
-  # Read the prebuild devcontainer
-  PREBUILD_CONTENT="$(cat -- .devcontainer/prebuild/devcontainer.json)"
+  PREBUILD_FILE=".devcontainer/prebuild/devcontainer.json"
+  DEST_FILE=".devcontainer/devcontainer.json"
   
   # Remove the repositories section if it exists (using multiple approaches for portability)
   if command -v jq >/dev/null 2>&1; then
-    # Use jq if available
-    printf '%s\n' "$PREBUILD_CONTENT" | jq 'del(.customizations.codespaces.repositories)' > .devcontainer/devcontainer.json
+    # Use jq if available (reads directly from file)
+    jq 'del(.customizations.codespaces.repositories)' -- "$PREBUILD_FILE" > "$DEST_FILE"
   elif command -v python3 >/dev/null 2>&1; then
-    # Use Python if available
+    # Use Python if available (reads directly from file via env var)
+    export PREBUILD_FILE DEST_FILE
     python3 -c "
-import json, sys
-data = json.loads(sys.stdin.read())
+import json, sys, os
+with open(os.environ['PREBUILD_FILE']) as f:
+    data = json.load(f)
 if 'customizations' in data and 'codespaces' in data['customizations']:
     if 'repositories' in data['customizations']['codespaces']:
         del data['customizations']['codespaces']['repositories']
-print(json.dumps(data, indent=2))
-" <<< "$PREBUILD_CONTENT" > .devcontainer/devcontainer.json
+with open(os.environ['DEST_FILE'], 'w') as f:
+    json.dump(data, f, indent=2)
+    f.write('\n')
+"
   else
     # Fallback: just copy it (will have repositories section but still works)
     echo "  Warning: jq and python3 not found; copying devcontainer as-is"
-    cp -- .devcontainer/prebuild/devcontainer.json .devcontainer/devcontainer.json
+    cp -- "$PREBUILD_FILE" "$DEST_FILE"
   fi
   
   # Remove prebuild directory

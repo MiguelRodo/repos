@@ -79,3 +79,8 @@
 **Vulnerability:** Multiple secondary and helper scripts (e.g., `run-pipeline.sh`, `update-scripts.sh`) were missing `set -u` (nounset) and the `--` option terminator for common commands like `basename` and `git add`.
 **Learning:** While core scripts were hardened, utility scripts often trailed behind in security standards. `basename` is particularly susceptible to argument injection if a path component starts with a hyphen.
 **Prevention:** Enforce `set -u` across all scripts to catch uninitialized variables. Consistently use the `--` separator for *all* commands that accept variable-based positional arguments, including standard utilities like `basename`, `dirname`, and `git add`.
+
+## 2025-06-11 - [Improvement] Non-Interactive Git Hardening and Robust JSON Processing
+**Pattern:** Core scripts lacked explicit hardening for non-interactive Git use, potentially leading to hangs in automated environments (like CI/CD) when credentials were requested. Additionally, large JSON processing used shell variable expansion, risking "Argument list too long" errors.
+**Learning:** Automated scripts must explicitly disable terminal prompts for Git and SSH to ensure they fail fast rather than hanging. Relying on shell variable expansion for large configuration files is fragile.
+**Prevention:** Export `GIT_TERMINAL_PROMPT=0` and `GIT_ASKPASS=/bin/false` in all scripts using Git. Use a `git` wrapper function that redirects `/dev/null` to stdin. For JSON processing, have tools read directly from file paths instead of using intermediate shell variables.

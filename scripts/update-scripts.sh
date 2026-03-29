@@ -6,6 +6,13 @@
 
 set -Eeuo pipefail
 
+# Never prompt for credentials (prevents stdin reads that can kill the loop)
+export GIT_TERMINAL_PROMPT=0
+export GIT_ASKPASS=/bin/false
+export GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh -oBatchMode=yes}"
+
+git() { command git "$@" </dev/null; }
+
 # --- Configuration ---
 UPSTREAM_REPO="https://github.com/MiguelRodo/CompTemplate.git"
 UPSTREAM_BRANCH="${UPSTREAM_BRANCH:-main}"
