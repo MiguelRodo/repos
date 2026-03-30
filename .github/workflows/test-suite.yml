@@ -8,10 +8,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  test-suite-ubuntu:
-    runs-on: ubuntu-latest
+  test-suite:
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: read
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
 
     steps:
       - name: Checkout code
@@ -19,8 +22,12 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y git curl jq bash
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            sudo apt-get update
+            sudo apt-get install -y git curl jq bash
+          elif [ "${{ runner.os }}" = "macOS" ]; then
+            brew install jq
+          fi
 
       - name: Make scripts and tests executable
         run: |
@@ -126,4 +133,4 @@ jobs:
       - name: Test suite summary
         if: always()
         run: |
-          echo "✅ Test suite completed on Ubuntu"
+          echo "✅ Test suite completed on ${{ runner.os }}"
