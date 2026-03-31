@@ -22,6 +22,8 @@ trap 'rm -rf "$TEST_DIR"' EXIT
 mkdir -p "$TEST_DIR/remote/repo"
 cd "$TEST_DIR/remote/repo"
 git init
+git config user.email "test@example.com"
+git config user.name "Test User"
 git commit --allow-empty -m "Initial commit"
 
 # 2. Setup work dir
@@ -30,6 +32,8 @@ cd "$TEST_DIR/work"
 # The script expects to be run inside a git repo to derive fallback
 git init base-repo
 cd base-repo
+git config user.email "test@example.com"
+git config user.name "Test User"
 git commit --allow-empty -m "Initial commit"
 git remote add origin "file://$TEST_DIR/remote/repo"
 

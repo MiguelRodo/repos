@@ -14,6 +14,8 @@ cd "$TEST_DIR"
 mkdir -p repo
 cd repo
 git init -q
+git config user.email "test@example.com"
+git config user.name "Test User"
 git commit -q --allow-empty -m "Initial commit"
 git remote add origin https://github.com/owner/repo
 REPOS_LIST="$TEST_DIR/repos.list"
