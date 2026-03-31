@@ -11,7 +11,8 @@ NC='\033[0m' # No Color
 print_pass() { echo -e "${GREEN}PASS: $1${NC}"; }
 print_fail() { echo -e "${RED}FAIL: $1${NC}"; exit 1; }
 
-REPO_ROOT=$(pwd)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Create a workspace for testing
 TEST_DIR=$(mktemp -d)
@@ -39,7 +40,7 @@ git remote add origin "file://$TEST_DIR/remote/repo"
 
 # Copy the script to be tested
 mkdir -p scripts/helper
-cp "$REPO_ROOT/scripts/helper/clone-repos.sh" scripts/helper/
+cp "$PROJECT_ROOT/scripts/helper/clone-repos.sh" scripts/helper/
 
 # Test Case: @-h branch name
 # This should trigger help in git worktree add if not hardened

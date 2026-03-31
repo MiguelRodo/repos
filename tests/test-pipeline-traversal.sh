@@ -25,12 +25,15 @@ EOF
 chmod +x /tmp/malicious_pipeline.sh
 
 # 2. Setup dummy repo and workspace
+# Get absolute path to project root before we start changing directories
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
 mkdir -p "$TEST_DIR/project/dummy-repo"
 cd "$TEST_DIR/project"
 
 # Copy the script to be tested
 mkdir -p scripts
-cp "$OLDPWD/scripts/run-pipeline.sh" scripts/
+cp "$PROJECT_ROOT/scripts/run-pipeline.sh" scripts/
 
 cat > entire-project.code-workspace <<'EOF'
 {
