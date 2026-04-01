@@ -963,7 +963,7 @@ parse_args() {
         else
           # Auto-generate debug file securely
           TEMP_DIR=$(get_temp_dir)
-          DEBUG_FILE_ARG=$(mktemp -- "${TEMP_DIR}/repos-clone-debug-XXXXXX")
+          DEBUG_FILE_ARG=$(mktemp "${TEMP_DIR}/repos-clone-debug-XXXXXX")
         fi
         ;;
       -h|--help) usage; exit 0 ;;
@@ -1118,7 +1118,7 @@ main() {
   
   # Skip authentication check if all remotes are local
   if has_non_local_remotes "$REPOS_FILE"; then
-    check_non_interactive_auth "$DEBUG" || exit 1
+    check_non_interactive_auth "$DEBUG" || return 1
   else
     [[ "$DEBUG" == true ]] && echo "All remotes are local; skipping authentication check." >&2
   fi

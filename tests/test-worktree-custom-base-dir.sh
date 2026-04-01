@@ -108,13 +108,8 @@ file://$REPO_BARE@branch1 slides
 EOF
 
 # Run clone-repos.sh
-set +e
-"$CLONE_SCRIPT" -f repos.list >/dev/null 2>&1
-EXIT_CODE=$?
-set -e
-
-if [ $EXIT_CODE -ne 0 ]; then
-  print_fail "clone-repos.sh failed with exit code $EXIT_CODE"
+if ! "$CLONE_SCRIPT" -f repos.list >/dev/null 2>&1; then
+  print_fail "clone-repos.sh failed with exit code $?"
 fi
 
 # ============================================

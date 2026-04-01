@@ -159,7 +159,7 @@ if ! "$CLONE_SCRIPT" -f repos.list 2>&1; then
   print_info "clone-repos.sh exit code: $?"
 fi
 # Check if repos were cloned successfully regardless of exit code
-# Correct directory name for worktree is testrepo1-dev (since testrepo1 is the fallback)
+# Correct directory name for worktree is testrepo1-dev (based on fallback)
 if [ -d "$TEST_ROOT/testrepo1" ] && [ -d "$TEST_ROOT/testrepo1-dev" ]; then
   print_pass "Cloned testrepo1 and created dev worktree"
 else
@@ -294,7 +294,6 @@ if [ -x "$WORKSPACE_SCRIPT" ]; then
       print_pass "Workspace file created for local remotes"
       
       # Verify paths in workspace
-      # Since we're in workspace4, the base is workspace4
       if grep -q '../testrepo1' entire-project.code-workspace && \
          grep -q '../testrepo1-dev' entire-project.code-workspace; then
         print_pass "Workspace contains correct paths for local repos"
