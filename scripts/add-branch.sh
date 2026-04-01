@@ -248,15 +248,15 @@ if [ -f ".devcontainer/prebuild/devcontainer.json" ]; then
   # Remove the repositories section if it exists (using multiple approaches for portability)
   if command -v jq >/dev/null 2>&1; then
     # Use jq if available (reads directly from file)
-    tmp_dest=$(mktemp -- "${DEST_FILE}.XXXXXX")
-    trap 'rm -f -- "$tmp_dest"' EXIT
+    tmp_dest=$(mktemp "$DEST_FILE.XXXXXX")
+    trap 'rm -f -- "$tmp_dest" 2>/dev/null || true' EXIT
     jq 'del(.customizations.codespaces.repositories)' -- "$PREBUILD_FILE" > "$tmp_dest" && mv -- "$tmp_dest" "$DEST_FILE"
     trap - EXIT
   elif command -v python3 >/dev/null 2>&1; then
     # Use Python if available (reads directly from file via env var)
     export PREBUILD_FILE DEST_FILE
-    tmp_dest=$(mktemp -- "${DEST_FILE}.XXXXXX")
-    trap 'rm -f -- "$tmp_dest"' EXIT
+    tmp_dest=$(mktemp "$DEST_FILE.XXXXXX")
+    trap 'rm -f -- "$tmp_dest" 2>/dev/null || true' EXIT
     export tmp_dest
     python3 -c "
 import json, sys, os

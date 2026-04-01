@@ -31,7 +31,6 @@ export GIT_TERMINAL_PROMPT=0
 export GIT_ASKPASS=/bin/false
 : "${GIT_SSH_COMMAND:=ssh -oBatchMode=yes}"
 trace() { printf '▶ %s\n' "$*" >&2; }
-trap '' ERR
 
 git() { command git "$@" </dev/null; }
 
@@ -457,7 +456,7 @@ has_non_local_remotes() {
     
     # Check if it's a local remote
     case "$repo_spec" in
-      file://*|/*) continue ;;  # Local path
+      file://*|/*|../*|./*) continue ;;  # Local path
       */*)
         # Check if it looks like owner/repo (GitHub format)
         if [[ "$repo_spec" =~ ^[^/]+/[^/]+$ ]]; then
@@ -1119,7 +1118,7 @@ main() {
   
   # Skip authentication check if all remotes are local
   if has_non_local_remotes "$REPOS_FILE"; then
-    check_non_interactive_auth "$DEBUG"
+    check_non_interactive_auth "$DEBUG" || exit 1
   else
     [[ "$DEBUG" == true ]] && echo "All remotes are local; skipping authentication check." >&2
   fi

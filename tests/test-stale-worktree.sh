@@ -125,13 +125,12 @@ cd "$TEST_DIR"
 rm -rf *
 
 # 1. Create a test repo with repos.list
-git init main-repo
+# Create a local bare repo to use as origin
+git init --bare main-remote.git
+git clone main-remote.git main-repo
 cd main-repo
 git config user.name "Test User"
 git config user.email "test@example.com"
-
-# Set up git remote (required for clone-repos.sh)
-git remote add origin "https://github.com/test/main-repo.git" || true
 
 echo "# Main Repo" > README.md
 git add README.md
