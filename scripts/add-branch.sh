@@ -123,9 +123,9 @@ if ! git check-ref-format --allow-onelevel "$BRANCH_NAME" || [[ "$BRANCH_NAME" =
 fi
 
 # --- Validate we're in a git repo ---
-cd "$PROJECT_ROOT"
+cd -- "$PROJECT_ROOT"
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  echo "Error: not inside a Git working tree" >&2
+  printf "Error: not inside a Git working tree\n" >&2
   exit 1
 fi
 
@@ -166,7 +166,7 @@ fi
 
 # --- Create worktree ---
 if [ "$USE_BRANCH" = true ]; then
-  echo "Error: --branch mode not yet implemented. Use worktrees instead." >&2
+  printf "Error: --branch mode not yet implemented. Use worktrees instead.\n" >&2
   exit 1
 fi
 
@@ -174,22 +174,22 @@ fi
 git fetch -- origin >/dev/null 2>&1 || true
 
 if git ls-remote --exit-code --heads origin -- "$BRANCH_NAME" >/dev/null 2>&1; then
-  echo "Branch exists on origin, creating tracking worktree..."
+  printf "Branch exists on origin, creating tracking worktree...\n"
   # Ensure we have the remote tracking branch
   git fetch -- origin "refs/heads/$BRANCH_NAME:refs/remotes/origin/$BRANCH_NAME" 2>/dev/null || true
   git worktree add -b "$BRANCH_NAME" -- "$DEST" "origin/$BRANCH_NAME" || \
     git worktree add -- "$DEST" "$BRANCH_NAME"
 else
-  echo "Creating new branch from current HEAD..."
+  printf "Creating new branch from current HEAD...\n"
   git worktree add -b "$BRANCH_NAME" -- "$DEST"
   
   # Push to origin with tracking
-  echo "Pushing branch to origin..."
+  printf "Pushing branch to origin...\n"
   git -C "$DEST" push -u origin -- "$BRANCH_NAME"
 fi
 
 # --- Clean the worktree ---
-echo "Cleaning worktree to minimal infrastructure..."
+printf "Cleaning worktree to minimal infrastructure...\n"
 
 cd -- "$DEST"
 
@@ -237,10 +237,10 @@ for item in .[!.]*; do
 done
 
 # --- Setup devcontainer ---
-echo "Setting up devcontainer..."
+printf "Setting up devcontainer...\n"
 
 if [ -f ".devcontainer/prebuild/devcontainer.json" ]; then
-  echo "  Moving prebuild devcontainer to main location..."
+  printf "  Moving prebuild devcontainer to main location...\n"
   
   PREBUILD_FILE=".devcontainer/prebuild/devcontainer.json"
   DEST_FILE=".devcontainer/devcontainer.json"
@@ -248,10 +248,16 @@ if [ -f ".devcontainer/prebuild/devcontainer.json" ]; then
   # Remove the repositories section if it exists (using multiple approaches for portability)
   if command -v jq >/dev/null 2>&1; then
     # Use jq if available (reads directly from file)
-    jq 'del(.customizations.codespaces.repositories)' -- "$PREBUILD_FILE" > "$DEST_FILE"
+    tmp_dest=$(mktemp -- "${DEST_FILE}.XXXXXX")
+    trap 'rm -f -- "$tmp_dest"' EXIT
+    jq 'del(.customizations.codespaces.repositories)' -- "$PREBUILD_FILE" > "$tmp_dest" && mv -- "$tmp_dest" "$DEST_FILE"
+    trap - EXIT
   elif command -v python3 >/dev/null 2>&1; then
     # Use Python if available (reads directly from file via env var)
     export PREBUILD_FILE DEST_FILE
+    tmp_dest=$(mktemp -- "${DEST_FILE}.XXXXXX")
+    trap 'rm -f -- "$tmp_dest"' EXIT
+    export tmp_dest
     python3 -c "
 import json, sys, os
 with open(os.environ['PREBUILD_FILE']) as f:
@@ -259,38 +265,39 @@ with open(os.environ['PREBUILD_FILE']) as f:
 if 'customizations' in data and 'codespaces' in data['customizations']:
     if 'repositories' in data['customizations']['codespaces']:
         del data['customizations']['codespaces']['repositories']
-with open(os.environ['DEST_FILE'], 'w') as f:
+with open(os.environ['tmp_dest'], 'w') as f:
     json.dump(data, f, indent=2)
     f.write('\n')
-"
+" && mv -- "$tmp_dest" "$DEST_FILE"
+    trap - EXIT
   else
     # Fallback: just copy it (will have repositories section but still works)
-    echo "  Warning: jq and python3 not found; copying devcontainer as-is"
+    printf "  Warning: jq and python3 not found; copying devcontainer as-is\n"
     cp -- "$PREBUILD_FILE" "$DEST_FILE"
   fi
   
   # Remove prebuild directory
   rm -rf -- .devcontainer/prebuild
-  echo "  ✓ Devcontainer configured"
+  printf "  ✓ Devcontainer configured\n"
 elif [ -f ".devcontainer/devcontainer.json" ]; then
-  echo "  Devcontainer already exists, keeping as-is"
+  printf "  Devcontainer already exists, keeping as-is\n"
 else
-  echo "  Warning: No devcontainer configuration found"
+  printf "  Warning: No devcontainer configuration found\n"
 fi
 
 # --- Commit the changes ---
-echo "Committing infrastructure changes..."
+printf "Committing infrastructure changes...\n"
 git add -A --
 git commit -m "Initialize ${BRANCH_NAME} branch with minimal infrastructure" -- || true
 git push origin -- "$BRANCH_NAME" || true
 
 # --- Update repos.list ---
-cd "$PROJECT_ROOT"
-echo "Adding branch to repos.list..."
+cd -- "$PROJECT_ROOT"
+printf "Adding branch to repos.list...\n"
 
 # Check if @branch line already exists
-if [ -f repos.list ] && awk -v branch="@${BRANCH_NAME}" '$1 == branch { found=1; exit 0 } END { if (found) exit 0; else exit 1 }' repos.list; then
-  echo "  Branch already in repos.list"
+if [ -f repos.list ] && awk -v branch="@${BRANCH_NAME}" -- '$1 == branch { found=1; exit 0 } END { if (found) exit 0; else exit 1 }' repos.list; then
+  printf "  Branch already in repos.list\n"
 else
   # Add after the current repo (first line or after any existing @branch lines from current repo)
   if [ -n "$TARGET_DIR" ]; then
@@ -303,11 +310,11 @@ fi
 
 # --- Update workspace ---
 if [ -x "$SCRIPT_DIR/helper/vscode-workspace-add.sh" ]; then
-  echo "Updating VS Code workspace..."
+  printf "Updating VS Code workspace...\n"
   "$SCRIPT_DIR/helper/vscode-workspace-add.sh" -f repos.list
-  echo "  ✓ Workspace updated"
+  printf "  ✓ Workspace updated\n"
 else
-  echo "  Warning: vscode-workspace-add.sh not found; run it manually to update workspace"
+  printf "  Warning: vscode-workspace-add.sh not found; run it manually to update workspace\n"
 fi
 
 printf "\n"
