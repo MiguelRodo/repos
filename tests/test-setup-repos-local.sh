@@ -155,9 +155,12 @@ file://$REPO2_BARE
 EOF
 
 print_info "Running clone-repos.sh with file:// URLs..."
-"$CLONE_SCRIPT" -f repos.list >/dev/null 2>&1 || true  # Don't fail on non-zero exit
+if ! "$CLONE_SCRIPT" -f repos.list 2>&1; then
+  print_info "clone-repos.sh exit code: $?"
+fi
 # Check if repos were cloned successfully regardless of exit code
-if [ -d "$TEST_ROOT/testrepo1" ] && [ -d "$TEST_ROOT/workspace1-dev" ]; then
+# Correct directory name for worktree is testrepo1-dev (since testrepo1 is the fallback)
+if [ -d "$TEST_ROOT/testrepo1" ] && [ -d "$TEST_ROOT/testrepo1-dev" ]; then
   print_pass "Cloned testrepo1 and created dev worktree"
 else
   print_fail "Failed to clone repos from file:// URLs"
@@ -196,13 +199,15 @@ $REPO1_BARE
 EOF
 
 print_info "Running clone-repos.sh with absolute paths..."
-"$CLONE_SCRIPT" -f repos.list >/dev/null 2>&1 || true  # Don't fail on non-zero exit
+if ! "$CLONE_SCRIPT" -f repos.list 2>&1; then
+  print_info "clone-repos.sh exit code: $?"
+fi
 # Check for sanitized directory name (feature/test → feature-test)
-if [ -d "$TEST_ROOT/testrepo1" ] && [ -d "$TEST_ROOT/workspace2-feature-test" ]; then
+if [ -d "$TEST_ROOT/testrepo1" ] && [ -d "$TEST_ROOT/testrepo1-feature-test" ]; then
   print_pass "Cloned with absolute path and created worktree with sanitized name"
   
   # Verify actual branch name is preserved
-  cd "$TEST_ROOT/workspace2-feature-test"
+  cd "$TEST_ROOT/testrepo1-feature-test"
   ACTUAL_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
   if [ "$ACTUAL_BRANCH" = "feature/test" ]; then
     print_pass "Git branch name preserved with slash: $ACTUAL_BRANCH"
@@ -277,7 +282,9 @@ file://$REPO1_BARE
 EOF
 
 # Clone the repos first
-"$CLONE_SCRIPT" -f repos.list >/dev/null 2>&1 || true
+if ! "$CLONE_SCRIPT" -f repos.list 2>&1; then
+  print_info "clone-repos.sh exit code: $?"
+fi
 
 # Generate workspace file
 WORKSPACE_SCRIPT="$PROJECT_ROOT/scripts/helper/vscode-workspace-add.sh"
@@ -287,6 +294,7 @@ if [ -x "$WORKSPACE_SCRIPT" ]; then
       print_pass "Workspace file created for local remotes"
       
       # Verify paths in workspace
+      # Since we're in workspace4, the base is workspace4
       if grep -q '../testrepo1' entire-project.code-workspace && \
          grep -q '../testrepo1-dev' entire-project.code-workspace; then
         print_pass "Workspace contains correct paths for local repos"

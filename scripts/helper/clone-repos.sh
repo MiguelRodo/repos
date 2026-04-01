@@ -392,7 +392,7 @@ spec_to_https() {
       printf '%s\n' "${spec%.git}"
       ;;
     https://*) printf '%s\n' "${spec%.git}" ;;
-    /*) printf '%s\n' "${spec%.git}" ;;
+    /*|[a-zA-Z]:/*) printf '%s\n' "${spec%.git}" ;;
     */*)
       # Only convert to GitHub URL if it looks like owner/repo (not a path)
       if [[ "$spec" =~ ^[^/]+/[^/]+(@.*)?$ ]]; then
@@ -456,7 +456,7 @@ has_non_local_remotes() {
     
     # Check if it's a local remote
     case "$repo_spec" in
-      file://*|/*|../*|./*) continue ;;  # Local path
+      file://*|/*|../*|./*|[a-zA-Z]:/*) continue ;;  # Local path
       */*)
         # Check if it looks like owner/repo (GitHub format)
         if [[ "$repo_spec" =~ ^[^/]+/[^/]+$ ]]; then
@@ -657,7 +657,7 @@ clone_one_repo() {
       repo_url="$repo_url_no_ref"
       repo_dir=$(basename -- "${repo_url_no_ref%.git}")
       ;;
-    /*)
+    /*|[a-zA-Z]:/*)
       repo_url="$repo_url_no_ref"
       repo_dir=$(basename -- "${repo_url_no_ref%.git}")
       ;;
@@ -1215,16 +1215,14 @@ main() {
           # If this is an @branch clone (not a worktree) and no explicit target_dir,
           # calculate target_dir based on fallback repo's local name + branch
           if [ "$is_at_branch" -eq 1 ] && [ "$is_branch_clone" -eq 1 ] && [ -z "$target_dir" ]; then
-            local fallback_local_name
-            if [ "$fallback_repo_https" = "$current_repo_https" ]; then
+            local fallback_local_name=""
+            local idx; idx="$(remote_index "$fallback_repo_https")"
+            if [ "$idx" -ge 0 ] && [ -n "${REMOTE_LOCAL_PATH[$idx]}" ]; then
+              fallback_local_name="$(basename -- "${REMOTE_LOCAL_PATH[$idx]}")"
+            elif [ "$fallback_repo_https" = "$current_repo_https" ]; then
               fallback_local_name="$(basename -- "$start_dir")"
             else
-              local idx; idx="$(remote_index "$fallback_repo_https")"
-              if [ "$idx" -ge 0 ] && [ -n "${REMOTE_LOCAL_PATH[$idx]}" ]; then
-                fallback_local_name="$(basename -- "${REMOTE_LOCAL_PATH[$idx]}")"
-              else
-                fallback_local_name="$(plan_base_name "$fallback_repo_https")"
-              fi
+              fallback_local_name="$(plan_base_name "$fallback_repo_https")"
             fi
             local safe_ref; safe_ref="$(sanitize_branch_name "$ref")"
             target_dir="${fallback_local_name}-${safe_ref}"
@@ -1232,10 +1230,12 @@ main() {
           fi
 
           clone_one_repo "$repo_spec" "$target_dir" "$parent_dir" "$all_branches" "$DEBUG" || rc=$?
+          [ "$rc" -ne 0 ] && [ "$rc" -ne 2 ] && { ( exit "$rc" ); } # early exit if real error
+
           fallback_repo_https="$this_remote_https"
 
           if [ "$is_branch_clone" -eq 0 ]; then
-            fallback_repo_local="$CLONE_DEST"
+            [ -n "$CLONE_DEST" ] && fallback_repo_local="$CLONE_DEST"
             remember_remote "$this_remote_https" "$fallback_repo_local"
           else
             if [ "$seen_before" -eq 0 ] && [ "$(plan_has_full "$this_remote_https")" -eq 1 ]; then

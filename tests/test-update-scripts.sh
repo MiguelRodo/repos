@@ -200,7 +200,7 @@ else
 fi
 
 # Check for helper scripts
-HELPER_SCRIPTS=("helper/clone-repos.sh" "helper/vscode-workspace-add.sh" "helper/codespaces-auth-add.sh" "helper/create-repos.sh" "helper/install-r-deps.sh")
+HELPER_SCRIPTS=("helper/clone-repos.sh" "helper/vscode-workspace-add.sh" "helper/codespaces-auth-add.sh")
 HELPER_SCRIPTS_FOUND=true
 
 for script in "${HELPER_SCRIPTS[@]}"; do

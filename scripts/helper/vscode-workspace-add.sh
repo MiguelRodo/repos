@@ -112,7 +112,7 @@ update_with_jq() {
       > "$workspace_file"
   else
     # merge into existing file: set .folders = $folders
-    tmp="$(mktemp -- "$(get_temp_dir)/repos-workspace-XXXXXX")"
+    tmp="$(mktemp "$(get_temp_dir)/repos-workspace-XXXXXX")"
     jq --argjson folders "$folders_json" \
        '.folders = $folders' \
        -- "$workspace_file" > "$tmp" \
@@ -655,7 +655,7 @@ main() {
         else
           # Auto-generate debug file securely
           TEMP_DIR=$(get_temp_dir)
-          DEBUG_FILE=$(mktemp -- "${TEMP_DIR}/repos-workspace-debug-XXXXXX")
+          DEBUG_FILE=$(mktemp "${TEMP_DIR}/repos-workspace-debug-XXXXXX")
         fi
         ;;
       -h|--help)
