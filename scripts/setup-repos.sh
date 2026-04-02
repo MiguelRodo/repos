@@ -69,7 +69,7 @@ DEVCONTAINER_PATHS=()
 CODESPACES_SCRIPT="$SCRIPT_DIR/helper/codespaces-auth-add.sh"
 CREATE_SCRIPT="$SCRIPT_DIR/helper/create-repos.sh"
 CLONE_SCRIPT="$SCRIPT_DIR/helper/clone-repos.sh"
-WORKSPACE_SCRIPT="$SCRIPT_DIR/helper/vscode-workspace-add.sh"
+WORKSPACE_SCRIPT="$PROJECT_ROOT/scripts/helper/vscode-workspace-add.sh"
 
 usage() {
   cat <<EOF
@@ -239,29 +239,30 @@ if $DEBUG; then
   fi
 fi
 
-debug "Debug args to pass to helpers: ${DEBUG_ARGS[*]}"
+# Use Bash 3.2-safe array expansion that works with set -u
+debug "Debug args to pass to helpers: ${DEBUG_ARGS[*]:-}"
 
 echo "=== 1) Creating repos ==="
-debug "Running create-repos.sh with args: -f $REPOS_FILE $PUBLIC_FLAG ${DEBUG_ARGS[*]}"
+debug "Running create-repos.sh with args: -f $REPOS_FILE $PUBLIC_FLAG ${DEBUG_ARGS[*]:-}"
 create_args=( -f "$REPOS_FILE" )
 $PUBLIC_FLAG && create_args+=( --public )
-create_args+=( "${DEBUG_ARGS[@]}" )
+create_args+=( ${DEBUG_ARGS[@]+"${DEBUG_ARGS[@]}"} )
 "$CREATE_SCRIPT" "${create_args[@]}"
 
 echo "=== 2) Cloning repos locally ==="
-debug "Running clone-repos.sh with args: --file $REPOS_FILE ${DEBUG_ARGS[*]}"
+debug "Running clone-repos.sh with args: --file $REPOS_FILE ${DEBUG_ARGS[*]:-}"
 clone_args=( --file "$REPOS_FILE" )
 if [ "$WORKTREE_FLAG" = "true" ]; then
   clone_args+=( --worktree )
   debug "Adding --worktree flag to clone-repos.sh"
 fi
-clone_args+=( "${DEBUG_ARGS[@]}" )
+clone_args+=( ${DEBUG_ARGS[@]+"${DEBUG_ARGS[@]}"} )
 "$CLONE_SCRIPT" "${clone_args[@]}"
 
 echo "=== 3) Updating VS Code workspace ==="
-debug "Running vscode-workspace-add.sh with args: -f $REPOS_FILE ${DEBUG_ARGS[*]}"
+debug "Running vscode-workspace-add.sh with args: -f $REPOS_FILE ${DEBUG_ARGS[*]:-}"
 workspace_args=( -f "$REPOS_FILE" )
-workspace_args+=( "${DEBUG_ARGS[@]}" )
+workspace_args+=( ${DEBUG_ARGS[@]+"${DEBUG_ARGS[@]}"} )
 "$WORKSPACE_SCRIPT" "${workspace_args[@]}"
 
 if $CODESPACES_FLAG; then
@@ -288,7 +289,7 @@ if $CODESPACES_FLAG; then
     
     [ -n "$PERMISSIONS_OPT" ] && codespaces_args+=( --permissions "$PERMISSIONS_OPT" )
     [ -n "$TOOL_OPT" ]       && codespaces_args+=( -t "$TOOL_OPT" )
-    codespaces_args+=( "${DEBUG_ARGS[@]}" )
+    codespaces_args+=( ${DEBUG_ARGS[@]+"${DEBUG_ARGS[@]}"} )
     "$CODESPACES_SCRIPT" "${codespaces_args[@]}"
   else
     echo "Warning: codespaces-auth-add.sh not found; skipping Codespaces auth step."
