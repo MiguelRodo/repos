@@ -109,7 +109,7 @@ trap 'rm -rf -- "$TEMP_DIR"' EXIT
 echo "Fetching scripts from $UPSTREAM_REPO (branch: $UPSTREAM_BRANCH)..."
 
 # --- Clone the upstream repo ---
-if ! git clone --depth 1 --branch "$UPSTREAM_BRANCH" --single-branch -- "$UPSTREAM_REPO" "$TEMP_DIR/CompTemplate" >/dev/null 2>&1; then
+if ! git clone --depth 1 --branch "$UPSTREAM_BRANCH" --single-branch -- "$UPSTREAM_REPO" "$TEMP_DIR/CompTemplate" 2>&1; then
   echo "Error: Failed to clone upstream repository" >&2
   echo "Repository: $UPSTREAM_REPO" >&2
   echo "Branch: $UPSTREAM_BRANCH" >&2
@@ -165,6 +165,10 @@ list_scripts "$UPSTREAM_SCRIPTS" "$TARGET_DIR" ""
 if [ "$SCRIPT_COUNT" -eq 0 ]; then
   echo ""
   echo "✓ All scripts are up to date!"
+  if $DRY_RUN; then
+    echo ""
+    echo "This was a dry run. No changes needed."
+  fi
   exit 0
 fi
 

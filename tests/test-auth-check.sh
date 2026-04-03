@@ -82,8 +82,9 @@ export SSH_AUTH_SOCK=""  # Disable SSH agent
 print_info "Cleared all authentication environment variables"
 
 # 3. Run clone-repos.sh - should fail with auth error
+# Use a temporary HOME and GIT_CONFIG_NOSYSTEM=1 to isolate from runner's git config
 set +e
-output=$("$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
+output=$(HOME="$TEST_DIR/fake-home" GIT_CONFIG_NOSYSTEM=1 "$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
 exit_code=$?
 set -e
 
@@ -121,7 +122,7 @@ print_info "Set GH_TOKEN environment variable"
 
 # Run with just the empty repos.list to verify auth check passes
 set +e
-output=$("$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
+output=$(HOME="$TEST_DIR/fake-home" GIT_CONFIG_NOSYSTEM=1 "$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
 exit_code=$?
 set -e
 
@@ -158,7 +159,7 @@ if command -v gh >/dev/null 2>&1; then
     
     # Should still pass auth check via gh CLI
     set +e
-    output=$("$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
+    output=$(HOME="$TEST_DIR/fake-home" GIT_CONFIG_NOSYSTEM=1 "$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
     exit_code=$?
     set -e
     

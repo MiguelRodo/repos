@@ -27,17 +27,25 @@ print_pass() {
 
 print_fail() {
   echo -e "${RED}✗ $1${NC}"
+  TESTS_FAILED=$((TESTS_FAILED + 1))
 }
 
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# Initialize counters
+TESTS_FAILED=0
+
 print_header "Integration Test: Branches with Slashes"
 
 # Create temporary test directory structure
 TEST_ROOT=$(mktemp -d)
 trap 'rm -rf "$TEST_ROOT"' EXIT
+
+# Configure git globally to avoid "dubious ownership" errors in CI environment
+# for the temporary test directory
+git config --global safe.directory "*"
 
 print_info "Test root: $TEST_ROOT"
 
@@ -83,20 +91,34 @@ cat > repos.list <<EOF
 EOF
 
 print_info "Running clone-repos.sh..."
-# Use a more flexible grep that handles both clones and worktrees, and avoids non-ASCII character issues
-if "$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1 | grep -qE "Adding worktree|Cloning.*branch"; then
+# Avoid piping to grep -q to prevent SIGPIPE issues
+CLONE_OUTPUT=$("$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
+EXIT_CODE=$?
+echo "$CLONE_OUTPUT"
+
+if [ $EXIT_CODE -eq 0 ] && echo "$CLONE_OUTPUT" | grep -qE "Adding worktree|Cloning.*branch"; then
   # Check if the worktree directory was created with sanitized name
   EXPECTED_DIR="$TEST_ROOT/workspace-feature-cool-feature"
   if [ -d "$EXPECTED_DIR" ]; then
     print_pass "Worktree created with sanitized directory name: $(basename "$EXPECTED_DIR")"
     
     # Verify the actual branch name in git is correct (with slash)
-    cd "$EXPECTED_DIR"
-    ACTUAL_BRANCH=$(git branch --show-current 2>/dev/null || git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "UNKNOWN")
+    # Use git -C to avoid issues with cd and safe.directory
+    ACTUAL_BRANCH=$(git -C "$EXPECTED_DIR" rev-parse --abbrev-ref HEAD 2>&1 || echo "ERROR")
     if [ "$ACTUAL_BRANCH" = "feature/cool-feature" ]; then
       print_pass "Git branch name preserved with slash: $ACTUAL_BRANCH"
     else
-      print_fail "Git branch name incorrect: $ACTUAL_BRANCH (expected: feature/cool-feature)"
+      # Try one more time with full ref name
+      ACTUAL_REF=$(git -C "$EXPECTED_DIR" rev-parse --symbolic-full-name HEAD 2>&1 || echo "ERROR")
+      if [ "$ACTUAL_REF" = "refs/heads/feature/cool-feature" ]; then
+         print_pass "Git branch preserved with slash (checked via full ref)"
+      else
+         # Provide more info on failure
+         print_fail "Git branch name incorrect: $ACTUAL_BRANCH (expected: feature/cool-feature)"
+         print_info "Full ref: $ACTUAL_REF"
+         print_info "Directory contents (ls -laF):"
+         ls -laF "$EXPECTED_DIR"
+      fi
     fi
   else
     print_fail "Expected directory not found: $EXPECTED_DIR"
@@ -117,17 +139,28 @@ cat > repos.list <<EOF
 EOF
 
 print_info "Running clone-repos.sh with custom directory..."
-if "$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1 | grep -qE "Adding worktree|Cloning.*branch"; then
+CLONE_OUTPUT=$("$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
+EXIT_CODE=$?
+echo "$CLONE_OUTPUT"
+
+if [ $EXIT_CODE -eq 0 ] && echo "$CLONE_OUTPUT" | grep -qE "Adding worktree|Cloning.*branch"; then
   EXPECTED_DIR="$TEST_ROOT/custom-dir"
   if [ -d "$EXPECTED_DIR" ]; then
     print_pass "Worktree created with custom directory name: $(basename "$EXPECTED_DIR")"
     
-    cd "$EXPECTED_DIR"
-    ACTUAL_BRANCH=$(git branch --show-current 2>/dev/null || git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "UNKNOWN")
+    ACTUAL_BRANCH=$(git -C "$EXPECTED_DIR" rev-parse --abbrev-ref HEAD 2>&1 || echo "ERROR")
     if [ "$ACTUAL_BRANCH" = "hotfix/urgent-fix" ]; then
       print_pass "Git branch name preserved with slash: $ACTUAL_BRANCH"
     else
-      print_fail "Git branch name incorrect: $ACTUAL_BRANCH"
+      ACTUAL_REF=$(git -C "$EXPECTED_DIR" rev-parse --symbolic-full-name HEAD 2>&1 || echo "ERROR")
+      if [ "$ACTUAL_REF" = "refs/heads/hotfix/urgent-fix" ]; then
+         print_pass "Git branch preserved with slash (checked via full ref)"
+      else
+         print_fail "Git branch name incorrect: $ACTUAL_BRANCH"
+         print_info "Full ref: $ACTUAL_REF"
+         print_info "Directory contents (ls -laF):"
+         ls -laF "$EXPECTED_DIR"
+      fi
     fi
   else
     print_fail "Expected custom directory not found: $EXPECTED_DIR"
@@ -173,6 +206,12 @@ fi
 
 # Summary
 print_header "Integration Test Summary"
+
+if [ "$TESTS_FAILED" -gt 0 ] 2>/dev/null; then
+  echo -e "${RED}Integration tests failed with $TESTS_FAILED errors.${NC}"
+  exit 1
+fi
+
 echo -e "${GREEN}Integration tests completed successfully!${NC}"
 echo ""
 echo "Key findings:"
