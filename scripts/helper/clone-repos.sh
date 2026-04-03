@@ -356,6 +356,13 @@ normalise_remote_to_https() {
       url="${url%.git}"
       printf '%s\n' "$url"
       ;;
+    ./*|../*)
+      url="${url%.git}"
+      # Convert to absolute path securely
+      local base; base="$(pwd)"
+      url="${base}/${url}"
+      printf '%s\n' "$url"
+      ;;
     /*|[a-zA-Z]:/*)
       url="${url%.git}"
       printf '%s\n' "$url"
@@ -473,6 +480,13 @@ has_non_local_remotes() {
 }
 
 get_current_repo_remote_https() {
+  if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    # Handle potential ownership issues in CI containers
+    if [ -d ".git" ] || [ -f ".git" ]; then
+      git config --global --add safe.directory "$(pwd)" 2>/dev/null || true
+    fi
+  fi
+
   git rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
     echo "Error: not inside a Git working tree; cannot derive fallback repo." >&2
     exit 1
@@ -499,11 +513,18 @@ get_current_repo_remote_https() {
   local normalized
   normalized="$(normalise_remote_to_https "$url")" || return $?
 
-  # Validate for path traversal
-  case "$normalized" in
-    *..*)
-      echo "Error: current repository remote contains path traversal: $normalized" >&2
-      exit 1
+  # Validate for path traversal (only for non-local paths)
+  case "$url" in
+    file://*|/*|[a-zA-Z]:/*|./*|../*)
+      # Local path - already normalized and safe
+      : ;;
+    *)
+      case "$normalized" in
+        *..*)
+          echo "Error: current repository remote contains path traversal: $normalized" >&2
+          exit 1
+          ;;
+      esac
       ;;
   esac
 

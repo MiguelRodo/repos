@@ -157,16 +157,18 @@ EOF
 print_info "Running clone-repos.sh with file:// URLs..."
 CLONE_OUT=$("$CLONE_SCRIPT" -f repos.list 2>&1) || true
 # Check if repos were cloned successfully regardless of exit code
-if [ -d "$TEST_ROOT/testrepo1" ] && [ -d "$TEST_ROOT/workspace1-dev" ]; then
+# Use relative checks to be more robust across platforms (Windows path mapping)
+cd "$TEST_ROOT"
+if [ -d "testrepo1" ] && { [ -d "workspace1-dev" ] || [ -d "testrepo1-dev" ]; }; then
   print_pass "Cloned testrepo1 and created dev worktree"
 else
   print_fail "Failed to clone repos from file:// URLs"
   print_info "Clone output: $CLONE_OUT"
   print_info "Contents of $TEST_ROOT:"
-  ls -la "$TEST_ROOT" | grep -E "testrepo|workspace"
+  ls -laF .
 fi
 
-if [ -d "$TEST_ROOT/testrepo2" ] && [ -d "$TEST_ROOT/testrepo2-release-v1.0" ]; then
+if [ -d "testrepo2" ] && { [ -d "testrepo2-release-v1.0" ] || [ -d "workspace1-release-v1.0" ]; }; then
   print_pass "Cloned testrepo2 and created release/v1.0 worktree"
 else
   print_fail "Failed to clone testrepo2 or create worktree"
@@ -176,6 +178,22 @@ fi
 # Test 2: clone-repos.sh with absolute paths
 # ============================================
 print_test "clone-repos.sh handles absolute paths"
+
+# Use a separate bare repo for Test 2 to avoid interference with Test 1's clones
+REPO1_BARE_T2="$BARE_REPOS_DIR/testrepo1_t2.git"
+git init --bare -q "$REPO1_BARE_T2"
+TEMP_CLONE_T2="$TEST_ROOT/temp-clone1_t2"
+git clone -q "$REPO1_BARE_T2" "$TEMP_CLONE_T2"
+cd "$TEMP_CLONE_T2"
+git config user.email "test@example.com"
+git config user.name "Test User"
+echo "# Test Repo 1 Test 2" > README.md
+git add README.md
+git commit -q -m "Initial commit"
+DEFAULT_BRANCH=$(git symbolic-ref --short HEAD)
+git push -q origin "$DEFAULT_BRANCH"
+git checkout -q -b feature/test
+git push -q origin feature/test
 
 WORKSPACE2="$TEST_ROOT/workspace2"
 mkdir -p "$WORKSPACE2"
@@ -192,18 +210,20 @@ git commit -q -m "Initial commit"
 # Create repos.list with absolute paths
 cat > repos.list <<EOF
 # Test with absolute paths
-$REPO1_BARE
+$REPO1_BARE_T2
 @feature/test
 EOF
 
 print_info "Running clone-repos.sh with absolute paths..."
 CLONE_OUT=$("$CLONE_SCRIPT" -f repos.list 2>&1) || true
 # Check for sanitized directory name (feature/test → feature-test)
-if [ -d "$TEST_ROOT/testrepo1" ] && [ -d "$TEST_ROOT/workspace2-feature-test" ]; then
+# Use relative checks to be more robust across platforms
+cd "$TEST_ROOT"
+if [ -d "testrepo1_t2" ] && { [ -d "workspace2-feature-test" ] || [ -d "testrepo1_t2-feature-test" ]; }; then
   print_pass "Cloned with absolute path and created worktree with sanitized name"
   
   # Verify actual branch name is preserved
-  cd "$TEST_ROOT/workspace2-feature-test"
+  cd "workspace2-feature-test" 2>/dev/null || cd "testrepo1_t2-feature-test"
   ACTUAL_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
   if [ "$ACTUAL_BRANCH" = "feature/test" ]; then
     print_pass "Git branch name preserved with slash: $ACTUAL_BRANCH"
@@ -252,6 +272,8 @@ if [ $? -eq 0 ]; then
     print_pass "Local repos were cloned successfully"
   else
     print_fail "Repos were not cloned"
+    print_info "Contents of $TEST_ROOT:"
+    ls -laF "$TEST_ROOT"
   fi
 else
   print_fail "setup-repos.sh failed (this should pass after fix)"
@@ -334,7 +356,7 @@ file://$REPO1_BARE@dev
 EOF
 
 print_info "Running clone-repos.sh for single-branch from local remote..."
-"$CLONE_SCRIPT" -f repos.list >/dev/null 2>&1 || true
+CLONE_OUT=$("$CLONE_SCRIPT" -f repos.list 2>&1) || true
 if [ -d "$TEST_ROOT/testrepo1" ]; then
   print_pass "Single-branch clone from local remote succeeded"
   

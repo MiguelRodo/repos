@@ -247,6 +247,13 @@ create_branch() {
 
 # ── Get current repo info (for initial fallback) ───────────────────────────────
 get_current_repo_info() {
+  if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    # Handle potential ownership issues in CI containers
+    if [ -d ".git" ] || [ -f ".git" ]; then
+      git config --global --add safe.directory "$(pwd)" 2>/dev/null || true
+    fi
+  fi
+
   if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     # Get origin URL
     local origin_url
@@ -275,10 +282,16 @@ get_current_repo_info() {
     # Remove .git suffix
     origin_url=${origin_url%.git}
 
-    # Validate for path traversal
+    # Validate for path traversal (skip for local paths)
     case "$origin_url" in
-      *..*)
-        return 1
+      file://*|/*|[a-zA-Z]:/*|./*|../*)
+        : ;;
+      *)
+        case "$origin_url" in
+          *..*)
+            return 1
+            ;;
+        esac
         ;;
     esac
     

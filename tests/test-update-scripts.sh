@@ -226,10 +226,15 @@ fi
 print_test "Branch option is accepted"
 
 # Just check that it doesn't error on the option parsing
-if "$UPDATE_SCRIPT" --branch nonexistent-branch --dry-run --force 2>&1 | grep -q "branch: nonexistent-branch"; then
+# Avoid set -e failure during grep
+set +e
+BRANCH_OUT=$("$UPDATE_SCRIPT" --branch nonexistent-branch --dry-run --force 2>&1)
+set -e
+if echo "$BRANCH_OUT" | grep -q "branch: nonexistent-branch"; then
   print_pass "Branch option is accepted"
 else
   print_fail "Branch option is not properly handled"
+  print_info "Output: $BRANCH_OUT"
 fi
 
 # ============================================
