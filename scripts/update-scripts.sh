@@ -85,11 +85,17 @@ if ! git check-ref-format --allow-onelevel "$UPSTREAM_BRANCH" || [[ "$UPSTREAM_B
 fi
 
 # --- Validate environment ---
-cd "$PROJECT_ROOT"
+cd -- "$PROJECT_ROOT"
 
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  echo "Error: not inside a Git working tree" >&2
-  exit 1
+  # Handle potential ownership issues in CI containers
+  if [ -d ".git" ]; then
+    git config --global --add safe.directory "$(pwd)" 2>/dev/null || true
+  fi
+  if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    echo "Error: not inside a Git working tree" >&2
+    exit 1
+  fi
 fi
 
 # Check for uncommitted changes

@@ -356,7 +356,7 @@ normalise_remote_to_https() {
       url="${url%.git}"
       printf '%s\n' "$url"
       ;;
-    /*)
+    /*|[a-zA-Z]:/*)
       url="${url%.git}"
       printf '%s\n' "$url"
       ;;
@@ -393,7 +393,7 @@ spec_to_https() {
       printf '%s\n' "${spec%.git}"
       ;;
     https://*) printf '%s\n' "${spec%.git}" ;;
-    /*) printf '%s\n' "${spec%.git}" ;;
+    /*|[a-zA-Z]:/*|./*|../*) printf '%s\n' "${spec%.git}" ;;
     */*)
       # Only convert to GitHub URL if it looks like owner/repo (not a path)
       if [[ "$spec" =~ ^[^/]+/[^/]+(@.*)?$ ]]; then
@@ -457,7 +457,7 @@ has_non_local_remotes() {
     
     # Check if it's a local remote
     case "$repo_spec" in
-      file://*|/*) continue ;;  # Local path
+      file://*|/*|[a-zA-Z]:/*|./*|../*) continue ;;  # Local path
       */*)
         # Check if it looks like owner/repo (GitHub format)
         if [[ "$repo_spec" =~ ^[^/]+/[^/]+$ ]]; then
@@ -658,7 +658,7 @@ clone_one_repo() {
       repo_url="$repo_url_no_ref"
       repo_dir=$(basename -- "${repo_url_no_ref%.git}")
       ;;
-    /*)
+    /*|[a-zA-Z]:/*|./*|../*)
       repo_url="$repo_url_no_ref"
       repo_dir=$(basename -- "${repo_url_no_ref%.git}")
       ;;

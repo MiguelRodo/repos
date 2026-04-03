@@ -155,12 +155,13 @@ file://$REPO2_BARE
 EOF
 
 print_info "Running clone-repos.sh with file:// URLs..."
-"$CLONE_SCRIPT" -f repos.list >/dev/null 2>&1 || true  # Don't fail on non-zero exit
+CLONE_OUT=$("$CLONE_SCRIPT" -f repos.list 2>&1) || true
 # Check if repos were cloned successfully regardless of exit code
 if [ -d "$TEST_ROOT/testrepo1" ] && [ -d "$TEST_ROOT/workspace1-dev" ]; then
   print_pass "Cloned testrepo1 and created dev worktree"
 else
   print_fail "Failed to clone repos from file:// URLs"
+  print_info "Clone output: $CLONE_OUT"
   print_info "Contents of $TEST_ROOT:"
   ls -la "$TEST_ROOT" | grep -E "testrepo|workspace"
 fi
@@ -196,7 +197,7 @@ $REPO1_BARE
 EOF
 
 print_info "Running clone-repos.sh with absolute paths..."
-"$CLONE_SCRIPT" -f repos.list >/dev/null 2>&1 || true  # Don't fail on non-zero exit
+CLONE_OUT=$("$CLONE_SCRIPT" -f repos.list 2>&1) || true
 # Check for sanitized directory name (feature/test → feature-test)
 if [ -d "$TEST_ROOT/testrepo1" ] && [ -d "$TEST_ROOT/workspace2-feature-test" ]; then
   print_pass "Cloned with absolute path and created worktree with sanitized name"
@@ -211,6 +212,7 @@ if [ -d "$TEST_ROOT/testrepo1" ] && [ -d "$TEST_ROOT/workspace2-feature-test" ];
   fi
 else
   print_fail "Failed to clone repo from absolute path"
+  print_info "Clone output: $CLONE_OUT"
   print_info "Contents of $TEST_ROOT:"
   ls -la "$TEST_ROOT" | grep -E "testrepo|workspace"
 fi
@@ -241,7 +243,8 @@ EOF
 
 print_info "Running setup-repos.sh with local remotes..."
 # setup-repos.sh should handle this gracefully now with our fix
-if "$SETUP_SCRIPT" -f repos.list >/dev/null 2>&1; then
+SETUP_OUT=$("$SETUP_SCRIPT" -f repos.list 2>&1)
+if [ $? -eq 0 ]; then
   print_pass "setup-repos.sh completed without errors"
   
   # Verify repos were cloned
@@ -252,6 +255,7 @@ if "$SETUP_SCRIPT" -f repos.list >/dev/null 2>&1; then
   fi
 else
   print_fail "setup-repos.sh failed (this should pass after fix)"
+  print_info "Setup output: $SETUP_OUT"
 fi
 
 # ============================================

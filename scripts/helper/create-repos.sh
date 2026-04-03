@@ -427,7 +427,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   
   # Skip local remotes (file:// URLs and absolute paths)
   case "$repo_spec" in
-    file://*|/*)
+    file://*|/*|[a-zA-Z]:/*|./*|../*)
       debug "Line $line_num: Skipping local remote: $repo_spec"
       printf "Skipping local remote: %s\n" "$repo_spec"
       continue

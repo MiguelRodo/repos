@@ -195,7 +195,8 @@ normalise_remote_to_https() {
 
 # ——— Get current repo's remote as https URL —————————————————————————
 get_current_repo_remote_https() {
-  cd "$PROJECT_ROOT" || return 1
+  # Use PROJECT_ROOT, but don't fail if we can't cd into it (already there or permission issue)
+  cd -- "$PROJECT_ROOT" || true
   git rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
     echo "Error: not inside a Git working tree; cannot derive fallback repo." >&2
     return 1
@@ -285,6 +286,7 @@ normalise(){
       raw="${raw%/}"              # strip trailing slash
       raw="${raw%.git}"           # strip .git
       case "$raw" in
+    file://*|/*|[a-zA-Z]:/*|./*|../*) return 1 ;; # Local path
         https://github.com/*) raw="${raw#https://github.com/}" ;;
         https://*/*) raw="${raw#https://*/}" ;;
         */*) : ;;  # already in owner/repo format
