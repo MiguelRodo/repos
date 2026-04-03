@@ -42,7 +42,7 @@ DEBUG_FD_GLOBAL=3  # Use FD 3 for debug output (compatible with Bash 3.2+)
 
 debug() {
   if $DEBUG_GLOBAL; then
-    echo "[DEBUG clone-repos.sh] $*" >&$DEBUG_FD_GLOBAL
+    printf "[DEBUG clone-repos.sh] %s\n" "$*" >&$DEBUG_FD_GLOBAL
   fi
 }
 
@@ -964,7 +964,7 @@ parse_args() {
         else
           # Auto-generate debug file securely
           TEMP_DIR=$(get_temp_dir)
-          DEBUG_FILE_ARG=$(mktemp -- "${TEMP_DIR}/repos-clone-debug-XXXXXX")
+          DEBUG_FILE_ARG=$(mktemp "${TEMP_DIR}/repos-clone-debug-XXXXXX")
         fi
         ;;
       -h|--help) usage; exit 0 ;;

@@ -19,7 +19,7 @@ DEBUG_FD=3  # Use FD 3 for debug output (compatible with Bash 3.2+)
 
 debug() {
   if $DEBUG; then
-    echo "[DEBUG] $*" >&$DEBUG_FD
+    printf "[DEBUG] %s\n" "$*" >&$DEBUG_FD
   fi
 }
 
@@ -115,7 +115,7 @@ while [ $# -gt 0 ]; do
       else
         # Auto-generate debug file securely
         TEMP_DIR=$(get_temp_dir)
-        DEBUG_FILE=$(mktemp -- "${TEMP_DIR}/repos-debug-XXXXXX")
+        DEBUG_FILE=$(mktemp "${TEMP_DIR}/repos-debug-XXXXXX")
       fi
       ;;
     -h|--help)      usage 0 ;;

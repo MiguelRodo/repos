@@ -94,7 +94,7 @@ while [ $# -gt 0 ]; do
       else
         # Auto-generate debug file securely
         TEMP_DIR=$(get_temp_dir)
-        DEBUG_FILE=$(mktemp -- "${TEMP_DIR}/repos-create-debug-XXXXXX")
+        DEBUG_FILE=$(mktemp "${TEMP_DIR}/repos-create-debug-XXXXXX")
       fi
       ;;
     -h|--help)    usage 0 ;;
@@ -136,7 +136,7 @@ get_credentials() {
       GH_USER=$(printf '%s\n' "$creds" | tr -d '\r' | awk -F= '/^username=/ {print $2}')
     [ -z "${GH_TOKEN-}" ] && \
       GH_TOKEN=$(printf '%s\n' "$creds" | tr -d '\r' | awk -F= '/^password=/ {print $2}')
-    
+
     debug "Retrieved GH_USER: ${GH_USER:+<present>}"
     debug "Retrieved GH_TOKEN: ${GH_TOKEN:+<present>}"
     
@@ -151,7 +151,12 @@ get_credentials() {
     debug "Environment GH_USER: ${GH_USER:+<present>}"
     debug "Environment GH_TOKEN: ${GH_TOKEN:+<present>}"
   fi
-  debug "Credentials successfully obtained"
+
+  # Final sanitization to prevent HTTP header injection
+  GH_USER=$(printf '%s\n' "${GH_USER-}" | tr -d '\r\n')
+  GH_TOKEN=$(printf '%s\n' "${GH_TOKEN-}" | tr -d '\r\n')
+
+  debug "Credentials successfully obtained and sanitized"
   return 0
 }
 
