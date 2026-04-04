@@ -82,8 +82,10 @@ export SSH_AUTH_SOCK=""  # Disable SSH agent
 print_info "Cleared all authentication environment variables"
 
 # 3. Run clone-repos.sh - should fail with auth error
+# Use a temporary HOME and GIT_CONFIG_NOSYSTEM=1 to prevent host-level Git credentials
+# from causing the test to pass incorrectly.
 set +e
-output=$("$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
+output=$(HOME="$TEST_DIR/fake-home" GIT_CONFIG_NOSYSTEM=1 "$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
 exit_code=$?
 set -e
 

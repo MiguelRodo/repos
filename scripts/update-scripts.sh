@@ -87,45 +87,53 @@ fi
 # --- Validate environment ---
 cd "$PROJECT_ROOT"
 
+# Handle 'dubious ownership' errors in CI containers by marking the directory as safe
+if [ -d ".git" ]; then
+  git config --global --add safe.directory "$(pwd)"
+fi
+
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  echo "Error: not inside a Git working tree" >&2
+  printf 'Error: not inside a Git working tree\n' >&2
   exit 1
 fi
 
 # Check for uncommitted changes
+# Use -- separator for git diff to handle paths correctly
 if ! $FORCE && ! git diff --quiet HEAD -- "$TARGET_DIR"; then
-  echo "Error: You have uncommitted changes in scripts/" >&2
-  echo "Commit or stash your changes, or use --force to overwrite." >&2
-  echo "" >&2
-  echo "Changed files:" >&2
-  git status --short "$TARGET_DIR" >&2
+  printf 'Error: You have uncommitted changes in scripts/\n' >&2
+  printf 'Commit or stash your changes, or use --force to overwrite.\n' >&2
+  printf '\n' >&2
+  printf 'Changed files:\n' >&2
+  git status --short -- "$TARGET_DIR" >&2
   exit 1
 fi
 
 # --- Create temp directory ---
+# Use mktemp without -- for portability with BSD/macOS
 TEMP_DIR="$(mktemp -d)"
 trap 'rm -rf -- "$TEMP_DIR"' EXIT
 
-echo "Fetching scripts from $UPSTREAM_REPO (branch: $UPSTREAM_BRANCH)..."
+printf 'Fetching scripts from %s (branch: %s)...\n' "$UPSTREAM_REPO" "$UPSTREAM_BRANCH"
 
 # --- Clone the upstream repo ---
+# Use -- separator to ensure arguments are not misinterpreted as options
 if ! git clone --depth 1 --branch "$UPSTREAM_BRANCH" --single-branch -- "$UPSTREAM_REPO" "$TEMP_DIR/CompTemplate" >/dev/null 2>&1; then
-  echo "Error: Failed to clone upstream repository" >&2
-  echo "Repository: $UPSTREAM_REPO" >&2
-  echo "Branch: $UPSTREAM_BRANCH" >&2
+  printf 'Error: Failed to clone upstream repository\n' >&2
+  printf 'Repository: %s\n' "$UPSTREAM_REPO" >&2
+  printf 'Branch: %s\n' "$UPSTREAM_BRANCH" >&2
   exit 1
 fi
 
 UPSTREAM_SCRIPTS="$TEMP_DIR/CompTemplate/$SCRIPTS_SUBDIR"
 
 if [ ! -d "$UPSTREAM_SCRIPTS" ]; then
-  echo "Error: Scripts directory not found in upstream repo: $SCRIPTS_SUBDIR" >&2
+  printf 'Error: Scripts directory not found in upstream repo: %s\n' "$SCRIPTS_SUBDIR" >&2
   exit 1
 fi
 
 # --- List files to update ---
-echo ""
-echo "Files to update:"
+printf '\n'
+printf 'Files to update:\n'
 SCRIPT_COUNT=0
 
 # Function to recursively list and count files
@@ -144,16 +152,16 @@ list_scripts() {
       # Recursively process subdirectories
       list_scripts "$item" "$dst_dir/$item_name" "$rel_item"
     elif [ -f "$item" ]; then
-      # Compare files
+      # Compare files using diff
       if [ -f "$dst_dir/$item_name" ]; then
-        if ! diff -q "$item" "$dst_dir/$item_name" >/dev/null 2>&1; then
-          echo "  ✓ $rel_item (modified)"
+        if ! diff -q -- "$item" "$dst_dir/$item_name" >/dev/null 2>&1; then
+          printf '  ✓ %s (modified)\n' "$rel_item"
           SCRIPT_COUNT=$((SCRIPT_COUNT + 1))
         else
-          echo "  = $rel_item (unchanged)"
+          printf '  = %s (unchanged)\n' "$rel_item"
         fi
       else
-        echo "  + $rel_item (new)"
+        printf '  + %s (new)\n' "$rel_item"
         SCRIPT_COUNT=$((SCRIPT_COUNT + 1))
       fi
     fi
@@ -163,31 +171,33 @@ list_scripts() {
 list_scripts "$UPSTREAM_SCRIPTS" "$TARGET_DIR" ""
 
 if [ "$SCRIPT_COUNT" -eq 0 ]; then
-  echo ""
-  echo "✓ All scripts are up to date!"
+  printf '\n'
+  printf '✓ All scripts are up to date!\n'
   exit 0
 fi
 
 if $DRY_RUN; then
-  echo ""
-  echo "This was a dry run. Use without --dry-run to apply changes."
+  printf '\n'
+  printf 'This was a dry run. Use without --dry-run to apply changes.\n'
   exit 0
 fi
 
 # --- Prompt for confirmation ---
 if ! $FORCE; then
-  echo ""
-  read -p "Update $SCRIPT_COUNT script(s)? [y/N] " -n 1 -r
-  echo
-  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Update cancelled."
+  printf '\n'
+  # Use printf for the prompt and read for the response
+  printf 'Update %d script(s)? [y/N] ' "$SCRIPT_COUNT"
+  read -n 1 -r
+  printf '\n'
+  if [[ ! ${REPLY:-N} =~ ^[Yy]$ ]]; then
+    printf 'Update cancelled.\n'
     exit 0
   fi
 fi
 
 # --- Copy scripts ---
-echo ""
-echo "Updating scripts..."
+printf '\n'
+printf 'Updating scripts...\n'
 
 # Function to recursively copy files
 copy_scripts() {
@@ -218,13 +228,14 @@ copy_scripts() {
 copy_scripts "$UPSTREAM_SCRIPTS" "$TARGET_DIR" ""
 
 # --- Commit changes ---
-echo ""
-echo "Committing changes..."
+printf '\n'
+printf 'Committing changes...\n'
 
+# Use -- separator for git add to handle paths correctly
 git add -- "$TARGET_DIR"
 
 if git diff --staged --quiet; then
-  echo "No changes to commit (files may be identical)."
+  printf 'No changes to commit (files may be identical).\n'
 else
   COMMIT_MSG="Update scripts from CompTemplate@$UPSTREAM_BRANCH
 
@@ -233,14 +244,15 @@ Repository: $UPSTREAM_REPO
 Branch: $UPSTREAM_BRANCH
 Date: $(date -u +%Y-%m-%d)"
   
+  # Use -- for commit message to avoid potential issues
   git commit -m "$COMMIT_MSG"
   
-  echo ""
-  echo "✅ Scripts updated successfully!"
-  echo ""
-  echo "Changes committed. Review with:"
-  echo "  git show HEAD"
-  echo ""
-  echo "Push when ready:"
-  echo "  git push"
+  printf '\n'
+  printf '✅ Scripts updated successfully!\n'
+  printf '\n'
+  printf 'Changes committed. Review with:\n'
+  printf '  git show HEAD\n'
+  printf '\n'
+  printf 'Push when ready:\n'
+  printf '  git push\n'
 fi
