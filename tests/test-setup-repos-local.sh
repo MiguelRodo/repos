@@ -157,6 +157,8 @@ EOF
 print_info "Running clone-repos.sh with file:// URLs..."
 "$CLONE_SCRIPT" -f repos.list >/dev/null 2>&1 || true  # Don't fail on non-zero exit
 # Check if repos were cloned successfully regardless of exit code
+# Worktrees for @branch lines are now named <fallback_repo>-<branch>
+# where fallback_repo is the name of the repo directory.
 if [ -d "$TEST_ROOT/testrepo1" ] && [ -d "$TEST_ROOT/workspace1-dev" ]; then
   print_pass "Cloned testrepo1 and created dev worktree"
 else

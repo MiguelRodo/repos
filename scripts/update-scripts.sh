@@ -89,7 +89,7 @@ cd "$PROJECT_ROOT"
 
 # Handle 'dubious ownership' errors in CI containers by marking the directory as safe
 if [ -d ".git" ]; then
-  git config --global --add safe.directory "$(pwd)"
+  git config --global --add safe.directory "$(pwd)" 2>/dev/null || true
 fi
 
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -117,7 +117,7 @@ printf 'Fetching scripts from %s (branch: %s)...\n' "$UPSTREAM_REPO" "$UPSTREAM_
 
 # --- Clone the upstream repo ---
 # Use -- separator to ensure arguments are not misinterpreted as options
-if ! git clone --depth 1 --branch "$UPSTREAM_BRANCH" --single-branch -- "$UPSTREAM_REPO" "$TEMP_DIR/CompTemplate" >/dev/null 2>&1; then
+if ! git clone --depth 1 --branch "$UPSTREAM_BRANCH" --single-branch -- "$UPSTREAM_REPO" "$TEMP_DIR/CompTemplate"; then
   printf 'Error: Failed to clone upstream repository\n' >&2
   printf 'Repository: %s\n' "$UPSTREAM_REPO" >&2
   printf 'Branch: %s\n' "$UPSTREAM_BRANCH" >&2
