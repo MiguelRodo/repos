@@ -479,7 +479,7 @@ update_with_jq(){
       { customizations:{ codespaces:{ repositories:$repos } } }
     ' >"$file"
   else
-    tmp="$(mktemp -- "$(get_temp_dir)/repos-auth-XXXXXX")"
+    tmp="$(mktemp "$(get_temp_dir)/repos-auth-XXXXXX")"
     jq --argjson repos "$repos_obj" '
       .customizations.codespaces.repositories
         |= ( (. // {}) + $repos )
@@ -619,7 +619,7 @@ update_devfile(){
         update_with_python "$devfile" "$tool"
       else
         # Safely write via a temporary file, then move into place
-        tmp="$(mktemp -- "$(get_temp_dir)/repos-auth-XXXXXX")"
+        tmp="$(mktemp "$(get_temp_dir)/repos-auth-XXXXXX")"
         update_with_python "$devfile" "$tool" > "$tmp"
         mv -- "$tmp" "$devfile"
         echo "Updated '$devfile' with $tool."

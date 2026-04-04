@@ -94,7 +94,7 @@ while [ $# -gt 0 ]; do
       else
         # Auto-generate debug file securely
         TEMP_DIR=$(get_temp_dir)
-        DEBUG_FILE=$(mktemp -- "${TEMP_DIR}/repos-create-debug-XXXXXX")
+        DEBUG_FILE=$(mktemp "${TEMP_DIR}/repos-create-debug-XXXXXX")
       fi
       ;;
     -h|--help)    usage 0 ;;
@@ -133,9 +133,9 @@ get_credentials() {
       return 1
     fi
     [ -z "${GH_USER-}" ] && \
-      GH_USER=$(printf '%s\n' "$creds" | tr -d '\r' | awk -F= '/^username=/ {print $2}')
+      GH_USER=$(printf '%s\n' "$creds" | awk -F= '/^username=/ {print $2}' | tr -d '\r\n')
     [ -z "${GH_TOKEN-}" ] && \
-      GH_TOKEN=$(printf '%s\n' "$creds" | tr -d '\r' | awk -F= '/^password=/ {print $2}')
+      GH_TOKEN=$(printf '%s\n' "$creds" | awk -F= '/^password=/ {print $2}' | tr -d '\r\n')
     
     debug "Retrieved GH_USER: ${GH_USER:+<present>}"
     debug "Retrieved GH_TOKEN: ${GH_TOKEN:+<present>}"

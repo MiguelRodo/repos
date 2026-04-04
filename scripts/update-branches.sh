@@ -131,7 +131,7 @@ while IFS= read -r line; do
   fi
   
   # Read and process the prebuild file securely
-  TMP_DEST=$(mktemp -- "$DEST_FILE.XXXXXX")
+  TMP_DEST=$(mktemp "$DEST_FILE.XXXXXX")
   if [ "$JSON_TOOL" = "jq" ]; then
     jq 'del(.customizations.codespaces.repositories)' -- "$PREBUILD_FILE" > "$TMP_DEST"
   else
