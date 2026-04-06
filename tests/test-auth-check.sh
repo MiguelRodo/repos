@@ -73,13 +73,18 @@ cat > repos.list <<'EOF'
 test/test-repo
 EOF
 
-# 2. Unset all auth-related environment variables
+# 2. Unset all auth-related environment variables and isolate git config
 unset GH_TOKEN
 unset GITHUB_TOKEN
 unset GH_USER
 export SSH_AUTH_SOCK=""  # Disable SSH agent
 
-print_info "Cleared all authentication environment variables"
+# Isolate from global/system git config that might have credential helpers
+export GIT_CONFIG_NOSYSTEM=1
+export HOME="$TEST_DIR/fake-home"
+mkdir -p "$HOME"
+
+print_info "Cleared all authentication environment variables and isolated git config"
 
 # 3. Run clone-repos.sh - should fail with auth error
 set +e

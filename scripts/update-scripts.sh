@@ -87,6 +87,16 @@ fi
 # --- Validate environment ---
 cd "$PROJECT_ROOT"
 
+# Handle "dubious ownership" in CI containers by adding current directory to safe.directory
+if [ -d ".git" ] && ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  # Try to use environment variable for the current process
+  export GIT_CONFIG_PARAMETERS="'safe.directory=$(pwd)'"
+  # If it still doesn't work, we might need to add it to global config (less ideal)
+  if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    git config --global --add safe.directory "$(pwd)"
+  fi
+fi
+
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "Error: not inside a Git working tree" >&2
   exit 1

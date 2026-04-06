@@ -121,9 +121,15 @@ debug "Private flag: $PRIVATE_FLAG"
 # Returns 0 if credentials are available, 1 if not
 get_credentials() {
   debug "Attempting to get GitHub credentials..."
+
+  # Sanitize any environment variables from environment to prevent header injection (newline/CRLF)
+  [ -n "${GH_USER-}" ] && GH_USER=$(printf '%s\n' "$GH_USER" | tr -d '\r\n')
+  [ -n "${GH_TOKEN-}" ] && GH_TOKEN=$(printf '%s\n' "$GH_TOKEN" | tr -d '\r\n')
+
   if [ -z "${GH_TOKEN-}" ] || [ -z "${GH_USER-}" ]; then
     debug "GH_TOKEN or GH_USER not set, trying git credential fill..."
     # Try to get credentials, but don't fail if unavailable
+    local creds
     if ! creds=$(
       printf 'url=https://github.com\n\n' \
         | git -c credential.interactive=false credential fill 2>/dev/null
@@ -132,10 +138,11 @@ get_credentials() {
       echo "Warning: GitHub credentials not available. Skipping repository creation/verification." >&2
       return 1
     fi
+    # Use sed to extract values accurately, handling '=' in the value and sanitizing CRLF
     [ -z "${GH_USER-}" ] && \
-      GH_USER=$(printf '%s\n' "$creds" | tr -d '\r' | awk -F= '/^username=/ {print $2}')
+      GH_USER=$(printf '%s\n' "$creds" | sed -n 's/^username=//p' | tr -d '\r\n')
     [ -z "${GH_TOKEN-}" ] && \
-      GH_TOKEN=$(printf '%s\n' "$creds" | tr -d '\r' | awk -F= '/^password=/ {print $2}')
+      GH_TOKEN=$(printf '%s\n' "$creds" | sed -n 's/^password=//p' | tr -d '\r\n')
     
     debug "Retrieved GH_USER: ${GH_USER:+<present>}"
     debug "Retrieved GH_TOKEN: ${GH_TOKEN:+<present>}"

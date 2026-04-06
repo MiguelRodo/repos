@@ -194,9 +194,9 @@ for script in "${MAIN_SCRIPTS[@]}"; do
 done
 
 if $MAIN_SCRIPTS_FOUND; then
-  print_pass "All main scripts are listed"
+  print_pass "Core main scripts are listed"
 else
-  print_fail "Some main scripts are missing"
+  print_fail "Some core main scripts are missing"
 fi
 
 # Check for helper scripts
@@ -213,9 +213,9 @@ for script in "${HELPER_SCRIPTS[@]}"; do
 done
 
 if $HELPER_SCRIPTS_FOUND; then
-  print_pass "Helper scripts are listed with subdirectory path"
+  print_pass "Core helper scripts are listed"
 else
-  print_fail "Some helper scripts are missing"
+  print_fail "Some core helper scripts are missing"
 fi
 
 # ============================================

@@ -83,8 +83,12 @@ cat > repos.list <<EOF
 EOF
 
 print_info "Running clone-repos.sh..."
+# Capture output to avoid SIGPIPE if grep exits early
+OUTPUT=$("$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
+echo "$OUTPUT"
+
 # Use a more flexible grep that handles both clones and worktrees, and avoids non-ASCII character issues
-if "$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1 | grep -qE "Adding worktree|Cloning.*branch"; then
+if echo "$OUTPUT" | grep -qE "Adding worktree|Cloning.*branch"; then
   # Check if the worktree directory was created with sanitized name
   EXPECTED_DIR="$TEST_ROOT/workspace-feature-cool-feature"
   if [ -d "$EXPECTED_DIR" ]; then
@@ -117,7 +121,10 @@ cat > repos.list <<EOF
 EOF
 
 print_info "Running clone-repos.sh with custom directory..."
-if "$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1 | grep -qE "Adding worktree|Cloning.*branch"; then
+OUTPUT=$("$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
+echo "$OUTPUT"
+
+if echo "$OUTPUT" | grep -qE "Adding worktree|Cloning.*branch"; then
   EXPECTED_DIR="$TEST_ROOT/custom-dir"
   if [ -d "$EXPECTED_DIR" ]; then
     print_pass "Worktree created with custom directory name: $(basename "$EXPECTED_DIR")"
