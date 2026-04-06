@@ -84,3 +84,8 @@
 **Pattern:** Core scripts lacked explicit hardening for non-interactive Git use, potentially leading to hangs in automated environments (like CI/CD) when credentials were requested. Additionally, large JSON processing used shell variable expansion, risking "Argument list too long" errors.
 **Learning:** Automated scripts must explicitly disable terminal prompts for Git and SSH to ensure they fail fast rather than hanging. Relying on shell variable expansion for large configuration files is fragile.
 **Prevention:** Export `GIT_TERMINAL_PROMPT=0` and `GIT_ASKPASS=/bin/false` in all scripts using Git. Use a `git` wrapper function that redirects `/dev/null` to stdin. For JSON processing, have tools read directly from file paths instead of using intermediate shell variables.
+
+## 2025-06-12 - [High] Credential Header Injection and Truncation in Repository Management
+**Vulnerability:** `GH_TOKEN` and `GH_USER` environment variables were used in HTTP headers without sanitization, allowing for CRLF injection. Additionally, `awk` was used with `=` as a delimiter to parse `git credential fill` output, causing tokens containing `=` to be truncated.
+**Learning:** Credentials provided by environment variables or external tools should never be trusted as safe for direct inclusion in protocol headers. Standard text processing tools like `awk` can easily misinterpret values if they contain the delimiter.
+**Prevention:** Always sanitize credentials by removing newlines and carriage returns (`tr -d '\r\n'`) before use in headers. Use more robust parsing (like `sed -n 's/^prefix=//p'`) to extract values that may contain delimiters.
