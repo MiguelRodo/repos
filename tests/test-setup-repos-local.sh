@@ -157,6 +157,8 @@ EOF
 print_info "Running clone-repos.sh with file:// URLs..."
 "$CLONE_SCRIPT" -f repos.list >/dev/null 2>&1 || true  # Don't fail on non-zero exit
 # Check if repos were cloned successfully regardless of exit code
+# For @branch clones from external repos, clone-repos.sh now uses <base_dir_name>-<branch>
+# In these tests, the base directory where repos.list lives is used.
 if [ -d "$TEST_ROOT/testrepo1" ] && [ -d "$TEST_ROOT/workspace1-dev" ]; then
   print_pass "Cloned testrepo1 and created dev worktree"
 else

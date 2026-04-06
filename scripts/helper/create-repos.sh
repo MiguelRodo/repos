@@ -139,10 +139,11 @@ get_credentials() {
       return 1
     fi
     # Use sed to extract values accurately, handling '=' in the value and sanitizing CRLF
+    # Remove carriage returns first to avoid issues with sed parsing on Windows/macOS
     [ -z "${GH_USER-}" ] && \
-      GH_USER=$(printf '%s\n' "$creds" | sed -n 's/^username=//p' | tr -d '\r\n')
+      GH_USER=$(printf '%s\n' "$creds" | tr -d '\r' | sed -n 's/^username=//p' | tr -d '\n')
     [ -z "${GH_TOKEN-}" ] && \
-      GH_TOKEN=$(printf '%s\n' "$creds" | sed -n 's/^password=//p' | tr -d '\r\n')
+      GH_TOKEN=$(printf '%s\n' "$creds" | tr -d '\r' | sed -n 's/^password=//p' | tr -d '\n')
     
     debug "Retrieved GH_USER: ${GH_USER:+<present>}"
     debug "Retrieved GH_TOKEN: ${GH_TOKEN:+<present>}"
