@@ -11,22 +11,22 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 print_header() {
-  echo ""
-  echo "============================================"
-  echo "$1"
-  echo "============================================"
+  printf '\n'
+  printf '============================================\n'
+  printf '%s\n' "$1"
+  printf '============================================\n'
 }
 
 print_info() {
-  echo "ℹ️  $1"
+  printf 'ℹ️  %s\n' "$1"
 }
 
 print_pass() {
-  echo -e "${GREEN}✓ $1${NC}"
+  printf "${GREEN}✓ %s${NC}\n" "$1"
 }
 
 print_fail() {
-  echo -e "${RED}✗ $1${NC}"
+  printf "${RED}✗ %s${NC}\n" "$1"
 }
 
 # Get script directory
@@ -43,8 +43,8 @@ print_info "Test root: $TEST_ROOT"
 
 # Create a base repository to work with
 BASE_REPO="$TEST_ROOT/test-repo"
-mkdir -p "$BASE_REPO"
-cd "$BASE_REPO"
+mkdir -p -- "$BASE_REPO"
+cd -- "$BASE_REPO"
 
 print_info "Creating test git repository..."
 git init -q
@@ -65,8 +65,8 @@ print_info ""
 print_info "Test 1: Testing clone-repos.sh with @branch for branches with slashes"
 
 WORK_DIR="$TEST_ROOT/workspace"
-mkdir -p "$WORK_DIR"
-cd "$WORK_DIR"
+mkdir -p -- "$WORK_DIR"
+cd -- "$WORK_DIR"
 
 # Initialize as git repo (required for clone-repos.sh)
 git init -q
@@ -92,11 +92,11 @@ if printf '%s\n' "$OUTPUT" | grep -qE "Adding worktree|Cloning.*branch"; then
   # Check if the worktree directory was created with sanitized name
   EXPECTED_DIR="$TEST_ROOT/workspace-feature-cool-feature"
   if [ -d "$EXPECTED_DIR" ]; then
-    print_pass "Worktree created with sanitized directory name: $(basename "$EXPECTED_DIR")"
+    print_pass "Worktree created with sanitized directory name: $(basename -- "$EXPECTED_DIR")"
     
     # Verify the actual branch name in git is correct (with slash)
-    cd "$EXPECTED_DIR"
-    ACTUAL_BRANCH=$(git branch --show-current 2>/dev/null || git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "UNKNOWN")
+    cd -- "$EXPECTED_DIR"
+    ACTUAL_BRANCH=$(git branch --show-current 2>/dev/null || git rev-parse --abbrev-ref HEAD 2>/dev/null || printf 'UNKNOWN\n')
     if [ "$ACTUAL_BRANCH" = "feature/cool-feature" ]; then
       print_pass "Git branch name preserved with slash: $ACTUAL_BRANCH"
     else
@@ -105,7 +105,7 @@ if printf '%s\n' "$OUTPUT" | grep -qE "Adding worktree|Cloning.*branch"; then
   else
     print_fail "Expected directory not found: $EXPECTED_DIR"
     print_info "Contents of parent dir:"
-    ls -la "$TEST_ROOT" | grep workspace
+    ls -la -- "$TEST_ROOT" | grep workspace
   fi
 else
   print_fail "clone-repos.sh failed or didn't create worktree"
@@ -115,7 +115,7 @@ fi
 print_info ""
 print_info "Test 2: Testing with explicit target directory"
 
-cd "$WORK_DIR"
+cd -- "$WORK_DIR"
 cat > repos.list <<EOF
 @hotfix/urgent-fix custom-dir
 EOF
@@ -127,10 +127,10 @@ printf '%s\n' "$OUTPUT"
 if printf '%s\n' "$OUTPUT" | grep -qE "Adding worktree|Cloning.*branch"; then
   EXPECTED_DIR="$TEST_ROOT/custom-dir"
   if [ -d "$EXPECTED_DIR" ]; then
-    print_pass "Worktree created with custom directory name: $(basename "$EXPECTED_DIR")"
+    print_pass "Worktree created with custom directory name: $(basename -- "$EXPECTED_DIR")"
     
-    cd "$EXPECTED_DIR"
-    ACTUAL_BRANCH=$(git branch --show-current 2>/dev/null || git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "UNKNOWN")
+    cd -- "$EXPECTED_DIR"
+    ACTUAL_BRANCH=$(git branch --show-current 2>/dev/null || git rev-parse --abbrev-ref HEAD 2>/dev/null || printf 'UNKNOWN\n')
     if [ "$ACTUAL_BRANCH" = "hotfix/urgent-fix" ]; then
       print_pass "Git branch name preserved with slash: $ACTUAL_BRANCH"
     else
@@ -145,7 +145,7 @@ fi
 print_info ""
 print_info "Test 3: Testing vscode-workspace-add.sh path generation"
 
-cd "$WORK_DIR"
+cd -- "$WORK_DIR"
 cat > repos.list <<EOF
 @feature/cool-feature
 @hotfix/urgent-fix custom-dir
@@ -180,9 +180,9 @@ fi
 
 # Summary
 print_header "Integration Test Summary"
-echo -e "${GREEN}Integration tests completed successfully!${NC}"
-echo ""
-echo "Key findings:"
+printf "${GREEN}Integration tests completed successfully!${NC}\n"
+printf '\n'
+printf "Key findings:\n"
 echo "  • Branches with slashes are handled correctly"
 echo "  • Directory names use sanitized names (slashes → dashes)"
 echo "  • Git operations use original branch names (with slashes)"

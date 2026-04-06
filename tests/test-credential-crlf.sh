@@ -16,6 +16,7 @@ print_fail() { echo -e "  ${RED}FAIL${NC}: $1"; }
 print_header "Test: CRLF handling in git credential fill"
 
 creds=$'username=joe\r\npassword=secret=token\r\n'
+# Logic from scripts/helper/create-repos.sh:
 EXTRACTED_USER=$(printf '%s\n' "$creds" | tr -d '\r' | sed -n 's/^username=//p' | tr -d '\n')
 EXTRACTED_TOKEN=$(printf '%s\n' "$creds" | tr -d '\r' | sed -n 's/^password=//p' | tr -d '\n')
 
@@ -31,6 +32,7 @@ print_header "Test: Environment variable sanitization"
 GH_USER=$'admin\r\nInjected: user'
 GH_TOKEN=$'token\nInjected: token'
 
+# Logic from scripts/helper/create-repos.sh:
 SANITIZED_USER=$(printf '%s\n' "$GH_USER" | tr -d '\r\n')
 SANITIZED_TOKEN=$(printf '%s\n' "$GH_TOKEN" | tr -d '\r\n')
 

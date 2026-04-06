@@ -122,7 +122,7 @@ debug "Private flag: $PRIVATE_FLAG"
 get_credentials() {
   debug "Attempting to get GitHub credentials..."
 
-  # Sanitize any environment variables from environment to prevent header injection (newline/CRLF)
+  # Sanitize any credentials from environment to prevent header injection (newline/CRLF)
   [ -n "${GH_USER-}" ] && GH_USER=$(printf '%s\n' "$GH_USER" | tr -d '\r\n')
   [ -n "${GH_TOKEN-}" ] && GH_TOKEN=$(printf '%s\n' "$GH_TOKEN" | tr -d '\r\n')
 
@@ -324,7 +324,7 @@ line_num=0
 
 while IFS= read -r line || [ -n "$line" ]; do
   line_num=$((line_num + 1))
-  case "$line" in ''|\#*) debug "Line $line_num: Skipping empty or comment line"; continue ;; esac
+  case "$line" in ''|\#*) debug "Line $line_num: Skipping empty or comment line"; continue ;; END) break ;; esac
   
   debug "Line $line_num: Processing: $line"
 
