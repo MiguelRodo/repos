@@ -385,7 +385,7 @@ spec_to_https() {
   case "$spec" in
     file://*)
       # Convert file:///path to /path for consistency
-      spec="$spec"
+      spec="${spec#file://}"
       printf '%s\n' "${spec%.git}"
       ;;
     https://*) printf '%s\n' "${spec%.git}" ;;
