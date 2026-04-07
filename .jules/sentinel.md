@@ -84,3 +84,8 @@
 **Pattern:** Core scripts lacked explicit hardening for non-interactive Git use, potentially leading to hangs in automated environments (like CI/CD) when credentials were requested. Additionally, large JSON processing used shell variable expansion, risking "Argument list too long" errors.
 **Learning:** Automated scripts must explicitly disable terminal prompts for Git and SSH to ensure they fail fast rather than hanging. Relying on shell variable expansion for large configuration files is fragile.
 **Prevention:** Export `GIT_TERMINAL_PROMPT=0` and `GIT_ASKPASS=/bin/false` in all scripts using Git. Use a `git` wrapper function that redirects `/dev/null` to stdin. For JSON processing, have tools read directly from file paths instead of using intermediate shell variables.
+
+## 2025-07-15 - [High] Insecure Credential Parsing and Header Injection
+**Vulnerability:** `get_credentials` used `awk -F=` to parse `git credential fill` output, which truncated tokens containing equals signs. It also lacked CRLF sanitization for `GH_USER` and `GH_TOKEN` environment variables.
+**Learning:** Using a single character delimiter like `=` for parsing key-value pairs is fragile if the value itself can contain that delimiter. GitHub tokens frequently contain `=` characters. Lack of sanitization of user-provided environment variables in scripts that interact with web APIs can lead to header injection vulnerabilities.
+**Prevention:** Use `sed -n 's/^key=//p'` for robust extraction of values from key-value pairs. Always sanitize external inputs (including environment variables) with `tr -d '\r\n'` before using them in HTTP headers or security-sensitive contexts.

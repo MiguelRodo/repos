@@ -94,7 +94,7 @@ while [ $# -gt 0 ]; do
       else
         # Auto-generate debug file securely
         TEMP_DIR=$(get_temp_dir)
-        DEBUG_FILE=$(mktemp -- "${TEMP_DIR}/repos-create-debug-XXXXXX")
+        DEBUG_FILE=$(mktemp "${TEMP_DIR}/repos-create-debug-XXXXXX")
       fi
       ;;
     -h|--help)    usage 0 ;;
@@ -121,6 +121,10 @@ debug "Private flag: $PRIVATE_FLAG"
 # Returns 0 if credentials are available, 1 if not
 get_credentials() {
   debug "Attempting to get GitHub credentials..."
+  # Sanitize environment variables to prevent header/credential injection
+  [ -n "${GH_USER:-}" ] && GH_USER=$(printf '%s\n' "$GH_USER" | tr -d '\r\n')
+  [ -n "${GH_TOKEN:-}" ] && GH_TOKEN=$(printf '%s\n' "$GH_TOKEN" | tr -d '\r\n')
+
   if [ -z "${GH_TOKEN-}" ] || [ -z "${GH_USER-}" ]; then
     debug "GH_TOKEN or GH_USER not set, trying git credential fill..."
     # Try to get credentials, but don't fail if unavailable
@@ -132,10 +136,12 @@ get_credentials() {
       echo "Warning: GitHub credentials not available. Skipping repository creation/verification." >&2
       return 1
     fi
+    # Parse credentials with sed instead of awk -F= to support tokens with equals signs.
+    # Sanitize retrieved values with tr to prevent header injection.
     [ -z "${GH_USER-}" ] && \
-      GH_USER=$(printf '%s\n' "$creds" | tr -d '\r' | awk -F= '/^username=/ {print $2}')
+      GH_USER=$(printf '%s\n' "$creds" | sed -n 's/^username=//p' | tr -d '\r\n')
     [ -z "${GH_TOKEN-}" ] && \
-      GH_TOKEN=$(printf '%s\n' "$creds" | tr -d '\r' | awk -F= '/^password=/ {print $2}')
+      GH_TOKEN=$(printf '%s\n' "$creds" | sed -n 's/^password=//p' | tr -d '\r\n')
     
     debug "Retrieved GH_USER: ${GH_USER:+<present>}"
     debug "Retrieved GH_TOKEN: ${GH_TOKEN:+<present>}"
@@ -341,7 +347,7 @@ while IFS= read -r line || [ -n "$line" ]; do
       ;;
   esac
 
-  repo_spec=${line%%[[:space:]]*}
+  repo_spec=${trimmed_line%%[[:space:]]*}
   
   # Parse line-specific flags for this repo
   line_is_public=""
@@ -427,7 +433,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   
   # Skip local remotes (file:// URLs and absolute paths)
   case "$repo_spec" in
-    file://*|/*)
+    file://*|/*|[a-zA-Z]:/*)
       debug "Line $line_num: Skipping local remote: $repo_spec"
       printf "Skipping local remote: %s\n" "$repo_spec"
       continue

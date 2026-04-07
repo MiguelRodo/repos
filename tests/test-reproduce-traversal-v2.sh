@@ -3,16 +3,18 @@ set -euo pipefail
 
 # Setup
 TEST_DIR=$(mktemp -d)
-# trap 'rm -rf "$TEST_DIR"' EXIT
+trap 'rm -rf "$TEST_DIR"' EXIT
 
-PROJECT_ROOT="$PWD"
+# Get absolute path to project root before we start changing directories
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
 # Copy script to $TEST_DIR/bin/
 mkdir -p "$TEST_DIR/bin"
-cp scripts/run-pipeline.sh "$TEST_DIR/bin/"
+cp "$PROJECT_ROOT/scripts/run-pipeline.sh" "$TEST_DIR/bin/"
 mkdir -p "$TEST_DIR/scripts"
-cp scripts/setup-repos.sh "$TEST_DIR/scripts/"
+cp "$PROJECT_ROOT/scripts/setup-repos.sh" "$TEST_DIR/scripts/"
 mkdir -p "$TEST_DIR/scripts/helper"
-cp scripts/helper/install-r-deps.sh "$TEST_DIR/scripts/helper/"
+cp "$PROJECT_ROOT/scripts/helper/install-r-deps.sh" "$TEST_DIR/scripts/helper/"
 
 cd "$TEST_DIR"
 git init -q

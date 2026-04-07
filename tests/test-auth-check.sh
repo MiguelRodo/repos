@@ -39,9 +39,11 @@ print_info() {
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+FAKE_HOME=$(mktemp -d)
+trap 'rm -rf "$FAKE_HOME" "$TEST_DIR"' EXIT
+
 # Create temporary test directory
 TEST_DIR=$(mktemp -d)
-trap 'rm -rf "$TEST_DIR"' EXIT
 
 print_header "Authentication Check Test Suite"
 print_info "Test directory: $TEST_DIR"
@@ -82,11 +84,12 @@ export SSH_AUTH_SOCK=""  # Disable SSH agent
 print_info "Cleared all authentication environment variables"
 
 # 3. Run clone-repos.sh - should fail with auth error
-# We use GIT_CONFIG_NOSYSTEM=1 and a temporary HOME to isolate from host git config
-# (like credential helpers) that might make the auth check pass unexpectedly.
+# We use a clean HOME and GIT_CONFIG_NOSYSTEM to ensure no external credential helpers interfere
 set +e
-output=$(HOME="$TEST_DIR" GIT_CONFIG_NOSYSTEM=1 "$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
+NEW_HOME=$(mktemp -d)
+output=$(HOME="$NEW_HOME" GIT_CONFIG_NOSYSTEM=1 "$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
 exit_code=$?
+rm -rf "$NEW_HOME"
 set -e
 
 print_info "Exit code: $exit_code"
@@ -123,7 +126,7 @@ print_info "Set GH_TOKEN environment variable"
 
 # Run with just the empty repos.list to verify auth check passes
 set +e
-output=$("$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
+output=$(HOME="$FAKE_HOME" GIT_CONFIG_NOSYSTEM=1 "$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
 exit_code=$?
 set -e
 
