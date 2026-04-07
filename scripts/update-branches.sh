@@ -132,6 +132,7 @@ while IFS= read -r line; do
   
   # Read and process the prebuild file securely
   TMP_DEST=$(mktemp "$DEST_FILE.XXXXXX")
+  trap 'rm -f -- "$TMP_DEST" 2>/dev/null || true' EXIT
   if [ "$JSON_TOOL" = "jq" ]; then
     jq 'del(.customizations.codespaces.repositories)' -- "$PREBUILD_FILE" > "$TMP_DEST"
   else
@@ -151,6 +152,7 @@ with open(os.environ['TMP_DEST'], 'w') as f:
   
   # Move the temp file to destination
   mv -- "$TMP_DEST" "$DEST_FILE"
+  trap - EXIT
   
   echo "    ✓ Updated devcontainer.json"
   

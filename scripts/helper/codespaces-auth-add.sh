@@ -400,7 +400,7 @@ build_raw_list(){
             repo_no_branch="${repo_no_branch%.git}"
             # Convert to https format
             case "$repo_no_branch" in
-              https://*)
+              https://*|/*|[a-zA-Z]:/*|file://*)
                 repo_https=$(normalise_remote_to_https "$repo_no_branch")
                 ;;
               */*)

@@ -44,6 +44,16 @@ jobs:
           chmod +x scripts/helper/*.sh
           chmod +x tests/*.sh
 
+      - name: Run security hardening tests
+        run: |
+          cd tests
+          ./test-security-hardening.sh
+          ./test-add-branch-security.sh
+          ./test-branch-hardening.sh
+          ./test-create-repos-security.sh
+          ./test-git-hardening.sh
+          ./test-pipeline-traversal.sh
+
       - name: Run auth check test
         run: |
           cd tests
@@ -164,6 +174,16 @@ jobs:
           chmod +x scripts/*.sh
           chmod +x scripts/helper/*.sh
           chmod +x tests/*.sh
+
+      - name: Run security hardening tests
+        run: |
+          cd tests
+          ./test-security-hardening.sh
+          ./test-add-branch-security.sh
+          ./test-branch-hardening.sh
+          ./test-create-repos-security.sh
+          ./test-git-hardening.sh
+          ./test-pipeline-traversal.sh
 
       - name: Run auth check test
         run: |
