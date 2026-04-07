@@ -351,7 +351,7 @@ normalise_remote_to_https() {
   case "$url" in
     file://*)
       # Convert file:///path to /path
-      url="${url#file://}"
+      url="$url"
       url="${url%.git}"
       printf '%s\n' "$url"
       ;;
@@ -388,7 +388,7 @@ spec_to_https() {
   case "$spec" in
     file://*)
       # Convert file:///path to /path for consistency
-      spec="${spec#file://}"
+      spec="$spec"
       printf '%s\n' "${spec%.git}"
       ;;
     https://*) printf '%s\n' "${spec%.git}" ;;

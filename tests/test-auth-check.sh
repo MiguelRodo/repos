@@ -163,7 +163,8 @@ if command -v gh >/dev/null 2>&1; then
     
     # Should still pass auth check via gh CLI
     set +e
-    output=$(HOME="$FAKE_HOME" GIT_CONFIG_NOSYSTEM=1 "$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
+    # Don't isolate HOME/GIT_CONFIG here as we NEED the host's gh auth
+    output=$("$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
     exit_code=$?
     set -e
     

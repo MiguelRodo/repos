@@ -197,6 +197,8 @@ done
 if $MAIN_SCRIPTS_FOUND; then
   print_pass "All main scripts are listed"
 else
+  print_info "Dry-run output was:"
+  print_info "$DRY_RUN_OUTPUT"
   print_fail "Some main scripts are missing"
 fi
 
@@ -216,6 +218,8 @@ done
 if $HELPER_SCRIPTS_FOUND; then
   print_pass "Helper scripts are listed with subdirectory path"
 else
+  print_info "Dry-run output was:"
+  print_info "$DRY_RUN_OUTPUT"
   print_fail "Some helper scripts are missing"
 fi
 
