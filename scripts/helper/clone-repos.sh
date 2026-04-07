@@ -759,7 +759,7 @@ clone_one_repo() {
       if [ "${all_branches:-0}" -eq 0 ]; then clone_opts=(--single-branch); fi
       clone_opts+=("--branch" "$ref")
       echo "Cloning $repo_url → $dest (branch $ref)"
-      if ! git clone "${clone_opts[@]}" -- "$repo_url" "$dest" </dev/null; then
+      if ! git clone ${clone_opts[@]+"${clone_opts[@]}"} -- "$repo_url" "$dest" </dev/null; then
         [[ "$debug" == true ]] && echo "clone_one_repo: clone failed" >&2
         return 1
       fi
@@ -774,7 +774,7 @@ clone_one_repo() {
       if [ "${all_branches:-0}" -eq 0 ]; then clone_opts=(--single-branch); fi
       echo "Remote branch '$ref' not found on $repo_url; creating it."
       echo "Cloning default branch of $repo_url → $dest"
-      if ! git clone "${clone_opts[@]}" -- "$repo_url" "$dest" </dev/null; then
+      if ! git clone ${clone_opts[@]+"${clone_opts[@]}"} -- "$repo_url" "$dest" </dev/null; then
         [[ "$debug" == true ]] && echo "clone_one_repo: clone failed" >&2
         return 1
       fi
@@ -793,7 +793,7 @@ clone_one_repo() {
     local clone_opts=()
     if [ "${all_branches:-0}" -eq 0 ]; then clone_opts=(--single-branch); fi
     echo "Cloning $repo_url → $dest"
-    if ! git clone "${clone_opts[@]}" -- "$repo_url" "$dest" </dev/null; then
+    if ! git clone ${clone_opts[@]+"${clone_opts[@]}"} -- "$repo_url" "$dest" </dev/null; then
       [[ "$debug" == true ]] && echo "clone_one_repo: clone failed" >&2
       return 1
     fi
