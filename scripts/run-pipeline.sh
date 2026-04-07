@@ -260,7 +260,7 @@ run_in_repo() {
         record_success "$repo_name" "$script_name"
       else
         $VERBOSE && echo "  chmod +x \"$target\""
-        chmod +x -- "$target"
+        chmod +x "$target"
         $VERBOSE && echo "  cd \"$full_path\" && ./$script_name"
         local rc=0
         ( cd -- "$full_path" && "./$script_name" ) || rc=$?
