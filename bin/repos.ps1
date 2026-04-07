@@ -81,5 +81,7 @@ if ($TargetScriptUnix -match '^([A-Za-z]):(.*)$') {
 }
 
 # Execute the target script with remaining arguments
-& $BashPath -c "$TargetScriptUnix $Remaining"
+# Use -- to terminate options and pass arguments directly to bash
+# instead of using -c which is vulnerable to command injection
+& $BashPath -- $TargetScriptUnix @Remaining
 exit $LASTEXITCODE
