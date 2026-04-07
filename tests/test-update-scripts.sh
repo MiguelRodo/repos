@@ -192,15 +192,15 @@ trap 'rm -rf "$MOCK_UPSTREAM_DIR"' EXIT INT TERM
   done
   git add .
   git commit -q -m "Mock upstream"
-  # Ensure a 'main' branch exists
-  git checkout -q -b main 2>/dev/null || true
+  # Ensure the branch is named 'main' (git may default to 'master')
+  git checkout -q -B main
 )
 
 cd "$PROJECT_ROOT"
 
 # Run dry-run against local mock upstream (avoids network dependency)
 DRY_RUN_OUTPUT=$(UPSTREAM_REPO="file://$MOCK_UPSTREAM_DIR" UPSTREAM_BRANCH="main" \
-  "$UPDATE_SCRIPT" --dry-run --force 2>&1) || DRY_RUN_OUTPUT=""
+  "$UPDATE_SCRIPT" --dry-run --force 2>&1)
 
 # Check for main scripts
 # Only check for core scripts guaranteed to be in the upstream CompTemplate
