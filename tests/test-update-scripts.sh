@@ -175,10 +175,32 @@ git checkout -- scripts/dummy.sh
 # ============================================
 print_test "Lists both main scripts and helper scripts"
 
+# Create a local mock upstream repo so this test works without network access
+MOCK_UPSTREAM_DIR="$(mktemp -d)"
+trap 'rm -rf "$MOCK_UPSTREAM_DIR"' EXIT INT TERM
+(
+  cd "$MOCK_UPSTREAM_DIR"
+  git init -q
+  git config user.email "test@example.com"
+  git config user.name "Test User"
+  mkdir -p scripts/helper
+  for s in run-pipeline.sh setup-repos.sh update-scripts.sh; do
+    printf '#!/bin/bash\n# %s\n' "$s" > "scripts/$s"
+  done
+  for s in clone-repos.sh vscode-workspace-add.sh codespaces-auth-add.sh; do
+    printf '#!/bin/bash\n# %s\n' "$s" > "scripts/helper/$s"
+  done
+  git add .
+  git commit -q -m "Mock upstream"
+  # Ensure the branch is named 'main' (git may default to 'master')
+  git checkout -q -B main
+)
+
 cd "$PROJECT_ROOT"
 
-# Run dry-run and capture output
-DRY_RUN_OUTPUT=$("$UPDATE_SCRIPT" --dry-run --force 2>&1)
+# Run dry-run against local mock upstream (avoids network dependency)
+DRY_RUN_OUTPUT=$(UPSTREAM_REPO="file://$MOCK_UPSTREAM_DIR" UPSTREAM_BRANCH="main" \
+  "$UPDATE_SCRIPT" --dry-run --force 2>&1)
 
 # Check for main scripts
 # Only check for core scripts guaranteed to be in the upstream CompTemplate

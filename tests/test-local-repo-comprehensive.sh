@@ -243,7 +243,7 @@ cd "$WORKSPACE4"
 git init -q
 git config user.email "test@example.com"
 git config user.name "Test User"
-git remote add origin "$REPO1_BARE"
+git remote add origin "file://$REPO1_BARE"
 echo "# WS4" > README.md
 git add README.md
 git commit -q -m "Init"
@@ -322,12 +322,12 @@ git add README.md
 git commit -q -m "Init"
 
 cat > repos.list <<EOF
-$REPO2_BARE
+$REPO2_BARE repo2-abs
 EOF
 
 "$CLONE_SCRIPT" -f repos.list >/dev/null 2>&1 || true
 
-if [ -d "$TEST_ROOT/repo2" ]; then
+if [ -d "$TEST_ROOT/repo2-abs" ]; then
   print_pass "Clone with absolute path succeeded"
 else
   print_fail "Clone with absolute path failed"
@@ -445,7 +445,7 @@ cd "$WORKSPACE8"
 git init -q
 git config user.email "test@example.com"
 git config user.name "Test User"
-git remote add origin "$REPO1_BARE"
+git remote add origin "file://$REPO1_BARE"
 echo "# WS8" > README.md
 git add README.md
 git commit -q -m "Init"

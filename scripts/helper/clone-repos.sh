@@ -730,12 +730,8 @@ clone_one_repo() {
       return 2   # benign skip
     fi
   fi
-  # 1) Create the destination dir if needed
-  [[ "$debug" == true ]] && echo "clone_one_repo: creating destination directory '$dest'" >&2
-  mkdir -p -- "$dest"
-
-  # 2) If the destination exists and is non-empty but not a Git repo, skip (don't abort the whole run)
-  if [ -n "$(ls -A -- "$dest" 2>/dev/null)" ]; then
+  # 1) If the destination exists and is non-empty but not a Git repo, skip (don't abort the whole run)
+  if [ -d "$dest" ] && [ -n "$(ls -A -- "$dest" 2>/dev/null)" ]; then
     [[ "$debug" == true ]] && echo "clone_one_repo: destination is non-empty, checking if it's a git repo" >&2
     if [ -d "$dest/.git" ]; then
       echo "Already exists: $dest"
@@ -866,9 +862,8 @@ create_worktree_for_branch() {
   [[ "$debug" == true ]] && echo "create_worktree_for_branch: fetching from origin" >&2
   git -C "$base" fetch --prune origin </dev/null
 
-  [[ "$debug" == true ]] && echo "create_worktree_for_branch: creating destination directory" >&2
-  mkdir -p -- "$dest"
-  if [ -n "$(ls -A -- "$dest" 2>/dev/null)" ]; then
+  [[ "$debug" == true ]] && echo "create_worktree_for_branch: checking destination directory" >&2
+  if [ -d "$dest" ] && [ -n "$(ls -A -- "$dest" 2>/dev/null)" ]; then
     echo "Skip: destination '$dest' exists and is not empty; not touching it." >&2
     [[ "$debug" == true ]] && echo "create_worktree_for_branch: destination non-empty, skipping" >&2
     CNT_SKIPPED=$((CNT_SKIPPED + 1))

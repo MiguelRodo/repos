@@ -14,7 +14,7 @@ export GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh -oBatchMode=yes}"
 git() { command git "$@" </dev/null; }
 
 # --- Configuration ---
-UPSTREAM_REPO="https://github.com/MiguelRodo/CompTemplate.git"
+UPSTREAM_REPO="${UPSTREAM_REPO:-https://github.com/MiguelRodo/CompTemplate.git}"
 UPSTREAM_BRANCH="${UPSTREAM_BRANCH:-main}"
 SCRIPTS_SUBDIR="scripts"
 
