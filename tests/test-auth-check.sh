@@ -39,9 +39,11 @@ print_info() {
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+FAKE_HOME=$(mktemp -d)
+trap 'rm -rf "$FAKE_HOME" "$TEST_DIR"' EXIT
+
 # Create temporary test directory
 TEST_DIR=$(mktemp -d)
-trap 'rm -rf "$TEST_DIR"' EXIT
 
 print_header "Authentication Check Test Suite"
 print_info "Test directory: $TEST_DIR"
@@ -124,7 +126,7 @@ print_info "Set GH_TOKEN environment variable"
 
 # Run with just the empty repos.list to verify auth check passes
 set +e
-output=$("$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
+output=$(HOME="$FAKE_HOME" GIT_CONFIG_NOSYSTEM=1 "$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
 exit_code=$?
 set -e
 
@@ -161,7 +163,7 @@ if command -v gh >/dev/null 2>&1; then
     
     # Should still pass auth check via gh CLI
     set +e
-    output=$("$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
+    output=$(HOME="$FAKE_HOME" GIT_CONFIG_NOSYSTEM=1 "$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
     exit_code=$?
     set -e
     

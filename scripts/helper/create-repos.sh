@@ -94,7 +94,7 @@ while [ $# -gt 0 ]; do
       else
         # Auto-generate debug file securely
         TEMP_DIR=$(get_temp_dir)
-        DEBUG_FILE=$(mktemp -- "${TEMP_DIR}/repos-create-debug-XXXXXX")
+        DEBUG_FILE=$(mktemp "${TEMP_DIR}/repos-create-debug-XXXXXX")
       fi
       ;;
     -h|--help)    usage 0 ;;
@@ -342,7 +342,7 @@ while IFS= read -r line || [ -n "$line" ]; do
       ;;
   esac
 
-  repo_spec=${line%%[[:space:]]*}
+  repo_spec=${trimmed_line%%[[:space:]]*}
   
   # Parse line-specific flags for this repo
   line_is_public=""
@@ -428,7 +428,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   
   # Skip local remotes (file:// URLs and absolute paths)
   case "$repo_spec" in
-    file://*|/*)
+    file://*|/*|[a-zA-Z]:/*)
       debug "Line $line_num: Skipping local remote: $repo_spec"
       printf "Skipping local remote: %s\n" "$repo_spec"
       continue

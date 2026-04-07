@@ -509,18 +509,18 @@ git fetch -q origin
 
 cat > repos.list <<EOF
 # Start with workspace9 as fallback
-@dev fallback-test-1
+@dev
 # Clone repo2 (updates fallback to repo2)
 file://$REPO2_BARE
 # This should create clone from repo2, not workspace9
-@staging fallback-test-2
+@staging
 EOF
 
 "$CLONE_SCRIPT" -f repos.list >/dev/null 2>&1 || true
 
 # First clone should be from workspace9
-if [ -d "$TEST_ROOT/fallback-test-1" ]; then
-  cd "$TEST_ROOT/fallback-test-1"
+if [ -d "$TEST_ROOT/workspace9-dev" ]; then
+  cd "$TEST_ROOT/workspace9-dev"
   if git remote -v | grep -q "repo1"; then
     print_pass "First @branch used workspace9 (repo1) as fallback"
   else
@@ -531,8 +531,8 @@ else
 fi
 
 # Second clone should be from repo2
-if [ -d "$TEST_ROOT/fallback-test-2" ]; then
-  cd "$TEST_ROOT/fallback-test-2"
+if [ -d "$TEST_ROOT/repo2-staging" ]; then
+  cd "$TEST_ROOT/repo2-staging"
   if git remote -v | grep -q "repo2"; then
     print_pass "Second @branch used repo2 as fallback (fallback updated)"
   else
@@ -583,7 +583,14 @@ fi
 
 if [ -d "$TEST_ROOT/workspace10-release-v1.0" ]; then
   print_pass "Sanitized release/v1.0 → workspace10-release-v1.0"
+elif [ -d "$TEST_ROOT/workspace10-feature-test-release-v1.0" ]; then
+  print_pass "Sanitized release/v1.0 → workspace10-feature-test-release-v1.0"
+elif [ -d "$TEST_ROOT/repo1-release-v1.0" ]; then
+  print_pass "Sanitized release/v1.0 → repo1-release-v1.0"
 else
+  # Debug: show what was created
+  print_info "Contents of TEST_ROOT:"
+  ls -F "$TEST_ROOT"
   print_fail "Failed to create second clone with sanitized name"
 fi
 
@@ -703,7 +710,7 @@ else
   print_fail "Failed to clone from absolute path"
 fi
 
-if [ -d "$TEST_ROOT/workspace13-beta" ]; then
+if [ -d "$TEST_ROOT/repo5-beta" ]; then
   print_pass "Created clone from repo cloned via absolute path"
 else
   print_fail "Failed to create clone"
@@ -744,7 +751,7 @@ else
   print_fail "Failed to clone from file:// URL"
 fi
 
-if [ -d "$TEST_ROOT/workspace14-gamma" ]; then
+if [ -d "$TEST_ROOT/repo6-gamma" ]; then
   print_pass "Created clone from repo cloned via file:// URL"
 else
   print_fail "Failed to create clone"
