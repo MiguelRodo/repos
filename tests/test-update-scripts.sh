@@ -181,7 +181,8 @@ cd "$PROJECT_ROOT"
 DRY_RUN_OUTPUT=$("$UPDATE_SCRIPT" --dry-run --force 2>&1)
 
 # Check for main scripts
-MAIN_SCRIPTS=("add-branch.sh" "run-pipeline.sh" "setup-repos.sh" "update-branches.sh" "update-scripts.sh")
+# Only check for core scripts guaranteed to be in the upstream CompTemplate
+MAIN_SCRIPTS=("run-pipeline.sh" "setup-repos.sh" "update-scripts.sh")
 MAIN_SCRIPTS_FOUND=true
 
 for script in "${MAIN_SCRIPTS[@]}"; do
