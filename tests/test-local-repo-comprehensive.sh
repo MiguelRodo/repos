@@ -406,11 +406,11 @@ BRANCHES_CREATED=0
 if [ -d "$TEST_ROOT/repo1" ]; then
   BRANCHES_CREATED=$((BRANCHES_CREATED + 1))
 fi
-if [ -d "$TEST_ROOT/ws7-dev" ]; then
+if [ -d "$TEST_ROOT/repo1-dev" ]; then
   BRANCHES_CREATED=$((BRANCHES_CREATED + 1))
 fi
 # feature/test should create feature-test directory
-if [ -d "$TEST_ROOT/ws7-feature-test" ]; then
+if [ -d "$TEST_ROOT/repo1-feature-test" ]; then
   BRANCHES_CREATED=$((BRANCHES_CREATED + 1))
 fi
 
@@ -418,13 +418,13 @@ if [ "$BRANCHES_CREATED" -ge 2 ]; then
   print_pass "Multiple worktrees from same repo created (found $BRANCHES_CREATED)"
 else
   print_fail "Not all worktrees created (found only $BRANCHES_CREATED)"
-  print_info "Expected: repo1, ws7-dev, ws7-feature-test"
+  print_info "Expected: repo1, repo1-dev, repo1-feature-test"
   ls -la "$TEST_ROOT" | grep -E "repo1|ws7" || true
 fi
 
 # Verify branch with slash is handled correctly
-if [ -d "$TEST_ROOT/ws7-feature-test" ]; then
-  cd "$TEST_ROOT/ws7-feature-test"
+if [ -d "$TEST_ROOT/repo1-feature-test" ]; then
+  cd "$TEST_ROOT/repo1-feature-test"
   CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
   if [ "$CURRENT_BRANCH" = "feature/test" ]; then
     print_pass "Branch with slash preserved correctly in git (feature/test)"
@@ -525,7 +525,7 @@ fi
 # Verify repos were cloned
 REPOS_FOUND=0
 [ -d "$TEST_ROOT/repo1" ] && REPOS_FOUND=$((REPOS_FOUND + 1))
-[ -d "$TEST_ROOT/ws9-dev" ] && REPOS_FOUND=$((REPOS_FOUND + 1))
+[ -d "$TEST_ROOT/repo1-dev" ] && REPOS_FOUND=$((REPOS_FOUND + 1))
 [ -d "$TEST_ROOT/repo2" ] && REPOS_FOUND=$((REPOS_FOUND + 1))
 
 if [ "$REPOS_FOUND" -eq 3 ]; then
@@ -566,11 +566,11 @@ EOF
 "$CLONE_SCRIPT" -f repos.list >/dev/null 2>&1 || true
 
 # Directory name should be sanitized (feature-test instead of feature/test)
-if [ -d "$TEST_ROOT/ws10-feature-test" ]; then
-  print_pass "Branch with slash sanitized for directory name (ws10-feature-test)"
+if [ -d "$TEST_ROOT/repo1-feature-test" ]; then
+  print_pass "Branch with slash sanitized for directory name (repo1-feature-test)"
   
   # But git branch should still have the slash
-  cd "$TEST_ROOT/ws10-feature-test"
+  cd "$TEST_ROOT/repo1-feature-test"
   ACTUAL_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
   if [ "$ACTUAL_BRANCH" = "feature/test" ]; then
     print_pass "Git branch name preserved with slash: $ACTUAL_BRANCH"
@@ -579,7 +579,7 @@ if [ -d "$TEST_ROOT/ws10-feature-test" ]; then
   fi
 else
   print_fail "Worktree with sanitized name not found"
-  print_info "Looking for: $TEST_ROOT/ws10-feature-test"
+  print_info "Looking for: $TEST_ROOT/repo1-feature-test"
   ls -la "$TEST_ROOT" | grep ws10 || true
 fi
 

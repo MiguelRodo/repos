@@ -85,6 +85,16 @@
 **Learning:** Automated scripts must explicitly disable terminal prompts for Git and SSH to ensure they fail fast rather than hanging. Relying on shell variable expansion for large configuration files is fragile.
 **Prevention:** Export `GIT_TERMINAL_PROMPT=0` and `GIT_ASKPASS=/bin/false` in all scripts using Git. Use a `git` wrapper function that redirects `/dev/null` to stdin. For JSON processing, have tools read directly from file paths instead of using intermediate shell variables.
 
+## 2025-06-12 - [High] CRLF Injection in HTTP Headers and Non-Portable mktemp Usage
+**Vulnerability:** GitHub credentials (`GH_USER` and `GH_TOKEN`) extracted from `git credential fill` lacked full newline sanitization, potentially allowing CRLF injection in subsequent `curl` calls. Additionally, the use of `mktemp --` (option terminator) broke portability on BSD-based systems (like macOS).
+**Learning:** Shell command substitution `$(...)` strips trailing newlines, but internal ones or carriage returns can persist. Explicit sanitization is necessary for variables used in HTTP headers. While `--` is a security best practice for many tools to prevent argument injection, it is not universally supported by all implementations of `mktemp`.
+**Prevention:** Use `tr -d '\r\n'` to sanitize all components of a credential or any variable destined for an HTTP header. For `mktemp`, prioritize portability by omitting `--` if the template is the final argument and unlikely to be confused with an option.
+
+## 2025-06-13 - [Medium] Fragile Test Isolation and Silent Failures in Core Scripts
+**Vulnerability:** Core cloner script used `trap '' ERR`, which suppressed non-zero exit codes from failed Git operations, leading to silent failures. Integration tests were vulnerable to `SIGPIPE` when piping long-running scripts into `grep -q`. Host-level Git credentials could also leak into test environments, causing false passes.
+**Learning:** Error suppression with `trap` is dangerous in security-critical scripts as it masks failures in validation or authentication. Automated tests must be strictly isolated from the host's environment (e.g. `HOME`, `GIT_CONFIG_NOSYSTEM`) to ensure they truly verify the script's logic.
+**Prevention:** Avoid `trap '' ERR`. Capture script output to variables before processing with `grep` to avoid `SIGPIPE`. Use temporary `HOME` directories and `GIT_CONFIG_NOSYSTEM=1` for all tests involving Git authentication or configuration.
+
 ## 2025-07-15 - [High] Insecure Credential Parsing and Header Injection
 **Vulnerability:** `get_credentials` used `awk -F=` to parse `git credential fill` output, which truncated tokens containing equals signs. It also lacked CRLF sanitization for `GH_USER` and `GH_TOKEN` environment variables.
 **Learning:** Using a single character delimiter like `=` for parsing key-value pairs is fragile if the value itself can contain that delimiter. GitHub tokens frequently contain `=` characters. Lack of sanitization of user-provided environment variables in scripts that interact with web APIs can lead to header injection vulnerabilities.

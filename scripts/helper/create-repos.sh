@@ -158,10 +158,6 @@ get_credentials() {
     debug "Environment GH_TOKEN: ${GH_TOKEN:+<present>}"
   fi
 
-  # Security hardening: sanitize credentials by removing any carriage returns or newlines
-  # to prevent HTTP header injection in curl commands that use these values.
-  [ -n "${GH_TOKEN-}" ] && GH_TOKEN=$(printf '%s' "$GH_TOKEN" | tr -d '\r\n')
-  [ -n "${GH_USER-}" ]  && GH_USER=$(printf '%s' "$GH_USER" | tr -d '\r\n')
   debug "Credentials successfully obtained"
   return 0
 }
@@ -431,9 +427,9 @@ while IFS= read -r line || [ -n "$line" ]; do
       ;;
   esac
   
-  # Skip local remotes (file:// URLs and absolute paths)
+  # Skip local remotes (file:// URLs and absolute paths, including Windows)
   case "$repo_spec" in
-    file://*|/*|[a-zA-Z]:/*)
+    file://*|[a-zA-Z]:/*|[a-zA-Z]:\\*|/*|\\*)
       debug "Line $line_num: Skipping local remote: $repo_spec"
       printf "Skipping local remote: %s\n" "$repo_spec"
       continue

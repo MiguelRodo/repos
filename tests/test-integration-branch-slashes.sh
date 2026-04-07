@@ -128,7 +128,7 @@ if [ -d "$EXPECTED_DIR" ]; then
   (
     cd "$EXPECTED_DIR"
     ACTUAL_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "UNKNOWN")
-    if [ "$NC_ACTUAL_BRANCH" = "hotfix/urgent-fix" ] || [ "$ACTUAL_BRANCH" = "hotfix/urgent-fix" ]; then
+    if [ "$ACTUAL_BRANCH" = "hotfix/urgent-fix" ]; then
       print_pass "Git branch name preserved with slash: $ACTUAL_BRANCH"
     else
       print_fail "Git branch name incorrect: $ACTUAL_BRANCH"

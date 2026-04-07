@@ -346,17 +346,14 @@ EOF
 # --- Normalisation helpers ---------------------------------------------------
 normalise_remote_to_https() {
   # Convert a remote URL to https://host/owner/repo (no .git)
-  # Normalize file:// and absolute paths to absolute path form
+  # Normalize local paths (file://, absolute paths) and forward slashes
   local url="$1" host path
   case "$url" in
-    file://*)
-      # Convert file:///path to /path
-      url="$url"
+    file://*|[a-zA-Z]:/*|[a-zA-Z]:\\*|/*|\\*|../*|..\\*)
+      url="${url#file://}"
+      url="${url//\\//}" # backslash to forward slash
       url="${url%.git}"
-      printf '%s\n' "$url"
-      ;;
-    /*)
-      url="${url%.git}"
+      url="${url%/}"
       printf '%s\n' "$url"
       ;;
     https://*)
@@ -388,7 +385,7 @@ spec_to_https() {
   case "$spec" in
     file://*)
       # Convert file:///path to /path for consistency
-      spec="$spec"
+      spec="${spec#file://}"
       printf '%s\n' "${spec%.git}"
       ;;
     https://*) printf '%s\n' "${spec%.git}" ;;
@@ -454,9 +451,9 @@ has_non_local_remotes() {
     # Extract repo spec (remove @branch if present)
     local repo_spec="${first%@*}"
     
-    # Check if it's a local remote
+    # Check if it's a local remote (handling Windows paths, relative paths, and file://)
     case "$repo_spec" in
-      file://*|/*|../*|./*|[a-zA-Z]:/*) continue ;;  # Local path
+      file://*|[a-zA-Z]:/*|[a-zA-Z]:\\*|/*|\\*|./*|../*|.\\*|..\\*) continue ;;  # Local path
       */*)
         # Check if it looks like owner/repo (GitHub format)
         if [[ "$repo_spec" =~ ^[^/]+/[^/]+$ ]]; then
@@ -1118,7 +1115,7 @@ main() {
   
   # Skip authentication check if all remotes are local
   if has_non_local_remotes "$REPOS_FILE"; then
-    check_non_interactive_auth "$DEBUG" || return 1
+    check_non_interactive_auth "$DEBUG" || exit 1
   else
     [[ "$DEBUG" == true ]] && echo "All remotes are local; skipping authentication check." >&2
   fi

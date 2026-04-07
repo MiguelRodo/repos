@@ -125,13 +125,13 @@ file://$REPO1_BARE testrepo1-file
 @dev workspace1-dev
 EOF
 
-print_info "Running clone-repos.sh with file:// URLs..."
-if ! "$CLONE_SCRIPT" -f repos.list 2>&1; then
-  print_info "clone-repos.sh exit code: $?"
-fi
+  print_info "Running clone-repos.sh with file:// URLs..."
+  if ! "$CLONE_SCRIPT" -f repos.list 2>&1; then
+    print_info "clone-repos.sh exit code: $?"
+  fi
+)
 # Check if repos were cloned successfully regardless of exit code
-# Correct directory name for worktree is testrepo1-dev (based on fallback)
-if [ -d "$TEST_ROOT/testrepo1" ] && [ -d "$TEST_ROOT/testrepo1-dev" ]; then
+if [ -d "$TEST_ROOT/testrepo1-file" ] && [ -d "$TEST_ROOT/workspace1-dev" ]; then
   print_pass "Cloned testrepo1 and created dev worktree"
 else
   print_fail "Failed to clone repos from file:// URLs"
@@ -168,17 +168,17 @@ $REPO1_BARE testrepo1-abs
 @feature/test workspace2-feature-test
 EOF
 
-print_info "Running clone-repos.sh with absolute paths..."
-if ! "$CLONE_SCRIPT" -f repos.list 2>&1; then
-  print_info "clone-repos.sh exit code: $?"
-fi
+  print_info "Running clone-repos.sh with absolute paths..."
+  if ! "$CLONE_SCRIPT" -f repos.list 2>&1; then
+    print_info "clone-repos.sh exit code: $?"
+  fi
+)
 # Check for sanitized directory name (feature/test → feature-test)
-if [ -d "$TEST_ROOT/testrepo1" ] && [ -d "$TEST_ROOT/testrepo1-feature-test" ]; then
+if [ -d "$TEST_ROOT/testrepo1-abs" ] && [ -d "$TEST_ROOT/workspace2-feature-test" ]; then
   print_pass "Cloned with absolute path and created worktree with sanitized name"
   
   # Verify actual branch name is preserved
-  cd "$TEST_ROOT/testrepo1-feature-test"
-  ACTUAL_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+  ACTUAL_BRANCH=$(git -C "$TEST_ROOT/workspace2-feature-test" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
   if [ "$ACTUAL_BRANCH" = "feature/test" ]; then
     print_pass "Git branch name preserved with slash: $ACTUAL_BRANCH"
   else
