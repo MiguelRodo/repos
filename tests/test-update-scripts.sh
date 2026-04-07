@@ -178,7 +178,11 @@ print_test "Lists both main scripts and helper scripts"
 cd "$PROJECT_ROOT"
 
 # Run dry-run and capture output
-DRY_RUN_OUTPUT=$("$UPDATE_SCRIPT" --dry-run --force 2>&1)
+if ! DRY_RUN_OUTPUT=$("$UPDATE_SCRIPT" --dry-run --force 2>&1); then
+  print_fail "update-scripts.sh --dry-run failed with exit code $?"
+  echo "Output was: $DRY_RUN_OUTPUT"
+  exit 1
+fi
 
 # Check for main scripts
 MAIN_SCRIPTS=("add-branch.sh" "run-pipeline.sh" "setup-repos.sh" "update-branches.sh" "update-scripts.sh")

@@ -82,10 +82,13 @@ export SSH_AUTH_SOCK=""  # Disable SSH agent
 print_info "Cleared all authentication environment variables"
 
 # 3. Run clone-repos.sh - should fail with auth error
+# Use a temporary HOME and disable system config to prevent host credential helpers from interfering
+TEMP_HOME=$(mktemp -d)
 set +e
-output=$("$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
+output=$(HOME="$TEMP_HOME" GIT_CONFIG_NOSYSTEM=1 "$PROJECT_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
 exit_code=$?
 set -e
+rm -rf "$TEMP_HOME"
 
 print_info "Exit code: $exit_code"
 

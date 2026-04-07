@@ -43,6 +43,8 @@ jobs:
           chmod +x scripts/*.sh
           chmod +x scripts/helper/*.sh
           chmod +x tests/*.sh
+          # Prevent dubious ownership errors in CI
+          git config --global safe.directory '*'
 
       - name: Run auth check test
         run: |
@@ -157,13 +159,15 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install system dependencies
-        run: dnf install -y git curl jq bash
+        run: dnf install -y git curl jq bash ca-certificates
 
       - name: Make scripts and tests executable
         run: |
           chmod +x scripts/*.sh
           chmod +x scripts/helper/*.sh
           chmod +x tests/*.sh
+          # Prevent dubious ownership errors in CI
+          git config --global safe.directory '*'
 
       - name: Run auth check test
         run: |
