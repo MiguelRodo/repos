@@ -196,11 +196,14 @@ trap 'rm -rf "$MOCK_UPSTREAM_DIR"' EXIT INT TERM
   git checkout -q -B main
 )
 
-cd "$PROJECT_ROOT"
+cd "$TEST_DIR"
 
 # Run dry-run against local mock upstream (avoids network dependency)
+# Use the update-scripts.sh copy in $TEST_DIR (from Test 4) so the script
+# finds a valid git repo — the real project root may not be a git repo when
+# actions/checkout falls back to tarball download (e.g. Fedora container).
 DRY_RUN_OUTPUT=$(UPSTREAM_REPO="file://$MOCK_UPSTREAM_DIR" UPSTREAM_BRANCH="main" \
-  "$UPDATE_SCRIPT" --dry-run --force 2>&1)
+  scripts/update-scripts.sh --dry-run --force 2>&1)
 
 # Check for main scripts
 # Only check for core scripts guaranteed to be in the upstream CompTemplate
