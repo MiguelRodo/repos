@@ -49,6 +49,11 @@ get_temp_dir() {
   fi
 }
 
+# URL encode a string using jq
+urlencode() {
+  printf '%s' "$1" | jq -rR '@uri'
+}
+
 # ── CONFIG & USAGE ─────────────────────────────────────────────────────────────
 if [ ! -f "repos.list" ] && [ -f "repos-to-clone.list" ]; then
   REPOS_FILE="repos-to-clone.list"
@@ -228,13 +233,18 @@ api_get_field() {
 
 create_branch() {
   local owner="$1"; local repo="$2"; local newbr="$3"
+  local e_owner e_repo e_defbr
+  e_owner=$(urlencode "$owner")
+  e_repo=$(urlencode "$repo")
+
   local defbr
-  defbr=$( api_get_field "$API_URL/repos/$owner/$repo" "default_branch" )
+  defbr=$( api_get_field "$API_URL/repos/$e_owner/$e_repo" "default_branch" )
+  e_defbr=$(urlencode "$defbr")
 
   local defsha
   defsha=$(
     curl -s -H "$AUTH_HDR" \
-      "$API_URL/repos/$owner/$repo/git/ref/heads/$defbr" \
+      "$API_URL/repos/$e_owner/$e_repo/git/ref/heads/$e_defbr" \
     | jq -r '.object.sha // .sha'
   )
 
@@ -244,7 +254,7 @@ create_branch() {
   curl -s -o /dev/null -w "%{http_code}" -X POST \
     -H "$AUTH_HDR" -H "Content-Type: application/json" \
     -d "$payload" \
-    "$API_URL/repos/$owner/$repo/git/refs"
+    "$API_URL/repos/$e_owner/$e_repo/git/refs"
 }
 
 # ── Get current repo info (for initial fallback) ───────────────────────────────
@@ -402,7 +412,7 @@ while IFS= read -r line || [ -n "$line" ]; do
       ref_status=$(
         curl -s -o /dev/null -w "%{http_code}" \
           -H "$AUTH_HDR" \
-          "$API_URL/repos/$fallback_owner/$fallback_repo/git/refs/heads/$branch"
+          "$API_URL/repos/$(urlencode "$fallback_owner")/$(urlencode "$fallback_repo")/git/refs/heads/$(urlencode "$branch")"
       )
       debug "Line $line_num: Branch check returned HTTP $ref_status"
       if [ "$ref_status" -eq 200 ]; then
@@ -518,14 +528,14 @@ while IFS= read -r line || [ -n "$line" ]; do
 
   # 1) Determine owner type (User vs Organization)
   debug "Line $line_num: Checking owner type for $owner"
-  owner_info=$(curl -s -H "$AUTH_HDR" "$API_URL/users/$owner")
+  owner_info=$(curl -s -H "$AUTH_HDR" "$API_URL/users/$(urlencode "$owner")")
   owner_type=$(printf '%s\n' "$owner_info" | jq -r '.type // empty')
   
   debug "Line $line_num: Owner type: $owner_type"
 
   case "$owner_type" in
     Organization)
-      create_url="$API_URL/orgs/$owner/repos"
+      create_url="$API_URL/orgs/$(urlencode "$owner")/repos"
       ;;
     User)
       create_url="$API_URL/user/repos"
@@ -540,7 +550,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   status=$(
     curl -s -o /dev/null -w "%{http_code}" \
       -H "$AUTH_HDR" \
-      "$API_URL/repos/$owner/$repo"
+      "$API_URL/repos/$(urlencode "$owner")/$(urlencode "$repo")"
   )
   if [ "$status" -eq 200 ]; then
     printf "Exists: %s/%s\n" "$owner" "$repo"
@@ -548,7 +558,7 @@ while IFS= read -r line || [ -n "$line" ]; do
     # build payload (auto_init if we’ll push a branch later)
     # Determine if this repo should be private or public
     # Line-specific flag takes precedence over global flag
-    local this_repo_private
+    this_repo_private=""
     if [ -n "$line_is_public" ]; then
       # Line has explicit --public or --private flag
       if [ "$line_is_public" = "true" ]; then
@@ -595,7 +605,7 @@ while IFS= read -r line || [ -n "$line" ]; do
     ref_status=$(
       curl -s -o /dev/null -w "%{http_code}" \
         -H "$AUTH_HDR" \
-        "$API_URL/repos/$owner/$repo/git/refs/heads/$branch"
+        "$API_URL/repos/$(urlencode "$owner")/$(urlencode "$repo")/git/refs/heads/$(urlencode "$branch")"
     )
     if [ "$ref_status" -eq 200 ]; then
       printf "Branch exists: %s\n" "$branch"

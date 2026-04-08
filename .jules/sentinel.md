@@ -99,3 +99,8 @@
 **Vulnerability:** `get_credentials` used `awk -F=` to parse `git credential fill` output, which truncated tokens containing equals signs. It also lacked CRLF sanitization for `GH_USER` and `GH_TOKEN` environment variables.
 **Learning:** Using a single character delimiter like `=` for parsing key-value pairs is fragile if the value itself can contain that delimiter. GitHub tokens frequently contain `=` characters. Lack of sanitization of user-provided environment variables in scripts that interact with web APIs can lead to header injection vulnerabilities.
 **Prevention:** Use `sed -n 's/^key=//p'` for robust extraction of values from key-value pairs. Always sanitize external inputs (including environment variables) with `tr -d '\r\n'` before using them in HTTP headers or security-sensitive contexts.
+
+## 2025-08-20 - [Improvement] Reusable URL Encoding Pattern for API Interactions
+**Vulnerability:** GitHub API components (owner, repo, branch) were interpolated directly into URL strings without encoding. While primary validation regexes restricted most characters, branch names (validated only by `git check-ref-format`) could contain characters like `/` or `#` that would break URL structure or lead to path manipulation.
+**Learning:** Even with input validation, parameters destined for URL paths must be explicitly encoded to ensure they are treated as literal data by the receiving API and to prevent misinterpretation of URL metacharacters.
+**Prevention:** Implement a reusable `urlencode` helper using `jq -rR '@uri'` (available in the project's environment) and apply it to all user-controlled or external data interpolated into URL strings.
