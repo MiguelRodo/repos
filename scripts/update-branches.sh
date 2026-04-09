@@ -101,8 +101,8 @@ UPDATED_COUNT=0
 SKIPPED_COUNT=0
 
 while IFS= read -r line; do
-  # Parse worktree line: "path commit [branch]"
-  WORKTREE_PATH="${line%% *}"
+  # Parse worktree line from porcelain: "worktree <path>"
+  WORKTREE_PATH="${line#worktree }"
   
   # Skip the base repo (it will have bare or the repo path)
   if [ "$WORKTREE_PATH" = "$PROJECT_ROOT" ]; then
@@ -176,7 +176,7 @@ with open(os.environ['TMP_DEST'], 'w') as f:
   
   cd -- "$PROJECT_ROOT"
   
-done < <(git worktree list --porcelain | grep '^worktree' | sed 's/^worktree //')
+done < <(git worktree list --porcelain | grep '^worktree')
 
 echo ""
 echo "Summary:"

@@ -535,10 +535,26 @@ ensure_wildcard_fetch_refspec() {
 }
 
 find_worktree_for_branch() {
-  local base="$1" branch="$2" line=""
-  if line="$(git -C "$base" worktree list 2>/dev/null | grep -F -e " [$branch]" | head -n1)"; then
-    printf '%s\n' "${line%% *}"
-  fi
+  local base="$1" branch="$2"
+  local current_worktree=""
+  local target_ref="refs/heads/$branch"
+
+  # Use git worktree list --porcelain for unambiguous parsing
+  # and to prevent pattern injection from directory paths.
+  while IFS= read -r line; do
+    case "$line" in
+      "worktree "*)
+        current_worktree="${line#worktree }"
+        ;;
+      "branch "*)
+        if [ "${line#branch }" = "$target_ref" ]; then
+          printf '%s\n' "$current_worktree"
+          return 0
+        fi
+        ;;
+    esac
+  done < <(git -C "$base" worktree list --porcelain 2>/dev/null)
+  return 1
 }
 
 # --- Parsing -----------------------------------------------------------------
