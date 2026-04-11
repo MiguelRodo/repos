@@ -41,7 +41,8 @@ DEBUG_FD_GLOBAL=3  # Use FD 3 for debug output (compatible with Bash 3.2+)
 
 debug() {
   if $DEBUG_GLOBAL; then
-    echo "[DEBUG clone-repos.sh] $*" >&$DEBUG_FD_GLOBAL
+    # Use printf for variable output to prevent argument injection
+    printf "[DEBUG clone-repos.sh] %s\n" "$*" >&$DEBUG_FD_GLOBAL
   fi
 }
 
@@ -89,9 +90,9 @@ CLONE_DEST=""
 remote_index() { # echo index or -1
   local needle="$1" i
   for i in "${!SEEN_REMOTES[@]}"; do
-    [ "${SEEN_REMOTES[$i]}" = "$needle" ] && { echo "$i"; return; }
+    [ "${SEEN_REMOTES[$i]}" = "$needle" ] && { printf '%s\n' "$i"; return; }
   done
-  echo -1
+  printf -- '-1\n'
 }
 
 remember_remote() { # remote https, local path
@@ -108,9 +109,9 @@ remember_remote() { # remote https, local path
 plan_index() { # echo index in PLAN_REMOTES or -1
   local needle="$1" i
   for i in "${!PLAN_REMOTES[@]}"; do
-    [ "${PLAN_REMOTES[$i]}" = "$needle" ] && { echo "$i"; return; }
+    [ "${PLAN_REMOTES[$i]}" = "$needle" ] && { printf '%s\n' "$i"; return; }
   done
-  echo -1
+  printf -- '-1\n'
 }
 
 plan_remember_remote() { # remote https, has_full(0/1), base_name_or_empty
@@ -134,7 +135,7 @@ plan_remember_remote() { # remote https, has_full(0/1), base_name_or_empty
 
 plan_has_full() { # remote https -> 0/1
   local idx; idx="$(plan_index "$1")"
-  [ "$idx" -ge 0 ] && echo "${PLAN_HAS_FULL[$idx]}" || echo 0
+  [ "$idx" -ge 0 ] && printf '%s\n' "${PLAN_HAS_FULL[$idx]}" || printf '0\n'
 }
 
 plan_base_name() { # remote https -> base dir name (fallback to repo name)
@@ -142,15 +143,15 @@ plan_base_name() { # remote https -> base dir name (fallback to repo name)
   idx="$(plan_index "$r")"
   if [ "$idx" -ge 0 ]; then
     name="${PLAN_BASE_NAME[$idx]}"
-    if [ -n "$name" ]; then echo "$name"; return; fi
+    if [ -n "$name" ]; then printf '%s\n' "$name"; return; fi
   fi
   # default to repo basename from https
-  echo "${r##*/}"
+  printf '%s\n' "${r##*/}"
 }
 
 plan_ref_count() { # remote https -> reference count (default 0)
   local idx; idx="$(plan_index "$1")"
-  [ "$idx" -ge 0 ] && echo "${PLAN_REF_COUNT[$idx]}" || echo 0
+  [ "$idx" -ge 0 ] && printf '%s\n' "${PLAN_REF_COUNT[$idx]}" || printf '0\n'
 }
 
 ensure_base_exists() { # remote https, base_abs_path, debug

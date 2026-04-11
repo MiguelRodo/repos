@@ -28,7 +28,8 @@ DEBUG_FD=3  # Use FD 3 for debug output (compatible with Bash 3.2+)
 
 debug() {
   if $DEBUG; then
-    echo "[DEBUG vscode-workspace-add.sh] $*" >&$DEBUG_FD
+    # Use printf for variable output to prevent argument injection
+    printf "[DEBUG vscode-workspace-add.sh] %s\n" "$*" >&$DEBUG_FD
   fi
 }
 
@@ -222,12 +223,12 @@ get_workspace_file() {
   local workspace_file="$current_dir/entire-project.code-workspace"
   local workspace_file_camel="$current_dir/EntireProject.code-workspace"
   if [ -f "$workspace_file" ]; then
-    echo "$workspace_file"
+    printf '%s\n' "$workspace_file"
   elif [ -f "$workspace_file_camel" ]; then
-    echo "$workspace_file_camel"
+    printf '%s\n' "$workspace_file_camel"
   else
     # If neither exists, will create lower-case one by default
-    echo "$workspace_file"
+    printf '%s\n' "$workspace_file"
   fi
 }
 

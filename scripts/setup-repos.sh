@@ -19,7 +19,8 @@ DEBUG_FD=3  # Use FD 3 for debug output (compatible with Bash 3.2+)
 
 debug() {
   if $DEBUG; then
-    echo "[DEBUG] $*" >&$DEBUG_FD
+    # Use printf for variable output to prevent argument injection
+    printf "[DEBUG] %s\n" "$*" >&$DEBUG_FD
   fi
 }
 
