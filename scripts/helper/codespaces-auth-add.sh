@@ -22,7 +22,7 @@ validate_devcontainer_path() {
   if [ -n "$path" ]; then
     case "$path" in
       /*|*..*)
-        echo "Error: devcontainer path cannot be absolute or contain '..': $path" >&2
+        printf "Error: devcontainer path cannot be absolute or contain '..': %s\n" "$path" >&2
         return 1
         ;;
     esac
@@ -118,31 +118,31 @@ parse_args(){
   while [ $# -gt 0 ]; do
     case "$1" in
       -f|--file)
-        shift; [ $# -gt 0 ] || { echo "Error: Missing file" >&2; usage; }
+        shift; [ $# -gt 0 ] || { printf "Error: Missing file\n" >&2; usage; }
         REPOS_FILE="$1"; shift
         ;;
       -r|--repo)
-        shift; [ $# -gt 0 ] || { echo "Error: Missing repo list" >&2; usage; }
+        shift; [ $# -gt 0 ] || { printf "Error: Missing repo list\n" >&2; usage; }
         REPOS_OVERRIDE="$1"; shift
         ;;
       -d|--devcontainer)
-        shift; [ $# -gt 0 ] || { echo "Error: Missing devcontainer path" >&2; usage; }
+        shift; [ $# -gt 0 ] || { printf "Error: Missing devcontainer path\n" >&2; usage; }
         validate_devcontainer_path "$1" || exit 1
         DEVCONTAINER_PATHS+=("$1"); shift
         ;;
       --permissions)
-        shift; [ $# -gt 0 ] || { echo "Error: Missing type" >&2; usage; }
+        shift; [ $# -gt 0 ] || { printf "Error: Missing type\n" >&2; usage; }
         case "$1" in all) PERMISSIONS="all" ;; contents) PERMISSIONS="contents" ;;
-          *) echo "Error: Unknown permissions: $1" >&2; usage ;;
+          *) printf "Error: Unknown permissions: %s\n" "$1" >&2; usage ;;
         esac
         shift
         ;;
       -t|--tool)
-        shift; [ $# -gt 0 ] || { echo "Error: Missing tool name" >&2; usage; }
+        shift; [ $# -gt 0 ] || { printf "Error: Missing tool name\n" >&2; usage; }
         case "$1" in
           jq|python|python3|py|rscript|Rscript) 
             [ "$1" = "rscript" ] && FORCE_TOOL="Rscript" || FORCE_TOOL="$1"
-            ;;          *) echo "Error: Unsupported tool: $1" >&2; usage ;;
+            ;;          *) printf "Error: Unsupported tool: %s\n" "$1" >&2; usage ;;
         esac
         shift
         ;;
@@ -153,7 +153,7 @@ parse_args(){
         usage 0
         ;;
       *)
-        echo "Error: Unknown option: $1" >&2; usage
+        printf "Error: Unknown option: %s\n" "$1" >&2; usage
         ;;
     esac
   done
@@ -197,7 +197,7 @@ normalise_remote_to_https() {
 get_current_repo_remote_https() {
   cd "$PROJECT_ROOT" || return 1
   git rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
-    echo "Error: not inside a Git working tree; cannot derive fallback repo." >&2
+    printf "Error: not inside a Git working tree; cannot derive fallback repo.\n" >&2
     return 1
   }
 
@@ -221,14 +221,14 @@ get_current_repo_remote_https() {
     fi
   fi
 
-  [ -z "$url" ] && { echo "Error: no Git remotes found in the current repository." >&2; return 1; }
+  [ -z "$url" ] && { printf "Error: no Git remotes found in the current repository.\n" >&2; return 1; }
   local normalized
   normalized="$(normalise_remote_to_https "$url")" || return $?
 
   # Validate for path traversal
   case "$normalized" in
     *..*)
-      echo "Error: current repository remote contains path traversal: $normalized" >&2
+      printf "Error: current repository remote contains path traversal: %s\n" "$normalized" >&2
       return 1
       ;;
   esac
@@ -269,11 +269,11 @@ normalise(){
       # This is a @branch line - use fallback repo
       local branch="${first#@}"
       if [ -z "$branch" ] || [[ "$branch" == -* ]] || ! git check-ref-format --allow-onelevel "$branch"; then
-        echo "Error: '$branch' is not a valid Git branch name." >&2
+        printf "Error: '%s' is not a valid Git branch name.\n" "$branch" >&2
         return 1
       fi
       if [ -z "$fallback_repo_https" ]; then
-        echo "Warning: @branch line without fallback repo: $line" >&2
+        printf "Warning: @branch line without fallback repo: %s\n" "$line" >&2
         return 1
       fi
       extract_owner_repo_from_https "$fallback_repo_https"
@@ -337,7 +337,7 @@ build_raw_list(){
     done
     set +f
   else
-    [ -f "$REPOS_FILE" ] || { echo "Error: File not found: $REPOS_FILE" >&2; exit 1; }
+    [ -f "$REPOS_FILE" ] || { printf "Error: File not found: %s\n" "$REPOS_FILE" >&2; exit 1; }
     
     # Initialize fallback repo to current repo's remote
     local fallback_repo_https current_repo_https
@@ -381,14 +381,14 @@ build_raw_list(){
           local branch_part=""
           case "$first" in *@*) branch_part="${first##*@}" ;; esac
           if [ -n "$branch_part" ] && ( [[ "$branch_part" == -* ]] || ! git check-ref-format --allow-onelevel "$branch_part" ); then
-            echo "Error: '$branch_part' is not a valid Git branch name." >&2
+            printf "Error: '%s' is not a valid Git branch name.\n" "$branch_part" >&2
             exit 1
           fi
 
           # Validate repo_spec to prevent path traversal
           case "${first%@*}" in
             *..*)
-              echo "Error: repository spec cannot contain '..': $first" >&2
+              printf "Error: repository spec cannot contain '..': %s\n" "$first" >&2
               exit 1
               ;;
           esac
@@ -425,11 +425,11 @@ filter_valid_list(){
     if vr=$(validate "$repo"); then
       VALID_LIST+="$vr"$'\n'
     else
-      echo "Skipping invalid or disallowed: $repo" >&2
+      printf "Skipping invalid or disallowed: %s\n" "$repo" >&2
     fi
   done <<<"$RAW_LIST"
 
-  [ -n "$VALID_LIST" ] || { echo "Error: No valid repos found." >&2; exit 1; }
+  [ -n "$VALID_LIST" ] || { printf "Error: No valid repos found.\n" >&2; exit 1; }
 }
 
 # ——— Build a newline-delimited JSON array for jq ———————————————
@@ -486,7 +486,7 @@ update_with_jq(){
     ' -- "$file" >"$tmp" && mv -- "$tmp" "$file"
   fi
 
-  echo "Updated '$file' with jq."
+  printf "Updated '%s' with jq.\n" "$file"
 }
 
 # ——— Python (or python3 / py) fallback, JSONC-aware + trailing-comma strip —————
@@ -586,7 +586,7 @@ data$customizations <- cs
 write_json(data, file, pretty = TRUE, auto_unbox = TRUE)
 RSCRIPT
 
-  echo "Updated '$file' with Rscript."
+  printf "Updated '%s' with Rscript.\n" "$file"
 }
 
 # ——— Dispatch to the first available tool ——————————————————————
@@ -597,7 +597,7 @@ update_devfile(){
   # 1) Pick the forced tool or auto-detect
   if [ -n "$FORCE_TOOL" ]; then
     command -v "$FORCE_TOOL" >/dev/null 2>&1 \
-      || { echo "Error: forced tool '$FORCE_TOOL' not found." >&2; exit 1; }
+      || { printf "Error: forced tool '%s' not found.\n" "$FORCE_TOOL" >&2; exit 1; }
     tool="$FORCE_TOOL"
   else
     for candidate in jq python python3 py Rscript; do
@@ -605,7 +605,7 @@ update_devfile(){
         tool="$candidate"; break
       fi
     done
-    [ -n "$tool" ] || { echo "Error: No JSON tool found." >&2; exit 1; }
+    [ -n "$tool" ] || { printf "Error: No JSON tool found.\n" >&2; exit 1; }
   fi
 
   # 2) Invoke the updater
@@ -622,7 +622,7 @@ update_devfile(){
         tmp="$(mktemp "$(get_temp_dir)/repos-auth-XXXXXX")"
         update_with_python "$devfile" "$tool" > "$tmp"
         mv -- "$tmp" "$devfile"
-        echo "Updated '$devfile' with $tool."
+        printf "Updated '%s' with %s.\n" "$devfile" "$tool"
       fi
       ;;
     Rscript)
@@ -632,8 +632,8 @@ update_devfile(){
 
   # 3) In dry-run mode, show the result
   if [ "$DRY_RUN" -eq 1 ]; then
-    echo "=== DRY-RUN OUTPUT for $devfile ==="
-    cat "$devfile"
+    printf "=== DRY-RUN OUTPUT for %s ===\n" "$devfile"
+    cat -- "$devfile"
   fi
 }
 
@@ -643,14 +643,14 @@ main(){
   
   # If no devcontainer paths specified, exit with message (opt-in behavior)
   if [ ${#DEVCONTAINER_PATHS[@]} -eq 0 ]; then
-    echo "No devcontainer.json paths specified. Use -d/--devcontainer to specify paths to update." >&2
+    printf "No devcontainer.json paths specified. Use -d/--devcontainer to specify paths to update.\n" >&2
     exit 0
   fi
   
   build_raw_list
   filter_valid_list
 
-  echo "DEBUG: will add the following repos:" >&2
+  printf "DEBUG: will add the following repos:\n" >&2
   printf '%s' "$VALID_LIST" >&2
 
   # Process each devcontainer.json path
@@ -662,11 +662,11 @@ main(){
     fi
     
     if [ ! -f "$devfile" ]; then
-      echo "Error: devcontainer.json not found at $devfile" >&2
+      printf "Error: devcontainer.json not found at %s\n" "$devfile" >&2
       exit 1
     fi
     
-    echo "Processing $devfile..." >&2
+    printf "Processing %s...\n" "$devfile" >&2
     update_devfile "$devfile"
   done
 }

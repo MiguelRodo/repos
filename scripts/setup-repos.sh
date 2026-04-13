@@ -7,7 +7,7 @@ set -euo pipefail
 # — Prerequisites —
 for cmd in curl git jq mktemp; do
   if ! command -v "$cmd" >/dev/null 2>&1; then
-    echo "Error: '$cmd' is required but not found in PATH." >&2
+    printf "Error: '%s' is required but not found in PATH.\n" "$cmd" >&2
     exit 1
   fi
 done
@@ -19,7 +19,6 @@ DEBUG_FD=3  # Use FD 3 for debug output (compatible with Bash 3.2+)
 
 debug() {
   if $DEBUG; then
-    # Use printf for variable output to prevent argument injection
     printf "[DEBUG] %s\n" "$*" >&$DEBUG_FD
   fi
 }
@@ -120,14 +119,14 @@ while [ $# -gt 0 ]; do
       fi
       ;;
     -h|--help)      usage 0 ;;
-    *)              echo "Unknown option: $1" >&2; usage ;;
+    *)              printf "Unknown option: %s\n" "$1" >&2; usage ;;
   esac
 done
 
 # Set up debug file descriptor if needed
 if [ -n "$DEBUG_FILE" ]; then
   exec 3>>"$DEBUG_FILE"
-  echo "Debug output will be written to: $DEBUG_FILE" >&2
+  printf "Debug output will be written to: %s\n" "$DEBUG_FILE" >&2
 else
   # Redirect FD 3 to stderr by default
   exec 3>&2
@@ -142,7 +141,7 @@ debug "Public flag: $PUBLIC_FLAG"
 debug "Debug enabled: $DEBUG"
 debug "Debug file: ${DEBUG_FILE:-none}"
 
-[ -f "$REPOS_FILE" ] || { echo "Error: repo list '$REPOS_FILE' not found." >&2; exit 1; }
+[ -f "$REPOS_FILE" ] || { printf "Error: repo list '%s' not found.\n" "$REPOS_FILE" >&2; exit 1; }
 
 debug "Repos file exists: $REPOS_FILE"
 
@@ -198,7 +197,7 @@ parse_repos_file_flags() {
   done < "$file"
   
   # Return flags as space-separated values: codespaces public private worktree
-  echo "$codespaces_found $public_found $private_found $worktree_found"
+  printf "%s %s %s %s\n" "$codespaces_found" "$public_found" "$private_found" "$worktree_found"
 }
 
 # Parse flags from repos.list
@@ -227,7 +226,7 @@ debug "Worktree flag from repos.list: $WORKTREE_FLAG"
 
 # — Ensure helpers exist —
 for script in "$CREATE_SCRIPT" "$CLONE_SCRIPT" "$WORKSPACE_SCRIPT"; do
-  [ -x "$script" ] || { echo "Error: '$script' not found or not executable." >&2; exit 1; }
+  [ -x "$script" ] || { printf "Error: '%s' not found or not executable.\n" "$script" >&2; exit 1; }
   debug "Helper script found: $script"
 done
 
@@ -243,14 +242,14 @@ fi
 # Use Bash 3.2-safe array expansion that works with set -u
 debug "Debug args to pass to helpers: ${DEBUG_ARGS[*]:-}"
 
-echo "=== 1) Creating repos ==="
+printf "=== 1) Creating repos ===\n"
 debug "Running create-repos.sh with args: -f $REPOS_FILE $PUBLIC_FLAG ${DEBUG_ARGS[*]:-}"
 create_args=( -f "$REPOS_FILE" )
 $PUBLIC_FLAG && create_args+=( --public )
 create_args+=( ${DEBUG_ARGS[@]+"${DEBUG_ARGS[@]}"} )
 "$CREATE_SCRIPT" "${create_args[@]}"
 
-echo "=== 2) Cloning repos locally ==="
+printf "=== 2) Cloning repos locally ===\n"
 debug "Running clone-repos.sh with args: --file $REPOS_FILE ${DEBUG_ARGS[*]:-}"
 clone_args=( --file "$REPOS_FILE" )
 if [ "$WORKTREE_FLAG" = "true" ]; then
@@ -260,7 +259,7 @@ fi
 clone_args+=( ${DEBUG_ARGS[@]+"${DEBUG_ARGS[@]}"} )
 "$CLONE_SCRIPT" "${clone_args[@]}"
 
-echo "=== 3) Updating VS Code workspace ==="
+printf "=== 3) Updating VS Code workspace ===\n"
 debug "Running vscode-workspace-add.sh with args: -f $REPOS_FILE ${DEBUG_ARGS[*]:-}"
 workspace_args=( -f "$REPOS_FILE" )
 workspace_args+=( ${DEBUG_ARGS[@]+"${DEBUG_ARGS[@]}"} )
@@ -269,7 +268,7 @@ workspace_args+=( ${DEBUG_ARGS[@]+"${DEBUG_ARGS[@]}"} )
 if $CODESPACES_FLAG; then
   debug "Codespaces flag enabled, will run codespaces auth step"
   if [ -x "$CODESPACES_SCRIPT" ]; then
-    echo "=== 4) Injecting Codespaces permissions ==="
+    printf "=== 4) Injecting Codespaces permissions ===\n"
     debug "Running codespaces-auth-add.sh"
     codespaces_args=( -f "$REPOS_FILE" )
     
@@ -283,7 +282,7 @@ if $CODESPACES_FLAG; then
       if [ -f "$PROJECT_ROOT/.devcontainer/devcontainer.json" ]; then
         codespaces_args+=( -d "$PROJECT_ROOT/.devcontainer/devcontainer.json" )
       else
-        echo "Warning: No devcontainer.json paths specified and default path not found."
+        printf "Warning: No devcontainer.json paths specified and default path not found.\n"
         debug "Default devcontainer.json not found at: $PROJECT_ROOT/.devcontainer/devcontainer.json"
       fi
     fi
@@ -293,15 +292,15 @@ if $CODESPACES_FLAG; then
     codespaces_args+=( ${DEBUG_ARGS[@]+"${DEBUG_ARGS[@]}"} )
     "$CODESPACES_SCRIPT" "${codespaces_args[@]}"
   else
-    echo "Warning: codespaces-auth-add.sh not found; skipping Codespaces auth step."
+    printf "Warning: codespaces-auth-add.sh not found; skipping Codespaces auth step.\n"
     debug "codespaces-auth-add.sh not executable: $CODESPACES_SCRIPT"
   fi
 else
-  echo "Skipping Codespaces auth step (use --codespaces or -d to enable)."
+  printf "Skipping Codespaces auth step (use --codespaces or -d to enable).\n"
   debug "Codespaces flag not set"
 fi
 
-echo "✅ Setup complete."
+printf "✅ Setup complete.\n"
 debug "=== Setup-repos.sh Debug Session Ended ==="
 
 # Close debug file descriptor if opened
