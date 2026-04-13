@@ -28,7 +28,7 @@ DEBUG_FD=3  # Use FD 3 for debug output (compatible with Bash 3.2+)
 
 debug() {
   if $DEBUG; then
-    printf "[DEBUG vscode-workspace-add.sh] %s\n" "$*" >&$DEBUG_FD
+    printf "[DEBUG] %s\n" "$*" >&$DEBUG_FD
   fi
 }
 
