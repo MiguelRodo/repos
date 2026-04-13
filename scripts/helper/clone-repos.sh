@@ -41,7 +41,7 @@ DEBUG_FD_GLOBAL=3  # Use FD 3 for debug output (compatible with Bash 3.2+)
 
 debug() {
   if $DEBUG_GLOBAL; then
-    echo "[DEBUG clone-repos.sh] $*" >&$DEBUG_FD_GLOBAL
+    printf "[DEBUG clone-repos.sh] %s\n" "$*" >&$DEBUG_FD_GLOBAL
   fi
 }
 
@@ -89,9 +89,9 @@ CLONE_DEST=""
 remote_index() { # echo index or -1
   local needle="$1" i
   for i in "${!SEEN_REMOTES[@]}"; do
-    [ "${SEEN_REMOTES[$i]}" = "$needle" ] && { echo "$i"; return; }
+    [ "${SEEN_REMOTES[$i]}" = "$needle" ] && { printf '%s\n' "$i"; return; }
   done
-  echo -1
+  printf -- '-1\n'
 }
 
 remember_remote() { # remote https, local path
@@ -108,9 +108,9 @@ remember_remote() { # remote https, local path
 plan_index() { # echo index in PLAN_REMOTES or -1
   local needle="$1" i
   for i in "${!PLAN_REMOTES[@]}"; do
-    [ "${PLAN_REMOTES[$i]}" = "$needle" ] && { echo "$i"; return; }
+    [ "${PLAN_REMOTES[$i]}" = "$needle" ] && { printf '%s\n' "$i"; return; }
   done
-  echo -1
+  printf -- '-1\n'
 }
 
 plan_remember_remote() { # remote https, has_full(0/1), base_name_or_empty
@@ -134,7 +134,7 @@ plan_remember_remote() { # remote https, has_full(0/1), base_name_or_empty
 
 plan_has_full() { # remote https -> 0/1
   local idx; idx="$(plan_index "$1")"
-  [ "$idx" -ge 0 ] && echo "${PLAN_HAS_FULL[$idx]}" || echo 0
+  [ "$idx" -ge 0 ] && printf '%s\n' "${PLAN_HAS_FULL[$idx]}" || printf '0\n'
 }
 
 plan_base_name() { # remote https -> base dir name (fallback to repo name)
@@ -142,46 +142,46 @@ plan_base_name() { # remote https -> base dir name (fallback to repo name)
   idx="$(plan_index "$r")"
   if [ "$idx" -ge 0 ]; then
     name="${PLAN_BASE_NAME[$idx]}"
-    if [ -n "$name" ]; then echo "$name"; return; fi
+    if [ -n "$name" ]; then printf '%s\n' "$name"; return; fi
   fi
   # default to repo basename from https
-  echo "${r##*/}"
+  printf '%s\n' "${r##*/}"
 }
 
 plan_ref_count() { # remote https -> reference count (default 0)
   local idx; idx="$(plan_index "$1")"
-  [ "$idx" -ge 0 ] && echo "${PLAN_REF_COUNT[$idx]}" || echo 0
+  [ "$idx" -ge 0 ] && printf '%s\n' "${PLAN_REF_COUNT[$idx]}" || printf '0\n'
 }
 
 ensure_base_exists() { # remote https, base_abs_path, debug
   local remote="$1" base="$2" debug="$3"
 
-  [[ "$debug" == true ]] && echo "ensure_base_exists: checking base '$base' for remote '$remote'" >&2
+  [[ "$debug" == true ]] && printf "ensure_base_exists: checking base '%s' for remote '%s'\n" "$base" "$remote" >&2
 
   # Treat as Git repo if rev-parse says so (works for .git dirs *and* .git files/worktrees)
   if git -C "$base" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    [[ "$debug" == true ]] && echo "ensure_base_exists: base '$base' already exists as git repo" >&2
+    [[ "$debug" == true ]] && printf "ensure_base_exists: base '%s' already exists as git repo\n" "$base" >&2
     return 0  # already a git repo: OK
   fi
 
   # If the path exists and is non-empty but not a git repo, signal a benign per-line failure
   if [ -e "$base" ] && [ -n "$(ls -A -- "$base" 2>/dev/null)" ]; then
-    echo "Error: intended base '$base' exists and is not a Git repo (non-empty). Skipping." >&2
-    [[ "$debug" == true ]] && echo "ensure_base_exists: returning error code 2" >&2
+    printf "Error: intended base '%s' exists and is not a Git repo (non-empty). Skipping.\n" "$base" >&2
+    [[ "$debug" == true ]] && printf "ensure_base_exists: returning error code 2\n" >&2
     return 2
   fi
 
   # Create dir if needed and clone a proper base
-  [[ "$debug" == true ]] && echo "ensure_base_exists: creating base directory and cloning" >&2
+  [[ "$debug" == true ]] && printf "ensure_base_exists: creating base directory and cloning\n" >&2
   mkdir -p -- "$base"
-  echo "Priming base clone for $remote → $base"
+  printf "Priming base clone for %s → %s\n" "$remote" "$base"
   if ! git clone -- "$remote" "$base" </dev/null; then
-    echo "Error: failed to clone '$remote' into '$base'." >&2
-    [[ "$debug" == true ]] && echo "ensure_base_exists: clone failed, returning error code 3" >&2
+    printf "Error: failed to clone '%s' into '%s'.\n" "$remote" "$base" >&2
+    [[ "$debug" == true ]] && printf "ensure_base_exists: clone failed, returning error code 3\n" >&2
     return 3
   fi
   CNT_CLONED_FULL=$((CNT_CLONED_FULL + 1))
-  [[ "$debug" == true ]] && echo "ensure_base_exists: base clone successful" >&2
+  [[ "$debug" == true ]] && printf "ensure_base_exists: base clone successful\n" >&2
 
   return 0
 }
@@ -189,33 +189,33 @@ ensure_base_exists() { # remote https, base_abs_path, debug
 # --- Prerequisites -----------------------------------------------------------
 check_prerequisites() {
   local debug="$1"
-  [[ "$debug" == true ]] && echo "Checking prerequisites..." >&2
+  [[ "$debug" == true ]] && printf "Checking prerequisites...\n" >&2
   for cmd in git mktemp; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
-      echo "Error: '$cmd' is required but not found in PATH." >&2
+      printf "Error: '%s' is required but not found in PATH.\n" "$cmd" >&2
       exit 1
     fi
   done
-  [[ "$debug" == true ]] && echo "All prerequisites met." >&2
+  [[ "$debug" == true ]] && printf "All prerequisites met.\n" >&2
   return 0
 }
 
 check_non_interactive_auth() {
   local debug="$1"
-  [[ "$debug" == true ]] && echo "Checking for non-interactive authentication..." >&2
+  [[ "$debug" == true ]] && printf "Checking for non-interactive authentication...\n" >&2
   
   local has_auth=0
   
   # 1. Check for GH_TOKEN
   if [ -n "${GH_TOKEN:-}" ]; then
-    [[ "$debug" == true ]] && echo "✓ GH_TOKEN is set" >&2
+    [[ "$debug" == true ]] && printf "✓ GH_TOKEN is set\n" >&2
     has_auth=1
   fi
   
   # 2. Check for gh CLI authentication
   if command -v gh >/dev/null 2>&1; then
     if gh auth status >/dev/null 2>&1; then
-      [[ "$debug" == true ]] && echo "✓ gh CLI is authenticated" >&2
+      [[ "$debug" == true ]] && printf "✓ gh CLI is authenticated\n" >&2
       has_auth=1
     fi
   fi
@@ -224,7 +224,7 @@ check_non_interactive_auth() {
   if [ -n "${SSH_AUTH_SOCK:-}" ] && [ -S "${SSH_AUTH_SOCK}" ]; then
     if command -v ssh-add >/dev/null 2>&1; then
       if ssh-add -l >/dev/null 2>&1; then
-        [[ "$debug" == true ]] && echo "✓ SSH agent has keys" >&2
+        [[ "$debug" == true ]] && printf "✓ SSH agent has keys\n" >&2
         has_auth=1
       fi
     fi
@@ -232,7 +232,7 @@ check_non_interactive_auth() {
   
   # 4. Check for Git credential helper (e.g., Git Credential Manager)
   if git config --get credential.helper >/dev/null 2>&1; then
-    [[ "$debug" == true ]] && echo "✓ Git credential helper configured" >&2
+    [[ "$debug" == true ]] && printf "✓ Git credential helper configured\n" >&2
     has_auth=1
   fi
     
@@ -263,7 +263,7 @@ EOF
     return 1
   fi
   
-  [[ "$debug" == true ]] && echo "Non-interactive authentication check passed." >&2
+  [[ "$debug" == true ]] && printf "Non-interactive authentication check passed.\n" >&2
   return 0
 }
 
@@ -470,7 +470,7 @@ has_non_local_remotes() {
 
 get_current_repo_remote_https() {
   git rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
-    echo "Error: not inside a Git working tree; cannot derive fallback repo." >&2
+    printf "Error: not inside a Git working tree; cannot derive fallback repo.\n" >&2
     exit 1
   }
 
@@ -491,14 +491,14 @@ get_current_repo_remote_https() {
     fi
   fi
 
-  [ -z "$url" ] && { echo "Error: no Git remotes found in the current repository." >&2; exit 1; }
+  [ -z "$url" ] && { printf "Error: no Git remotes found in the current repository.\n" >&2; exit 1; }
   local normalized
   normalized="$(normalise_remote_to_https "$url")" || return $?
 
   # Validate for path traversal
   case "$normalized" in
     *..*)
-      echo "Error: current repository remote contains path traversal: $normalized" >&2
+      printf "Error: current repository remote contains path traversal: %s\n" "$normalized" >&2
       exit 1
       ;;
   esac
@@ -572,7 +572,7 @@ parse_effective_line() {
     @*)
       local branch="${first#@}"
       if [ -z "$branch" ] || [[ "$branch" == -* ]] || ! git check-ref-format --allow-onelevel "$branch"; then
-        echo "Error: '$branch' is not a valid Git branch name." >&2
+        printf "Error: '%s' is not a valid Git branch name.\n" "$branch" >&2
         set +f; return 1
       fi
       while [ "$#" -gt 0 ]; do
@@ -581,15 +581,15 @@ parse_effective_line() {
           -a|--all-branches) all_branches=1 ;;  # harmless for worktrees
           --public|--private|--codespaces) ;;   # ignore valid create-repos flags
           -*)
-            echo "Warning: ignoring unknown option '$1' on line: $line" >&2 ;;
+            printf "Warning: ignoring unknown option '%s' on line: %s\n" "$1" "$line" >&2 ;;
           *)
             if [ -z "$target_dir" ]; then target_dir="$1"
-            else echo "Error: multiple target directories on one line: $line" >&2; set +f; return 1
+            else printf "Error: multiple target directories on one line: %s\n" "$line" >&2; set +f; return 1
             fi ;;
         esac
         shift
       done
-      [ -z "$fallback_repo_https" ] && { echo "Error: no fallback repo available for '$line'."; set +f; return 1; }
+      [ -z "$fallback_repo_https" ] && { printf "Error: no fallback repo available for '%s'.\n" "$line" >&2; set +f; return 1; }
       # Apply global worktree flag if set and no explicit flag on the line
       if [ "$use_worktree" -eq 0 ] && [ "${GLOBAL_WORKTREE:-false}" = "true" ]; then
         use_worktree=1
@@ -600,7 +600,7 @@ parse_effective_line() {
       if [ -n "$target_dir" ]; then
         case "$target_dir" in
           /*|*..*)
-            echo "Error: target directory cannot be absolute or contain '..': $target_dir" >&2
+            printf "Error: target directory cannot be absolute or contain '..': %s\n" "$target_dir" >&2
             set +f; return 1
             ;;
         esac
@@ -612,20 +612,20 @@ parse_effective_line() {
       # Validate repo_spec to prevent path traversal
       case "${repo_spec%@*}" in
         *..*)
-          echo "Error: repository spec cannot contain '..': $repo_spec" >&2
+          printf "Error: repository spec cannot contain '..': %s\n" "$repo_spec" >&2
           set +f; return 1
           ;;
       esac
       while [ "$#" -gt 0 ]; do
         case "$1" in
           -a|--all-branches) all_branches=1 ;;
-          -w|--worktree)  echo "Warning: '--worktree' ignored on clone line: $line" >&2 ;;
+          -w|--worktree)  printf "Warning: '--worktree' ignored on clone line: %s\n" "$line" >&2 ;;
           --public|--private|--codespaces) ;;   # ignore valid create-repos flags
           -*)
-            echo "Warning: ignoring unknown option '$1' on line: $line" >&2 ;;
+            printf "Warning: ignoring unknown option '%s' on line: %s\n" "$1" "$line" >&2 ;;
           *)
             if [ -z "$target_dir" ]; then target_dir="$1"
-            else echo "Error: multiple target directories on one line: $line" >&2; set +f; return 1
+            else printf "Error: multiple target directories on one line: %s\n" "$line" >&2; set +f; return 1
             fi ;;
         esac
         shift
@@ -634,7 +634,7 @@ parse_effective_line() {
       if [ -n "$target_dir" ]; then
         case "$target_dir" in
           /*|*..*)
-            echo "Error: target directory cannot be absolute or contain '..': $target_dir" >&2
+            printf "Error: target directory cannot be absolute or contain '..': %s\n" "$target_dir" >&2
             set +f; return 1
             ;;
         esac
@@ -650,7 +650,7 @@ parse_effective_line() {
 clone_one_repo() {
   local repo_spec="$1" target_dir="$2" base_dir="$3" all_branches="$4" debug="$5"
 
-  [[ "$debug" == true ]] && echo "clone_one_repo: processing repo_spec='$repo_spec' target_dir='$target_dir'" >&2
+  [[ "$debug" == true ]] && printf "clone_one_repo: processing repo_spec='%s' target_dir='%s'\n" "$repo_spec" "$target_dir" >&2
 
   local repo_url_no_ref ref
   case "$repo_spec" in
@@ -659,10 +659,10 @@ clone_one_repo() {
   esac
 
   if [ -n "$ref" ] && ( [[ "$ref" == -* ]] || ! git check-ref-format --allow-onelevel "$ref" ); then
-    echo "Error: '$ref' is not a valid Git branch name." >&2
+    printf "Error: '%s' is not a valid Git branch name.\n" "$ref" >&2
     return 1
   fi
-  [[ "$debug" == true ]] && echo "clone_one_repo: parsed repo_url_no_ref='$repo_url_no_ref' ref='$ref'" >&2
+  [[ "$debug" == true ]] && printf "clone_one_repo: parsed repo_url_no_ref='%s' ref='%s'\n" "$repo_url_no_ref" "$ref" >&2
 
   local repo_url repo_dir
   case "$repo_url_no_ref" in
@@ -690,18 +690,18 @@ clone_one_repo() {
       fi
       ;;
     *)
-      echo "Error: invalid repo spec '$repo_spec'." >&2; return 1 ;;
+      printf "Error: invalid repo spec '%s'.\n" "$repo_spec" >&2; return 1 ;;
   esac
 
   # Normalised https remote for lookup (owner/repo or url)
   local remote_https
   remote_https="$(spec_to_https "$repo_url_no_ref")"
-  [[ "$debug" == true ]] && echo "clone_one_repo: remote_https='$remote_https'" >&2
+  [[ "$debug" == true ]] && printf "clone_one_repo: remote_https='%s'\n" "$remote_https" >&2
 
   local dest
   if [ -n "$target_dir" ]; then
     dest="$base_dir/$target_dir"
-    [[ "$debug" == true ]] && echo "clone_one_repo: using explicit target_dir, dest='$dest'" >&2
+    [[ "$debug" == true ]] && printf "clone_one_repo: using explicit target_dir, dest='%s'\n" "$dest" >&2
   elif [ -n "$ref" ] ; then
     # Single-branch clone with no explicit target dir:
     # If there are multiple references to this repo (ref_count > 1),
@@ -710,20 +710,20 @@ clone_one_repo() {
     if [ "$ref_count" -gt 1 ]; then
       local safe_ref; safe_ref="$(sanitize_branch_name "$ref")"
       dest="$base_dir/${repo_dir}-${safe_ref}"
-      [[ "$debug" == true ]] && echo "clone_one_repo: single-branch clone (multiple refs: $ref_count), dest='$dest'" >&2
+      [[ "$debug" == true ]] && printf "clone_one_repo: single-branch clone (multiple refs: %d), dest='%s'\n" "$ref_count" "$dest" >&2
     else
       dest="$base_dir/$repo_dir"
-      [[ "$debug" == true ]] && echo "clone_one_repo: single-branch clone (single ref), dest='$dest'" >&2
+      [[ "$debug" == true ]] && printf "clone_one_repo: single-branch clone (single ref), dest='%s'\n" "$dest" >&2
     fi
   else
     # Full clone (no @branch)
     dest="$base_dir/$repo_dir"
-    [[ "$debug" == true ]] && echo "clone_one_repo: full clone, dest='$dest'" >&2
+    [[ "$debug" == true ]] && printf "clone_one_repo: full clone, dest='%s'\n" "$dest" >&2
   fi
 
   # 0) If destination already contains a Git repo, reuse it (only if it matches the intended remote)
   if [ -d "$dest/.git" ]; then
-    [[ "$debug" == true ]] && echo "clone_one_repo: destination '$dest' already exists, checking remote" >&2
+    [[ "$debug" == true ]] && printf "clone_one_repo: destination '%s' already exists, checking remote\n" "$dest" >&2
     local existing_remote="" existing_https=""
     if existing_remote="$(safe_get_origin_url "$dest")"; then
       existing_https="$(normalise_remote_to_https "$existing_remote")"
@@ -732,15 +732,15 @@ clone_one_repo() {
     fi
 
     if [ -n "$existing_https" ] && [ "$existing_https" = "$remote_https" ]; then
-      echo "Already exists: $dest (matches $remote_https)"
-      [[ "$debug" == true ]] && echo "clone_one_repo: remote matches, skipping" >&2
+      printf "Already exists: %s (matches %s)\n" "$dest" "$remote_https"
+      [[ "$debug" == true ]] && printf "clone_one_repo: remote matches, skipping\n" >&2
       CLONE_DEST="$dest"
       remember_remote "$remote_https" "$dest"
       CNT_SKIPPED=$((CNT_SKIPPED + 1))
       return 2   # benign skip
     else
-      echo "Skip: $dest is a Git repo for '$existing_https' (wanted '$remote_https'); leaving as-is."
-      [[ "$debug" == true ]] && echo "clone_one_repo: remote mismatch, skipping" >&2
+      printf "Skip: %s is a Git repo for '%s' (wanted '%s'); leaving as-is.\n" "$dest" "$existing_https" "$remote_https"
+      [[ "$debug" == true ]] && printf "clone_one_repo: remote mismatch, skipping\n" >&2
       CNT_SKIPPED=$((CNT_SKIPPED + 1))
       # Do NOT set CLONE_DEST or remember_remote here
       return 2   # benign skip
@@ -748,17 +748,17 @@ clone_one_repo() {
   fi
   # 1) If the destination exists and is non-empty but not a Git repo, skip (don't abort the whole run)
   if [ -d "$dest" ] && [ -n "$(ls -A -- "$dest" 2>/dev/null)" ]; then
-    [[ "$debug" == true ]] && echo "clone_one_repo: destination is non-empty, checking if it's a git repo" >&2
+    [[ "$debug" == true ]] && printf "clone_one_repo: destination is non-empty, checking if it's a git repo\n" >&2
     if [ -d "$dest/.git" ]; then
-      echo "Already exists: $dest"
-      [[ "$debug" == true ]] && echo "clone_one_repo: is a git repo, skipping" >&2
+      printf "Already exists: %s\n" "$dest"
+      [[ "$debug" == true ]] && printf "clone_one_repo: is a git repo, skipping\n" >&2
       CLONE_DEST="$dest"
       remember_remote "$remote_https" "$dest"
       CNT_SKIPPED=$((CNT_SKIPPED + 1))
       return 2
     else
-      echo "Skip: $dest exists and is not empty (non-Git); leaving as-is."
-      [[ "$debug" == true ]] && echo "clone_one_repo: not a git repo, skipping" >&2
+      printf "Skip: %s exists and is not empty (non-Git); leaving as-is.\n" "$dest"
+      [[ "$debug" == true ]] && printf "clone_one_repo: not a git repo, skipping\n" >&2
       CNT_SKIPPED=$((CNT_SKIPPED + 1))
       # Do NOT set CLONE_DEST or remember_remote here
       return 2  # benign skip
@@ -767,56 +767,56 @@ clone_one_repo() {
 
   # If a branch ref was requested, check whether it exists on the remote.
   if [ -n "$ref" ]; then
-    [[ "$debug" == true ]] && echo "clone_one_repo: checking if branch '$ref' exists on remote" >&2
+    [[ "$debug" == true ]] && printf "clone_one_repo: checking if branch '%s' exists on remote\n" "$ref" >&2
     if git ls-remote --exit-code --heads -- "$repo_url" "$ref" >/dev/null 2>&1; then
       # Remote branch exists: clone it directly.
-      [[ "$debug" == true ]] && echo "clone_one_repo: remote branch exists, cloning directly" >&2
+      [[ "$debug" == true ]] && printf "clone_one_repo: remote branch exists, cloning directly\n" >&2
       local clone_opts=()
       if [ "${all_branches:-0}" -eq 0 ]; then clone_opts=(--single-branch); fi
       clone_opts+=("--branch" "$ref")
-      echo "Cloning $repo_url → $dest (branch $ref)"
+      printf "Cloning %s → %s (branch %s)\n" "$repo_url" "$dest" "$ref"
       if ! git clone ${clone_opts[@]+"${clone_opts[@]}"} -- "$repo_url" "$dest" </dev/null; then
-        [[ "$debug" == true ]] && echo "clone_one_repo: clone failed" >&2
+        [[ "$debug" == true ]] && printf "clone_one_repo: clone failed\n" >&2
         return 1
       fi
       CNT_CLONED_BRANCH=$((CNT_CLONED_BRANCH + 1))
       CLONE_DEST="$dest"
       remember_remote "$remote_https" "$dest"
-      [[ "$debug" == true ]] && echo "clone_one_repo: branch clone successful" >&2
+      [[ "$debug" == true ]] && printf "clone_one_repo: branch clone successful\n" >&2
     else
       # Remote branch does not exist: clone default branch, create and publish the new one.
-      [[ "$debug" == true ]] && echo "clone_one_repo: remote branch not found, will create it" >&2
+      [[ "$debug" == true ]] && printf "clone_one_repo: remote branch not found, will create it\n" >&2
       local clone_opts=()
       if [ "${all_branches:-0}" -eq 0 ]; then clone_opts=(--single-branch); fi
-      echo "Remote branch '$ref' not found on $repo_url; creating it."
-      echo "Cloning default branch of $repo_url → $dest"
+      printf "Remote branch '%s' not found on %s; creating it.\n" "$ref" "$repo_url"
+      printf "Cloning default branch of %s → %s\n" "$repo_url" "$dest"
       if ! git clone ${clone_opts[@]+"${clone_opts[@]}"} -- "$repo_url" "$dest" </dev/null; then
-        [[ "$debug" == true ]] && echo "clone_one_repo: clone failed" >&2
+        [[ "$debug" == true ]] && printf "clone_one_repo: clone failed\n" >&2
         return 1
       fi
       CNT_CLONED_BRANCH=$((CNT_CLONED_BRANCH + 1))
       CLONE_DEST="$dest"
       remember_remote "$remote_https" "$dest"
       # Create the new branch locally and publish it upstream with tracking.
-      [[ "$debug" == true ]] && echo "clone_one_repo: creating and pushing new branch '$ref'" >&2
+      [[ "$debug" == true ]] && printf "clone_one_repo: creating and pushing new branch '%s'\n" "$ref" >&2
       git -C "$dest" switch -c "$ref" -- </dev/null
       git -C "$dest" push -u origin -- HEAD:"$ref" </dev/null
-      [[ "$debug" == true ]] && echo "clone_one_repo: new branch created and pushed" >&2
+      [[ "$debug" == true ]] && printf "clone_one_repo: new branch created and pushed\n" >&2
     fi
   else
     # No branch ref requested: normal clone (default branch or all branches).
-    [[ "$debug" == true ]] && echo "clone_one_repo: performing full clone (no specific branch)" >&2
+    [[ "$debug" == true ]] && printf "clone_one_repo: performing full clone (no specific branch)\n" >&2
     local clone_opts=()
     if [ "${all_branches:-0}" -eq 0 ]; then clone_opts=(--single-branch); fi
-    echo "Cloning $repo_url → $dest"
+    printf "Cloning %s → %s\n" "$repo_url" "$dest"
     if ! git clone ${clone_opts[@]+"${clone_opts[@]}"} -- "$repo_url" "$dest" </dev/null; then
-      [[ "$debug" == true ]] && echo "clone_one_repo: clone failed" >&2
+      [[ "$debug" == true ]] && printf "clone_one_repo: clone failed\n" >&2
       return 1
     fi
     CNT_CLONED_FULL=$((CNT_CLONED_FULL + 1))
     CLONE_DEST="$dest"
     remember_remote "$remote_https" "$dest"
-    [[ "$debug" == true ]] && echo "clone_one_repo: full clone successful" >&2
+    [[ "$debug" == true ]] && printf "clone_one_repo: full clone successful\n" >&2
   fi
   return 0
 }
@@ -826,23 +826,23 @@ create_worktree_for_branch() {
   # Args: base_path branch target_dir parent_dir debug
   local base="$1" branch="$2" target_dir="$3" parent_dir="$4" debug="$5"
   
-  [[ "$debug" == true ]] && echo "create_worktree_for_branch: base='$base' branch='$branch' target_dir='$target_dir'" >&2
+  [[ "$debug" == true ]] && printf "create_worktree_for_branch: base='%s' branch='%s' target_dir='%s'\n" "$base" "$branch" "$target_dir" >&2
   
-  [ -z "$branch" ] && { echo "Error: @branch requires a branch name."; return 1; }
-  [ -z "$base" ] && { echo "Error: no fallback base path available for worktree."; return 1; }
+  [ -z "$branch" ] && { printf "Error: @branch requires a branch name.\n" >&2; return 1; }
+  [ -z "$base" ] && { printf "Error: no fallback base path available for worktree.\n" >&2; return 1; }
 
   # Prune stale worktree references (e.g., from manually deleted directories)
   # This prevents errors like "branch is already used by worktree at <deleted-path>"
-  [[ "$debug" == true ]] && echo "create_worktree_for_branch: pruning stale worktree references" >&2
+  [[ "$debug" == true ]] && printf "create_worktree_for_branch: pruning stale worktree references\n" >&2
   git -C "$base" worktree prune </dev/null || true
 
   # If this branch is already checked out in any worktree, skip
-  [[ "$debug" == true ]] && echo "create_worktree_for_branch: checking if branch already checked out" >&2
+  [[ "$debug" == true ]] && printf "create_worktree_for_branch: checking if branch already checked out\n" >&2
   local existing_wt
   existing_wt="$(find_worktree_for_branch "$base" "$branch" || true)"
   if [ -n "$existing_wt" ]; then
-    echo "Skip: branch '$branch' already checked out at $existing_wt"
-    [[ "$debug" == true ]] && echo "create_worktree_for_branch: branch already checked out, skipping" >&2
+    printf "Skip: branch '%s' already checked out at %s\n" "$branch" "$existing_wt"
+    [[ "$debug" == true ]] && printf "create_worktree_for_branch: branch already checked out, skipping\n" >&2
     CNT_SKIPPED=$((CNT_SKIPPED + 1))
     return 2
   fi
@@ -851,47 +851,47 @@ create_worktree_for_branch() {
   local dest
   if [ -n "$target_dir" ]; then
     dest="$parent_dir/$target_dir"
-    [[ "$debug" == true ]] && echo "create_worktree_for_branch: using explicit target_dir, dest='$dest'" >&2
+    [[ "$debug" == true ]] && printf "create_worktree_for_branch: using explicit target_dir, dest='%s'\n" "$dest" >&2
   else
     local safe_branch; safe_branch="$(sanitize_branch_name "$branch")"
     dest="$parent_dir/${repo_base}-${safe_branch}"
-    [[ "$debug" == true ]] && echo "create_worktree_for_branch: using default dest='$dest'" >&2
+    [[ "$debug" == true ]] && printf "create_worktree_for_branch: using default dest='%s'\n" "$dest" >&2
   fi
 
   if [ -d "$dest/.git" ]; then
-    [[ "$debug" == true ]] && echo "create_worktree_for_branch: destination already exists, checking branch" >&2
+    [[ "$debug" == true ]] && printf "create_worktree_for_branch: destination already exists, checking branch\n" >&2
     if git -C "$dest" rev-parse --abbrev-ref HEAD >/dev/null 2>&1; then
       local curb; curb="$(git -C "$dest" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
       if [ "$curb" = "$branch" ]; then
-        echo "Already exists: $dest (branch $branch)"
+        printf "Already exists: %s (branch %s)\n" "$dest" "$branch"
       else
-        echo "Skip: $dest already exists (branch '$curb'); leaving as-is."
+        printf "Skip: %s already exists (branch '%s'); leaving as-is.\n" "$dest" "$curb"
       fi
     else
-      echo "Skip: $dest already exists and is a Git dir; leaving as-is."
+      printf "Skip: %s already exists and is a Git dir; leaving as-is.\n" "$dest"
     fi
-    [[ "$debug" == true ]] && echo "create_worktree_for_branch: destination exists, skipping" >&2
+    [[ "$debug" == true ]] && printf "create_worktree_for_branch: destination exists, skipping\n" >&2
     CNT_SKIPPED=$((CNT_SKIPPED + 1))
     return 2  # benign skip
   fi
 
-  [[ "$debug" == true ]] && echo "create_worktree_for_branch: fetching from origin" >&2
+  [[ "$debug" == true ]] && printf "create_worktree_for_branch: fetching from origin\n" >&2
   git -C "$base" fetch --prune origin </dev/null
 
-  [[ "$debug" == true ]] && echo "create_worktree_for_branch: checking destination directory" >&2
+  [[ "$debug" == true ]] && printf "create_worktree_for_branch: checking destination directory\n" >&2
   if [ -d "$dest" ] && [ -n "$(ls -A -- "$dest" 2>/dev/null)" ]; then
-    echo "Skip: destination '$dest' exists and is not empty; not touching it." >&2
-    [[ "$debug" == true ]] && echo "create_worktree_for_branch: destination non-empty, skipping" >&2
+    printf "Skip: destination '%s' exists and is not empty; not touching it.\n" "$dest" >&2
+    [[ "$debug" == true ]] && printf "create_worktree_for_branch: destination non-empty, skipping\n" >&2
     CNT_SKIPPED=$((CNT_SKIPPED + 1))
     return 2  # benign skip
   fi
 
   if local_branch_exists "$base" "$branch"; then
-    [[ "$debug" == true ]] && echo "create_worktree_for_branch: local branch exists, adding worktree" >&2
-    echo "Adding worktree $dest (existing local branch '$branch')"
+    [[ "$debug" == true ]] && printf "create_worktree_for_branch: local branch exists, adding worktree\n" >&2
+    printf "Adding worktree %s (existing local branch '%s')\n" "$dest" "$branch"
     git -C "$base" worktree add -- "$dest" "$branch" </dev/null
     CNT_WORKTREE_ADDED=$((CNT_WORKTREE_ADDED + 1))
-    [[ "$debug" == true ]] && echo "create_worktree_for_branch: worktree added, setting upstream if needed" >&2
+    [[ "$debug" == true ]] && printf "create_worktree_for_branch: worktree added, setting upstream if needed\n" >&2
     if git -C "$base" rev-parse --verify --quiet "refs/remotes/origin/$branch" >/dev/null; then
       ensure_wildcard_fetch_refspec "$base"
       git -C "$dest" branch --set-upstream-to "origin/$branch" -- || true
@@ -899,9 +899,9 @@ create_worktree_for_branch() {
       git -C "$dest" push -u origin -- HEAD:"$branch" || true
     fi
   elif git -C "$base" ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
-    echo "Branch exists: $branch (on remote)"
-    [[ "$debug" == true ]] && echo "create_worktree_for_branch: branch exists on origin, tracking it" >&2
-    echo "Adding worktree $dest (tracking origin/$branch)"
+    printf "Branch exists: %s (on remote)\n" "$branch"
+    [[ "$debug" == true ]] && printf "create_worktree_for_branch: branch exists on origin, tracking it\n" >&2
+    printf "Adding worktree %s (tracking origin/%s)\n" "$dest" "$branch"
     # Ensure the remote-tracking ref exists even in single-branch clones
     git -C "$base" fetch origin "refs/heads/$branch:refs/remotes/origin/$branch" || true
     if git -C "$base" rev-parse --verify --quiet "refs/remotes/origin/$branch" >/dev/null; then
@@ -909,24 +909,24 @@ create_worktree_for_branch() {
       CNT_WORKTREE_ADDED=$((CNT_WORKTREE_ADDED + 1))
       ensure_wildcard_fetch_refspec "$base"
       git -C "$dest" branch --set-upstream-to "origin/$branch" -- || true
-      [[ "$debug" == true ]] && echo "create_worktree_for_branch: worktree added from origin/$branch" >&2
+      [[ "$debug" == true ]] && printf "create_worktree_for_branch: worktree added from origin/%s\n" "$branch" >&2
     else
       # Fallback: remote declared it exists, but we still don't see it locally.
       # Start new branch from default (or HEAD if default isn't available).
-      [[ "$debug" == true ]] && echo "create_worktree_for_branch: could not resolve origin/$branch, using fallback" >&2
+      [[ "$debug" == true ]] && printf "create_worktree_for_branch: could not resolve origin/%s, using fallback\n" "$branch" >&2
       local defb base_ref
       defb="$(default_remote_branch "$base")"
       base_ref="origin/$defb"
       if ! remote_branch_exists "$base" "$defb"; then base_ref="HEAD"; fi
-      echo "Could not resolve origin/$branch locally; creating from $base_ref instead"
+      printf "Could not resolve origin/%s locally; creating from %s instead\n" "$branch" "$base_ref"
       git -C "$base" worktree add -b "$branch" -- "$dest" "$base_ref" </dev/null
       CNT_WORKTREE_ADDED=$((CNT_WORKTREE_ADDED + 1))
       git -C "$dest" push -u origin -- HEAD:"$branch" || true
     fi
   else
     # New branch off default; cope with single-branch bases (no origin/<default>)
-    echo "Branch not found: $branch (on remote, creating new)"
-    [[ "$debug" == true ]] && echo "create_worktree_for_branch: creating new branch from default" >&2
+    printf "Branch not found: %s (on remote, creating new)\n" "$branch"
+    [[ "$debug" == true ]] && printf "create_worktree_for_branch: creating new branch from default\n" >&2
     local defb base_ref
     defb="$(default_remote_branch "$base")"
     base_ref="origin/$defb"
@@ -934,12 +934,12 @@ create_worktree_for_branch() {
       # In single-branch clones, we may not have origin/<default>; fall back to HEAD.
       base_ref="HEAD"
     fi
-    [[ "$debug" == true ]] && echo "create_worktree_for_branch: base_ref='$base_ref'" >&2
-    echo "Adding worktree $dest (new branch '$branch' from $base_ref)"
+    [[ "$debug" == true ]] && printf "create_worktree_for_branch: base_ref='%s'\n" "$base_ref" >&2
+    printf "Adding worktree %s (new branch '%s' from %s)\n" "$dest" "$branch" "$base_ref"
     git -C "$base" worktree add -b "$branch" -- "$dest" "$base_ref" </dev/null
     git -C "$dest" push -u origin -- HEAD:"$branch" || true
     CNT_WORKTREE_ADDED=$((CNT_WORKTREE_ADDED + 1))
-    [[ "$debug" == true ]] && echo "create_worktree_for_branch: worktree added and pushed" >&2
+    [[ "$debug" == true ]] && printf "create_worktree_for_branch: worktree added and pushed\n" >&2
   fi
   return 0
 }
@@ -975,7 +975,7 @@ parse_args() {
         fi
         ;;
       -h|--help) usage; exit 0 ;;
-      *) echo "Unknown argument: $1" >&2; usage; exit 1 ;;
+      *) printf "Unknown argument: %s\n" "$1" >&2; usage; exit 1 ;;
     esac
   done
 
@@ -986,7 +986,7 @@ parse_args() {
   # Set up debug file descriptor if needed
   if [ -n "$DEBUG_FILE_GLOBAL" ]; then
     exec 3>>"$DEBUG_FILE_GLOBAL"
-    echo "clone-repos.sh debug output will be appended to: $DEBUG_FILE_GLOBAL" >&2
+    printf "clone-repos.sh debug output will be appended to: %s\n" "$DEBUG_FILE_GLOBAL" >&2
   else
     # Redirect FD 3 to stderr by default
     exec 3>&2
@@ -996,7 +996,7 @@ parse_args() {
   debug "Using repo list file: $REPOS_FILE"
 
   if [ ! -f "$REPOS_FILE" ]; then
-    echo "File '$REPOS_FILE' not found." >&2
+    printf "File '%s' not found.\n" "$REPOS_FILE" >&2
     exit 1
   fi
 
@@ -1013,13 +1013,13 @@ plan_forward() {
   current_repo_https="$(get_current_repo_remote_https)"
   fallback_https="$current_repo_https"
   
-  [[ "$debug" == true ]] && echo "Planning from file: $file" >&2
-  [[ "$debug" == true ]] && echo "Parent dir for clones: $parent_dir" >&2
-  [[ "$debug" == true ]] && echo "Planning fallback starts as: $fallback_https" >&2
+  [[ "$debug" == true ]] && printf "Planning from file: %s\n" "$file" >&2
+  [[ "$debug" == true ]] && printf "Parent dir for clones: %s\n" "$parent_dir" >&2
+  [[ "$debug" == true ]] && printf "Planning fallback starts as: %s\n" "$fallback_https" >&2
   
   while IFS= read -r line || [ -n "$line" ]; do
     # trim, strip comments
-    [[ "$debug" == true ]] && echo "Planning line: $line" >&2
+    [[ "$debug" == true ]] && printf "Planning line: %s\n" "$line" >&2
     trimmed="${line#"${line%%[![:space:]]*}"}"
     case "$trimmed" in \#*|"") continue ;; esac
     case "$trimmed" in *" # "*) trimmed="${trimmed%% # *}" ;; *" #"*) trimmed="${trimmed%% #*}" ;; esac
@@ -1032,7 +1032,7 @@ plan_forward() {
       --public|--public[[:space:]]*|\
       --private|--private[[:space:]]*|\
       --worktree|--worktree[[:space:]]*)
-        [[ "$debug" == true ]] && echo "Planning: skipping global flag line: $trimmed" >&2
+        [[ "$debug" == true ]] && printf "Planning: skipping global flag line: %s\n" "$trimmed" >&2
         continue
         ;;
     esac
@@ -1061,7 +1061,7 @@ plan_forward() {
 
         # If it's a worktree (with --worktree), count it as a reference to fallback
         if [ "$use_worktree" -eq 1 ]; then
-          [[ "$debug" == true ]] && echo "Planning: worktree on fallback $fallback_https" >&2
+          [[ "$debug" == true ]] && printf "Planning: worktree on fallback %s\n" "$fallback_https" >&2
           plan_remember_remote "$fallback_https" 0 ""
         fi
         # Note: @branch lines don't change the fallback
@@ -1072,7 +1072,7 @@ plan_forward() {
         # Validate remote_spec to prevent path traversal
         case "$remote_spec" in
           *..*)
-            echo "Error: repository specification cannot contain '..': $remote_spec" >&2
+            printf "Error: repository specification cannot contain '..': %s\n" "$remote_spec" >&2
             continue
             ;;
         esac
@@ -1091,7 +1091,7 @@ plan_forward() {
             # Validate target_dir to prevent path traversal in plan
             case "$tok2" in
               /*|*..*)
-                echo "Error: target directory cannot be absolute or contain '..': $tok2" >&2
+                printf "Error: target directory cannot be absolute or contain '..': %s\n" "$tok2" >&2
                 continue
                 ;;
             esac
@@ -1111,11 +1111,11 @@ plan_forward() {
         
         # Update fallback for subsequent lines
         fallback_https="$remote_https"
-        [[ "$debug" == true ]] && echo "Planning: fallback updated to $fallback_https" >&2
+        [[ "$debug" == true ]] && printf "Planning: fallback updated to %s\n" "$fallback_https" >&2
         ;;
     esac
   done <"$file"
-  [[ "$debug" == true ]] && echo "Planning complete." >&2
+  [[ "$debug" == true ]] && printf "Planning complete.\n" >&2
   return 0
 }
 
@@ -1128,7 +1128,7 @@ main() {
   if has_non_local_remotes "$REPOS_FILE"; then
     check_non_interactive_auth "$DEBUG" || exit 1
   else
-    [[ "$DEBUG" == true ]] && echo "All remotes are local; skipping authentication check." >&2
+    [[ "$DEBUG" == true ]] && printf "All remotes are local; skipping authentication check.\n" >&2
   fi
 
   local start_dir parent_dir
@@ -1143,19 +1143,19 @@ main() {
   fallback_repo_https="$current_repo_https"
   local fallback_repo_local
   fallback_repo_local="$start_dir"
-  [[ "$DEBUG" == true ]] && echo "Initial fallback repo: $fallback_repo_https → $fallback_repo_local" >&2
+  [[ "$DEBUG" == true ]] && printf "Initial fallback repo: %s → %s\n" "$fallback_repo_https" "$fallback_repo_local" >&2
 
 
   while IFS= read -r line || [ -n "$line" ]; do
     # Trim & ignore comments/blank
-    [[ "$DEBUG" == true ]] && echo "Processing line: $line" >&2
+    [[ "$DEBUG" == true ]] && printf "Processing line: %s\n" "$line" >&2
     local trimmed="${line#"${line%%[![:space:]]*}"}"
     case "$trimmed" in \#*|"") continue ;; esac
     case "$trimmed" in *" # "*) trimmed="${trimmed%% # *}" ;; *" #"*) trimmed="${trimmed%% #*}" ;; esac
     trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"; trimmed=${trimmed%$'\r'}
     # if the line is now empty
     if [ -z "$trimmed" ]; then
-      [[ "$DEBUG" == true ]] && echo "Skipping empty line after trimming." >&2
+      [[ "$DEBUG" == true ]] && printf "Skipping empty line after trimming.\n" >&2
       continue
     fi
     
@@ -1165,19 +1165,19 @@ main() {
       --public|--public[[:space:]]*|\
       --private|--private[[:space:]]*|\
       --worktree|--worktree[[:space:]]*)
-        [[ "$DEBUG" == true ]] && echo "Skipping global flag line: $trimmed" >&2
+        [[ "$DEBUG" == true ]] && printf "Skipping global flag line: %s\n" "$trimmed" >&2
         continue
         ;;
     esac
 
     CURRENT_LINE="$trimmed"
-    [[ "$DEBUG" == true ]] && echo "Current line to process: $CURRENT_LINE" >&2
+    [[ "$DEBUG" == true ]] && printf "Current line to process: %s\n" "$CURRENT_LINE" >&2
     trace "$CURRENT_LINE"
 
     local line_rc=0
     set +e
     {
-      [[ "$DEBUG" == true ]] && echo "Parsing line: $trimmed" >&2
+      [[ "$DEBUG" == true ]] && printf "Parsing line: %s\n" "$trimmed" >&2
       local rc=0
       # Parse with current fallback
       local parsed repo_spec="" target_dir="" all_branches=0 is_worktree=0 is_at_branch=0
@@ -1200,7 +1200,7 @@ main() {
             if [ "$idx" -ge 0 ] && [ -n "${REMOTE_LOCAL_PATH[$idx]}" ]; then
               # Use the actual path where it was cloned
               base_abs="${REMOTE_LOCAL_PATH[$idx]}"
-              [[ "$DEBUG" == true ]] && echo "Using existing clone at '$base_abs' for worktree base" >&2
+              [[ "$DEBUG" == true ]] && printf "Using existing clone at '%s' for worktree base\n" "$base_abs" >&2
             else
               # Not cloned yet, use planned base name
               local base_name; base_name="$(plan_base_name "$fallback_repo_https")"
@@ -1234,7 +1234,7 @@ main() {
             fi
             local safe_ref; safe_ref="$(sanitize_branch_name "$ref")"
             target_dir="${fallback_local_name}-${safe_ref}"
-            [[ "$DEBUG" == true ]] && echo "@branch clone: using target_dir='$target_dir'" >&2
+            [[ "$DEBUG" == true ]] && printf "@branch clone: using target_dir='%s'\n" "$target_dir" >&2
           fi
 
           clone_one_repo "$repo_spec" "$target_dir" "$parent_dir" "$all_branches" "$DEBUG" || rc=$?
@@ -1267,31 +1267,31 @@ main() {
     }
     line_rc=$?
     # Note: Debug statement must be after line_rc=$? to avoid capturing debug statement's exit code
-    [[ "$DEBUG" == true ]] && echo "Finished processing line: $CURRENT_LINE" >&2
+    [[ "$DEBUG" == true ]] && printf "Finished processing line: %s\n" "$CURRENT_LINE" >&2
     set -e
 
-    [[ "$DEBUG" == true ]] && echo "Line result code: $line_rc" >&2
-    [[ $DEBUG == true ]] && echo "Updating counters." >&2
+    [[ "$DEBUG" == true ]] && printf "Line result code: %s\n" "$line_rc" >&2
+    [[ $DEBUG == true ]] && printf "Updating counters.\n" >&2
     CNT_TOTAL=$((CNT_TOTAL + 1))
-    [[ "$DEBUG" == true ]] && echo "CNT_TOTAL=$CNT_TOTAL" >&2
+    [[ "$DEBUG" == true ]] && printf "CNT_TOTAL=%d\n" "$CNT_TOTAL" >&2
     
-    [[ "$DEBUG" = "true" ]] && echo "Providing feedback" >&2
+    [[ "$DEBUG" = "true" ]] && printf "Providing feedback\n" >&2
     case "$line_rc" in
       0) : ;;
       2) printf '↷ skipped: %s\n' "$CURRENT_LINE" >&2 ;;
       *) printf '✖ line failed (rc=%s): %s\n' "$line_rc" "$CURRENT_LINE" >&2; CNT_ERRORS=$((CNT_ERRORS + 1)) ;;
     esac
-    [[ "$DEBUG" == true ]] && echo "Moving to next line." >&2
+    [[ "$DEBUG" == true ]] && printf "Moving to next line.\n" >&2
   done <"$REPOS_FILE"
 
   echo
-  echo "Summary:"
-  echo "  Instructions processed : $CNT_TOTAL"
-  echo "  Skipped (already present): $CNT_SKIPPED"
-  echo "  Cloned (full)           : $CNT_CLONED_FULL"
-  echo "  Cloned (single-branch)  : $CNT_CLONED_BRANCH"
-  echo "  Worktrees added         : $CNT_WORKTREE_ADDED"
-  echo "  Errors                  : $CNT_ERRORS"
+  printf "Summary:\n"
+  printf "  Instructions processed : %d\n" "$CNT_TOTAL"
+  printf "  Skipped (already present): %d\n" "$CNT_SKIPPED"
+  printf "  Cloned (full)           : %d\n" "$CNT_CLONED_FULL"
+  printf "  Cloned (single-branch)  : %d\n" "$CNT_CLONED_BRANCH"
+  printf "  Worktrees added         : %d\n" "$CNT_WORKTREE_ADDED"
+  printf "  Errors                  : %d\n" "$CNT_ERRORS"
 
   [ "$CNT_ERRORS" -eq 0 ] || exit 1
 }

@@ -28,7 +28,7 @@ DEBUG_FD=3  # Use FD 3 for debug output (compatible with Bash 3.2+)
 
 debug() {
   if $DEBUG; then
-    echo "[DEBUG vscode-workspace-add.sh] $*" >&$DEBUG_FD
+    printf "[DEBUG] %s\n" "$*" >&$DEBUG_FD
   fi
 }
 
@@ -119,7 +119,7 @@ update_with_jq() {
       && mv -- "$tmp" "$workspace_file"
   fi
 
-  echo "Updated '$workspace_file' with jq."
+  printf "Updated '%s' with jq.\n" "$workspace_file"
 }
 
 # --- Update workspace with Python ---
@@ -144,21 +144,21 @@ update_with_python() {
   local paths_list="$2"
   # Use - and passing filename as argument, without redundant -- which can break indexing
   PATHS_LIST="$paths_list" python - "$workspace_file" <<<"$PYTHON_UPDATE_SCRIPT"
-  echo "Updated '$workspace_file' with Python."
+  printf "Updated '%s' with Python.\n" "$workspace_file"
 }
 
 update_with_python3() {
   local workspace_file="$1"
   local paths_list="$2"
   PATHS_LIST="$paths_list" python3 - "$workspace_file" <<<"$PYTHON_UPDATE_SCRIPT"
-  echo "Updated '$workspace_file' with Python3."
+  printf "Updated '%s' with Python3.\n" "$workspace_file"
 }
 
 update_with_py() {
   local workspace_file="$1"
   local paths_list="$2"
   PATHS_LIST="$paths_list" py - "$workspace_file" <<<"$PYTHON_UPDATE_SCRIPT"
-  echo "Updated '$workspace_file' with py launcher."
+  printf "Updated '%s' with py launcher.\n" "$workspace_file"
 }
 
 
@@ -210,7 +210,7 @@ jsonlite::write_json(
   auto_unbox  = TRUE
 )
 RSCRIPT
-  echo "Updated '$workspace_file' with Rscript."
+  printf "Updated '%s' with Rscript.\n" "$workspace_file"
 }
 
 
@@ -222,12 +222,12 @@ get_workspace_file() {
   local workspace_file="$current_dir/entire-project.code-workspace"
   local workspace_file_camel="$current_dir/EntireProject.code-workspace"
   if [ -f "$workspace_file" ]; then
-    echo "$workspace_file"
+    printf '%s\n' "$workspace_file"
   elif [ -f "$workspace_file_camel" ]; then
-    echo "$workspace_file_camel"
+    printf '%s\n' "$workspace_file_camel"
   else
     # If neither exists, will create lower-case one by default
-    echo "$workspace_file"
+    printf '%s\n' "$workspace_file"
   fi
 }
 
@@ -262,7 +262,7 @@ validate_target_dir() {
   if [ -n "$dir" ]; then
     case "$dir" in
       /*|*..*)
-        echo "Error: target directory cannot be absolute or contain '..': $dir" >&2
+        printf "Error: target directory cannot be absolute or contain '..': %s\n" "$dir" >&2
         return 1
         ;;
     esac
@@ -290,8 +290,8 @@ build_paths_list() {
   # Initialize fallback to current repo
   plan_fallback_name="$(basename -- "$current_dir")"
   
-  [[ "$debug" == true ]] && echo "[DEBUG] Planning phase: counting references" >&2
-  [[ "$debug" == true ]] && echo "[DEBUG] Planning fallback starts as: $plan_fallback_name" >&2
+  [[ "$debug" == true ]] && printf "[DEBUG] Planning phase: counting references\n" >&2
+  [[ "$debug" == true ]] && printf "[DEBUG] Planning fallback starts as: %s\n" "$plan_fallback_name" >&2
   
   while IFS= read -r line || [ -n "$line" ]; do
     trimmed="${line#"${line%%[![:space:]]*}"}"
@@ -353,7 +353,7 @@ build_paths_list() {
             plan_repo_names+=("$plan_repo_name")
             plan_ref_counts+=("1")
           fi
-          [[ "$debug" == true ]] && echo "[DEBUG]   Plan: worktree on fallback=$plan_fallback_name, count=${plan_ref_counts[${#plan_ref_counts[@]}-1]}" >&2
+          [[ "$debug" == true ]] && printf "[DEBUG]   Plan: worktree on fallback=%s, count=%d\n" "$plan_fallback_name" "${plan_ref_counts[${#plan_ref_counts[@]}-1]}" >&2
         fi
         # Note: worktree lines don't change the fallback
         ;;
@@ -383,7 +383,7 @@ build_paths_list() {
         # Validate repo_no_ref to prevent path traversal
         case "$repo_no_ref" in
           *..*)
-            echo "Error: repository spec cannot contain '..': $repo_no_ref" >&2
+            printf "Error: repository spec cannot contain '..': %s\n" "$repo_no_ref" >&2
             set +f; return 1
             ;;
         esac
@@ -405,22 +405,22 @@ build_paths_list() {
           plan_repo_names+=("$plan_repo_name")
           plan_ref_counts+=("1")
         fi
-        [[ "$debug" == true ]] && echo "[DEBUG]   Plan: clone repo=$plan_repo_name, count=${plan_ref_counts[${#plan_ref_counts[@]}-1]}" >&2
+        [[ "$debug" == true ]] && printf "[DEBUG]   Plan: clone repo=%s, count=%d\n" "$plan_repo_name" "${plan_ref_counts[${#plan_ref_counts[@]}-1]}" >&2
         
         # Update fallback for subsequent lines
         plan_fallback_name="$plan_repo_name"
-        [[ "$debug" == true ]] && echo "[DEBUG]   Plan: fallback updated to $plan_fallback_name" >&2
+        [[ "$debug" == true ]] && printf "[DEBUG]   Plan: fallback updated to %s\n" "$plan_fallback_name" >&2
         ;;
     esac
     set +f
   done < "$repos_list_file"
   
-  [[ "$debug" == true ]] && echo "[DEBUG] Planning complete" >&2
+  [[ "$debug" == true ]] && printf "[DEBUG] Planning complete\n" >&2
   
   # --- Main processing: build paths ---
   # Initialize fallback to current repo (the one containing repos.list)
   fallback_repo_name="$(basename -- "$current_dir")"
-  [[ "$debug" == true ]] && echo "[DEBUG] Initial fallback repo: $fallback_repo_name" >&2
+  [[ "$debug" == true ]] && printf "[DEBUG] Initial fallback repo: %s\n" "$fallback_repo_name" >&2
 
   while IFS= read -r line || [ -n "$line" ]; do
     # Trim and skip comments/blank lines
@@ -430,7 +430,7 @@ build_paths_list() {
     trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"; trimmed=${trimmed%$'\r'}
     [ -z "$trimmed" ] && continue
     
-    [[ "$debug" == true ]] && echo "[DEBUG] Processing line: $trimmed" >&2
+    [[ "$debug" == true ]] && printf "[DEBUG] Processing line: %s\n" "$trimmed" >&2
 
     # Skip global flag lines (they're handled by setup-repos.sh)
     case "$trimmed" in
@@ -458,7 +458,7 @@ build_paths_list() {
         # @branch line: @branch [target_dir] [--worktree|-w]
         branch="${first#@}"
         if [ -z "$branch" ] || [[ "$branch" == -* ]] || ! git check-ref-format --allow-onelevel "$branch"; then
-          echo "Error: '$branch' is not a valid Git branch name." >&2
+          printf "Error: '%s' is not a valid Git branch name.\n" "$branch" >&2
           set +f; return 1
         fi
         while [ "$#" -gt 0 ]; do
@@ -489,7 +489,7 @@ build_paths_list() {
             local safe_branch; safe_branch="$(sanitize_branch_name "$branch")"
             repo_path="$parent_dir/${fallback_repo_name}-${safe_branch}"
           fi
-          [[ "$debug" == true ]] && echo "[DEBUG]   @branch (worktree): branch=$branch, fallback=$fallback_repo_name, path=$repo_path" >&2
+          [[ "$debug" == true ]] && printf "[DEBUG]   @branch (worktree): branch=%s, fallback=%s, path=%s\n" "$branch" "$fallback_repo_name" "$repo_path" >&2
         else
           # Clone path: same as owner/repo@branch
           if [ -n "$target_dir" ]; then
@@ -498,7 +498,7 @@ build_paths_list() {
             local safe_branch; safe_branch="$(sanitize_branch_name "$branch")"
             repo_path="$parent_dir/${fallback_repo_name}-${safe_branch}"
           fi
-          [[ "$debug" == true ]] && echo "[DEBUG]   @branch (clone): branch=$branch, fallback=$fallback_repo_name, path=$repo_path" >&2
+          [[ "$debug" == true ]] && printf "[DEBUG]   @branch (clone): branch=%s, fallback=%s, path=%s\n" "$branch" "$fallback_repo_name" "$repo_path" >&2
         fi
         ;;
       *)
@@ -528,14 +528,14 @@ build_paths_list() {
         esac
 
         if [ -n "$ref" ] && ( [[ "$ref" == -* ]] || ! git check-ref-format --allow-onelevel "$ref" ); then
-          echo "Error: '$ref' is not a valid Git branch name." >&2
+          printf "Error: '%s' is not a valid Git branch name.\n" "$ref" >&2
           set +f; return 1
         fi
 
         # Validate repo_no_ref to prevent path traversal
         case "$repo_no_ref" in
           *..*)
-            echo "Error: repository specification cannot contain '..': $repo_no_ref" >&2
+            printf "Error: repository specification cannot contain '..': %s\n" "$repo_no_ref" >&2
             set +f; return 1
             ;;
         esac
@@ -543,7 +543,7 @@ build_paths_list() {
         # Validate repo_no_ref to prevent path traversal
         case "$repo_no_ref" in
           *..*)
-            echo "Error: repository spec cannot contain '..': $repo_no_ref" >&2
+            printf "Error: repository spec cannot contain '..': %s\n" "$repo_no_ref" >&2
             set +f; return 1
             ;;
         esac
@@ -578,7 +578,7 @@ build_paths_list() {
         
         # Update fallback for subsequent @branch lines
         fallback_repo_name="$repo_name"
-        [[ "$debug" == true ]] && echo "[DEBUG]   Clone line: repo=$repo_name, path=$repo_path, new fallback=$fallback_repo_name" >&2
+        [[ "$debug" == true ]] && printf "[DEBUG]   Clone line: repo=%s, path=%s, new fallback=%s\n" "$repo_name" "$repo_path" "$fallback_repo_name" >&2
         ;;
     esac
     set +f
@@ -603,8 +603,8 @@ build_paths_list() {
 update_workspace_file() {
   local workspace_file="$1"
   local paths_list="$2"
-  [ -n "$workspace_file" ] || { echo "update_workspace_file: missing workspace_file" >&2; exit 1; }
-  [ -n "$paths_list" ]   || { echo "update_workspace_file: missing paths_list"   >&2; exit 1; }
+  [ -n "$workspace_file" ] || { printf "update_workspace_file: missing workspace_file\n" >&2; exit 1; }
+  [ -n "$paths_list" ]   || { printf "update_workspace_file: missing paths_list\n"   >&2; exit 1; }
 
 
   if command -v jq >/dev/null 2>&1; then
@@ -618,7 +618,7 @@ update_workspace_file() {
   elif command -v Rscript >/dev/null 2>&1; then
     update_with_rscript "$workspace_file" "$paths_list"
   else
-    echo "Error: none of jq, python, python3, py, or Rscript found. Cannot update workspace." >&2
+    printf "Error: none of jq, python, python3, py, or Rscript found. Cannot update workspace.\n" >&2
     exit 1
   fi
 }
@@ -662,7 +662,7 @@ main() {
         usage; exit 0
         ;;
       *)
-        echo "Unknown argument: $1"
+      printf "Unknown argument: %s\n" "$1"
         usage
         exit 1
         ;;
@@ -672,7 +672,7 @@ main() {
   # Set up debug file descriptor if needed
   if [ -n "$DEBUG_FILE" ]; then
     exec 3>>"$DEBUG_FILE"
-    echo "vscode-workspace-add.sh debug output will be appended to: $DEBUG_FILE" >&2
+  printf "vscode-workspace-add.sh debug output will be appended to: %s\n" "$DEBUG_FILE" >&2
   else
     # Redirect FD 3 to stderr by default
     exec 3>&2
@@ -682,18 +682,18 @@ main() {
   debug "Repository list file: $repos_list_file"
 
   if [ ! -f "$repos_list_file" ]; then
-    echo "Repository list file '$repos_list_file' not found."
+    printf "Repository list file '%s' not found.\n" "$repos_list_file"
     exit 1
   fi
 
-  [[ "$DEBUG" == true ]] && echo "[DEBUG] Using repo list file: $repos_list_file" >&2
+  [[ "$DEBUG" == true ]] && printf "[DEBUG] Using repo list file: %s\n" "$repos_list_file" >&2
 
   local current_dir workspace_file paths_list
   current_dir="$(pwd)"
   workspace_file="$(get_workspace_file "$current_dir")"
   
-  [[ "$DEBUG" == true ]] && echo "[DEBUG] Workspace file: $workspace_file" >&2
-  [[ "$DEBUG" == true ]] && echo "[DEBUG] Current dir: $current_dir" >&2
+  [[ "$DEBUG" == true ]] && printf "[DEBUG] Workspace file: %s\n" "$workspace_file" >&2
+  [[ "$DEBUG" == true ]] && printf "[DEBUG] Current dir: %s\n" "$current_dir" >&2
 
   paths_list="$(build_paths_list "$repos_list_file" "$current_dir" "$DEBUG")"
 
