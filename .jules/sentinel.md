@@ -65,6 +65,11 @@
 **Learning:** Glob patterns like `*../*..*` only catch multiple occurrences of `..` separated by a slash, and `../*` only catches `..` at the beginning followed by a slash. They do not cover all permutations of directory traversal.
 **Prevention:** Use a more comprehensive `case` pattern like `/*|..|*/..|../*|*/../*` to catch `..` in any position. If certain traversals are allowed (like a single level up for sibling repos), use explicit logic to validate that the path matches exactly the allowed pattern and nothing more.
 
+## 2025-06-14 - [Medium] Credential Leakage in Normalized Git URLs
+**Vulnerability:** Embedded credentials (e.g., `https://token@github.com/...`) in Git URLs were preserved during normalization in `normalise_remote_to_https`, leading to potential leakage in logs and workspace configuration files.
+**Learning:** Normalizing URLs for display or configuration must explicitly strip sensitive user information. Relying on Git to handle credentials internally is safer than passing them around in URL strings.
+**Prevention:** Use `sed` or similar tools to strip the `user:pass@` or `token@` part from HTTPS URLs before using them in any context that might be logged or stored in configuration files.
+
 ## 2029-05-18 - [Medium] Unintended Glob Expansion and Argument Injection in Codespaces Auth Helper
 **Vulnerability:** `scripts/helper/codespaces-auth-add.sh` was vulnerable to unintended glob expansion when processing repository overrides via the `-r` flag. Additionally, it lacked `--` separators in `mv`, `jq`, and `python` commands, making it susceptible to argument injection from filenames starting with a hyphen.
 **Learning:** Even in helper scripts, unquoted variable expansion during word-splitting or loop iteration can lead to globbing if not explicitly disabled. Furthermore, any command that accepts filenames must use the `--` separator to prevent those filenames from being interpreted as options.

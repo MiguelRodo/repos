@@ -174,6 +174,9 @@ normalise_remote_to_https() {
   case "$url" in
     https://*)
       url="${url%.git}"
+      # Strip embedded credentials (e.g. https://user:pass@host/...)
+      # to prevent leaking tokens in logs or workspace files.
+      url="$(printf '%s\n' "$url" | sed 's|^\(https://\)[^/]*@|\1|')"
       printf '%s\n' "$url"
       ;;
     ssh://git@*)
