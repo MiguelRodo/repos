@@ -21,7 +21,7 @@ INSTALL_DEPS_SCRIPT="$SCRIPT_DIR/helper/install-r-deps.sh"
 check_prerequisites() {
   for cmd in git; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
-      echo "Error: '$cmd' is required but not found in PATH." >&2
+      printf "Error: '%s' is required but not found in PATH.\n" "$cmd" >&2
       exit 1
     fi
   done
@@ -116,13 +116,13 @@ parse_args() {
       -h|--help)
         usage; exit 0 ;;
       *)
-        echo "Unknown option: $1" >&2
+        printf "Unknown option: %s\n" "$1" >&2
         usage; exit 1 ;;
     esac
   done
 
   if [ ! -f "$REPOS_FILE" ]; then
-    echo "Error: repo list '$REPOS_FILE' not found." >&2
+    printf "Error: repo list '%s' not found.\n" "$REPOS_FILE" >&2
     exit 1
   fi
 
@@ -159,9 +159,9 @@ is_concise_format() {
     # Skip empty lines and comments
     [ -z "$line" ] && continue
     [[ "$line" == \#* ]] && continue
-    # If line contains '/' or starts with '@' or is a global flag, it's fully-specified
+    # If line contains '/' or '@' or starts with '--', it's fully-specified
     case "$line" in
-      */*|@*|--codespaces*|--worktree*|--public*|--private*)
+      */*|*@*|--*)
         return 1 ;;
     esac
   done < "$file"
@@ -197,22 +197,23 @@ record_skip() {
 }
 
 print_summary() {
-  echo ""
-  echo "=== Pipeline Summary ==="
+  printf "\n"
+  printf "=== Pipeline Summary ===\n"
   for line in "${SUMMARY_LINES[@]}"; do
-    echo "$line"
+    printf "%s\n" "$line"
   done
-  echo ""
-  echo "Total: ${TOTAL_COUNT} repositories | ${SUCCESS_COUNT} succeeded | ${FAIL_COUNT} failed | ${SKIP_COUNT} skipped"
+  printf "\n"
+  printf "Total: %d repositories | %d succeeded | %d failed | %d skipped\n" \
+    "${TOTAL_COUNT}" "${SUCCESS_COUNT}" "${FAIL_COUNT}" "${SKIP_COUNT}"
 }
 
-# Validate directory name to prevent path traversal
+# Validate directory name to prevent path traversal and argument injection
 validate_dir_name() {
   local dir="$1"
   if [ -n "$dir" ]; then
     case "$dir" in
-      /*|*..*)
-        echo "Error: directory name cannot be absolute or contain '..': $dir" >&2
+      /*|..|*/..|../*|*/../*|-*)
+        printf "Error: directory name cannot be absolute, contain '..', or start with '-': %s\n" "$dir" >&2
         return 1
         ;;
     esac
@@ -224,10 +225,10 @@ validate_dir_name() {
 validate_script_path() {
   local script_path="$1"
   if [ -n "$script_path" ]; then
-    # Disallow absolute paths and path traversal
+    # Disallow absolute paths, path traversal, and leading hyphens
     case "$script_path" in
-      /*|*..*)
-        echo "Error: script path cannot be absolute or contain '..': $script_path" >&2
+      /*|..|*/..|../*|*/../*|-*)
+        printf "Error: script path cannot be absolute, contain '..', or start with '-': %s\n" "$script_path" >&2
         return 1
         ;;
     esac
@@ -235,7 +236,7 @@ validate_script_path() {
     # Stricter validation: allow only alphanumeric, underscores, dashes, dots, and forward slashes
     # This provides defense-in-depth against command injection
     if [[ ! "$script_path" =~ ^[a-zA-Z0-9._/-]+$ ]]; then
-      echo "Error: script path contains disallowed characters: $script_path" >&2
+      printf "Error: script path contains disallowed characters: %s\n" "$script_path" >&2
       return 1
     fi
   fi
@@ -247,21 +248,21 @@ run_in_repo() {
   local full_path="$1" repo_name="$2" script_name="$3"
 
   if ! should_process "$repo_name"; then
-    $VERBOSE && echo "Skipping $repo_name"
+    $VERBOSE && printf "Skipping %s\n" "$repo_name"
     return 0
   fi
 
   if [ -d "$full_path" ]; then
     local target="$full_path/$script_name"
     if [ -f "$target" ]; then
-      echo "⏵ $repo_name: $script_name found"
+      printf "⏵ %s: %s found\n" "$repo_name" "$script_name"
       if $DRY_RUN; then
-        echo "  DRY-RUN: would chmod +x and execute $target"
+        printf "  DRY-RUN: would chmod +x and execute %s\n" "$target"
         record_success "$repo_name" "$script_name"
       else
-        $VERBOSE && echo "  chmod +x \"$target\""
+        $VERBOSE && printf "  chmod +x \"%s\"\n" "$target"
         chmod +x "$target"
-        $VERBOSE && echo "  cd \"$full_path\" && ./$script_name"
+        $VERBOSE && printf "  cd \"%s\" && ./%s\n" "$full_path" "$script_name"
         local rc=0
         ( cd -- "$full_path" && "./$script_name" ) || rc=$?
         if [ $rc -eq 0 ]; then
@@ -275,11 +276,11 @@ run_in_repo() {
         fi
       fi
     else
-      $VERBOSE && echo "⏭ $repo_name: no $script_name"
+      $VERBOSE && printf "⏭ %s: no %s\n" "$repo_name" "$script_name"
       record_skip "$repo_name" "$script_name"
     fi
   else
-    $VERBOSE && echo "⚠️  Folder not found: $full_path"
+    $VERBOSE && printf "⚠️  Folder not found: %s\n" "$full_path"
     record_skip "$repo_name" "$script_name"
   fi
 }
@@ -295,41 +296,41 @@ main() {
   # Step 1: Run setup (unless skipped)
   if [ "$SKIP_SETUP" = false ]; then
     if [ -x "$SETUP_SCRIPT" ]; then
-      echo "=== 1) Running setup-repos.sh ==="
+      printf "=== 1) Running setup-repos.sh ===\n"
       if $DRY_RUN; then
-        echo "  DRY-RUN: would execute $SETUP_SCRIPT -f $REPOS_FILE"
+        printf "  DRY-RUN: would execute %s -f %s\n" "$SETUP_SCRIPT" "$REPOS_FILE"
       else
         "$SETUP_SCRIPT" -f "$REPOS_FILE"
       fi
     else
-      echo "Warning: setup-repos.sh not found or not executable; skipping setup step."
+      printf "Warning: setup-repos.sh not found or not executable; skipping setup step.\n"
     fi
   else
-    echo "=== 1) Skipping setup step (default; use --ensure-setup to run) ==="
+    printf "=== 1) Skipping setup step (default; use --ensure-setup to run) ===\n"
   fi
 
   # Step 2: Install R dependencies (unless skipped)
   if [ "$SKIP_DEPS" = false ]; then
     if [ -x "$INSTALL_DEPS_SCRIPT" ]; then
-      echo "=== 2) Installing R dependencies ==="
+      printf "=== 2) Installing R dependencies ===\n"
       if $DRY_RUN; then
-        echo "  DRY-RUN: would execute $INSTALL_DEPS_SCRIPT"
+        printf "  DRY-RUN: would execute %s\n" "$INSTALL_DEPS_SCRIPT"
       else
-        "$INSTALL_DEPS_SCRIPT" || echo "Warning: install-r-deps.sh failed; continuing..."
+        "$INSTALL_DEPS_SCRIPT" || printf "Warning: install-r-deps.sh failed; continuing...\n"
       fi
     else
-      $VERBOSE && echo "Note: install-r-deps.sh not found; skipping dependency installation."
+      $VERBOSE && printf "Note: install-r-deps.sh not found; skipping dependency installation.\n"
     fi
   else
-    echo "=== 2) Skipping R dependencies (--skip-deps) ==="
+    printf "=== 2) Skipping R dependencies (--skip-deps) ===\n"
   fi
 
   # Step 3: Run each repository's script
-  echo "=== 3) Executing $RUN_SCRIPT in repositories ==="
+  printf "=== 3) Executing %s in repositories ===\n" "$RUN_SCRIPT"
 
   # Check if the list file uses concise format
   if is_concise_format "$REPOS_FILE"; then
-    $VERBOSE && echo "Detected concise format in $REPOS_FILE"
+    $VERBOSE && printf "Detected concise format in %s\n" "$REPOS_FILE"
     while IFS= read -r line || [ -n "$line" ]; do
       line="$(printf '%s\n' "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
       [ -z "$line" ] && continue
@@ -373,21 +374,22 @@ main() {
   
   if [ -n "$workspace_file" ] && command -v jq >/dev/null 2>&1; then
     while IFS= read -r folder_path; do
-      # Validate folder_path to prevent path traversal
+      # Validate folder_path to prevent path traversal and argument injection
       case "$folder_path" in
-        /*|..|*/..|../*|*/../*)
-          # If absolute or contains ".." anywhere, only allow exactly one leading "../"
-          # followed by a single directory name (no further traversal)
+        /*|..|*/..|../*|*/../*|-*)
+          # If absolute or contains ".." anywhere, or starts with "-",
+          # only allow exactly one leading "../" followed by a single directory name
+          # (no further traversal, and must not start with "-" after "../")
           is_valid=false
           if [[ "$folder_path" == ../* ]]; then
             remainder="${folder_path#../}"
-            if [[ "$remainder" != */* && "$remainder" != *..* && "$remainder" != "" ]]; then
+            if [[ "$remainder" != */* && "$remainder" != *..* && "$remainder" != "" && "$remainder" != -* ]]; then
               is_valid=true
             fi
           fi
 
           if [ "$is_valid" = false ]; then
-            echo "Error: invalid workspace folder path (unauthorized '..' or absolute): $folder_path" >&2
+            printf "Error: invalid workspace folder path (unauthorized '..', absolute, or leading hyphen): %s\n" "$folder_path" >&2
             record_fail "$folder_path" "$RUN_SCRIPT" "1"
             if [ "$STOP_ON_ERROR" = true ]; then print_summary; exit 1; fi
             continue
@@ -403,8 +405,8 @@ main() {
     print_summary
     [ $FAIL_COUNT -gt 0 ] && exit 1
   else
-    echo "Warning: No workspace file or jq not available. Cannot execute scripts."
-    echo "Run 'repos setup' first to generate the workspace file."
+    printf "Warning: No workspace file or jq not available. Cannot execute scripts.\n"
+    printf "Run 'repos setup' first to generate the workspace file.\n"
     exit 1
   fi
 }

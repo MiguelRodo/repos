@@ -599,11 +599,11 @@ parse_effective_line() {
       fi
       is_worktree=$use_worktree
       is_at_branch=1
-      # Validate target_dir to prevent path traversal
+      # Validate target_dir to prevent path traversal and argument injection
       if [ -n "$target_dir" ]; then
         case "$target_dir" in
-          /*|*..*)
-            printf "Error: target directory cannot be absolute or contain '..': %s\n" "$target_dir" >&2
+          /*|..|*/..|../*|*/../*|-*)
+            printf "Error: target directory cannot be absolute, contain '..', or start with '-': %s\n" "$target_dir" >&2
             set +f; return 1
             ;;
         esac
@@ -633,11 +633,11 @@ parse_effective_line() {
         esac
         shift
       done
-      # Validate target_dir to prevent path traversal
+      # Validate target_dir to prevent path traversal and argument injection
       if [ -n "$target_dir" ]; then
         case "$target_dir" in
-          /*|*..*)
-            printf "Error: target directory cannot be absolute or contain '..': %s\n" "$target_dir" >&2
+          /*|..|*/..|../*|*/../*|-*)
+            printf "Error: target directory cannot be absolute, contain '..', or start with '-': %s\n" "$target_dir" >&2
             set +f; return 1
             ;;
         esac

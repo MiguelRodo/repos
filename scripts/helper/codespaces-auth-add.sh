@@ -16,13 +16,13 @@ export GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh -oBatchMode=yes}"
 git() { command git "$@" </dev/null; }
 
 # ——— Defaults ———————————————————————————————————————————————
-# Validate devcontainer path to prevent path traversal
+# Validate devcontainer path to prevent path traversal and argument injection
 validate_devcontainer_path() {
   local path="$1"
   if [ -n "$path" ]; then
     case "$path" in
-      /*|*..*)
-        printf "Error: devcontainer path cannot be absolute or contain '..': %s\n" "$path" >&2
+      /*|..|*/..|../*|*/../*|-*)
+        printf "Error: devcontainer path cannot be absolute, contain '..', or start with '-': %s\n" "$path" >&2
         return 1
         ;;
     esac
@@ -507,8 +507,8 @@ update_with_python(){
   export REPOS_JSON="$repos_obj"
 
   # 3) Run Python: strip comments & trailing commas, parse, merge, emit JSON
-  # Using -- after the interpreter or - ensures that $file is not interpreted as a flag
-  "$py_cmd" - "$file" <<'PYCODE'
+  # Using -- after the interpreter and - ensures that $file is not interpreted as a flag
+  "$py_cmd" - -- "$file" <<'PYCODE'
 import sys, json, re, os
 
 fname = sys.argv[1]

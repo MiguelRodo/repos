@@ -256,13 +256,13 @@ sanitize_branch_name() {
   printf '%s\n' "${branch//\//-}"
 }
 
-# Validate target_dir to prevent path traversal
+# Validate target_dir to prevent path traversal and argument injection
 validate_target_dir() {
   local dir="$1"
   if [ -n "$dir" ]; then
     case "$dir" in
-      /*|*..*)
-        printf "Error: target directory cannot be absolute or contain '..': %s\n" "$dir" >&2
+      /*|..|*/..|../*|*/../*|-*)
+        printf "Error: target directory cannot be absolute, contain '..', or start with '-': %s\n" "$dir" >&2
         return 1
         ;;
     esac

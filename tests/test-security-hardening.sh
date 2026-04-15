@@ -235,13 +235,6 @@ cat > malicious.code-workspace <<EOF
 }
 EOF
 
-# Mock jq for run-pipeline.sh to read our malicious workspace
-if "$PIPELINE_SCRIPT" --script test.sh 2>error.log; then
-   # Note: PIPELINE_SCRIPT expects PROJECT_ROOT relative workspace by default
-   # But if it finds it, it should validate the paths
-   :
-fi
-
 # Re-run with the malicious workspace
 mv malicious.code-workspace entire-project.code-workspace
 touch repos.list
@@ -249,9 +242,7 @@ touch repos.list
 if "$PIPELINE_SCRIPT" -f repos.list --script test.sh 2>error.log; then
   print_fail "run-pipeline.sh should have failed for traversal in workspace"
 else
-  if grep -q "Error: invalid workspace folder path (unauthorized '..' or absolute)" error.log; then
-    print_pass "run-pipeline.sh blocked path traversal in workspace"
-  elif grep -q "Error: invalid workspace folder path (too many '..')" error.log; then
+  if grep -q "Error: invalid workspace folder path (unauthorized '..', absolute, or leading hyphen)" error.log; then
     print_pass "run-pipeline.sh blocked path traversal in workspace"
   else
     print_fail "run-pipeline.sh failed but with wrong error message"
@@ -283,6 +274,22 @@ if grep -q "Skipping invalid workspace folder path" error.log; then
 else
   print_fail "install-r-deps.sh did not block path traversal or didn't log warning"
   cat error.log
+fi
+
+# ============================================
+# Test 9: Leading hyphen in run-pipeline.sh
+# ============================================
+print_test "Leading hyphen in run-pipeline.sh"
+
+if "$PIPELINE_SCRIPT" --script "-malicious.sh" 2>error.log; then
+  print_fail "run-pipeline.sh should have failed for leading hyphen in script path"
+else
+  if grep -q "Error: script path cannot be absolute, contain '..', or start with '-'" error.log; then
+    print_pass "run-pipeline.sh blocked leading hyphen in script path"
+  else
+    print_fail "run-pipeline.sh failed but with wrong error message"
+    cat error.log
+  fi
 fi
 
 # ============================================
