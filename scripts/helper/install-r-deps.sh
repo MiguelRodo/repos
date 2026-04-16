@@ -113,7 +113,8 @@ restore_pak_desc() {
 }
 
 # 6. Loop over each folder and try restoring
-for rel in "${FOLDERS[@]}"; do
+# Use Bash 3.2-safe array expansion to avoid "unbound variable" error with set -u
+for rel in ${FOLDERS[@]+"${FOLDERS[@]}"}; do
   TARGET="$INVOKE_DIR/$rel"
 
   if [ ! -d "$TARGET" ]; then

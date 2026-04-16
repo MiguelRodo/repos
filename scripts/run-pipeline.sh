@@ -133,15 +133,16 @@ parse_args() {
 # --- Filter logic ---
 should_process() {
   local name="$1"
+  # Use Bash 3.2-safe array expansion to avoid "unbound variable" error with set -u
   if [ "${#INCLUDE[@]}" -gt 0 ]; then
     local found=0
-    for inc in "${INCLUDE[@]}"; do
+    for inc in ${INCLUDE[@]+"${INCLUDE[@]}"}; do
       [ "$inc" = "$name" ] && found=1
     done
     [ $found -eq 1 ] || return 1
   fi
   if [ "${#EXCLUDE[@]}" -gt 0 ]; then
-    for exc in "${EXCLUDE[@]}"; do
+    for exc in ${EXCLUDE[@]+"${EXCLUDE[@]}"}; do
       [ "$exc" = "$name" ] && return 1
     done
   fi
@@ -199,7 +200,8 @@ record_skip() {
 print_summary() {
   printf "\n"
   printf "=== Pipeline Summary ===\n"
-  for line in "${SUMMARY_LINES[@]}"; do
+  # Use Bash 3.2-safe array expansion to avoid "unbound variable" error with set -u
+  for line in ${SUMMARY_LINES[@]+"${SUMMARY_LINES[@]}"}; do
     printf "%s\n" "$line"
   done
   printf "\n"
