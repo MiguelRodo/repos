@@ -249,7 +249,9 @@ touch repos.list
 if "$PIPELINE_SCRIPT" -f repos.list --script test.sh 2>error.log; then
   print_fail "run-pipeline.sh should have failed for traversal in workspace"
 else
-  if grep -q "Error: invalid workspace folder path (unauthorized '..' or absolute)" error.log; then
+  if grep -q "Error: invalid workspace folder path (unauthorized '..', absolute, or leading hyphen)" error.log; then
+    print_pass "run-pipeline.sh blocked path traversal in workspace"
+  elif grep -q "Error: invalid workspace folder path (unauthorized '..' or absolute)" error.log; then
     print_pass "run-pipeline.sh blocked path traversal in workspace"
   elif grep -q "Error: invalid workspace folder path (too many '..')" error.log; then
     print_pass "run-pipeline.sh blocked path traversal in workspace"
