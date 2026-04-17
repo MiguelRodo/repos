@@ -172,11 +172,11 @@ normalise_remote_to_https() {
   # Convert a remote URL to https://host/owner/repo (no .git)
   local url="$1" host path
   case "$url" in
-    https://*)
+    http://*|https://*)
       url="${url%.git}"
-      # Strip embedded credentials (e.g. https://user:pass@host/...)
+      # Strip embedded credentials (e.g. http://user:pass@host/...)
       # to prevent leaking tokens in logs or workspace files.
-      url="$(printf '%s\n' "$url" | sed 's|^\(https://\)[^/]*@|\1|')"
+      url="$(printf '%s\n' "$url" | sed 's|^\(https\?://\)[^/]*@|\1|')"
       printf '%s\n' "$url"
       ;;
     ssh://git@*)
@@ -403,7 +403,7 @@ build_raw_list(){
             repo_no_branch="${repo_no_branch%.git}"
             # Convert to https format
             case "$repo_no_branch" in
-              https://*|/*|[a-zA-Z]:/*|file://*)
+              http://*|https://*|/*|[a-zA-Z]:/*|file://*)
                 repo_https=$(normalise_remote_to_https "$repo_no_branch")
                 ;;
               */*)
