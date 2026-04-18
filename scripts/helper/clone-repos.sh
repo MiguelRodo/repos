@@ -1287,7 +1287,7 @@ main() {
     [[ "$DEBUG" == true ]] && printf "Moving to next line.\n" >&2
   done <"$REPOS_FILE"
 
-  echo
+  printf "\n"
   printf "Summary:\n"
   printf "  Instructions processed : %d\n" "$CNT_TOTAL"
   printf "  Skipped (already present): %d\n" "$CNT_SKIPPED"
