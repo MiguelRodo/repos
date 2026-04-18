@@ -70,15 +70,15 @@ done
 cd -- "$PROJECT_ROOT"
 
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  echo "Error: not inside a Git working tree" >&2
+  printf "Error: not inside a Git working tree\n" >&2
   exit 1
 fi
 
 PREBUILD_FILE="$PROJECT_ROOT/.devcontainer/prebuild/devcontainer.json"
 
 if [ ! -f "$PREBUILD_FILE" ]; then
-  echo "Error: prebuild devcontainer not found: $PREBUILD_FILE" >&2
-  echo "This file is required to update worktrees." >&2
+  printf "Error: prebuild devcontainer not found: %s\n" "$PREBUILD_FILE" >&2
+  printf "This file is required to update worktrees.\n" >&2
   exit 1
 fi
 
@@ -88,12 +88,12 @@ if command -v jq >/dev/null 2>&1; then
 elif command -v python3 >/dev/null 2>&1; then
   JSON_TOOL="python3"
 else
-  echo "Error: Neither jq nor python3 found. One is required for JSON manipulation." >&2
+  printf "Error: Neither jq nor python3 found. One is required for JSON manipulation.\n" >&2
   exit 1
 fi
 
 # --- Process worktrees ---
-echo "Finding worktrees..."
+printf "Finding worktrees...\n"
 
 # Get worktree list (skip the base repo)
 WORKTREE_COUNT=0
@@ -111,13 +111,13 @@ while IFS= read -r line; do
   
   WORKTREE_COUNT=$((WORKTREE_COUNT + 1))
   
-  echo ""
+  printf "\n"
   printf ' [%d] %s\n' "$WORKTREE_COUNT" "$(basename -- "$WORKTREE_PATH")"
   printf '    Path: %s\n' "$WORKTREE_PATH"
   
   # Check if worktree has .devcontainer directory
   if [ ! -d "$WORKTREE_PATH/.devcontainer" ]; then
-    echo "    ⏭  No .devcontainer directory, skipping"
+    printf "    ⏭  No .devcontainer directory, skipping\n"
     SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
     continue
   fi
@@ -154,13 +154,13 @@ with open(os.environ['TMP_DEST'], 'w') as f:
   mv -- "$TMP_DEST" "$DEST_FILE"
   trap - EXIT
   
-  echo "    ✓ Updated devcontainer.json"
+  printf "    ✓ Updated devcontainer.json\n"
   
   # Commit and push
   cd -- "$WORKTREE_PATH"
   
   if git diff --quiet "$DEST_FILE"; then
-    echo "    ℹ️  No changes to commit"
+    printf "    ℹ️  No changes to commit\n"
     SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
   else
     git add -- ".devcontainer/devcontainer.json"
@@ -170,7 +170,7 @@ with open(os.environ['TMP_DEST'], 'w') as f:
     BRANCH="$(git rev-parse --abbrev-ref HEAD)"
     git push origin -- "$BRANCH" || printf "    ⚠️  Push failed (you may need to push manually)\n"
     
-    echo "    ✓ Committed and pushed"
+    printf "    ✓ Committed and pushed\n"
     UPDATED_COUNT=$((UPDATED_COUNT + 1))
   fi
   
@@ -178,13 +178,13 @@ with open(os.environ['TMP_DEST'], 'w') as f:
   
 done < <(git worktree list --porcelain | grep '^worktree')
 
-echo ""
-echo "Summary:"
-echo "  Worktrees found: $WORKTREE_COUNT"
-echo "  Updated: $UPDATED_COUNT"
-echo "  Skipped: $SKIPPED_COUNT"
+printf "\n"
+printf "Summary:\n"
+printf "  Worktrees found: %d\n" "$WORKTREE_COUNT"
+printf "  Updated: %d\n" "$UPDATED_COUNT"
+printf "  Skipped: %d\n" "$SKIPPED_COUNT"
 
 if $DRY_RUN; then
-  echo ""
-  echo "This was a dry run. Use without --dry-run to apply changes."
+  printf "\n"
+  printf "This was a dry run. Use without --dry-run to apply changes.\n"
 fi

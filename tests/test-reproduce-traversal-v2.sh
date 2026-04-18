@@ -62,21 +62,21 @@ cat output.log
 # ../repo
 
 echo "--- VALIDATION RESULTS ---"
-if grep -q "Error: invalid workspace folder path (unauthorized '..' or absolute): .." output.log; then
+if grep -q "Error: invalid workspace folder path (unauthorized '..', absolute, or leading hyphen): .." output.log; then
     echo "PASS: rejected '..'"
 else
     echo "FAIL: did not reject '..'"
     exit 1
 fi
 
-if grep -q "Error: invalid workspace folder path (unauthorized '..' or absolute): repo/.." output.log; then
+if grep -q "Error: invalid workspace folder path (unauthorized '..', absolute, or leading hyphen): repo/.." output.log; then
     echo "PASS: rejected 'repo/..'"
 else
     echo "FAIL: did not reject 'repo/..'"
     exit 1
 fi
 
-if grep -q "Error: invalid workspace folder path (unauthorized '..' or absolute): ../repo/.." output.log; then
+if grep -q "Error: invalid workspace folder path (unauthorized '..', absolute, or leading hyphen): ../repo/.." output.log; then
     echo "PASS: rejected '../repo/..'"
 else
     echo "FAIL: did not reject '../repo/..'"

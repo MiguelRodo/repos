@@ -280,7 +280,7 @@ if "$INSTALL_R_DEPS_SCRIPT" 2>error.log >/dev/null; then
   :
 fi
 
-if grep -q "Skipping invalid workspace folder path" error.log; then
+if grep -q "invalid workspace folder path" error.log; then
   print_pass "install-r-deps.sh blocked path traversal"
 else
   print_fail "install-r-deps.sh did not block path traversal or didn't log warning"

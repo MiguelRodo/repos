@@ -8,12 +8,12 @@ IFS=$'\n\t'      # only split on newline and tab
 
 # 0. Ensure Rscript exists
 if ! command -v Rscript >/dev/null 2>&1; then
-  echo "❌ Rscript not found. Please install Rscript." >&2
+  printf "❌ Rscript not found. Please install Rscript.\n" >&2
   exit 1
 fi
 # 4. Parse all the "path" entries via jq
 if ! command -v jq >/dev/null 2>&1; then
-  echo "❌ jq not found. Please install jq to parse the workspace file." >&2
+  printf "❌ jq not found. Please install jq to parse the workspace file.\n" >&2
   exit 1
 fi
 
@@ -36,21 +36,22 @@ fi
 # 4. Parse all the "path" entries into a Bash array
 FOLDERS=()
 while IFS= read -r folder; do
-  # Validate folder path to prevent traversal
+  # Validate folder path to prevent traversal and argument injection
   case "$folder" in
-    /*|..|*/..|../*|*/../*)
+    /*|..|*/..|../*|*/../*|-*)
       # If absolute or contains ".." anywhere, only allow exactly one leading "../"
-      # followed by a single directory name (no further traversal)
+      # followed by a single directory name (no further traversal).
+      # Also block leading hyphens to prevent argument injection.
       is_valid=false
       if [[ "$folder" == ../* ]]; then
         remainder="${folder#../}"
-        if [[ "$remainder" != */* && "$remainder" != *..* && "$remainder" != "" ]]; then
+        if [[ "$remainder" != */* && "$remainder" != *..* && "$remainder" != "" && "$remainder" != -* ]]; then
           is_valid=true
         fi
       fi
 
       if [ "$is_valid" = false ]; then
-        printf "⚠️ Skipping invalid workspace folder path (unauthorized '..' or absolute): %s\n" "$folder" >&2
+        printf "Error: invalid workspace folder path (unauthorized '..', absolute, or leading hyphen): %s\n" "$folder" >&2
         continue
       fi
       ;;
@@ -133,4 +134,4 @@ for rel in ${FOLDERS[@]+"${FOLDERS[@]}"}; do
   fi
 done
 
-echo "✅ All done across all folders!"
+printf "✅ All done across all folders!\n"

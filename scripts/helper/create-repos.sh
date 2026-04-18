@@ -138,7 +138,7 @@ get_credentials() {
         | git -c credential.interactive=false credential fill 2>/dev/null
     ); then
       debug "git credential fill failed"
-      echo "Warning: GitHub credentials not available. Skipping repository creation/verification." >&2
+      printf "Warning: GitHub credentials not available. Skipping repository creation/verification.\n" >&2
       return 1
     fi
     # Parse credentials with sed instead of awk -F= to support tokens with equals signs.
@@ -154,7 +154,7 @@ get_credentials() {
     # Check if we actually got credentials
     if [ -z "${GH_USER-}" ] || [ -z "${GH_TOKEN-}" ]; then
       debug "Credentials incomplete after retrieval"
-      echo "Warning: GitHub credentials not available. Skipping repository creation/verification." >&2
+      printf "Warning: GitHub credentials not available. Skipping repository creation/verification.\n" >&2
       return 1
     fi
   else
@@ -423,9 +423,9 @@ while IFS= read -r line || [ -n "$line" ]; do
         code=$( create_branch "$fallback_owner" "$fallback_repo" "$branch" )
         debug "Line $line_num: Branch creation returned HTTP $code"
         if [ "$code" -eq 201 ]; then
-          echo "done."
+          printf "done.\n"
         else
-          echo "failed (HTTP $code)."
+          printf "failed (HTTP %s).\n" "$code"
         fi
       else
         printf "Error checking branch %s on %s/%s (HTTP %s).\n" "$branch" "$fallback_owner" "$fallback_repo" "$ref_status"
@@ -590,9 +590,9 @@ while IFS= read -r line || [ -n "$line" ]; do
         "$create_url"
     )
     if [ "$http_code" -eq 201 ]; then
-      echo "done."
+      printf "done.\n"
     else
-      echo "failed (HTTP $http_code)."
+      printf "failed (HTTP %s).\n" "$http_code"
       continue
     fi
   else
@@ -613,9 +613,9 @@ while IFS= read -r line || [ -n "$line" ]; do
       printf "Creating branch %s ... " "$branch"
       code=$( create_branch "$owner" "$repo" "$branch" )
       if [ "$code" -eq 201 ]; then
-        echo "done."
+        printf "done.\n"
       else
-        echo "failed (HTTP $code)."
+        printf "failed (HTTP %s).\n" "$code"
       fi
     else
       printf "Error checking branch %s (HTTP %s).\n" "$branch" "$ref_status"

@@ -73,14 +73,14 @@ while [ "$#" -gt 0 ]; do
     -h|--help)
       usage; exit 0 ;;
     *)
-      echo "Error: Unknown option: $1" >&2
+      printf "Error: Unknown option: %s\n" "$1" >&2
       usage; exit 1 ;;
   esac
 done
 
 # Validate upstream branch name
 if ! git check-ref-format --allow-onelevel "$UPSTREAM_BRANCH" || [[ "$UPSTREAM_BRANCH" == -* ]]; then
-  echo "Error: '$UPSTREAM_BRANCH' is not a valid Git branch name." >&2
+  printf "Error: '%s' is not a valid Git branch name.\n" "$UPSTREAM_BRANCH" >&2
   exit 1
 fi
 
@@ -245,7 +245,7 @@ Branch: $UPSTREAM_BRANCH
 Date: $(date -u +%Y-%m-%d)"
   
   # Use -- for commit message to avoid potential issues
-  git commit -m "$COMMIT_MSG"
+  git commit -m "$COMMIT_MSG" --
   
   printf '\n'
   printf '✅ Scripts updated successfully!\n'
