@@ -263,7 +263,7 @@ Install using [Scoop](https://scoop.sh/):
 
 ```powershell
 # Add the repos bucket (replace <username> with the bucket owner)
-scoop bucket add repos https://github.com/<username>/scoop-bucket
+scoop bucket add repos https://github.com/MiguelRodo/scoop-bucket
 
 # Install repos
 scoop install repos
