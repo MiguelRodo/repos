@@ -80,7 +80,8 @@ set -o pipefail
 echo "  Testing path traversal in target-directory"
 set +o pipefail
 OUTPUT=$(bash scripts/add-branch.sh "valid-branch" "../../outside" 2>&1) || true
-if echo "$OUTPUT" | grep -q "cannot be absolute"; then
+if echo "$OUTPUT" | grep -q "cannot be absolute" && \
+   echo "$OUTPUT" | grep -q "contain '\\.\\.'"; then
   print_pass "Correctly rejected path traversal in target-directory"
 else
   print_fail "Failed to reject path traversal in target-directory"
