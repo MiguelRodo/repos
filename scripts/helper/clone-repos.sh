@@ -1077,7 +1077,7 @@ plan_forward() {
         # Validate remote_spec to prevent path traversal and argument injection
         case "$remote_spec" in
           -*|*..*)
-            printf "Error: repository specification cannot start with a hyphen or contain '..': %s\n" "$remote_spec" >&2
+            printf "Error: repository spec cannot start with a hyphen or contain '..': %s\n" "$remote_spec" >&2
             continue
             ;;
         esac

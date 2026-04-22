@@ -16,13 +16,13 @@ export GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh -oBatchMode=yes}"
 git() { command git "$@" </dev/null; }
 
 # ——— Defaults ———————————————————————————————————————————————
-# Validate devcontainer path to prevent path traversal
+# Validate devcontainer path to prevent path traversal and argument injection
 validate_devcontainer_path() {
   local path="$1"
   if [ -n "$path" ]; then
     case "$path" in
-      /*|*..*)
-        printf "Error: devcontainer path cannot be absolute or contain '..': %s\n" "$path" >&2
+      /*|*..*|-*)
+        printf "Error: devcontainer path cannot be absolute, contain '..', or start with a hyphen: %s\n" "$path" >&2
         return 1
         ;;
     esac
