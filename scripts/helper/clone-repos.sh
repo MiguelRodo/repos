@@ -529,12 +529,12 @@ ensure_wildcard_fetch_refspec() {
   
   # Check if wildcard refspec already exists
   # Use grep -e to handle patterns starting with a hyphen literally
-  if git -C "$base" config --get-all remote.origin.fetch | grep -qF -e "$wildcard_refspec"; then
+  if git -C "$base" config --get-all -- remote.origin.fetch | grep -qF -e "$wildcard_refspec"; then
     return 0
   fi
   
   # Add wildcard refspec (does not remove existing refspecs)
-  git -C "$base" config --add remote.origin.fetch "$wildcard_refspec" 2>/dev/null || true
+  git -C "$base" config --add -- remote.origin.fetch "$wildcard_refspec" 2>/dev/null || true
 }
 
 find_worktree_for_branch() {
@@ -584,7 +584,8 @@ parse_effective_line() {
           -a|--all-branches) all_branches=1 ;;  # harmless for worktrees
           --public|--private|--codespaces) ;;   # ignore valid create-repos flags
           -*)
-            printf "Warning: ignoring unknown option '%s' on line: %s\n" "$1" "$line" >&2 ;;
+            printf "Error: unknown option '%s' on line: %s\n" "$1" "$line" >&2
+            set +f; return 1 ;;
           *)
             if [ -z "$target_dir" ]; then target_dir="$1"
             else printf "Error: multiple target directories on one line: %s\n" "$line" >&2; set +f; return 1
@@ -599,11 +600,11 @@ parse_effective_line() {
       fi
       is_worktree=$use_worktree
       is_at_branch=1
-      # Validate target_dir to prevent path traversal
+      # Validate target_dir to prevent path traversal and argument injection
       if [ -n "$target_dir" ]; then
         case "$target_dir" in
-          /*|*..*)
-            printf "Error: target directory cannot be absolute or contain '..': %s\n" "$target_dir" >&2
+          /*|*..*|-*)
+            printf "Error: target directory cannot be absolute, contain '..', or start with a hyphen: %s\n" "$target_dir" >&2
             set +f; return 1
             ;;
         esac
@@ -612,10 +613,10 @@ parse_effective_line() {
       ;;
     *)
       local repo_spec="$first"
-      # Validate repo_spec to prevent path traversal
+      # Validate repo_spec to prevent path traversal and argument injection
       case "${repo_spec%@*}" in
-        *..*)
-          printf "Error: repository spec cannot contain '..': %s\n" "$repo_spec" >&2
+        -*|*..*)
+          printf "Error: repository spec cannot start with a hyphen or contain '..': %s\n" "$repo_spec" >&2
           set +f; return 1
           ;;
       esac
@@ -625,7 +626,8 @@ parse_effective_line() {
           -w|--worktree)  printf "Warning: '--worktree' ignored on clone line: %s\n" "$line" >&2 ;;
           --public|--private|--codespaces) ;;   # ignore valid create-repos flags
           -*)
-            printf "Warning: ignoring unknown option '%s' on line: %s\n" "$1" "$line" >&2 ;;
+            printf "Error: unknown option '%s' on line: %s\n" "$1" "$line" >&2
+            set +f; return 1 ;;
           *)
             if [ -z "$target_dir" ]; then target_dir="$1"
             else printf "Error: multiple target directories on one line: %s\n" "$line" >&2; set +f; return 1
@@ -633,11 +635,11 @@ parse_effective_line() {
         esac
         shift
       done
-      # Validate target_dir to prevent path traversal
+      # Validate target_dir to prevent path traversal and argument injection
       if [ -n "$target_dir" ]; then
         case "$target_dir" in
-          /*|*..*)
-            printf "Error: target directory cannot be absolute or contain '..': %s\n" "$target_dir" >&2
+          /*|*..*|-*)
+            printf "Error: target directory cannot be absolute, contain '..', or start with a hyphen: %s\n" "$target_dir" >&2
             set +f; return 1
             ;;
         esac
@@ -1072,10 +1074,10 @@ plan_forward() {
       *)
         # clone line: owner/repo[@ref] or https url
         remote_spec="$tok1"
-        # Validate remote_spec to prevent path traversal
+        # Validate remote_spec to prevent path traversal and argument injection
         case "$remote_spec" in
-          *..*)
-            printf "Error: repository specification cannot contain '..': %s\n" "$remote_spec" >&2
+          -*|*..*)
+            printf "Error: repository specification cannot start with a hyphen or contain '..': %s\n" "$remote_spec" >&2
             continue
             ;;
         esac
@@ -1091,10 +1093,10 @@ plan_forward() {
           tok2="$1"
           case "$tok2" in -*) is_opt=1 ;; *) is_opt=0 ;; esac
           if [ "$is_opt" -eq 0 ]; then
-            # Validate target_dir to prevent path traversal in plan
+            # Validate target_dir to prevent path traversal and argument injection in plan
             case "$tok2" in
-              /*|*..*)
-                printf "Error: target directory cannot be absolute or contain '..': %s\n" "$tok2" >&2
+              /*|*..*|-*)
+                printf "Error: target directory cannot be absolute, contain '..', or start with a hyphen: %s\n" "$tok2" >&2
                 continue
                 ;;
             esac

@@ -109,3 +109,8 @@
 **Vulnerability:** GitHub API components (owner, repo, branch) were interpolated directly into URL strings without encoding. While primary validation regexes restricted most characters, branch names (validated only by `git check-ref-format`) could contain characters like `/` or `#` that would break URL structure or lead to path manipulation.
 **Learning:** Even with input validation, parameters destined for URL paths must be explicitly encoded to ensure they are treated as literal data by the receiving API and to prevent misinterpretation of URL metacharacters.
 **Prevention:** Implement a reusable `urlencode` helper using `jq -rR '@uri'` (available in the project's environment) and apply it to all user-controlled or external data interpolated into URL strings.
+
+## 2026-04-22 - [Medium] Consistent Hyphen Blocking and Robust Option Parsing
+**Vulnerability:** User-provided target directory names and repository specifications were validated for path traversal but not for leading hyphens. This allowed for potential argument injection if these strings were passed to Git or other shell commands without the `--` separator.
+**Learning:** Hardening against argument injection requires two layers: (1) strict input validation to block metacharacters and leading hyphens, and (2) consistent use of the `--` option terminator in all command invocations. Encountering "Warning" instead of "Error" for unknown options in parsers can also mask injection attempts.
+**Prevention:** Always include `-*` in path and identifier validation `case` statements. Upgrade unknown option warnings to errors to "fail securely". Consistently apply `--` before any variable-based positional argument in Git, curl, awk, and other standard utilities.

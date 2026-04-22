@@ -256,13 +256,13 @@ sanitize_branch_name() {
   printf '%s\n' "${branch//\//-}"
 }
 
-# Validate target_dir to prevent path traversal
+# Validate target_dir to prevent path traversal and argument injection
 validate_target_dir() {
   local dir="$1"
   if [ -n "$dir" ]; then
     case "$dir" in
-      /*|*..*)
-        printf "Error: target directory cannot be absolute or contain '..': %s\n" "$dir" >&2
+      /*|*..*|-*)
+        printf "Error: target directory cannot be absolute, contain '..', or start with a hyphen: %s\n" "$dir" >&2
         return 1
         ;;
     esac
@@ -323,6 +323,10 @@ build_paths_list() {
         while [ "$#" -gt 0 ]; do
           case "$1" in
             -w|--worktree) use_worktree=1 ;;
+            -a|--all-branches|--public|--private|--codespaces) ;; # ignore
+            -*)
+              printf "Error: unknown option '%s' on line: %s\n" "$1" "$trimmed" >&2
+              set +f; return 1 ;;
             *)
               if [ -z "$target_dir" ]; then
                 target_dir="$1"
@@ -363,7 +367,10 @@ build_paths_list() {
         target_dir=""
         while [ "$#" -gt 0 ]; do
           case "$1" in
-            -*) ;; # ignore options
+            -a|--all-branches|--public|--private|--codespaces) ;; # ignore
+            -*)
+              printf "Error: unknown option '%s' on line: %s\n" "$1" "$trimmed" >&2
+              set +f; return 1 ;;
             *)
               if [ -z "$target_dir" ]; then
                 target_dir="$1"
@@ -464,9 +471,10 @@ build_paths_list() {
         while [ "$#" -gt 0 ]; do
           case "$1" in
             -w|--worktree) use_worktree=1 ;;
-            -a|--all-branches) ;; # ignore for path calculation
+            -a|--all-branches|--public|--private|--codespaces) ;; # ignore for path calculation
             -*)
-              ;; # ignore unknown options
+              printf "Error: unknown option '%s' on line: %s\n" "$1" "$trimmed" >&2
+              set +f; return 1 ;;
             *)
               if [ -z "$target_dir" ]; then
                 target_dir="$1"
@@ -506,10 +514,11 @@ build_paths_list() {
         repo_spec="$first"
         while [ "$#" -gt 0 ]; do
           case "$1" in
-            -a|--all-branches) ;; # ignore for path calculation
+            -a|--all-branches|--public|--private|--codespaces) ;; # ignore for path calculation
             -w|--worktree) ;; # ignore on clone lines
             -*)
-              ;; # ignore unknown options
+              printf "Error: unknown option '%s' on line: %s\n" "$1" "$trimmed" >&2
+              set +f; return 1 ;;
             *)
               if [ -z "$target_dir" ]; then
                 target_dir="$1"

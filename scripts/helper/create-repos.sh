@@ -179,7 +179,7 @@ validate_token() {
   
   # Make a simple API call to check token validity
   local response
-  response=$(curl -s -H "$auth_header" "$API_URL/user")
+  response=$(curl -s -H "$auth_header" -- "$API_URL/user")
   
   # Check if response is empty
   if [ -z "$response" ]; then
@@ -228,7 +228,7 @@ validate_token() {
 api_get_field() {
   local url="$1"; local field="$2"
   # Use getpath with split to support nested fields (e.g. "commit.sha") securely
-  curl -s -H "$AUTH_HDR" "$url" | jq -r --arg field "$field" 'getpath($field | split("."))'
+  curl -s -H "$AUTH_HDR" -- "$url" | jq -r --arg field "$field" 'getpath($field | split("."))'
 }
 
 create_branch() {
@@ -243,7 +243,7 @@ create_branch() {
 
   local defsha
   defsha=$(
-    curl -s -H "$AUTH_HDR" \
+    curl -s -H "$AUTH_HDR" -- \
       "$API_URL/repos/$e_owner/$e_repo/git/ref/heads/$e_defbr" \
     | jq -r '.object.sha // .sha'
   )
@@ -253,7 +253,7 @@ create_branch() {
 
   curl -s -o /dev/null -w "%{http_code}" -X POST \
     -H "$AUTH_HDR" -H "Content-Type: application/json" \
-    -d "$payload" \
+    -d "$payload" -- \
     "$API_URL/repos/$e_owner/$e_repo/git/refs"
 }
 
@@ -262,7 +262,7 @@ get_current_repo_info() {
   if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     # Get origin URL
     local origin_url
-    origin_url=$(git config --get remote.origin.url 2>/dev/null || echo "")
+    origin_url=$(git config --get -- remote.origin.url 2>/dev/null || echo "")
     
     if [ -z "$origin_url" ]; then
       return 1
@@ -411,7 +411,7 @@ while IFS= read -r line || [ -n "$line" ]; do
       debug "Line $line_num: Checking if branch $branch exists on $fallback_owner/$fallback_repo"
       ref_status=$(
         curl -s -o /dev/null -w "%{http_code}" \
-          -H "$AUTH_HDR" \
+          -H "$AUTH_HDR" -- \
           "$API_URL/repos/$(urlencode "$fallback_owner")/$(urlencode "$fallback_repo")/git/refs/heads/$(urlencode "$branch")"
       )
       debug "Line $line_num: Branch check returned HTTP $ref_status"
@@ -528,7 +528,7 @@ while IFS= read -r line || [ -n "$line" ]; do
 
   # 1) Determine owner type (User vs Organization)
   debug "Line $line_num: Checking owner type for $owner"
-  owner_info=$(curl -s -H "$AUTH_HDR" "$API_URL/users/$(urlencode "$owner")")
+  owner_info=$(curl -s -H "$AUTH_HDR" -- "$API_URL/users/$(urlencode "$owner")")
   owner_type=$(printf '%s\n' "$owner_info" | jq -r '.type // empty')
   
   debug "Line $line_num: Owner type: $owner_type"
@@ -549,7 +549,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   # 2) Check repo existence
   status=$(
     curl -s -o /dev/null -w "%{http_code}" \
-      -H "$AUTH_HDR" \
+      -H "$AUTH_HDR" -- \
       "$API_URL/repos/$(urlencode "$owner")/$(urlencode "$repo")"
   )
   if [ "$status" -eq 200 ]; then
@@ -586,7 +586,7 @@ while IFS= read -r line || [ -n "$line" ]; do
       curl -s -o /dev/null -w "%{http_code}" \
         -H "$AUTH_HDR" \
         -H "Content-Type: application/json" \
-        -d "$payload" \
+        -d "$payload" -- \
         "$create_url"
     )
     if [ "$http_code" -eq 201 ]; then
@@ -604,7 +604,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   if [ -n "$branch" ]; then
     ref_status=$(
       curl -s -o /dev/null -w "%{http_code}" \
-        -H "$AUTH_HDR" \
+        -H "$AUTH_HDR" -- \
         "$API_URL/repos/$(urlencode "$owner")/$(urlencode "$repo")/git/refs/heads/$(urlencode "$branch")"
     )
     if [ "$ref_status" -eq 200 ]; then
