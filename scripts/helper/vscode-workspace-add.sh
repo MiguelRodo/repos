@@ -387,10 +387,10 @@ build_paths_list() {
           *)   repo_no_ref="$repo_spec" ;;
         esac
 
-        # Validate repo_no_ref to prevent path traversal
+        # Validate repo_no_ref to prevent path traversal and argument injection
         case "$repo_no_ref" in
-          *..*)
-            printf "Error: repository spec cannot contain '..': %s\n" "$repo_no_ref" >&2
+          -*|*..*)
+            printf "Error: repository spec cannot start with a hyphen or contain '..': %s\n" "$repo_no_ref" >&2
             set +f; return 1
             ;;
         esac
@@ -541,18 +541,10 @@ build_paths_list() {
           set +f; return 1
         fi
 
-        # Validate repo_no_ref to prevent path traversal
+        # Validate repo_no_ref to prevent path traversal and argument injection
         case "$repo_no_ref" in
-          *..*)
-            printf "Error: repository specification cannot contain '..': %s\n" "$repo_no_ref" >&2
-            set +f; return 1
-            ;;
-        esac
-        
-        # Validate repo_no_ref to prevent path traversal
-        case "$repo_no_ref" in
-          *..*)
-            printf "Error: repository spec cannot contain '..': %s\n" "$repo_no_ref" >&2
+          -*|*..*)
+            printf "Error: repository spec cannot start with a hyphen or contain '..': %s\n" "$repo_no_ref" >&2
             set +f; return 1
             ;;
         esac
