@@ -92,7 +92,7 @@ EOF
 if "$CLONE_SCRIPT" -f repos.list 2>error.log; then
   print_fail "clone-repos.sh should have failed for traversal"
 else
-  if grep -q "Error: repository spec cannot contain '..'" error.log; then
+  if grep -qiE "Error: repository spec(ification)? cannot (start with a hyphen or )?contain '..'" error.log; then
     print_pass "clone-repos.sh blocked path traversal"
   else
     print_fail "clone-repos.sh failed but with wrong error message"
@@ -139,7 +139,7 @@ EOF
 if "$WORKSPACE_SCRIPT" -f repos.list 2>error.log; then
   print_fail "vscode-workspace-add.sh should have failed for traversal"
 else
-  if grep -q "Error: repository spec cannot contain '..'" error.log; then
+  if grep -qiE "Error: repository spec(ification)? cannot (start with a hyphen or )?contain '..'" error.log; then
     print_pass "vscode-workspace-add.sh blocked path traversal"
   else
     print_fail "vscode-workspace-add.sh failed but with wrong error message"
@@ -160,7 +160,7 @@ if "$CODESPACES_SCRIPT" -f repos.list -d devcontainer.json 2>error.log; then
   # It might skip if devcontainer.json doesn't exist, but it should fail validation first
   print_fail "codespaces-auth-add.sh should have failed for traversal"
 else
-  if grep -q "Error: repository spec cannot contain '..'" error.log; then
+  if grep -qiE "Error: repository spec(ification)? cannot (start with a hyphen or )?contain '..'" error.log; then
     print_pass "codespaces-auth-add.sh blocked path traversal"
   else
     print_fail "codespaces-auth-add.sh failed but with wrong error message"
@@ -180,7 +180,7 @@ EOF
 if "$CREATE_SCRIPT" -f repos.list 2>error.log; then
   print_fail "create-repos.sh should have failed for traversal"
 else
-  if grep -qE "Error: repository spec (cannot contain '..'|must be in 'owner/repo' format)" error.log; then
+  if grep -qiE "Error: repository spec(ification)? (cannot (start with a hyphen or )?contain '..'|must be in 'owner/repo' format)" error.log; then
     print_pass "create-repos.sh blocked path traversal"
   else
     print_fail "create-repos.sh failed but with wrong error message"

@@ -388,10 +388,10 @@ build_raw_list(){
             exit 1
           fi
 
-          # Validate repo_spec to prevent path traversal
+          # Validate repo_spec to prevent path traversal and argument injection
           case "${first%@*}" in
-            *..*)
-              printf "Error: repository spec cannot contain '..': %s\n" "$first" >&2
+            -*|*..*)
+              printf "Error: repository spec cannot start with a hyphen or contain '..': %s\n" "$first" >&2
               exit 1
               ;;
           esac
