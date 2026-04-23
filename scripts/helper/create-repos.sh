@@ -467,10 +467,10 @@ while IFS= read -r line || [ -n "$line" ]; do
     exit 1
   fi
 
-  # Validate repo_path to prevent path traversal and argument injection
+  # Validate repo_path to prevent path traversal
   case "$repo_path" in
-    -*|*..*)
-      printf "Error: repository spec cannot start with a hyphen or contain '..': %s\n" "$repo_spec" >&2
+    *..*) 
+      printf "Error: repository spec contains '..': %s\n" "$repo_spec" >&2
       exit 1
       ;;
   esac
