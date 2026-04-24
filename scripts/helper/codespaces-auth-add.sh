@@ -483,10 +483,12 @@ update_with_jq(){
     ' >"$file"
   else
     tmp="$(mktemp "$(get_temp_dir)/repos-auth-XXXXXX")"
+    trap 'rm -f -- "$tmp"' EXIT
     jq --argjson repos "$repos_obj" '
       .customizations.codespaces.repositories
         |= ( (. // {}) + $repos )
     ' -- "$file" >"$tmp" && mv -- "$tmp" "$file"
+    trap - EXIT
   fi
 
   printf "Updated '%s' with jq.\n" "$file"
@@ -511,15 +513,27 @@ update_with_python(){
   "$py_cmd" - "$file" <<'PYCODE'
 import sys, json, re, os
 
-fname = sys.argv[1]
-text = open(fname, 'r').read()
+def strip_jsonc(text):
+    # Match strings or comments.
+    # For single-line comments, we use [^\n]* to avoid matching across lines
+    # even when re.DOTALL is active.
+    pattern = re.compile(
+        r'(?P<string>"([^"\\\n]|\\.)*")|(?P<comment_ml>/\*.*?\*/)|(?P<comment_sl>//[^\n]*)|(?P<comma>,\s*(?=[}\]]))',
+        re.DOTALL | re.MULTILINE
+    )
+    def replace(match):
+        if match.group('string'):
+            return match.group('string')
+        else:
+            return ""
+    return pattern.sub(replace, text)
 
-# Remove // line comments (but not inside URLs)
-text = re.sub(r'(?<!:)\/\/.*$', '', text, flags=re.MULTILINE)
-# Remove /* ... */ block comments
-text = re.sub(r'/\*.*?\*/', '', text, flags=re.DOTALL)
-# Remove trailing commas before } or ]
-text = re.sub(r',\s*([}\]])', r'\1', text)
+fname = sys.argv[1]
+with open(fname, 'r') as f:
+    text = f.read()
+
+# Strip comments and trailing commas properly (handling strings)
+text = strip_jsonc(text)
 
 # Now parse clean JSON
 data = json.loads(text)
@@ -623,8 +637,10 @@ update_devfile(){
       else
         # Safely write via a temporary file, then move into place
         tmp="$(mktemp "$(get_temp_dir)/repos-auth-XXXXXX")"
+        trap 'rm -f -- "$tmp"' EXIT
         update_with_python "$devfile" "$tool" > "$tmp"
         mv -- "$tmp" "$devfile"
+        trap - EXIT
         printf "Updated '%s' with %s.\n" "$devfile" "$tool"
       fi
       ;;
