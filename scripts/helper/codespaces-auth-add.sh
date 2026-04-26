@@ -52,7 +52,8 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Global array for temporary files to clean up on exit
 declare -a CLEANUP_FILES=()
-trap 'for f in "${CLEANUP_FILES[@]}"; do rm -f -- "$f"; done' EXIT
+# Use Bash 3.2-safe array expansion to avoid "unbound variable" error with set -u
+trap 'for f in ${CLEANUP_FILES[@]+"${CLEANUP_FILES[@]}"}; do rm -f -- "$f"; done' EXIT
 
 DEVCONTAINER_PATHS=()  # Array of devcontainer.json paths to update
 if [ ! -f "$PROJECT_ROOT/repos.list" ] && [ -f "$PROJECT_ROOT/repos-to-clone.list" ]; then

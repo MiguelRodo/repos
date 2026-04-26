@@ -23,7 +23,8 @@ set -euo pipefail
 
 # Global array for temporary files to clean up on exit
 declare -a CLEANUP_FILES=()
-trap 'for f in "${CLEANUP_FILES[@]}"; do rm -f -- "$f"; done' EXIT
+# Use Bash 3.2-safe array expansion to avoid "unbound variable" error with set -u
+trap 'for f in ${CLEANUP_FILES[@]+"${CLEANUP_FILES[@]}"}; do rm -f -- "$f"; done' EXIT
 
 # — Debug support —
 DEBUG=false
