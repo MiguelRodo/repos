@@ -15,6 +15,12 @@ website:
         text: repos setup
       - href: pipelines.qmd
         text: Running Pipelines
+      - text: "Language Packages"
+        menu:
+          - href: python-package.qmd
+            text: Python Package
+          - href: r-package.qmd
+            text: R Package
 
 format:
   html:

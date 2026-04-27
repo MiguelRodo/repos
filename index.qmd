@@ -41,6 +41,13 @@ devcontainer paths. → [repos setup guide](setup.html)
 script (or any script you specify), `repos run` executes it in each one.
 → [Running pipelines](pipelines.html)
 
+## Language Packages
+
+Use `repos` directly from R or Python — all the same commands, no terminal required.
+
+→ [Python package](python-package.html)  
+→ [R package](r-package.html)
+
 ## Installation
 
 → [Installation guide](install.html)
