@@ -262,7 +262,7 @@ run_in_repo() {
         record_success "$repo_name" "$script_name"
       else
         $VERBOSE && printf "  chmod +x \"%s\"\n" "$target"
-        chmod +x "$target"
+        chmod -- +x "$target"
         $VERBOSE && printf "  cd \"%s\" && ./%s\n" "$full_path" "$script_name"
         local rc=0
         ( cd -- "$full_path" && "./$script_name" ) || rc=$?
@@ -292,7 +292,7 @@ main() {
   parse_args "$@"
   
   # Change to PROJECT_ROOT to match clone-repos.sh behavior
-  cd "$PROJECT_ROOT"
+  cd -- "$PROJECT_ROOT"
 
   # Step 1: Run setup (unless skipped)
   if [ "$SKIP_SETUP" = false ]; then

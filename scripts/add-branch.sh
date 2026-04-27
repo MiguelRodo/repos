@@ -138,7 +138,7 @@ sanitize_branch_name() {
 
 # --- Determine destination ---
 REPO_NAME="$(basename -- "$PROJECT_ROOT")"
-PARENT_DIR="$(dirname "$PROJECT_ROOT")"
+PARENT_DIR="$(dirname -- "$PROJECT_ROOT")"
 
 if [ -n "$TARGET_DIR" ]; then
   # Validate TARGET_DIR to prevent path traversal and argument injection
