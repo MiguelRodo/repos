@@ -7,9 +7,31 @@ on:
       - 'v*'
   workflow_dispatch:
     inputs:
-      tag:
-        description: 'Tag to build (e.g. v1.2.3). Required for manual runs.'
-        required: true
+      bump_type:
+        description: >
+          Version component to bump (major | minor | patch).
+          Applies to all packages (CLI, Python, R) unless a specific
+          version override is provided for a package below.
+          The CLI current version is read from the most recent git tag;
+          Python and R current versions are read from pyproject.toml and
+          DESCRIPTION respectively.
+          Mutually exclusive with cli_version.
+        required: false
+      cli_version:
+        description: >
+          Exact CLI version to release (e.g. v1.2.3 or 1.2.3).
+          Mutually exclusive with bump_type.
+        required: false
+      python_version:
+        description: >
+          Override: exact version to set for the Python package (e.g. 1.2.3).
+          Leave empty to apply the same bump type as the CLI.
+        required: false
+      r_version:
+        description: >
+          Override: exact version to set for the R package (e.g. 1.2.3).
+          Leave empty to apply the same bump type as the CLI.
+        required: false
 
 jobs:
   build-deb:
@@ -22,6 +44,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install build dependencies
         run: |
@@ -32,23 +56,134 @@ jobs:
         id: get_version
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            RAW_TAG="${{ github.event.inputs.tag }}"
+            TAG_INPUT="${{ inputs.cli_version }}"
+            BUMP_INPUT="${{ inputs.bump_type }}"
+
+            # Exactly one of tag or bump_type must be set
+            if [ -n "$TAG_INPUT" ] && [ -n "$BUMP_INPUT" ]; then
+              echo "Error: provide exactly one of 'cli_version' or 'bump_type', not both." >&2
+              exit 1
+            fi
+            if [ -z "$TAG_INPUT" ] && [ -z "$BUMP_INPUT" ]; then
+              echo "Error: provide either 'cli_version' (explicit version) or 'bump_type' (major/minor/patch)." >&2
+              exit 1
+            fi
+
+            if [ -n "$BUMP_INPUT" ]; then
+              # Bump mode: derive next version from README
+              CURRENT=$(grep -E '^VERSION_REPOS=' README.md | head -1 | sed 's/^VERSION_REPOS=//')
+              if [ -z "$CURRENT" ]; then
+                echo "Error: could not read VERSION_REPOS from README.md" >&2
+                exit 1
+              fi
+              IFS='.' read -r cur_major cur_minor cur_patch <<< "$CURRENT"
+              cur_major="${cur_major:-0}"; cur_minor="${cur_minor:-0}"; cur_patch="${cur_patch:-0}"
+              case "$BUMP_INPUT" in
+                major) VERSION="$((cur_major + 1)).0.0" ;;
+                minor) VERSION="${cur_major}.$((cur_minor + 1)).0" ;;
+                patch) VERSION="${cur_major}.${cur_minor}.$((cur_patch + 1))" ;;
+                *)
+                  echo "Error: bump_type must be major, minor, or patch. Got: '$BUMP_INPUT'" >&2
+                  exit 1
+                  ;;
+              esac
+            else
+              # Explicit tag mode
+              VERSION="${TAG_INPUT#v}"
+            fi
           elif [ "${{ github.ref_type }}" = "tag" ]; then
-            RAW_TAG="${{ github.ref_name }}"
+            VERSION="${{ github.ref_name }}"
+            VERSION="${VERSION#v}"
           else
-            echo "This workflow only runs for tags or manual runs with a tag." >&2
+            echo "This workflow only runs for tags or manual runs with cli_version/bump_type." >&2
             exit 1
           fi
 
-          VERSION="${RAW_TAG#v}"
           if [[ ! "$VERSION" =~ ^[0-9] ]]; then
-            echo "Error: version '$VERSION' (from tag '$RAW_TAG') does not start with a digit." >&2
+            echo "Error: version '$VERSION' does not start with a digit." >&2
             exit 1
           fi
           TAG="v${VERSION}"
 
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Determine CLI bump type
+        id: determine_bump_type
+        run: |
+          # If bump_type was explicitly supplied, use it directly.
+          if [ -n "${{ inputs.bump_type }}" ]; then
+            BUMP_TYPE="${{ inputs.bump_type }}"
+          else
+            # Derive bump type by comparing the new version with the most recent
+            # previous semver git tag.
+            NEW_VERSION="${{ steps.get_version.outputs.version }}"
+            NEW_TAG="v${NEW_VERSION}"
+
+            # All semver-like tags sorted by version, excluding the new one
+            PREV_TAG=$(git tag --sort=version:refname \
+              | grep -E '^v[0-9]+\.[0-9]' \
+              | grep -vF "$NEW_TAG" \
+              | tail -1)
+
+            if [ -z "$PREV_TAG" ]; then
+              BUMP_TYPE="patch"
+            else
+              PREV_VERSION="${PREV_TAG#v}"
+              IFS='.' read -r prev_major prev_minor prev_patch <<< "$PREV_VERSION"
+              IFS='.' read -r new_major new_minor new_patch <<< "$NEW_VERSION"
+              prev_major="${prev_major:-0}"; prev_minor="${prev_minor:-0}"; prev_patch="${prev_patch:-0}"
+              new_major="${new_major:-0}";  new_minor="${new_minor:-0}";  new_patch="${new_patch:-0}"
+              if [ "$new_major" -gt "$prev_major" ]; then
+                BUMP_TYPE="major"
+              elif [ "$new_minor" -gt "$prev_minor" ]; then
+                BUMP_TYPE="minor"
+              else
+                BUMP_TYPE="patch"
+              fi
+            fi
+          fi
+
+          echo "bump_type=${BUMP_TYPE}" >> "$GITHUB_OUTPUT"
+          echo "Bump type: ${BUMP_TYPE}"
+
+      - name: Compute wrapper versions
+        id: compute_versions
+        run: |
+          BUMP_TYPE="${{ steps.determine_bump_type.outputs.bump_type }}"
+
+          # --- Python ---
+          if [ -n "${{ inputs.python_version }}" ]; then
+            NEW_PY_VERSION="${{ inputs.python_version }}"
+          else
+            CURRENT_PY=$(sed -n 's/^version = "\([^"]*\)"/\1/p' pyproject.toml | tr -d '[:space:]')
+            IFS='.' read -r py_major py_minor py_patch <<< "$CURRENT_PY"
+            py_major="${py_major:-0}"; py_minor="${py_minor:-0}"; py_patch="${py_patch:-0}"
+            case "$BUMP_TYPE" in
+              major) NEW_PY_VERSION="$((py_major + 1)).0.0" ;;
+              minor) NEW_PY_VERSION="${py_major}.$((py_minor + 1)).0" ;;
+              *)     NEW_PY_VERSION="${py_major}.${py_minor}.$((py_patch + 1))" ;;
+            esac
+          fi
+
+          # --- R ---
+          if [ -n "${{ inputs.r_version }}" ]; then
+            NEW_R_VERSION="${{ inputs.r_version }}"
+          else
+            CURRENT_R=$(sed -n 's/^Version: \(.*\)/\1/p' DESCRIPTION | tr -d '[:space:]')
+            IFS='.' read -r r_major r_minor r_patch <<< "$CURRENT_R"
+            r_major="${r_major:-0}"; r_minor="${r_minor:-0}"; r_patch="${r_patch:-0}"
+            case "$BUMP_TYPE" in
+              major) NEW_R_VERSION="$((r_major + 1)).0.0" ;;
+              minor) NEW_R_VERSION="${r_major}.$((r_minor + 1)).0" ;;
+              *)     NEW_R_VERSION="${r_major}.${r_minor}.$((r_patch + 1))" ;;
+            esac
+          fi
+
+          echo "python_version=${NEW_PY_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "r_version=${NEW_R_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Python wrapper → ${NEW_PY_VERSION}"
+          echo "R wrapper      → ${NEW_R_VERSION}"
 
       - name: Update changelog with version
         run: |
@@ -142,22 +277,33 @@ jobs:
           ref: ${{ github.event.repository.default_branch }}
           path: self-repo
 
-      - name: Update README VERSION_REPOS
+      - name: Update README and wrapper versions
         if: env.IS_RELEASE == 'true'
         run: |
           VERSION="${{ steps.get_version.outputs.version }}"
+          PY_VERSION="${{ steps.compute_versions.outputs.python_version }}"
+          R_VERSION="${{ steps.compute_versions.outputs.r_version }}"
           cd self-repo
-          sed -i -E "s/^VERSION_REPOS=.*/VERSION_REPOS=${VERSION}/" README.md
-
-          if git diff --quiet -- README.md; then
-            echo "README version already up to date."
-            exit 0
-          fi
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add README.md
-          git commit -m "Bump README install version to ${VERSION}"
+
+          # Update README install version
+          sed -i -E "s/^VERSION_REPOS=.*/VERSION_REPOS=${VERSION}/" README.md
+
+          # Update Python wrapper version
+          sed -i "s/^version = \"[^\"]*\"/version = \"${PY_VERSION}\"/" pyproject.toml
+
+          # Update R wrapper version
+          sed -i "s/^Version: .*/Version: ${R_VERSION}/" DESCRIPTION
+
+          if git diff --quiet -- README.md pyproject.toml DESCRIPTION; then
+            echo "All versions already up to date."
+            exit 0
+          fi
+
+          git add README.md pyproject.toml DESCRIPTION
+          git commit -m "Bump versions: CLI ${VERSION}, Python ${PY_VERSION}, R ${R_VERSION}"
           git push origin "${{ github.event.repository.default_branch }}"
 
       - name: Cleanup GPG home
