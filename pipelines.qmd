@@ -1,5 +1,6 @@
 ---
 title: "Running Pipelines"
+toc: true
 ---
 
 `repos run` executes a script inside each repository listed in your `repos.list`
@@ -25,7 +26,7 @@ repos run
 | `--exclude <repos>` | Comma-separated list of repositories to skip |
 | `--continue-on-error` | Keep running even if a repository fails |
 | `--dry-run` | Print what would be run without executing anything |
-| `--ensure-setup` | Run `repos setup` before executing the pipeline |
+| `--ensure-setup` | Clone repositories before running the pipeline |
 
 ```bash
 # Run a custom script in each repo

@@ -1,5 +1,6 @@
 ---
 title: "repos clone"
+toc: true
 ---
 
 `repos clone` reads your `repos.list` file and clones all listed repositories
@@ -53,20 +54,12 @@ gh auth login
 
 Public repositories can be cloned without any token.
 
-## Going further with repos setup
+## Going further
 
-`repos clone` only clones repositories.  `repos setup` does everything
-`repos clone` does, plus:
+`repos clone` only clones repositories.  For IDE integration, two additional
+commands are available:
 
-- **Creates** any GitHub repositories listed in `repos.list` that do not
-  exist yet (requires `GH_TOKEN`)
-- **Generates** a VS Code multi-root workspace file
-  (`entire-project.code-workspace`)
-- **Configures** GitHub Codespaces authentication (with `--codespaces`)
+- Generate a VS Code / Positron workspace: `repos workspace`
+- Configure GitHub Codespaces authentication: `repos codespace`
 
-You can also run these extra steps individually after cloning:
-
-- Generate the VS Code workspace: `repos workspace`
-- Run all steps at once: `repos setup`
-
-→ [repos setup guide](setup.html)
+→ [VS Code & Positron integration](vscode.html)

@@ -6,11 +6,11 @@ $Usage = @"
 Usage: repos <command> [options]
 
 Commands:
-  clone      Clone repositories listed in repos.list into the parent directory
-  setup      Clone and configure repositories (includes VS Code workspace and
-             optional Codespaces authentication)
-  workspace  Generate (or update) the VS Code multi-root workspace file
-  run        Execute a script inside each cloned repository
+  clone       Clone repositories listed in repos.list into the parent directory
+  workspace   Generate (or update) the VS Code multi-root workspace file
+  codespace   Configure GitHub Codespaces authentication
+  codespaces  Alias for codespace
+  run         Execute a script inside each cloned repository
 
 Run 'repos <command> --help' for more information on a command.
 "@
@@ -20,10 +20,11 @@ $ScriptRoot = Split-Path -Parent $PSCommandPath
 $ScriptsDir = Join-Path (Split-Path -Parent $ScriptRoot) "scripts"
 
 $SubcommandScripts = @{
-    "clone"     = "helper/clone-repos.sh"
-    "setup"     = "setup-repos.sh"
-    "workspace" = "helper/vscode-workspace-add.sh"
-    "run"       = "run-pipeline.sh"
+    "clone"      = "helper/clone-repos.sh"
+    "workspace"  = "helper/vscode-workspace-add.sh"
+    "codespace"  = "helper/codespaces-auth-add.sh"
+    "codespaces" = "helper/codespaces-auth-add.sh"
+    "run"        = "run-pipeline.sh"
 }
 
 # Parse subcommand

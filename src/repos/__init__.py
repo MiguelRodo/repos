@@ -10,14 +10,14 @@ import subprocess
 from pathlib import Path
 from typing import Optional, List, Union
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
-def get_script_path(script_name="setup-repos.sh"):
+def get_script_path(script_name="run-pipeline.sh"):
     """
     Find the path to a repos script.
     
     Args:
-        script_name: Name of the script file (default: setup-repos.sh)
+        script_name: Name of the script file (e.g., "helper/clone-repos.sh")
         
     Returns:
         Path to the script file
@@ -53,12 +53,12 @@ def get_script_path(script_name="setup-repos.sh"):
     )
 
 
-def run_script(script_name="setup-repos.sh", args=None):
+def run_script(script_name="run-pipeline.sh", args=None):
     """
     Run a repos script with the given arguments.
     
     Args:
-        script_name: Name of the script to run (default: setup-repos.sh)
+        script_name: Name of the script to run (e.g., "helper/clone-repos.sh")
         args: List of arguments to pass to the script
         
     Returns:
@@ -94,10 +94,66 @@ def run_script(script_name="setup-repos.sh", args=None):
     return result
 
 
-def setup(
+def workspace(
     file: Optional[str] = None,
-    public: bool = False,
-    codespaces: bool = False,
+    debug: bool = False,
+    debug_file: Optional[Union[bool, str]] = None,
+    **kwargs
+):
+    """
+    Generate or update the VS Code multi-root workspace file.
+
+    Args:
+        file: Path to repos list file (default: repos.list)
+        debug: If True, enable debug output to stderr
+        debug_file: Enable debug output to file (auto-generated if True, or specify path)
+        **kwargs: Additional keyword arguments (captured but ignored, for extensibility)
+
+    Returns:
+        subprocess.CompletedProcess object
+
+    Examples:
+        >>> # Generate workspace from default repos.list
+        >>> workspace()
+
+        >>> # Use a different file
+        >>> workspace(file="my-repos.list")
+    """
+    script_args = []
+
+    if file is not None:
+        script_args.extend(["-f", file])
+
+    if debug:
+        script_args.append("--debug")
+
+    if debug_file is not None:
+        if debug_file is True:
+            script_args.append("--debug-file")
+        else:
+            script_args.extend(["--debug-file", debug_file])
+
+    return run_script("helper/vscode-workspace-add.sh", script_args)
+
+
+def workspace_raw(*args):
+    """
+    Generate or update the VS Code workspace file (raw argument passing).
+
+    Args:
+        *args: Command-line arguments to pass directly to vscode-workspace-add.sh
+
+    Returns:
+        subprocess.CompletedProcess object
+
+    Examples:
+        >>> workspace_raw("-f", "custom.list")
+    """
+    return run_script("helper/vscode-workspace-add.sh", list(args))
+
+
+def codespace(
+    file: Optional[str] = None,
     devcontainer: Optional[Union[str, List[str]]] = None,
     permissions: Optional[str] = None,
     tool: Optional[str] = None,
@@ -106,92 +162,76 @@ def setup(
     **kwargs
 ):
     """
-    Clone and configure repositories from a repos.list file.
-    
+    Configure GitHub Codespaces authentication.
+
+    Injects the GH_TOKEN Codespaces secret into every cloned repository
+    that has a devcontainer.json.
+
     Args:
         file: Path to repos list file (default: repos.list)
-        public: If True, create repositories as public (default is private)
-        codespaces: If True, enable Codespaces authentication
-        devcontainer: Path(s) to devcontainer.json file(s) (implies codespaces=True)
+        devcontainer: Path(s) to devcontainer.json file(s)
         permissions: Pass through to codespaces-auth-add.sh ("all" or "contents")
         tool: Force tool for codespaces-auth-add.sh (e.g., "jq", "python")
         debug: If True, enable debug output to stderr
         debug_file: Enable debug output to file (auto-generated if True, or specify path)
         **kwargs: Additional keyword arguments (captured but ignored, for extensibility)
-        
+
     Returns:
         subprocess.CompletedProcess object
-        
+
     Examples:
-        >>> # Setup repositories from default repos.list
-        >>> setup()
-        
-        >>> # Use a different file
-        >>> setup(file="my-repos.list")
-        
-        >>> # Create repositories as public
-        >>> setup(public=True)
-        
-        >>> # Enable codespaces authentication
-        >>> setup(codespaces=True)
-        
-        >>> # Multiple options
-        >>> setup(public=True, codespaces=True, debug=True)
+        >>> # Configure with default devcontainer path
+        >>> codespace()
+
+        >>> # Specify devcontainer paths
+        >>> codespace(devcontainer=".devcontainer/devcontainer.json")
+
+        >>> # Multiple devcontainer paths
+        >>> codespace(devcontainer=[".devcontainer/devcontainer.json",
+        ...                         ".devcontainer/prebuild/devcontainer.json"])
     """
     script_args = []
-    
-    # Build argument list from keyword parameters
+
     if file is not None:
         script_args.extend(["-f", file])
-    
-    if public:
-        script_args.append("--public")
-    
-    if codespaces:
-        script_args.append("--codespaces")
-    
+
     if devcontainer is not None:
         devcontainers = [devcontainer] if isinstance(devcontainer, str) else devcontainer
         for dc in devcontainers:
             script_args.extend(["-d", dc])
-    
+
     if permissions is not None:
         script_args.extend(["--permissions", permissions])
-    
+
     if tool is not None:
         script_args.extend(["-t", tool])
-    
+
     if debug:
         script_args.append("--debug")
-    
+
     if debug_file is not None:
         if debug_file is True:
             script_args.append("--debug-file")
         else:
             script_args.extend(["--debug-file", debug_file])
-    
-    return run_script("setup-repos.sh", script_args)
+
+    return run_script("helper/codespaces-auth-add.sh", script_args)
 
 
-def setup_raw(*args):
+def codespace_raw(*args):
     """
-    Clone and configure repositories from a repos.list file (raw argument passing).
-    
-    This function provides backward compatibility for passing raw command-line arguments.
-    For idiomatic Python usage, use setup() with keyword arguments instead.
-    
+    Configure GitHub Codespaces authentication (raw argument passing).
+
     Args:
-        *args: Command-line arguments to pass directly to setup-repos.sh
-        
+        *args: Command-line arguments to pass directly to codespaces-auth-add.sh
+
     Returns:
         subprocess.CompletedProcess object
-        
+
     Examples:
-        >>> # Backward compatibility - raw argument passing
-        >>> setup_raw("--public", "--codespaces")
-        >>> setup_raw("-f", "custom.list", "--public")
+        >>> codespace_raw("-d", ".devcontainer/devcontainer.json")
     """
-    return run_script("setup-repos.sh", list(args))
+    return run_script("helper/codespaces-auth-add.sh", list(args))
 
 
 def run(
@@ -214,7 +254,7 @@ def run(
         script: Script to run in each repo, relative to repo root (default: run.sh)
         include: Repo name(s) to include (string or list of strings)
         exclude: Repo name(s) to exclude (string or list of strings)
-        ensure_setup: If True, run setup-repos.sh before executing scripts
+        ensure_setup: If True, clone repositories before executing scripts
         skip_deps: If True, skip the install-r-deps.sh step
         dry_run: If True, show what would be done without executing
         verbose: If True, enable verbose logging
@@ -306,15 +346,21 @@ USAGE = """\
 Usage: repos <command> [options]
 
 Commands:
-  setup    Clone and configure repositories from a repos.list file
-  run      Execute a script inside each cloned repository
+  clone       Clone repositories listed in repos.list into the parent directory
+  workspace   Generate (or update) the VS Code multi-root workspace file
+  codespace   Configure GitHub Codespaces authentication
+  codespaces  Alias for codespace
+  run         Execute a script inside each cloned repository
 
 Run 'repos <command> --help' for more information on a command.
 """
 
 SUBCOMMAND_SCRIPTS = {
-    "setup": "setup-repos.sh",
-    "run": "run-pipeline.sh",
+    "clone":      "helper/clone-repos.sh",
+    "workspace":  "helper/vscode-workspace-add.sh",
+    "codespace":  "helper/codespaces-auth-add.sh",
+    "codespaces": "helper/codespaces-auth-add.sh",
+    "run":        "run-pipeline.sh",
 }
 
 
@@ -326,8 +372,11 @@ def main():
     allowing users to run 'repos' from the command line after installation.
 
     Supports subcommands:
-      repos setup [flags]   — delegates to setup-repos.sh
-      repos run [flags]     — delegates to run-pipeline.sh
+      repos clone [flags]      — delegates to clone-repos.sh
+      repos workspace [flags]  — delegates to vscode-workspace-add.sh
+      repos codespace [flags]  — delegates to codespaces-auth-add.sh
+      repos codespaces [flags] — alias for codespace
+      repos run [flags]        — delegates to run-pipeline.sh
     """
     args = sys.argv[1:]
 

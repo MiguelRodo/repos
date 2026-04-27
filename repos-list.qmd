@@ -1,9 +1,10 @@
 ---
 title: "repos.list Reference"
+toc: true
 ---
 
 The `repos.list` file lists the repositories (and optionally branches) that
-`repos clone` (or `repos setup`) will clone.  Place it in the root of your project directory.
+`repos clone` will clone.  Place it in the root of your project directory.
 
 ## Basic Format
 
@@ -88,7 +89,7 @@ myorg/frontend@develop
 myorg/docs --public        # override: create docs repo as public
 ```
 
-After `repos clone` (or `repos setup`), the parent directory looks like:
+After `repos clone`, the parent directory looks like:
 
 ```
 workspace/

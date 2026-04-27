@@ -32,19 +32,28 @@ myorg/documentation
 See the [repos.list reference](repos-list.html) for the full syntax — branch
 pinning, worktrees, visibility flags, and more.
 
-### Step 2 — Clone and configure repositories
+### Step 2 — Clone repositories
 
 ```r
 library(repos)
 
-repos_setup()
+repos("clone")
 ```
 
-This reads `repos.list`, creates any missing GitHub repositories, clones
-everything to the **parent directory** of your current location, and generates a
-VS Code workspace file.  See [`repos_setup()`](#repos_setup) below for all options.
+This reads `repos.list` and clones everything to the **parent directory** of
+your current location.
 
-### Step 3 — Run a pipeline
+### Step 3 — Open in your IDE (optional)
+
+Generate a VS Code / Positron multi-root workspace file:
+
+```r
+repos_workspace()
+```
+
+See [`repos_workspace()`](#repos_workspace) below for all options.
+
+### Step 4 — Run a pipeline
 
 Once the repositories are cloned, run a script inside each one:
 
@@ -58,7 +67,7 @@ See [`repos_run()`](#repos_run) below for all options.
 
 ### `repos()` {#repos}
 
-Top-level dispatcher that delegates to `repos_setup()` or `repos_run()`.
+Top-level dispatcher that delegates to the appropriate subcommand.
 
 ```r
 repos(command, ...)
@@ -68,8 +77,8 @@ repos(command, ...)
 
 | Parameter | Type | Description |
 |---|---|---|
-| `command` | `character` | `"setup"` or `"run"` |
-| `...` | | Forwarded to `repos_setup()` or `repos_run()` |
+| `command` | `character` | `"clone"`, `"workspace"`, `"codespace"`, `"codespaces"`, or `"run"` |
+| `...` | | Forwarded to the corresponding function |
 
 **Returns:** Invisibly returns the exit status of the script (0 for success).
 
@@ -78,29 +87,25 @@ repos(command, ...)
 ```r
 library(repos)
 
-repos("setup")
-repos("setup", public = TRUE)
+repos("clone")
+repos("workspace")
+repos("codespace")
 repos("run")
 repos("run", script = "build.sh")
 ```
 
 ---
 
-### `repos_setup()` {#repos_setup}
+### `repos_workspace()` {#repos_workspace}
 
-Clone and configure repositories from a `repos.list` file.
+Generate or update the VS Code / Positron multi-root workspace file.
 
 ```r
-repos_setup(
-  file        = NULL,   # path to a custom list file (default: repos.list)
-  public      = FALSE,  # create new repos as public
-  codespaces  = FALSE,  # configure Codespaces authentication
-  devcontainer = NULL,  # path(s) to devcontainer.json (implies codespaces = TRUE)
-  permissions = NULL,   # "all" or "contents" — passed to codespaces-auth-add.sh
-  tool        = NULL,   # force tool for codespaces-auth-add.sh ("jq" or "python")
-  debug       = FALSE,  # write debug output to stderr
-  debug_file  = NULL,   # write debug output to a file (TRUE = auto-name, or a path)
-  ...                   # additional raw flags forwarded to setup-repos.sh
+repos_workspace(
+  file       = NULL,   # path to a custom list file (default: repos.list)
+  debug      = FALSE,  # write debug output to stderr
+  debug_file = NULL,   # write debug output to a file (TRUE = auto-name, or a path)
+  ...                  # additional raw flags forwarded to vscode-workspace-add.sh
 )
 ```
 
@@ -109,8 +114,49 @@ repos_setup(
 | Parameter | Type | Default | Description |
 |---|---|---|---|
 | `file` | `character` | `NULL` | Path to repos list file (default: `repos.list`) |
-| `public` | `logical` | `FALSE` | Create new repositories as public |
-| `codespaces` | `logical` | `FALSE` | Enable Codespaces authentication |
+| `debug` | `logical` | `FALSE` | Print debug output to stderr |
+| `debug_file` | `logical` or `character` | `NULL` | Write debug output to a file |
+| `...` | | | Additional raw flags forwarded as-is |
+
+**Returns:** Invisibly returns the exit status of the script (0 for success).
+
+**Examples:**
+
+```r
+library(repos)
+
+# Generate workspace from default repos.list
+repos_workspace()
+
+# Use a custom list file
+repos_workspace(file = "my-repos.list")
+```
+
+For the full description, see the [VS Code integration guide](vscode.html).
+
+---
+
+### `repos_codespace()` {#repos_codespace}
+
+Configure GitHub Codespaces authentication.
+
+```r
+repos_codespace(
+  file         = NULL,  # path to a custom list file (default: repos.list)
+  devcontainer = NULL,  # path(s) to devcontainer.json
+  permissions  = NULL,  # "all" or "contents" — passed to codespaces-auth-add.sh
+  tool         = NULL,  # force tool for codespaces-auth-add.sh ("jq" or "python")
+  debug        = FALSE, # write debug output to stderr
+  debug_file   = NULL,  # write debug output to a file (TRUE = auto-name, or a path)
+  ...                   # additional raw flags forwarded to codespaces-auth-add.sh
+)
+```
+
+**Parameters**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `file` | `character` | `NULL` | Path to repos list file (default: `repos.list`) |
 | `devcontainer` | `character` or `character vector` | `NULL` | Path(s) to `devcontainer.json` |
 | `permissions` | `character` | `NULL` | `"all"` or `"contents"` |
 | `tool` | `character` | `NULL` | Force `"jq"` or `"python"` for auth helper |
@@ -125,29 +171,18 @@ repos_setup(
 ```r
 library(repos)
 
-# Default — reads repos.list in the current directory
-repos_setup()
+# Configure with default devcontainer path
+repos_codespace()
 
-# Use a custom list file
-repos_setup(file = "my-repos.list")
+# Specify a devcontainer.json path
+repos_codespace(devcontainer = ".devcontainer/devcontainer.json")
 
-# Create new repositories as public
-repos_setup(public = TRUE)
-
-# Enable Codespaces auth
-repos_setup(codespaces = TRUE)
-
-# Specify devcontainer paths (also enables Codespaces auth)
-repos_setup(devcontainer = ".devcontainer/devcontainer.json")
-
-# Combine options
-repos_setup(public = TRUE, codespaces = TRUE, debug = TRUE)
-
-# Backward compatibility — raw flag passing still works
-repos_setup("--public", "--codespaces")
+# Multiple devcontainer paths
+repos_codespace(devcontainer = c("path1/devcontainer.json",
+                                 "path2/devcontainer.json"))
 ```
 
-For the full behavioural description, see the [repos setup guide](setup.html).
+For the full description, see the [VS Code integration guide](vscode.html).
 
 ---
 
@@ -161,7 +196,7 @@ repos_run(
   script           = NULL,   # script to run in each repo (default: run.sh)
   include          = NULL,   # repo name(s) to include
   exclude          = NULL,   # repo name(s) to skip
-  ensure_setup     = FALSE,  # run repos_setup() before executing scripts
+  ensure_setup     = FALSE,  # clone repos first (via repos clone)
   skip_deps        = FALSE,  # skip install-r-deps.sh
   dry_run          = FALSE,  # print what would run without executing
   verbose          = FALSE,  # verbose logging
@@ -178,7 +213,7 @@ repos_run(
 | `script` | `character` | `NULL` | Script file to run in each repo (default: `run.sh`) |
 | `include` | `character` or `character vector` | `NULL` | Only run in these repos |
 | `exclude` | `character` or `character vector` | `NULL` | Skip these repos |
-| `ensure_setup` | `logical` | `FALSE` | Run `repos_setup()` first |
+| `ensure_setup` | `logical` | `FALSE` | Clone repos first (via `repos clone`) |
 | `skip_deps` | `logical` | `FALSE` | Skip R dependency installation |
 | `dry_run` | `logical` | `FALSE` | Preview without executing |
 | `verbose` | `logical` | `FALSE` | Verbose logging |
@@ -220,16 +255,16 @@ repos_run(script = "test.sh", verbose = TRUE, ensure_setup = TRUE)
 repos_run("--script", "build.sh", "--dry-run")
 ```
 
-For the full behavioural description, see [Running Pipelines](pipelines.html).
+For the full description, see [Running Pipelines](pipelines.html).
 
 ## GitHub Authentication
 
-`repos_setup()` needs a GitHub token to create repositories and clone private
-ones.  Provide it via the `GH_TOKEN` environment variable or via the `gh` CLI:
+`repos_codespace()` needs a GitHub token with Codespaces permissions.
+Provide it via the `GH_TOKEN` environment variable or via the `gh` CLI:
 
 ```r
 Sys.setenv(GH_TOKEN = "your_personal_access_token")
-repos_setup()
+repos_codespace()
 ```
 
 Or set it in your shell before starting R:

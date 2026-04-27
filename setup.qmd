@@ -1,99 +1,16 @@
 ---
-title: "repos setup"
+title: "repos setup (removed)"
+toc: true
 ---
 
-`repos setup` is the all-in-one command that reads your `repos.list` file and
-runs every bootstrapping step in sequence:
+`repos setup` has been removed. Its individual steps are now available as
+separate commands:
 
-1. **Create** — creates any missing GitHub repositories (`repos create`)
-2. **Clone** — clones all listed repositories into the parent directory
-   ([repos clone](clone.html))
-3. **Workspace** — generates a VS Code multi-root workspace file
-   (`repos workspace`)
-4. **Codespaces** — configures GitHub Codespaces authentication (when
-   `--codespaces` is set)
-
-If you don't need VS Code or Codespaces support, consider using
-[`repos clone`](clone.html) instead — it is simpler and requires no GitHub
-token for public repositories.
-
-## Basic Usage
-
-```bash
-repos setup
-```
-
-## Options
-
-| Flag | Description |
+| What you want to do | Command |
 |---|---|
-| `-f <file>` | Use a different list file (default: `repos.list`) |
-| `--public` | Create new repositories as public (default is private) |
-| `--codespaces` | Configure Codespaces authentication |
-| `-d <path>` | Path to a `devcontainer.json` file (repeatable) |
+| Clone repositories | [`repos clone`](clone.html) |
+| Generate VS Code workspace | [`repos workspace`](vscode.html) |
+| Configure Codespaces auth | [`repos codespace`](vscode.html) |
 
-```bash
-# Use a custom list file
-repos setup -f my-repos.list
-
-# Create new repos as public
-repos setup --public
-
-# Enable Codespaces auth with default devcontainer path
-repos setup --codespaces
-
-# Specify one or more devcontainer.json paths
-repos setup -d .devcontainer/devcontainer.json
-repos setup -d path1/devcontainer.json -d path2/devcontainer.json
-```
-
-## GitHub Authentication
-
-`repos setup` needs a GitHub token to create repositories and clone private ones.
-Provide it via the `GH_TOKEN` environment variable or via the `gh` CLI:
-
-```bash
-export GH_TOKEN="your_personal_access_token"
-# or
-gh auth login
-```
-
-## VS Code Workspace
-
-After `repos setup` completes, a file called `entire-project.code-workspace` is
-written in your project directory.  Open it to load all cloned repositories as a
-multi-root workspace:
-
-```bash
-code entire-project.code-workspace
-```
-
-You can also generate or refresh the workspace file at any time without
-re-running the full setup:
-
-```bash
-repos workspace
-```
-
-## Codespaces Authentication
-
-Pass `--codespaces` to inject the `GH_TOKEN` Codespaces secret into every
-cloned repository that has a `devcontainer.json`.  You can override which
-`devcontainer.json` files are targeted with one or more `-d` flags:
-
-```bash
-repos setup --codespaces -d .devcontainer/prebuild/devcontainer.json
-```
-
-## Repository Layout
-
-Repositories are always cloned to the **parent** of your current directory:
-
-```
-workspace/
-├── my-project/          # your project (contains repos.list)
-├── backend/             # cloned from myorg/backend
-├── frontend-develop/    # cloned from myorg/frontend@develop
-└── docs/                # cloned from myorg/docs
-```
-
+See the [VS Code integration guide](vscode.html) for `repos workspace` and
+`repos codespace`, and the [repos clone guide](clone.html) for cloning.

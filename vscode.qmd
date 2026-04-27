@@ -1,0 +1,126 @@
+---
+title: "VS Code & Positron Integration"
+toc: true
+---
+
+`repos` provides two commands for IDE integration — generating a multi-root
+workspace file and configuring GitHub Codespaces authentication.  Both work
+with [VS Code](https://code.visualstudio.com/),
+[Positron](https://positron.posit.co/), and any other IDE that supports the
+VS Code workspace format.
+
+## `repos workspace`
+
+Generate (or refresh) the `entire-project.code-workspace` file in your project
+directory.  Open it to load all cloned repositories as a multi-root workspace:
+
+```bash
+repos workspace
+```
+
+Once the file is written, open it in your IDE:
+
+```bash
+code entire-project.code-workspace      # VS Code
+positron entire-project.code-workspace  # Positron
+```
+
+### Options
+
+| Flag | Description |
+|---|---|
+| `-f <file>` | Use a different list file (default: `repos.list`) |
+
+```bash
+# Use a custom list file
+repos workspace -f my-repos.list
+```
+
+### Repository Layout
+
+The workspace file reflects the repository layout in the parent directory:
+
+```
+workspace/
+├── my-project/          # your project (contains repos.list)
+├── backend/             # cloned from myorg/backend
+├── frontend-develop/    # cloned from myorg/frontend@develop
+└── docs/                # cloned from myorg/docs
+```
+
+---
+
+## `repos codespace`
+
+Inject the `GH_TOKEN` Codespaces secret into every cloned repository that has
+a `devcontainer.json`.  `repos codespaces` is an alias for `repos codespace`.
+
+```bash
+repos codespace
+```
+
+### Options
+
+| Flag | Description |
+|---|---|
+| `-f <file>` | Use a different list file (default: `repos.list`) |
+| `-d <path>` | Path to a `devcontainer.json` file (repeatable) |
+| `--permissions <all\|contents>` | Codespaces permission level |
+| `-t <tool>` | Force tool used for JSON processing (`jq` or `python`) |
+
+```bash
+# Use a custom list file
+repos codespace -f my-repos.list
+
+# Specify a devcontainer.json path
+repos codespace -d .devcontainer/devcontainer.json
+
+# Multiple devcontainer paths
+repos codespace -d path1/devcontainer.json -d path2/devcontainer.json
+```
+
+### GitHub Authentication
+
+`repos codespace` requires a GitHub token with Codespaces permissions:
+
+```bash
+export GH_TOKEN="your_personal_access_token"
+# or
+gh auth login
+```
+
+---
+
+## R and Python APIs
+
+### R
+
+```r
+library(repos)
+
+# Generate VS Code workspace
+repos_workspace()
+repos_workspace(file = "my-repos.list")
+
+# Configure Codespaces authentication
+repos_codespace()
+repos_codespace(devcontainer = ".devcontainer/devcontainer.json")
+repos_codespace(devcontainer = c("path1/devcontainer.json",
+                                 "path2/devcontainer.json"))
+```
+
+### Python
+
+```python
+from repos import workspace, codespace
+
+# Generate VS Code workspace
+workspace()
+workspace(file="my-repos.list")
+
+# Configure Codespaces authentication
+codespace()
+codespace(devcontainer=".devcontainer/devcontainer.json")
+codespace(devcontainer=["path1/devcontainer.json",
+                        "path2/devcontainer.json"])
+```

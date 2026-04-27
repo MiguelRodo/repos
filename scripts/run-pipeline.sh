@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# run-pipeline.sh — Multi-repo pipeline executor with setup integration
+# run-pipeline.sh — Multi-repo pipeline executor
 # Portable: Bash ≥3.2 (macOS default), Linux, WSL, Git Bash
 #
 # This script:
-# 1. Runs setup-repos.sh to ensure repositories are cloned and configured
+# 1. Optionally runs clone-repos.sh to ensure repositories are cloned
 # 2. Installs R dependencies (if install-r-deps.sh exists)
 # 3. Executes a script (default: run.sh) in each repository (if present)
 #
@@ -14,7 +14,7 @@ set -Eeuo pipefail
 # --- Paths ---
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-SETUP_SCRIPT="$SCRIPT_DIR/setup-repos.sh"
+CLONE_SCRIPT="$SCRIPT_DIR/helper/clone-repos.sh"
 INSTALL_DEPS_SCRIPT="$SCRIPT_DIR/helper/install-r-deps.sh"
 
 # --- Prerequisites ---
@@ -33,8 +33,8 @@ usage() {
 Usage: $0 [options]
 
 This script runs the analysis pipeline across all repositories:
-1. Runs setup-repos.sh to ensure repositories are cloned and configured
-2. Installs R dependencies (if install-r-deps.sh exists)  
+1. Optionally clones repositories (use --ensure-clone)
+2. Installs R dependencies (if install-r-deps.sh exists)
 3. Executes a script (default: run.sh) in each repository (if present)
 
 Options:
@@ -43,8 +43,8 @@ Options:
                            (default: run.sh)
   -i, --include <names>    Comma-separated list of repo names to INCLUDE
   -e, --exclude <names>    Comma-separated list of repo names to EXCLUDE
-      --ensure-setup       Run setup-repos.sh before executing scripts
-                           (by default, setup is skipped)
+      --ensure-setup       Clone repositories before executing scripts
+                           (by default, cloning is skipped)
   -d, --skip-deps          Skip the install-r-deps.sh step
   -n, --dry-run            Show what would be done, but don't execute
   -v, --verbose            Enable verbose logging
@@ -294,20 +294,20 @@ main() {
   # Change to PROJECT_ROOT to match clone-repos.sh behavior
   cd "$PROJECT_ROOT"
 
-  # Step 1: Run setup (unless skipped)
+  # Step 1: Clone repos (unless skipped)
   if [ "$SKIP_SETUP" = false ]; then
-    if [ -x "$SETUP_SCRIPT" ]; then
-      printf "=== 1) Running setup-repos.sh ===\n"
+    if [ -x "$CLONE_SCRIPT" ]; then
+      printf "=== 1) Cloning repositories ===\n"
       if $DRY_RUN; then
-        printf "  DRY-RUN: would execute %s -f %s\n" "$SETUP_SCRIPT" "$REPOS_FILE"
+        printf "  DRY-RUN: would execute %s --file %s\n" "$CLONE_SCRIPT" "$REPOS_FILE"
       else
-        "$SETUP_SCRIPT" -f "$REPOS_FILE"
+        "$CLONE_SCRIPT" --file "$REPOS_FILE"
       fi
     else
-      printf "Warning: setup-repos.sh not found or not executable; skipping setup step.\n"
+      printf "Warning: clone-repos.sh not found or not executable; skipping clone step.\n"
     fi
   else
-    printf "=== 1) Skipping setup step (default; use --ensure-setup to run) ===\n"
+    printf "=== 1) Skipping clone step (default; use --ensure-setup to clone first) ===\n"
   fi
 
   # Step 2: Install R dependencies (unless skipped)

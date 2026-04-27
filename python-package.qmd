@@ -40,19 +40,34 @@ myorg/documentation
 See the [repos.list reference](repos-list.html) for the full syntax — branch
 pinning, worktrees, visibility flags, and more.
 
-### Step 2 — Clone and configure repositories
+### Step 2 — Clone repositories
 
 ```python
-from repos import setup
+from repos import run_script
 
-setup()
+run_script("helper/clone-repos.sh")
 ```
 
-This reads `repos.list`, creates any missing GitHub repositories, clones
-everything to the **parent directory** of your current location, and generates a
-VS Code workspace file.  See [`setup()`](#setup) below for all options.
+Or using the CLI installed by the package:
 
-### Step 3 — Run a pipeline
+```bash
+repos clone
+```
+
+This reads `repos.list` and clones everything to the **parent directory** of
+your current location.
+
+### Step 3 — Open in your IDE (optional)
+
+Generate a VS Code / Positron multi-root workspace file:
+
+```python
+from repos import workspace
+
+workspace()
+```
+
+### Step 4 — Run a pipeline
 
 Once the repositories are cloned, run a script inside each one:
 
@@ -66,18 +81,54 @@ See [`run()`](#run) below for all options.
 
 ## API Reference
 
-### `setup()` {#setup}
+### `workspace()` {#workspace}
 
-Clone and configure repositories from a `repos.list` file.
+Generate or update the VS Code / Positron multi-root workspace file.
 
 ```python
-from repos import setup
+from repos import workspace
 
-setup(
+workspace(
     file=None,            # path to a custom list file (default: repos.list)
-    public=False,         # create new repos as public
-    codespaces=False,     # configure Codespaces authentication
-    devcontainer=None,    # path(s) to devcontainer.json (implies codespaces=True)
+    debug=False,          # write debug output to stderr
+    debug_file=None,      # write debug output to a file (True = auto-name, or pass a path)
+)
+```
+
+**Parameters**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `file` | `str` | `None` | Path to repos list file (default: `repos.list`) |
+| `debug` | `bool` | `False` | Print debug output to stderr |
+| `debug_file` | `bool` or `str` | `None` | Write debug output to a file |
+
+**Returns:** `subprocess.CompletedProcess`
+
+**Examples:**
+
+```python
+from repos import workspace
+
+# Generate workspace from default repos.list
+workspace()
+
+# Use a custom list file
+workspace(file="my-repos.list")
+```
+
+For the full description, see the [VS Code integration guide](vscode.html).
+
+### `codespace()` {#codespace}
+
+Configure GitHub Codespaces authentication.
+
+```python
+from repos import codespace
+
+codespace(
+    file=None,            # path to a custom list file (default: repos.list)
+    devcontainer=None,    # path(s) to devcontainer.json (str or list[str])
     permissions=None,     # "all" or "contents" — passed to codespaces-auth-add.sh
     tool=None,            # force tool for codespaces-auth-add.sh ("jq" or "python")
     debug=False,          # write debug output to stderr
@@ -90,8 +141,6 @@ setup(
 | Parameter | Type | Default | Description |
 |---|---|---|---|
 | `file` | `str` | `None` | Path to repos list file (default: `repos.list`) |
-| `public` | `bool` | `False` | Create new repositories as public |
-| `codespaces` | `bool` | `False` | Enable Codespaces authentication |
 | `devcontainer` | `str` or `list[str]` | `None` | Path(s) to `devcontainer.json` |
 | `permissions` | `str` | `None` | `"all"` or `"contents"` |
 | `tool` | `str` | `None` | Force `"jq"` or `"python"` for auth helper |
@@ -103,28 +152,20 @@ setup(
 **Examples:**
 
 ```python
-from repos import setup
+from repos import codespace
 
-# Default — reads repos.list in the current directory
-setup()
+# Configure with default devcontainer path
+codespace()
 
-# Use a custom list file
-setup(file="my-repos.list")
+# Specify a devcontainer.json path
+codespace(devcontainer=".devcontainer/devcontainer.json")
 
-# Create new repositories as public
-setup(public=True)
-
-# Enable Codespaces auth
-setup(codespaces=True)
-
-# Specify devcontainer paths (also enables Codespaces auth)
-setup(devcontainer=[".devcontainer/devcontainer.json"])
-
-# Combine options
-setup(public=True, codespaces=True, debug=True)
+# Multiple devcontainer paths
+codespace(devcontainer=[".devcontainer/devcontainer.json",
+                        ".devcontainer/prebuild/devcontainer.json"])
 ```
 
-For the full behavioural description, see the [repos setup guide](setup.html).
+For the full description, see the [VS Code integration guide](vscode.html).
 
 ### `run()` {#run}
 
@@ -154,7 +195,7 @@ run(
 | `script` | `str` | `None` | Script file to run in each repo (default: `run.sh`) |
 | `include` | `str` or `list[str]` | `None` | Only run in these repos |
 | `exclude` | `str` or `list[str]` | `None` | Skip these repos |
-| `ensure_setup` | `bool` | `False` | Run `setup()` first |
+| `ensure_setup` | `bool` | `False` | Clone repos first (via `repos clone`) |
 | `skip_deps` | `bool` | `False` | Skip R dependency installation |
 | `dry_run` | `bool` | `False` | Preview without executing |
 | `verbose` | `bool` | `False` | Verbose logging |
@@ -200,10 +241,11 @@ If you need to pass flags not yet exposed as keyword arguments, use the raw
 helpers:
 
 ```python
-from repos import setup_raw, run_raw
+from repos import workspace_raw, codespace_raw, run_raw
 
-setup_raw("--public", "--codespaces")
-setup_raw("-f", "custom.list", "--public")
+workspace_raw("-f", "custom.list")
+
+codespace_raw("-d", ".devcontainer/devcontainer.json")
 
 run_raw("--script", "build.sh", "--dry-run")
 run_raw("-f", "custom.list", "--continue-on-error")
@@ -218,19 +260,21 @@ Installing the Python package also registers a `repos` command that delegates
 directly to the same Bash scripts:
 
 ```bash
-repos setup
-repos setup --public
+repos clone
+repos workspace
+repos codespace
+repos codespace -d .devcontainer/devcontainer.json
 repos run
 repos run --script build.sh
 repos run --include "backend,frontend"
 ```
 
-This is the same interface documented in the [repos setup guide](setup.html) and
-[Running Pipelines](pipelines.html).
+This is the same interface documented in the [VS Code integration guide](vscode.html)
+and [Running Pipelines](pipelines.html).
 
 ## GitHub Authentication
 
-`setup()` needs a GitHub token to create repositories and clone private ones.
+`codespace()` needs a GitHub token with Codespaces permissions.
 Provide it via the `GH_TOKEN` environment variable or via the `gh` CLI:
 
 ```python
