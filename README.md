@@ -5,6 +5,11 @@
 
 Manage multiple Git repositories as a unified workspace from a single `repos.list` file.
 
+## Installation
+
+Installable on any OS (Linux, macOS, Windows) with R and Python wrappers available.
+→ [Full installation guide](https://miguelrodo.github.io/repos/install.html)
+
 ## Quick Start
 
 Create a `repos.list` file in your project directory listing the repositories you want:
@@ -36,10 +41,6 @@ authentication. → [repos setup guide](https://miguelrodo.github.io/repos/setup
 **Run a pipeline across all repos** — if your repositories contain a `run.sh` script
 (or any script you specify), `repos run` executes it in each one.
 → [Running pipelines](https://miguelrodo.github.io/repos/pipelines.html)
-
-## Installation
-
-→ [Installation guide](https://miguelrodo.github.io/repos/install.html)
 
 ## License
 
