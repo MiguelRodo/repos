@@ -56,7 +56,7 @@ print_test "Stale worktree can be recovered"
 cd "$TEST_DIR"
 
 # 1. Create a test git repo
-git init test-repo
+git -c init.defaultBranch=main init -q test-repo
 cd test-repo
 git config user.name "Test User"
 git config user.email "test@example.com"
@@ -125,7 +125,7 @@ cd "$TEST_DIR"
 rm -rf *
 
 # 1. Create a test repo with repos.list
-git init main-repo
+git -c init.defaultBranch=main init -q main-repo
 cd main-repo
 git config user.name "Test User"
 git config user.email "test@example.com"

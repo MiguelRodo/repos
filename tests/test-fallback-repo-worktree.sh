@@ -127,7 +127,7 @@ mkdir -p "$WORK_DIR/sta5069z"
 cd "$WORK_DIR/sta5069z"
 
 # Initialize this as a git repo (to provide current repo context)
-git init
+git -c init.defaultBranch=main init -q
 git config user.email "test@example.com"
 git config user.name "Test User"
 # Add a dummy remote so the script doesn't fail
@@ -265,7 +265,7 @@ WORK_DIR2="$TEST_ROOT/work2"
 mkdir -p "$WORK_DIR2/sta5069z"
 cd "$WORK_DIR2/sta5069z"
 
-git init
+git -c init.defaultBranch=main init -q
 git config user.email "test@example.com"
 git config user.name "Test User"
 git remote add origin "file://$REMOTE_ROOT/dummy.git"
@@ -312,7 +312,7 @@ WORK_DIR3="$TEST_ROOT/work3"
 mkdir -p "$WORK_DIR3/sta5069z"
 cd "$WORK_DIR3/sta5069z"
 
-git init
+git -c init.defaultBranch=main init -q
 git config user.email "test@example.com"
 git config user.name "Test User"
 git remote add origin "file://$REMOTE_ROOT/dummy.git"

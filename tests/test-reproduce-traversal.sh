@@ -16,7 +16,7 @@ trap 'rm -rf "$TEMP_DIR"' EXIT
 cd "$TEMP_DIR"
 mkdir -p work/main-repo
 cd work/main-repo
-git init
+git -c init.defaultBranch=main init -q
 git config user.email "test@example.com"
 git config user.name "Test User"
 touch a && git add a && git commit -m "initial"
@@ -26,7 +26,7 @@ cd ..
 # Create another repo to be the target of traversal
 mkdir -p remote/other-repo
 cd remote/other-repo
-git init
+git -c init.defaultBranch=main init -q
 git config user.email "test@example.com"
 git config user.name "Test User"
 touch b && git add b && git commit -m "initial"
