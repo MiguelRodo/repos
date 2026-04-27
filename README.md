@@ -2,6 +2,8 @@
 
 [![Test Installation Methods](https://github.com/MiguelRodo/repos/actions/workflows/test-installation.yml/badge.svg)](https://github.com/MiguelRodo/repos/actions/workflows/test-installation.yml)
 [![Test Suite](https://github.com/MiguelRodo/repos/actions/workflows/test-suite.yml/badge.svg)](https://github.com/MiguelRodo/repos/actions/workflows/test-suite.yml)
+[![R-CMD-check](https://github.com/MiguelRodo/repos/actions/workflows/R-CMD-check.yml/badge.svg)](https://github.com/MiguelRodo/repos/actions/workflows/R-CMD-check.yml)
+[![Python package](https://github.com/MiguelRodo/repos/actions/workflows/python-package.yml/badge.svg)](https://github.com/MiguelRodo/repos/actions/workflows/python-package.yml)
 
 Manage multiple Git repositories as a unified workspace from a single `repos.list` file.
 
