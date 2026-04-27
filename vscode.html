@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>VS Code &amp; Positron Integration – repos</title>
+<title>VS Code Integration – repos</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -200,7 +200,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">VS Code &amp; Positron Integration</h1>
+<h1 class="title">VS Code Integration</h1>
 </div>
 
 
@@ -217,7 +217,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p><code>repos</code> provides two commands for IDE integration — generating a multi-root workspace file and configuring GitHub Codespaces authentication. Both work with <a href="https://code.visualstudio.com/">VS Code</a>, <a href="https://positron.posit.co/">Positron</a>, and any other IDE that supports the VS Code workspace format.</p>
+<p><code>repos</code> provides two commands for IDE integration — generating a multi-root workspace file and configuring GitHub Codespaces authentication.</p>
+<p><code>repos workspace</code> works with <a href="https://code.visualstudio.com/">VS Code</a> and any other IDE that supports the VS Code workspace format (such as <a href="https://positron.posit.co/">Positron</a>). <code>repos codespace</code> is specific to GitHub Codespaces and VS Code.</p>
 <section id="repos-workspace" class="level2">
 <h2 class="anchored" data-anchor-id="repos-workspace"><code>repos workspace</code></h2>
 <p>Generate (or refresh) the <code>entire-project.code-workspace</code> file in your project directory. Open it to load all cloned repositories as a multi-root workspace:</p>
