@@ -16,6 +16,29 @@ devtools::install_github("MiguelRodo/repos")
 **System requirements:** `bash`, `git`, `curl`, and `jq` must be available on
 your `PATH`.
 
+### Does installing the R package also install the `repos` CLI?
+
+**No.** The R package bundles its own copies of the Bash scripts, so all R
+functions (`repos_run()`, `repos_workspace()`, etc.) work without the `repos`
+command being on your `PATH`.
+
+If you also want to run `repos clone`, `repos run`, etc. directly from a
+terminal, install the CLI separately.  The easiest way is to call
+`repos_install_cli()` from R:
+
+```r
+library(repos)
+
+# Print OS-appropriate installation instructions
+repos_install_cli()
+
+# Or print instructions AND run the installer automatically
+repos_install_cli(run = TRUE)
+```
+
+See [`repos_install_cli()`](#repos_install_cli) below for details, or visit
+the [Installation guide](install.html) for all options.
+
 ## End-to-End Workflow
 
 ### Step 1 — Create a `repos.list` file
@@ -64,6 +87,45 @@ repos_run()          # executes run.sh in every repo
 See [`repos_run()`](#repos_run) below for all options.
 
 ## API Reference
+
+### `repos_install_cli()` {#repos_install_cli}
+
+Print OS-appropriate instructions for installing the `repos` CLI, and
+optionally run the installer.
+
+```r
+repos_install_cli(
+  run = FALSE  # if TRUE, run the installer automatically
+)
+```
+
+**Parameters**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `run` | `logical` | `FALSE` | If `TRUE`, attempt to run the installer automatically |
+
+**Details**
+
+Detects the operating system and prints the recommended installation command
+for that platform.  On Linux and macOS, passing `run = TRUE` will also execute
+the installer.  On Windows, only instructions are printed.
+
+**Returns:** Invisibly returns `NULL`.
+
+**Examples:**
+
+```r
+library(repos)
+
+# Print installation instructions for your OS
+repos_install_cli()
+
+# Print instructions AND run the installer
+repos_install_cli(run = TRUE)
+```
+
+---
 
 ### `repos()` {#repos}
 

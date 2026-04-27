@@ -1,3 +1,85 @@
+#' Install the repos CLI
+#'
+#' Prints OS-appropriate instructions for installing the \code{repos} command-line
+#' tool and, when \code{run = TRUE}, attempts to run the installer automatically.
+#'
+#' @details
+#' The \code{repos} R package bundles all required Bash scripts, so functions
+#' such as \code{repos_run()} work without the \code{repos} CLI being on your
+#' \code{PATH}.  However, if you also want to invoke \code{repos} from a
+#' terminal, you need to install the CLI separately.
+#'
+#' When \code{run = TRUE}, the function runs the user-level installer
+#' (\code{install-local.sh}) on Linux or the \code{brew} installer on macOS.
+#' On Windows, only instructions are printed.
+#'
+#' @param run Logical (default \code{FALSE}).  If \code{TRUE}, attempt to run
+#'   the installer automatically.
+#'
+#' @return Invisibly returns \code{NULL}.
+#'
+#' @examples
+#' \dontrun{
+#' # Print installation instructions for your OS
+#' repos_install_cli()
+#'
+#' # Print instructions AND run the installer
+#' repos_install_cli(run = TRUE)
+#' }
+#'
+#' @export
+repos_install_cli <- function(run = FALSE) {
+  sysname <- Sys.info()[["sysname"]]
+
+  if (sysname == "Linux") {
+    message("To install the repos CLI on Ubuntu/Debian, choose one of:\n")
+    message("  # Option 1: APT repository (recommended — keeps repos up to date):")
+    message("  curl -fsSL https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/KEY.gpg \\")
+    message("     | sudo gpg --dearmor -o /usr/share/keyrings/miguelrodo-repos.gpg")
+    message('  echo "deb [signed-by=/usr/share/keyrings/miguelrodo-repos.gpg] https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/ ./" \\')
+    message("     | sudo tee /etc/apt/sources.list.d/miguelrodo-repos.list >/dev/null")
+    message("  sudo apt-get update && sudo apt-get install -y repos\n")
+    message("  # Option 2: User-level install (no sudo required):")
+    message("  git clone https://github.com/MiguelRodo/repos.git /tmp/repos-cli")
+    message("  bash /tmp/repos-cli/install-local.sh\n")
+    if (isTRUE(run)) {
+      message("Running user-level installer...")
+      tmp <- file.path(tempdir(), "repos-cli")
+      ret <- system(paste0("git clone https://github.com/MiguelRodo/repos.git ", shQuote(tmp),
+                           " && bash ", shQuote(file.path(tmp, "install-local.sh"))))
+      if (ret != 0L) {
+        warning("Installer exited with status ", ret,
+                ". Check the output above for details.")
+      }
+    }
+  } else if (sysname == "Darwin") {
+    message("To install the repos CLI on macOS, run:\n")
+    message("  brew tap MiguelRodo/repos")
+    message("  brew install repos\n")
+    if (isTRUE(run)) {
+      message("Running Homebrew installer...")
+      ret <- system("brew tap MiguelRodo/repos && brew install repos")
+      if (ret != 0L) {
+        warning("Installer exited with status ", ret,
+                ". Check the output above for details.")
+      }
+    }
+  } else if (sysname == "Windows") {
+    message("To install the repos CLI on Windows, run in PowerShell:\n")
+    message("  scoop bucket add repos https://github.com/MiguelRodo/scoop-bucket")
+    message("  scoop install repos\n")
+    message("Or download and run install.ps1 from the releases page:")
+    message("  https://github.com/MiguelRodo/repos/releases\n")
+    message("(Automatic installation via run = TRUE is not supported on Windows.)")
+  } else {
+    message("To install the repos CLI, see the installation guide:")
+    message("  https://miguelrodo.github.io/repos/install.html\n")
+  }
+
+  invisible(NULL)
+}
+
+
 #' Run a repos script
 #'
 #' Internal helper that locates a bundled script and executes it via

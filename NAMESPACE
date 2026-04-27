@@ -1,3 +1,5 @@
 export(repos)
-export(repos_setup)
+export(repos_codespace)
+export(repos_install_cli)
 export(repos_run)
+export(repos_workspace)

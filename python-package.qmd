@@ -24,6 +24,15 @@ pip install .
 your `PATH`.  On Windows, use [Git for Windows](https://git-scm.com/download/win)
 or WSL.
 
+### Does installing the Python package also install the `repos` CLI?
+
+**Yes.** Installing the package via `pip` registers a `repos` entry point, so
+you can run `repos clone`, `repos run`, etc. directly from your terminal
+straight away — no separate installation required.
+
+The package also bundles its own copies of the Bash scripts, so all Python
+functions (`run()`, `workspace()`, etc.) work without any additional setup.
+
 ## End-to-End Workflow
 
 ### Step 1 — Create a `repos.list` file

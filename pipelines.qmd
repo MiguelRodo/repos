@@ -67,24 +67,7 @@ Rscript analysis.R
 
 ## R and Python APIs
 
-### R
+For the R or Python API, see the language-specific wrapper pages:
 
-```r
-library(repos)
-
-repos_run()                                 # run run.sh in every repo
-repos_run(script = "build.sh")              # custom script
-repos_run(dry_run = TRUE, verbose = TRUE)   # preview
-repos_run(include = c("backend", "frontend"))
-```
-
-### Python
-
-```python
-from repos import run
-
-run()                              # run run.sh in every repo
-run(script="build.sh")             # custom script
-run(dry_run=True, verbose=True)    # preview
-run(include=["backend", "frontend"])
-```
+→ [R package](r-package.html)  
+→ [Python package](python-package.html)
