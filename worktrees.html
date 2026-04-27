@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>repos setup (removed) – repos</title>
+<title>Worktree &amp; Branch Management – repos</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -22,6 +22,41 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -115,6 +150,10 @@ ul.task-list li input[type="checkbox"] {
     <a class="nav-link" href="./pipelines.html"> 
 <span class="menu-text">Pipelines</span></a>
   </li>  
+  <li class="nav-item">
+    <a class="nav-link active" href="./worktrees.html" aria-current="page"> 
+<span class="menu-text">Worktrees</span></a>
+  </li>  
   <li class="nav-item dropdown ">
     <a class="nav-link dropdown-toggle" href="#" id="nav-menu-language-packages" role="link" data-bs-toggle="dropdown" aria-expanded="false">
  <span class="menu-text">Language Packages</span>
@@ -141,15 +180,38 @@ ul.task-list li input[type="checkbox"] {
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#repos-add_branch" id="toc-repos-add_branch" class="nav-link active" data-scroll-target="#repos-add_branch"><code>repos add_branch</code></a>
+  <ul class="collapse">
+  <li><a href="#options" id="toc-options" class="nav-link" data-scroll-target="#options">Options</a></li>
+  <li><a href="#examples" id="toc-examples" class="nav-link" data-scroll-target="#examples">Examples</a></li>
+  <li><a href="#notes" id="toc-notes" class="nav-link" data-scroll-target="#notes">Notes</a></li>
+  </ul></li>
+  <li><a href="#repos-update_branches" id="toc-repos-update_branches" class="nav-link" data-scroll-target="#repos-update_branches"><code>repos update_branches</code></a>
+  <ul class="collapse">
+  <li><a href="#options-1" id="toc-options-1" class="nav-link" data-scroll-target="#options-1">Options</a></li>
+  <li><a href="#examples-1" id="toc-examples-1" class="nav-link" data-scroll-target="#examples-1">Examples</a></li>
+  <li><a href="#prerequisites" id="toc-prerequisites" class="nav-link" data-scroll-target="#prerequisites">Prerequisites</a></li>
+  </ul></li>
+  <li><a href="#repos-update_scripts" id="toc-repos-update_scripts" class="nav-link" data-scroll-target="#repos-update_scripts"><code>repos update_scripts</code></a>
+  <ul class="collapse">
+  <li><a href="#options-2" id="toc-options-2" class="nav-link" data-scroll-target="#options-2">Options</a></li>
+  <li><a href="#environment-variables" id="toc-environment-variables" class="nav-link" data-scroll-target="#environment-variables">Environment variables</a></li>
+  <li><a href="#examples-2" id="toc-examples-2" class="nav-link" data-scroll-target="#examples-2">Examples</a></li>
+  </ul></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">repos setup (removed)</h1>
+<h1 class="title">Worktree &amp; Branch Management</h1>
 </div>
 
 
@@ -166,32 +228,191 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p><code>repos setup</code> has been removed. Its individual steps are now available as separate commands:</p>
+<p><code>repos</code> provides three convenience commands for managing Git worktrees and keeping multi-branch projects in sync.</p>
+<section id="repos-add_branch" class="level2">
+<h2 class="anchored" data-anchor-id="repos-add_branch"><code>repos add_branch</code></h2>
+<p>Create a new worktree (or branch) off the current repository and wire it into the project scaffolding in one step:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> add_branch <span class="op">&lt;</span>branch-name<span class="op">&gt;</span> <span class="pp">[</span><span class="ss">target</span><span class="pp">-</span><span class="ss">directory</span><span class="pp">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The command:</p>
+<ol type="1">
+<li>Creates a new worktree at <code>../&lt;repo&gt;-&lt;branch&gt;</code> (or <code>../&lt;target-directory&gt;</code>)</li>
+<li>Pushes the branch to <code>origin</code> with tracking set up</li>
+<li>Cleans the worktree (keeps only <code>.devcontainer/devcontainer.json</code> and <code>.gitignore</code>)</li>
+<li>Promotes <code>.devcontainer/prebuild/devcontainer.json</code> → <code>.devcontainer/devcontainer.json</code></li>
+<li>Strips the Codespaces <code>repositories</code> config from <code>devcontainer.json</code></li>
+<li>Appends an <code>@&lt;branch&gt;</code> line to <code>repos.list</code></li>
+<li>Refreshes the VS Code workspace file</li>
+</ol>
+<p>The resulting worktree can be opened independently in VS Code or Codespaces.</p>
+<section id="options" class="level3">
+<h3 class="anchored" data-anchor-id="options">Options</h3>
 <table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
 <thead>
 <tr class="header">
-<th>What you want to do</th>
-<th>Command</th>
+<th>Flag</th>
+<th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td>Clone repositories</td>
-<td><a href="clone.html"><code>repos clone</code></a></td>
+<td><code>&lt;branch-name&gt;</code></td>
+<td>Name of the new branch to create (<strong>required</strong>)</td>
 </tr>
 <tr class="even">
-<td>Generate VS Code workspace</td>
-<td><a href="vscode.html"><code>repos workspace</code></a></td>
+<td><code>[target-directory]</code></td>
+<td>Custom directory name (default: <code>&lt;repo&gt;-&lt;branch&gt;</code>)</td>
 </tr>
 <tr class="odd">
-<td>Configure Codespaces auth</td>
-<td><a href="vscode.html"><code>repos codespace</code></a></td>
+<td><code>-b</code>, <code>--branch</code></td>
+<td>Create as a plain branch instead of a worktree (not recommended)</td>
 </tr>
 </tbody>
 </table>
-<p>See the <a href="vscode.html">VS Code integration guide</a> for <code>repos workspace</code> and <code>repos codespace</code>, and the <a href="clone.html">repos clone guide</a> for cloning.</p>
+</section>
+<section id="examples" class="level3">
+<h3 class="anchored" data-anchor-id="examples">Examples</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a worktree at ../MyProject-data-tidy</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> add_branch data-tidy</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a worktree at a custom location</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> add_branch analysis my-analysis</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Create as a branch rather than a worktree</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> add_branch paper <span class="at">--branch</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="notes" class="level3">
+<h3 class="anchored" data-anchor-id="notes">Notes</h3>
+<ul>
+<li>Worktrees share <code>.git</code> with the base repository — saves disk space and simplifies fetching.</li>
+<li>A branch can only be checked out in one worktree at a time.</li>
+<li>To remove a worktree: <code>git worktree remove &lt;path&gt;</code></li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="repos-update_branches" class="level2">
+<h2 class="anchored" data-anchor-id="repos-update_branches"><code>repos update_branches</code></h2>
+<p>Propagate the latest devcontainer prebuild configuration from the base repository to every worktree:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> update_branches</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The command:</p>
+<ol type="1">
+<li>Reads <code>.devcontainer/prebuild/devcontainer.json</code> from the base repository</li>
+<li>Strips the Codespaces <code>repositories</code> section</li>
+<li>Writes the result to <code>.devcontainer/devcontainer.json</code> in each worktree</li>
+<li>Commits and pushes the changes in each worktree</li>
+</ol>
+<section id="options-1" class="level3">
+<h3 class="anchored" data-anchor-id="options-1">Options</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>-n</code>, <code>--dry-run</code></td>
+<td>Show what would be done without making changes</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="examples-1" class="level3">
+<h3 class="anchored" data-anchor-id="examples-1">Examples</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Update all worktrees</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> update_branches</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Preview changes without applying them</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> update_branches <span class="at">--dry-run</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="prerequisites" class="level3">
+<h3 class="anchored" data-anchor-id="prerequisites">Prerequisites</h3>
+<ul>
+<li><code>.devcontainer/prebuild/devcontainer.json</code> must exist in the base repository.</li>
+<li><code>jq</code> or <code>python3</code> must be available for JSON manipulation.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="repos-update_scripts" class="level2">
+<h2 class="anchored" data-anchor-id="repos-update_scripts"><code>repos update_scripts</code></h2>
+<p>Pull the latest helper scripts from the upstream <a href="https://github.com/MiguelRodo/CompTemplate">CompTemplate</a> repository:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> update_scripts</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The command:</p>
+<ol type="1">
+<li>Clones / pulls the latest <code>MiguelRodo/CompTemplate</code> repository</li>
+<li>Copies all scripts from its <code>scripts/</code> directory (including <code>helper/</code>)</li>
+<li>Preserves executable permissions</li>
+<li>Creates a git commit with the updates</li>
+</ol>
+<section id="options-2" class="level3">
+<h3 class="anchored" data-anchor-id="options-2">Options</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>-b &lt;name&gt;</code>, <code>--branch &lt;name&gt;</code></td>
+<td>Use a specific upstream branch (default: <code>main</code>)</td>
+</tr>
+<tr class="even">
+<td><code>-n</code>, <code>--dry-run</code></td>
+<td>Show what would be updated without making changes</td>
+</tr>
+<tr class="odd">
+<td><code>-f</code>, <code>--force</code></td>
+<td>Overwrite local changes without prompting</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="environment-variables" class="level3">
+<h3 class="anchored" data-anchor-id="environment-variables">Environment variables</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Variable</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>UPSTREAM_BRANCH</code></td>
+<td>Override the default upstream branch</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="examples-2" class="level3">
+<h3 class="anchored" data-anchor-id="examples-2">Examples</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Update from the default (main) branch</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> update_scripts</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Update from a specific branch</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> update_scripts <span class="at">--branch</span> dev</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Preview what would change</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> update_scripts <span class="at">--dry-run</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Force-overwrite local modifications</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> update_scripts <span class="at">--force</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
+</section>
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">

@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>repos.list Reference – repos</title>
+<title>license – repos</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -100,7 +100,7 @@ ul.task-list li input[type="checkbox"] {
 <span class="menu-text">Installation</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link active" href="./repos-list.html" aria-current="page"> 
+    <a class="nav-link" href="./repos-list.html"> 
 <span class="menu-text">repos.list</span></a>
   </li>  
   <li class="nav-item">
@@ -150,122 +150,22 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#basic-format" id="toc-basic-format" class="nav-link active" data-scroll-target="#basic-format">Basic Format</a></li>
-  <li><a href="#cloning-a-specific-branch" id="toc-cloning-a-specific-branch" class="nav-link" data-scroll-target="#cloning-a-specific-branch">Cloning a Specific Branch</a></li>
-  <li><a href="#custom-target-directory" id="toc-custom-target-directory" class="nav-link" data-scroll-target="#custom-target-directory">Custom Target Directory</a></li>
-  <li><a href="#worktrees" id="toc-worktrees" class="nav-link" data-scroll-target="#worktrees">Worktrees</a></li>
-  <li><a href="#visibility" id="toc-visibility" class="nav-link" data-scroll-target="#visibility">Visibility</a></li>
-  <li><a href="#global-flags" id="toc-global-flags" class="nav-link" data-scroll-target="#global-flags">Global Flags</a></li>
-  <li><a href="#example" id="toc-example" class="nav-link" data-scroll-target="#example">Example</a></li>
+  <li><a href="#mit-license" id="toc-mit-license" class="nav-link active" data-scroll-target="#mit-license">MIT License</a></li>
   </ul>
 </nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content">
-
-<header id="title-block-header" class="quarto-title-block default">
-<div class="quarto-title">
-<h1 class="title">repos.list Reference</h1>
-</div>
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
 
 
 
-<div class="quarto-title-meta">
 
-    
-  
-    
-  </div>
-  
-
-
-</header>
-
-
-<p>The <code>repos.list</code> file lists the repositories (and optionally branches) that <code>repos clone</code> will clone. Place it in the root of your project directory.</p>
-<section id="basic-format" class="level2">
-<h2 class="anchored" data-anchor-id="basic-format">Basic Format</h2>
-<p>Each line is one repository:</p>
-<pre><code>owner/repo</code></pre>
-<p>Lines starting with <code>#</code> are comments and are ignored.</p>
-</section>
-<section id="cloning-a-specific-branch" class="level2">
-<h2 class="anchored" data-anchor-id="cloning-a-specific-branch">Cloning a Specific Branch</h2>
-<p>Append <code>@branch</code> to clone only that branch:</p>
-<pre><code>owner/repo@develop</code></pre>
-</section>
-<section id="custom-target-directory" class="level2">
-<h2 class="anchored" data-anchor-id="custom-target-directory">Custom Target Directory</h2>
-<p>Add a name after the repository to clone into a different directory:</p>
-<pre><code>owner/repo my-data</code></pre>
-</section>
-<section id="worktrees" class="level2">
-<h2 class="anchored" data-anchor-id="worktrees">Worktrees</h2>
-<p>Use <code>@branch</code> without a repository name to create a <a href="https://git-scm.com/docs/git-worktree">Git worktree</a> from the most recently listed repository (or the current repository if none has been listed yet):</p>
-<pre><code>owner/repo
-@feature-x
-@bugfix-123</code></pre>
-<p>This produces a full clone of <code>owner/repo</code> plus two worktrees — no extra network clones required.</p>
-<p>Add <code>--worktree</code> to a full <code>owner/repo@branch</code> line to create a worktree instead of a separate clone:</p>
-<pre><code>owner/repo@staging --worktree</code></pre>
-</section>
-<section id="visibility" class="level2">
-<h2 class="anchored" data-anchor-id="visibility">Visibility</h2>
-<p>Control whether new repositories are created as public or private:</p>
-<pre><code>owner/repo --public
-owner/other-repo --private</code></pre>
-</section>
-<section id="global-flags" class="level2">
-<h2 class="anchored" data-anchor-id="global-flags">Global Flags</h2>
-<p>Place a flag on its own line (with nothing else except optional comments) to apply it to every subsequent repository:</p>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 50%">
-<col style="width: 50%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>Flag</th>
-<th>Effect</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><code>--public</code></td>
-<td>Create all repositories as public by default</td>
-</tr>
-<tr class="even">
-<td><code>--private</code></td>
-<td>Create all repositories as private by default (the default)</td>
-</tr>
-<tr class="odd">
-<td><code>--codespaces</code></td>
-<td>Configure Codespaces authentication for all repositories</td>
-</tr>
-<tr class="even">
-<td><code>--worktree</code></td>
-<td>Use worktrees instead of separate clones for all <code>@branch</code> lines</td>
-</tr>
-</tbody>
-</table>
-<p>Per-line <code>--public</code>/<code>--private</code> flags always override the global default.</p>
-</section>
-<section id="example" class="level2">
-<h2 class="anchored" data-anchor-id="example">Example</h2>
-<pre><code>--private        # default visibility for new repos
---codespaces     # set up Codespaces auth for all repos
-
-myorg/backend
-myorg/frontend@develop
-@staging                   # worktree of frontend at staging branch
-myorg/docs --public        # override: create docs repo as public</code></pre>
-<p>After <code>repos clone</code>, the parent directory looks like:</p>
-<pre><code>workspace/
-├── my-project/            # your project (contains repos.list)
-├── backend/
-├── frontend-develop/
-├── frontend-staging/      # worktree
-└── docs/</code></pre>
+<section id="mit-license" class="level1">
+<h1>MIT License</h1>
+<p>Copyright (c) 2024 Miguel Rodo</p>
+<p>Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:</p>
+<p>The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.</p>
+<p>THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
 
 
 </section>
