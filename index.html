@@ -139,6 +139,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="menu-text">repos.list</span></a>
   </li>  
   <li class="nav-item">
+    <a class="nav-link" href="./clone.html"> 
+<span class="menu-text">repos clone</span></a>
+  </li>  
+  <li class="nav-item">
     <a class="nav-link" href="./setup.html"> 
 <span class="menu-text">repos setup</span></a>
   </li>  
@@ -204,13 +208,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 myorg/analysis
 myorg/documentation</code></pre>
 <p>Then run:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> setup</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> clone</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>This clones all listed repositories into the parent directory of your current location.</p>
 </section>
 <section id="what-else-can-you-do" class="level2">
 <h2 class="anchored" data-anchor-id="what-else-can-you-do">What else can you do?</h2>
 <p><strong>Customise <code>repos.list</code></strong> — clone specific branches (<code>owner/repo@branch</code>), use worktrees (<code>@branch-name</code>), set repository visibility (<code>--public</code>/<code>--private</code>), and more. → <a href="repos-list.html">repos.list reference</a></p>
-<p><strong><code>repos setup</code></strong> — beyond cloning, it generates a VS Code workspace file, configures GitHub Codespaces authentication (<code>--codespaces</code>), and handles devcontainer paths. → <a href="setup.html">repos setup guide</a></p>
+<p><strong><code>repos setup</code></strong> — the all-in-one command: creates any missing GitHub repositories, clones them, generates a VS Code workspace file, and optionally configures Codespaces authentication. → <a href="setup.html">repos setup guide</a></p>
 <p><strong>Run a pipeline across all repos</strong> — if your repositories contain a <code>run.sh</code> script (or any script you specify), <code>repos run</code> executes it in each one. → <a href="pipelines.html">Running pipelines</a></p>
 </section>
 <section id="language-packages" class="level2">

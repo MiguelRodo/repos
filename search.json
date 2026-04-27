@@ -49,130 +49,88 @@
     "text": "Verify Installation\nrepos --help"
   },
   {
-    "objectID": "r-package.html",
-    "href": "r-package.html",
-    "title": "R Package",
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "repos",
     "section": "",
-    "text": "The repos R package wraps the same Bash scripts used by the command-line tool, so every feature available at the terminal is also available from R."
+    "text": "Manage multiple Git repositories as a unified workspace from a single repos.list file."
   },
   {
-    "objectID": "r-package.html#installation",
-    "href": "r-package.html#installation",
-    "title": "R Package",
+    "objectID": "index.html#quick-start",
+    "href": "index.html#quick-start",
+    "title": "repos",
+    "section": "Quick Start",
+    "text": "Quick Start\nCreate a repos.list file in your project directory listing the repositories you want:\nmyorg/data-curation\nmyorg/analysis\nmyorg/documentation\nThen run:\nrepos clone\nThis clones all listed repositories into the parent directory of your current location."
+  },
+  {
+    "objectID": "index.html#what-else-can-you-do",
+    "href": "index.html#what-else-can-you-do",
+    "title": "repos",
+    "section": "What else can you do?",
+    "text": "What else can you do?\nCustomise repos.list — clone specific branches (owner/repo@branch), use worktrees (@branch-name), set repository visibility (--public/--private), and more. → repos.list reference\nrepos setup — the all-in-one command: creates any missing GitHub repositories, clones them, generates a VS Code workspace file, and optionally configures Codespaces authentication. → repos setup guide\nRun a pipeline across all repos — if your repositories contain a run.sh script (or any script you specify), repos run executes it in each one. → Running pipelines"
+  },
+  {
+    "objectID": "index.html#language-packages",
+    "href": "index.html#language-packages",
+    "title": "repos",
+    "section": "Language Packages",
+    "text": "Language Packages\nUse repos directly from R or Python — all the same commands, no terminal required.\n→ Python package\n→ R package"
+  },
+  {
+    "objectID": "index.html#installation",
+    "href": "index.html#installation",
+    "title": "repos",
     "section": "Installation",
-    "text": "Installation\ninstall.packages(\"devtools\")\ndevtools::install_github(\"MiguelRodo/repos\")\nSystem requirements: bash, git, curl, and jq must be available on your PATH."
+    "text": "Installation\n→ Installation guide"
   },
   {
-    "objectID": "r-package.html#end-to-end-workflow",
-    "href": "r-package.html#end-to-end-workflow",
-    "title": "R Package",
+    "objectID": "python-package.html",
+    "href": "python-package.html",
+    "title": "Python Package",
+    "section": "",
+    "text": "The repos Python package wraps the same Bash scripts used by the command-line tool, so every feature available at the terminal is also available from Python."
+  },
+  {
+    "objectID": "python-package.html#installation",
+    "href": "python-package.html#installation",
+    "title": "Python Package",
+    "section": "Installation",
+    "text": "Installation\npip install git+https://github.com/MiguelRodo/repos.git\nOr from a local clone:\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\npip install .\nSystem requirements: bash, git, curl, and jq must be available on your PATH. On Windows, use Git for Windows or WSL."
+  },
+  {
+    "objectID": "python-package.html#end-to-end-workflow",
+    "href": "python-package.html#end-to-end-workflow",
+    "title": "Python Package",
     "section": "End-to-End Workflow",
-    "text": "End-to-End Workflow\n\nStep 1 — Create a repos.list file\nPlace a repos.list file in your project directory listing the repositories you want to manage (one per line):\nmyorg/data-curation\nmyorg/analysis\nmyorg/documentation\nSee the repos.list reference for the full syntax — branch pinning, worktrees, visibility flags, and more.\n\n\nStep 2 — Clone and configure repositories\nlibrary(repos)\n\nrepos_setup()\nThis reads repos.list, creates any missing GitHub repositories, clones everything to the parent directory of your current location, and generates a VS Code workspace file. See repos_setup() below for all options.\n\n\nStep 3 — Run a pipeline\nOnce the repositories are cloned, run a script inside each one:\nrepos_run()          # executes run.sh in every repo\nSee repos_run() below for all options."
+    "text": "End-to-End Workflow\n\nStep 1 — Create a repos.list file\nPlace a repos.list file in your project directory listing the repositories you want to manage (one per line):\nmyorg/data-curation\nmyorg/analysis\nmyorg/documentation\nSee the repos.list reference for the full syntax — branch pinning, worktrees, visibility flags, and more.\n\n\nStep 2 — Clone and configure repositories\nfrom repos import setup\n\nsetup()\nThis reads repos.list, creates any missing GitHub repositories, clones everything to the parent directory of your current location, and generates a VS Code workspace file. See setup() below for all options.\n\n\nStep 3 — Run a pipeline\nOnce the repositories are cloned, run a script inside each one:\nfrom repos import run\n\nrun()          # executes run.sh in every repo\nSee run() below for all options."
   },
   {
-    "objectID": "r-package.html#api-reference",
-    "href": "r-package.html#api-reference",
-    "title": "R Package",
+    "objectID": "python-package.html#api-reference",
+    "href": "python-package.html#api-reference",
+    "title": "Python Package",
     "section": "API Reference",
-    "text": "API Reference\n\nrepos()\nTop-level dispatcher that delegates to repos_setup() or repos_run().\nrepos(command, ...)\nParameters\n\n\n\nParameter\nType\nDescription\n\n\n\n\ncommand\ncharacter\n\"setup\" or \"run\"\n\n\n...\n\nForwarded to repos_setup() or repos_run()\n\n\n\nReturns: Invisibly returns the exit status of the script (0 for success).\nExamples:\nlibrary(repos)\n\nrepos(\"setup\")\nrepos(\"setup\", public = TRUE)\nrepos(\"run\")\nrepos(\"run\", script = \"build.sh\")\n\n\n\nrepos_setup()\nClone and configure repositories from a repos.list file.\nrepos_setup(\n  file        = NULL,   # path to a custom list file (default: repos.list)\n  public      = FALSE,  # create new repos as public\n  codespaces  = FALSE,  # configure Codespaces authentication\n  devcontainer = NULL,  # path(s) to devcontainer.json (implies codespaces = TRUE)\n  permissions = NULL,   # \"all\" or \"contents\" — passed to codespaces-auth-add.sh\n  tool        = NULL,   # force tool for codespaces-auth-add.sh (\"jq\" or \"python\")\n  debug       = FALSE,  # write debug output to stderr\n  debug_file  = NULL,   # write debug output to a file (TRUE = auto-name, or a path)\n  ...                   # additional raw flags forwarded to setup-repos.sh\n)\nParameters\n\n\n\n\n\n\n\n\n\nParameter\nType\nDefault\nDescription\n\n\n\n\nfile\ncharacter\nNULL\nPath to repos list file (default: repos.list)\n\n\npublic\nlogical\nFALSE\nCreate new repositories as public\n\n\ncodespaces\nlogical\nFALSE\nEnable Codespaces authentication\n\n\ndevcontainer\ncharacter or character vector\nNULL\nPath(s) to devcontainer.json\n\n\npermissions\ncharacter\nNULL\n\"all\" or \"contents\"\n\n\ntool\ncharacter\nNULL\nForce \"jq\" or \"python\" for auth helper\n\n\ndebug\nlogical\nFALSE\nPrint debug output to stderr\n\n\ndebug_file\nlogical or character\nNULL\nWrite debug output to a file\n\n\n...\n\n\nAdditional raw flags forwarded as-is\n\n\n\nReturns: Invisibly returns the exit status of the script (0 for success).\nExamples:\nlibrary(repos)\n\n# Default — reads repos.list in the current directory\nrepos_setup()\n\n# Use a custom list file\nrepos_setup(file = \"my-repos.list\")\n\n# Create new repositories as public\nrepos_setup(public = TRUE)\n\n# Enable Codespaces auth\nrepos_setup(codespaces = TRUE)\n\n# Specify devcontainer paths (also enables Codespaces auth)\nrepos_setup(devcontainer = \".devcontainer/devcontainer.json\")\n\n# Combine options\nrepos_setup(public = TRUE, codespaces = TRUE, debug = TRUE)\n\n# Backward compatibility — raw flag passing still works\nrepos_setup(\"--public\", \"--codespaces\")\nFor the full behavioural description, see the repos setup guide.\n\n\n\nrepos_run()\nExecute a script inside each cloned repository.\nrepos_run(\n  file             = NULL,   # path to a custom list file (default: repos.list)\n  script           = NULL,   # script to run in each repo (default: run.sh)\n  include          = NULL,   # repo name(s) to include\n  exclude          = NULL,   # repo name(s) to skip\n  ensure_setup     = FALSE,  # run repos_setup() before executing scripts\n  skip_deps        = FALSE,  # skip install-r-deps.sh\n  dry_run          = FALSE,  # print what would run without executing\n  verbose          = FALSE,  # verbose logging\n  continue_on_error = FALSE, # keep running after a failure\n  ...                        # additional raw flags forwarded to run-pipeline.sh\n)\nParameters\n\n\n\n\n\n\n\n\n\nParameter\nType\nDefault\nDescription\n\n\n\n\nfile\ncharacter\nNULL\nPath to repos list file (default: repos.list)\n\n\nscript\ncharacter\nNULL\nScript file to run in each repo (default: run.sh)\n\n\ninclude\ncharacter or character vector\nNULL\nOnly run in these repos\n\n\nexclude\ncharacter or character vector\nNULL\nSkip these repos\n\n\nensure_setup\nlogical\nFALSE\nRun repos_setup() first\n\n\nskip_deps\nlogical\nFALSE\nSkip R dependency installation\n\n\ndry_run\nlogical\nFALSE\nPreview without executing\n\n\nverbose\nlogical\nFALSE\nVerbose logging\n\n\ncontinue_on_error\nlogical\nFALSE\nContinue past failures\n\n\n...\n\n\nAdditional raw flags forwarded as-is\n\n\n\nReturns: Invisibly returns the exit status of the script (0 for success).\nExamples:\nlibrary(repos)\n\n# Run the default script (run.sh) in every repo\nrepos_run()\n\n# Run a custom script\nrepos_run(script = \"build.sh\")\n\n# Only run in specific repos\nrepos_run(include = c(\"backend\", \"frontend\"))\n\n# Skip a repo\nrepos_run(exclude = \"docs\")\n\n# Continue even if one repo fails\nrepos_run(continue_on_error = TRUE)\n\n# Preview without running\nrepos_run(dry_run = TRUE)\n\n# Ensure repos are cloned before running\nrepos_run(ensure_setup = TRUE)\n\n# Combine options\nrepos_run(script = \"test.sh\", verbose = TRUE, ensure_setup = TRUE)\n\n# Backward compatibility — raw flag passing still works\nrepos_run(\"--script\", \"build.sh\", \"--dry-run\")\nFor the full behavioural description, see Running Pipelines."
+    "text": "API Reference\n\nsetup()\nClone and configure repositories from a repos.list file.\nfrom repos import setup\n\nsetup(\n    file=None,            # path to a custom list file (default: repos.list)\n    public=False,         # create new repos as public\n    codespaces=False,     # configure Codespaces authentication\n    devcontainer=None,    # path(s) to devcontainer.json (implies codespaces=True)\n    permissions=None,     # \"all\" or \"contents\" — passed to codespaces-auth-add.sh\n    tool=None,            # force tool for codespaces-auth-add.sh (\"jq\" or \"python\")\n    debug=False,          # write debug output to stderr\n    debug_file=None,      # write debug output to a file (True = auto-name, or pass a path)\n)\nParameters\n\n\n\n\n\n\n\n\n\nParameter\nType\nDefault\nDescription\n\n\n\n\nfile\nstr\nNone\nPath to repos list file (default: repos.list)\n\n\npublic\nbool\nFalse\nCreate new repositories as public\n\n\ncodespaces\nbool\nFalse\nEnable Codespaces authentication\n\n\ndevcontainer\nstr or list[str]\nNone\nPath(s) to devcontainer.json\n\n\npermissions\nstr\nNone\n\"all\" or \"contents\"\n\n\ntool\nstr\nNone\nForce \"jq\" or \"python\" for auth helper\n\n\ndebug\nbool\nFalse\nPrint debug output to stderr\n\n\ndebug_file\nbool or str\nNone\nWrite debug output to a file\n\n\n\nReturns: subprocess.CompletedProcess\nExamples:\nfrom repos import setup\n\n# Default — reads repos.list in the current directory\nsetup()\n\n# Use a custom list file\nsetup(file=\"my-repos.list\")\n\n# Create new repositories as public\nsetup(public=True)\n\n# Enable Codespaces auth\nsetup(codespaces=True)\n\n# Specify devcontainer paths (also enables Codespaces auth)\nsetup(devcontainer=[\".devcontainer/devcontainer.json\"])\n\n# Combine options\nsetup(public=True, codespaces=True, debug=True)\nFor the full behavioural description, see the repos setup guide.\n\n\nrun()\nExecute a script inside each cloned repository.\nfrom repos import run\n\nrun(\n    file=None,              # path to a custom list file (default: repos.list)\n    script=None,            # script to run in each repo (default: run.sh)\n    include=None,           # repo name(s) to include\n    exclude=None,           # repo name(s) to skip\n    ensure_setup=False,     # run setup() before executing scripts\n    skip_deps=False,        # skip install-r-deps.sh\n    dry_run=False,          # print what would run without executing\n    verbose=False,          # verbose logging\n    continue_on_error=False # keep running after a failure\n)\nParameters\n\n\n\n\n\n\n\n\n\nParameter\nType\nDefault\nDescription\n\n\n\n\nfile\nstr\nNone\nPath to repos list file (default: repos.list)\n\n\nscript\nstr\nNone\nScript file to run in each repo (default: run.sh)\n\n\ninclude\nstr or list[str]\nNone\nOnly run in these repos\n\n\nexclude\nstr or list[str]\nNone\nSkip these repos\n\n\nensure_setup\nbool\nFalse\nRun setup() first\n\n\nskip_deps\nbool\nFalse\nSkip R dependency installation\n\n\ndry_run\nbool\nFalse\nPreview without executing\n\n\nverbose\nbool\nFalse\nVerbose logging\n\n\ncontinue_on_error\nbool\nFalse\nContinue past failures\n\n\n\nReturns: subprocess.CompletedProcess\nExamples:\nfrom repos import run\n\n# Run the default script (run.sh) in every repo\nrun()\n\n# Run a custom script\nrun(script=\"build.sh\")\n\n# Only run in specific repos\nrun(include=[\"backend\", \"frontend\"])\n\n# Skip a repo\nrun(exclude=\"docs\")\n\n# Continue even if one repo fails\nrun(continue_on_error=True)\n\n# Preview without running\nrun(dry_run=True)\n\n# Ensure repos are cloned before running\nrun(ensure_setup=True)\n\n# Combine options\nrun(script=\"test.sh\", verbose=True, ensure_setup=True)\nFor the full behavioural description, see Running Pipelines.\n\n\nRaw argument passing\nIf you need to pass flags not yet exposed as keyword arguments, use the raw helpers:\nfrom repos import setup_raw, run_raw\n\nsetup_raw(\"--public\", \"--codespaces\")\nsetup_raw(\"-f\", \"custom.list\", \"--public\")\n\nrun_raw(\"--script\", \"build.sh\", \"--dry-run\")\nrun_raw(\"-f\", \"custom.list\", \"--continue-on-error\")\nThese functions forward all positional arguments directly to the underlying Bash script without any processing."
   },
   {
-    "objectID": "r-package.html#github-authentication",
-    "href": "r-package.html#github-authentication",
-    "title": "R Package",
+    "objectID": "python-package.html#cli-usage",
+    "href": "python-package.html#cli-usage",
+    "title": "Python Package",
+    "section": "CLI Usage",
+    "text": "CLI Usage\nInstalling the Python package also registers a repos command that delegates directly to the same Bash scripts:\nrepos setup\nrepos setup --public\nrepos run\nrepos run --script build.sh\nrepos run --include \"backend,frontend\"\nThis is the same interface documented in the repos setup guide and Running Pipelines."
+  },
+  {
+    "objectID": "python-package.html#github-authentication",
+    "href": "python-package.html#github-authentication",
+    "title": "Python Package",
     "section": "GitHub Authentication",
-    "text": "GitHub Authentication\nrepos_setup() needs a GitHub token to create repositories and clone private ones. Provide it via the GH_TOKEN environment variable or via the gh CLI:\nSys.setenv(GH_TOKEN = \"your_personal_access_token\")\nrepos_setup()\nOr set it in your shell before starting R:\nexport GH_TOKEN=\"your_personal_access_token\""
-  },
-  {
-    "objectID": "setup.html",
-    "href": "setup.html",
-    "title": "repos setup",
-    "section": "",
-    "text": "repos setup reads your repos.list file, clones all listed repositories into the parent directory of your current location, creates any missing GitHub repositories, generates a VS Code workspace file, and optionally configures GitHub Codespaces authentication."
-  },
-  {
-    "objectID": "setup.html#basic-usage",
-    "href": "setup.html#basic-usage",
-    "title": "repos setup",
-    "section": "Basic Usage",
-    "text": "Basic Usage\nrepos setup"
-  },
-  {
-    "objectID": "setup.html#options",
-    "href": "setup.html#options",
-    "title": "repos setup",
-    "section": "Options",
-    "text": "Options\n\n\n\nFlag\nDescription\n\n\n\n\n-f &lt;file&gt;\nUse a different list file (default: repos.list)\n\n\n--public\nCreate new repositories as public (default is private)\n\n\n--codespaces\nConfigure Codespaces authentication\n\n\n-d &lt;path&gt;\nPath to a devcontainer.json file (repeatable)\n\n\n\n# Use a custom list file\nrepos setup -f my-repos.list\n\n# Create new repos as public\nrepos setup --public\n\n# Enable Codespaces auth with default devcontainer path\nrepos setup --codespaces\n\n# Specify one or more devcontainer.json paths\nrepos setup -d .devcontainer/devcontainer.json\nrepos setup -d path1/devcontainer.json -d path2/devcontainer.json"
-  },
-  {
-    "objectID": "setup.html#github-authentication",
-    "href": "setup.html#github-authentication",
-    "title": "repos setup",
-    "section": "GitHub Authentication",
-    "text": "GitHub Authentication\nrepos setup needs a GitHub token to create repositories and clone private ones. Provide it via the GH_TOKEN environment variable or via the gh CLI:\nexport GH_TOKEN=\"your_personal_access_token\"\n# or\ngh auth login"
-  },
-  {
-    "objectID": "setup.html#vs-code-workspace",
-    "href": "setup.html#vs-code-workspace",
-    "title": "repos setup",
-    "section": "VS Code Workspace",
-    "text": "VS Code Workspace\nAfter repos setup completes, a file called entire-project.code-workspace is written in your project directory. Open it to load all cloned repositories as a multi-root workspace:\ncode entire-project.code-workspace"
-  },
-  {
-    "objectID": "setup.html#codespaces-authentication",
-    "href": "setup.html#codespaces-authentication",
-    "title": "repos setup",
-    "section": "Codespaces Authentication",
-    "text": "Codespaces Authentication\nPass --codespaces to inject the GH_TOKEN Codespaces secret into every cloned repository that has a devcontainer.json. You can override which devcontainer.json files are targeted with one or more -d flags:\nrepos setup --codespaces -d .devcontainer/prebuild/devcontainer.json"
-  },
-  {
-    "objectID": "setup.html#repository-layout",
-    "href": "setup.html#repository-layout",
-    "title": "repos setup",
-    "section": "Repository Layout",
-    "text": "Repository Layout\nRepositories are always cloned to the parent of your current directory:\nworkspace/\n├── my-project/          # your project (contains repos.list)\n├── backend/             # cloned from myorg/backend\n├── frontend-develop/    # cloned from myorg/frontend@develop\n└── docs/                # cloned from myorg/docs"
-  },
-  {
-    "objectID": "pipelines.html",
-    "href": "pipelines.html",
-    "title": "Running Pipelines",
-    "section": "",
-    "text": "repos run executes a script inside each repository listed in your repos.list file. This lets you run a build, test, or any other task across your entire workspace with a single command."
-  },
-  {
-    "objectID": "pipelines.html#basic-usage",
-    "href": "pipelines.html#basic-usage",
-    "title": "Running Pipelines",
-    "section": "Basic Usage",
-    "text": "Basic Usage\nBy default, repos run looks for a file called run.sh in each cloned repository and executes it:\nrepos run"
-  },
-  {
-    "objectID": "pipelines.html#options",
-    "href": "pipelines.html#options",
-    "title": "Running Pipelines",
-    "section": "Options",
-    "text": "Options\n\n\n\n\n\n\n\nFlag\nDescription\n\n\n\n\n--script &lt;file&gt;\nRun a different script (default: run.sh)\n\n\n-f &lt;file&gt;\nUse a different list file (default: repos.list)\n\n\n--include &lt;repos&gt;\nComma-separated list of repositories to include\n\n\n--exclude &lt;repos&gt;\nComma-separated list of repositories to skip\n\n\n--continue-on-error\nKeep running even if a repository fails\n\n\n--dry-run\nPrint what would be run without executing anything\n\n\n--ensure-setup\nRun repos setup before executing the pipeline\n\n\n\n# Run a custom script in each repo\nrepos run --script build.sh\n\n# Only run in specific repos\nrepos run --include \"backend,frontend\"\n\n# Skip a repo\nrepos run --exclude \"docs\"\n\n# Continue even if one repo fails, then report all results\nrepos run --continue-on-error\n\n# Preview without running\nrepos run --dry-run\n\n# Make sure repos are cloned before running\nrepos run --ensure-setup"
-  },
-  {
-    "objectID": "pipelines.html#writing-a-pipeline-script",
-    "href": "pipelines.html#writing-a-pipeline-script",
-    "title": "Running Pipelines",
-    "section": "Writing a Pipeline Script",
-    "text": "Writing a Pipeline Script\nEach repository should contain the script that repos run will call. The script receives no arguments by default, but can read environment variables or accept flags if needed. A minimal run.sh:\n#!/usr/bin/env bash\nset -e\n\n# Install dependencies\nRscript -e \"renv::restore()\"\n\n# Run analysis\nRscript analysis.R"
-  },
-  {
-    "objectID": "pipelines.html#r-and-python-apis",
-    "href": "pipelines.html#r-and-python-apis",
-    "title": "Running Pipelines",
-    "section": "R and Python APIs",
-    "text": "R and Python APIs\n\nR\nlibrary(repos)\n\nrepos_run()                                 # run run.sh in every repo\nrepos_run(script = \"build.sh\")              # custom script\nrepos_run(dry_run = TRUE, verbose = TRUE)   # preview\nrepos_run(include = c(\"backend\", \"frontend\"))\n\n\nPython\nfrom repos import run\n\nrun()                              # run run.sh in every repo\nrun(script=\"build.sh\")             # custom script\nrun(dry_run=True, verbose=True)    # preview\nrun(include=[\"backend\", \"frontend\"])"
+    "text": "GitHub Authentication\nsetup() needs a GitHub token to create repositories and clone private ones. Provide it via the GH_TOKEN environment variable or via the gh CLI:\nimport os, subprocess\nfrom repos import setup\n\nos.environ[\"GH_TOKEN\"] = \"your_personal_access_token\"\nsetup()\nOr in a shell before starting Python:\nexport GH_TOKEN=\"your_personal_access_token\"\npython my_script.py"
   },
   {
     "objectID": "repos-list.html",
     "href": "repos-list.html",
     "title": "repos.list Reference",
     "section": "",
-    "text": "The repos.list file lists the repositories (and optionally branches) that repos setup will clone. Place it in the root of your project directory."
+    "text": "The repos.list file lists the repositories (and optionally branches) that repos clone (or repos setup) will clone. Place it in the root of your project directory."
   },
   {
     "objectID": "repos-list.html#basic-format",
@@ -221,83 +179,174 @@
     "href": "repos-list.html#example",
     "title": "repos.list Reference",
     "section": "Example",
-    "text": "Example\n--private        # default visibility for new repos\n--codespaces     # set up Codespaces auth for all repos\n\nmyorg/backend\nmyorg/frontend@develop\n@staging                   # worktree of frontend at staging branch\nmyorg/docs --public        # override: create docs repo as public\nAfter repos setup, the parent directory looks like:\nworkspace/\n├── my-project/            # your project (contains repos.list)\n├── backend/\n├── frontend-develop/\n├── frontend-staging/      # worktree\n└── docs/"
+    "text": "Example\n--private        # default visibility for new repos\n--codespaces     # set up Codespaces auth for all repos\n\nmyorg/backend\nmyorg/frontend@develop\n@staging                   # worktree of frontend at staging branch\nmyorg/docs --public        # override: create docs repo as public\nAfter repos clone (or repos setup), the parent directory looks like:\nworkspace/\n├── my-project/            # your project (contains repos.list)\n├── backend/\n├── frontend-develop/\n├── frontend-staging/      # worktree\n└── docs/"
   },
   {
-    "objectID": "python-package.html",
-    "href": "python-package.html",
-    "title": "Python Package",
+    "objectID": "pipelines.html",
+    "href": "pipelines.html",
+    "title": "Running Pipelines",
     "section": "",
-    "text": "The repos Python package wraps the same Bash scripts used by the command-line tool, so every feature available at the terminal is also available from Python."
+    "text": "repos run executes a script inside each repository listed in your repos.list file. This lets you run a build, test, or any other task across your entire workspace with a single command."
   },
   {
-    "objectID": "python-package.html#installation",
-    "href": "python-package.html#installation",
-    "title": "Python Package",
-    "section": "Installation",
-    "text": "Installation\npip install git+https://github.com/MiguelRodo/repos.git\nOr from a local clone:\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\npip install .\nSystem requirements: bash, git, curl, and jq must be available on your PATH. On Windows, use Git for Windows or WSL."
+    "objectID": "pipelines.html#basic-usage",
+    "href": "pipelines.html#basic-usage",
+    "title": "Running Pipelines",
+    "section": "Basic Usage",
+    "text": "Basic Usage\nBy default, repos run looks for a file called run.sh in each cloned repository and executes it:\nrepos run"
   },
   {
-    "objectID": "python-package.html#end-to-end-workflow",
-    "href": "python-package.html#end-to-end-workflow",
-    "title": "Python Package",
-    "section": "End-to-End Workflow",
-    "text": "End-to-End Workflow\n\nStep 1 — Create a repos.list file\nPlace a repos.list file in your project directory listing the repositories you want to manage (one per line):\nmyorg/data-curation\nmyorg/analysis\nmyorg/documentation\nSee the repos.list reference for the full syntax — branch pinning, worktrees, visibility flags, and more.\n\n\nStep 2 — Clone and configure repositories\nfrom repos import setup\n\nsetup()\nThis reads repos.list, creates any missing GitHub repositories, clones everything to the parent directory of your current location, and generates a VS Code workspace file. See setup() below for all options.\n\n\nStep 3 — Run a pipeline\nOnce the repositories are cloned, run a script inside each one:\nfrom repos import run\n\nrun()          # executes run.sh in every repo\nSee run() below for all options."
+    "objectID": "pipelines.html#options",
+    "href": "pipelines.html#options",
+    "title": "Running Pipelines",
+    "section": "Options",
+    "text": "Options\n\n\n\n\n\n\n\nFlag\nDescription\n\n\n\n\n--script &lt;file&gt;\nRun a different script (default: run.sh)\n\n\n-f &lt;file&gt;\nUse a different list file (default: repos.list)\n\n\n--include &lt;repos&gt;\nComma-separated list of repositories to include\n\n\n--exclude &lt;repos&gt;\nComma-separated list of repositories to skip\n\n\n--continue-on-error\nKeep running even if a repository fails\n\n\n--dry-run\nPrint what would be run without executing anything\n\n\n--ensure-setup\nRun repos setup before executing the pipeline\n\n\n\n# Run a custom script in each repo\nrepos run --script build.sh\n\n# Only run in specific repos\nrepos run --include \"backend,frontend\"\n\n# Skip a repo\nrepos run --exclude \"docs\"\n\n# Continue even if one repo fails, then report all results\nrepos run --continue-on-error\n\n# Preview without running\nrepos run --dry-run\n\n# Make sure repos are cloned before running\nrepos run --ensure-setup"
   },
   {
-    "objectID": "python-package.html#api-reference",
-    "href": "python-package.html#api-reference",
-    "title": "Python Package",
-    "section": "API Reference",
-    "text": "API Reference\n\nsetup()\nClone and configure repositories from a repos.list file.\nfrom repos import setup\n\nsetup(\n    file=None,            # path to a custom list file (default: repos.list)\n    public=False,         # create new repos as public\n    codespaces=False,     # configure Codespaces authentication\n    devcontainer=None,    # path(s) to devcontainer.json (implies codespaces=True)\n    permissions=None,     # \"all\" or \"contents\" — passed to codespaces-auth-add.sh\n    tool=None,            # force tool for codespaces-auth-add.sh (\"jq\" or \"python\")\n    debug=False,          # write debug output to stderr\n    debug_file=None,      # write debug output to a file (True = auto-name, or pass a path)\n)\nParameters\n\n\n\n\n\n\n\n\n\nParameter\nType\nDefault\nDescription\n\n\n\n\nfile\nstr\nNone\nPath to repos list file (default: repos.list)\n\n\npublic\nbool\nFalse\nCreate new repositories as public\n\n\ncodespaces\nbool\nFalse\nEnable Codespaces authentication\n\n\ndevcontainer\nstr or list[str]\nNone\nPath(s) to devcontainer.json\n\n\npermissions\nstr\nNone\n\"all\" or \"contents\"\n\n\ntool\nstr\nNone\nForce \"jq\" or \"python\" for auth helper\n\n\ndebug\nbool\nFalse\nPrint debug output to stderr\n\n\ndebug_file\nbool or str\nNone\nWrite debug output to a file\n\n\n\nReturns: subprocess.CompletedProcess\nExamples:\nfrom repos import setup\n\n# Default — reads repos.list in the current directory\nsetup()\n\n# Use a custom list file\nsetup(file=\"my-repos.list\")\n\n# Create new repositories as public\nsetup(public=True)\n\n# Enable Codespaces auth\nsetup(codespaces=True)\n\n# Specify devcontainer paths (also enables Codespaces auth)\nsetup(devcontainer=[\".devcontainer/devcontainer.json\"])\n\n# Combine options\nsetup(public=True, codespaces=True, debug=True)\nFor the full behavioural description, see the repos setup guide.\n\n\nrun()\nExecute a script inside each cloned repository.\nfrom repos import run\n\nrun(\n    file=None,              # path to a custom list file (default: repos.list)\n    script=None,            # script to run in each repo (default: run.sh)\n    include=None,           # repo name(s) to include\n    exclude=None,           # repo name(s) to skip\n    ensure_setup=False,     # run setup() before executing scripts\n    skip_deps=False,        # skip install-r-deps.sh\n    dry_run=False,          # print what would run without executing\n    verbose=False,          # verbose logging\n    continue_on_error=False # keep running after a failure\n)\nParameters\n\n\n\n\n\n\n\n\n\nParameter\nType\nDefault\nDescription\n\n\n\n\nfile\nstr\nNone\nPath to repos list file (default: repos.list)\n\n\nscript\nstr\nNone\nScript file to run in each repo (default: run.sh)\n\n\ninclude\nstr or list[str]\nNone\nOnly run in these repos\n\n\nexclude\nstr or list[str]\nNone\nSkip these repos\n\n\nensure_setup\nbool\nFalse\nRun setup() first\n\n\nskip_deps\nbool\nFalse\nSkip R dependency installation\n\n\ndry_run\nbool\nFalse\nPreview without executing\n\n\nverbose\nbool\nFalse\nVerbose logging\n\n\ncontinue_on_error\nbool\nFalse\nContinue past failures\n\n\n\nReturns: subprocess.CompletedProcess\nExamples:\nfrom repos import run\n\n# Run the default script (run.sh) in every repo\nrun()\n\n# Run a custom script\nrun(script=\"build.sh\")\n\n# Only run in specific repos\nrun(include=[\"backend\", \"frontend\"])\n\n# Skip a repo\nrun(exclude=\"docs\")\n\n# Continue even if one repo fails\nrun(continue_on_error=True)\n\n# Preview without running\nrun(dry_run=True)\n\n# Ensure repos are cloned before running\nrun(ensure_setup=True)\n\n# Combine options\nrun(script=\"test.sh\", verbose=True, ensure_setup=True)\nFor the full behavioural description, see Running Pipelines.\n\n\nRaw argument passing\nIf you need to pass flags not yet exposed as keyword arguments, use the raw helpers:\nfrom repos import setup_raw, run_raw\n\nsetup_raw(\"--public\", \"--codespaces\")\nsetup_raw(\"-f\", \"custom.list\", \"--public\")\n\nrun_raw(\"--script\", \"build.sh\", \"--dry-run\")\nrun_raw(\"-f\", \"custom.list\", \"--continue-on-error\")\nThese functions forward all positional arguments directly to the underlying Bash script without any processing."
+    "objectID": "pipelines.html#writing-a-pipeline-script",
+    "href": "pipelines.html#writing-a-pipeline-script",
+    "title": "Running Pipelines",
+    "section": "Writing a Pipeline Script",
+    "text": "Writing a Pipeline Script\nEach repository should contain the script that repos run will call. The script receives no arguments by default, but can read environment variables or accept flags if needed. A minimal run.sh:\n#!/usr/bin/env bash\nset -e\n\n# Install dependencies\nRscript -e \"renv::restore()\"\n\n# Run analysis\nRscript analysis.R"
   },
   {
-    "objectID": "python-package.html#cli-usage",
-    "href": "python-package.html#cli-usage",
-    "title": "Python Package",
-    "section": "CLI Usage",
-    "text": "CLI Usage\nInstalling the Python package also registers a repos command that delegates directly to the same Bash scripts:\nrepos setup\nrepos setup --public\nrepos run\nrepos run --script build.sh\nrepos run --include \"backend,frontend\"\nThis is the same interface documented in the repos setup guide and Running Pipelines."
+    "objectID": "pipelines.html#r-and-python-apis",
+    "href": "pipelines.html#r-and-python-apis",
+    "title": "Running Pipelines",
+    "section": "R and Python APIs",
+    "text": "R and Python APIs\n\nR\nlibrary(repos)\n\nrepos_run()                                 # run run.sh in every repo\nrepos_run(script = \"build.sh\")              # custom script\nrepos_run(dry_run = TRUE, verbose = TRUE)   # preview\nrepos_run(include = c(\"backend\", \"frontend\"))\n\n\nPython\nfrom repos import run\n\nrun()                              # run run.sh in every repo\nrun(script=\"build.sh\")             # custom script\nrun(dry_run=True, verbose=True)    # preview\nrun(include=[\"backend\", \"frontend\"])"
   },
   {
-    "objectID": "python-package.html#github-authentication",
-    "href": "python-package.html#github-authentication",
-    "title": "Python Package",
+    "objectID": "setup.html",
+    "href": "setup.html",
+    "title": "repos setup",
+    "section": "",
+    "text": "repos setup is the all-in-one command that reads your repos.list file and runs every bootstrapping step in sequence:\nIf you don’t need VS Code or Codespaces support, consider using repos clone instead — it is simpler and requires no GitHub token for public repositories."
+  },
+  {
+    "objectID": "setup.html#basic-usage",
+    "href": "setup.html#basic-usage",
+    "title": "repos setup",
+    "section": "Basic Usage",
+    "text": "Basic Usage\nrepos setup"
+  },
+  {
+    "objectID": "setup.html#options",
+    "href": "setup.html#options",
+    "title": "repos setup",
+    "section": "Options",
+    "text": "Options\n\n\n\nFlag\nDescription\n\n\n\n\n-f &lt;file&gt;\nUse a different list file (default: repos.list)\n\n\n--public\nCreate new repositories as public (default is private)\n\n\n--codespaces\nConfigure Codespaces authentication\n\n\n-d &lt;path&gt;\nPath to a devcontainer.json file (repeatable)\n\n\n\n# Use a custom list file\nrepos setup -f my-repos.list\n\n# Create new repos as public\nrepos setup --public\n\n# Enable Codespaces auth with default devcontainer path\nrepos setup --codespaces\n\n# Specify one or more devcontainer.json paths\nrepos setup -d .devcontainer/devcontainer.json\nrepos setup -d path1/devcontainer.json -d path2/devcontainer.json"
+  },
+  {
+    "objectID": "setup.html#github-authentication",
+    "href": "setup.html#github-authentication",
+    "title": "repos setup",
     "section": "GitHub Authentication",
-    "text": "GitHub Authentication\nsetup() needs a GitHub token to create repositories and clone private ones. Provide it via the GH_TOKEN environment variable or via the gh CLI:\nimport os, subprocess\nfrom repos import setup\n\nos.environ[\"GH_TOKEN\"] = \"your_personal_access_token\"\nsetup()\nOr in a shell before starting Python:\nexport GH_TOKEN=\"your_personal_access_token\"\npython my_script.py"
+    "text": "GitHub Authentication\nrepos setup needs a GitHub token to create repositories and clone private ones. Provide it via the GH_TOKEN environment variable or via the gh CLI:\nexport GH_TOKEN=\"your_personal_access_token\"\n# or\ngh auth login"
   },
   {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "repos",
+    "objectID": "setup.html#vs-code-workspace",
+    "href": "setup.html#vs-code-workspace",
+    "title": "repos setup",
+    "section": "VS Code Workspace",
+    "text": "VS Code Workspace\nAfter repos setup completes, a file called entire-project.code-workspace is written in your project directory. Open it to load all cloned repositories as a multi-root workspace:\ncode entire-project.code-workspace\nYou can also generate or refresh the workspace file at any time without re-running the full setup:\nrepos workspace"
+  },
+  {
+    "objectID": "setup.html#codespaces-authentication",
+    "href": "setup.html#codespaces-authentication",
+    "title": "repos setup",
+    "section": "Codespaces Authentication",
+    "text": "Codespaces Authentication\nPass --codespaces to inject the GH_TOKEN Codespaces secret into every cloned repository that has a devcontainer.json. You can override which devcontainer.json files are targeted with one or more -d flags:\nrepos setup --codespaces -d .devcontainer/prebuild/devcontainer.json"
+  },
+  {
+    "objectID": "setup.html#repository-layout",
+    "href": "setup.html#repository-layout",
+    "title": "repos setup",
+    "section": "Repository Layout",
+    "text": "Repository Layout\nRepositories are always cloned to the parent of your current directory:\nworkspace/\n├── my-project/          # your project (contains repos.list)\n├── backend/             # cloned from myorg/backend\n├── frontend-develop/    # cloned from myorg/frontend@develop\n└── docs/                # cloned from myorg/docs"
+  },
+  {
+    "objectID": "r-package.html",
+    "href": "r-package.html",
+    "title": "R Package",
     "section": "",
-    "text": "Manage multiple Git repositories as a unified workspace from a single repos.list file."
+    "text": "The repos R package wraps the same Bash scripts used by the command-line tool, so every feature available at the terminal is also available from R."
   },
   {
-    "objectID": "index.html#quick-start",
-    "href": "index.html#quick-start",
-    "title": "repos",
-    "section": "Quick Start",
-    "text": "Quick Start\nCreate a repos.list file in your project directory listing the repositories you want:\nmyorg/data-curation\nmyorg/analysis\nmyorg/documentation\nThen run:\nrepos setup\nThis clones all listed repositories into the parent directory of your current location."
-  },
-  {
-    "objectID": "index.html#what-else-can-you-do",
-    "href": "index.html#what-else-can-you-do",
-    "title": "repos",
-    "section": "What else can you do?",
-    "text": "What else can you do?\nCustomise repos.list — clone specific branches (owner/repo@branch), use worktrees (@branch-name), set repository visibility (--public/--private), and more. → repos.list reference\nrepos setup — beyond cloning, it generates a VS Code workspace file, configures GitHub Codespaces authentication (--codespaces), and handles devcontainer paths. → repos setup guide\nRun a pipeline across all repos — if your repositories contain a run.sh script (or any script you specify), repos run executes it in each one. → Running pipelines"
-  },
-  {
-    "objectID": "index.html#language-packages",
-    "href": "index.html#language-packages",
-    "title": "repos",
-    "section": "Language Packages",
-    "text": "Language Packages\nUse repos directly from R or Python — all the same commands, no terminal required.\n→ Python package\n→ R package"
-  },
-  {
-    "objectID": "index.html#installation",
-    "href": "index.html#installation",
-    "title": "repos",
+    "objectID": "r-package.html#installation",
+    "href": "r-package.html#installation",
+    "title": "R Package",
     "section": "Installation",
-    "text": "Installation\n→ Installation guide"
+    "text": "Installation\ninstall.packages(\"devtools\")\ndevtools::install_github(\"MiguelRodo/repos\")\nSystem requirements: bash, git, curl, and jq must be available on your PATH."
+  },
+  {
+    "objectID": "r-package.html#end-to-end-workflow",
+    "href": "r-package.html#end-to-end-workflow",
+    "title": "R Package",
+    "section": "End-to-End Workflow",
+    "text": "End-to-End Workflow\n\nStep 1 — Create a repos.list file\nPlace a repos.list file in your project directory listing the repositories you want to manage (one per line):\nmyorg/data-curation\nmyorg/analysis\nmyorg/documentation\nSee the repos.list reference for the full syntax — branch pinning, worktrees, visibility flags, and more.\n\n\nStep 2 — Clone and configure repositories\nlibrary(repos)\n\nrepos_setup()\nThis reads repos.list, creates any missing GitHub repositories, clones everything to the parent directory of your current location, and generates a VS Code workspace file. See repos_setup() below for all options.\n\n\nStep 3 — Run a pipeline\nOnce the repositories are cloned, run a script inside each one:\nrepos_run()          # executes run.sh in every repo\nSee repos_run() below for all options."
+  },
+  {
+    "objectID": "r-package.html#api-reference",
+    "href": "r-package.html#api-reference",
+    "title": "R Package",
+    "section": "API Reference",
+    "text": "API Reference\n\nrepos()\nTop-level dispatcher that delegates to repos_setup() or repos_run().\nrepos(command, ...)\nParameters\n\n\n\nParameter\nType\nDescription\n\n\n\n\ncommand\ncharacter\n\"setup\" or \"run\"\n\n\n...\n\nForwarded to repos_setup() or repos_run()\n\n\n\nReturns: Invisibly returns the exit status of the script (0 for success).\nExamples:\nlibrary(repos)\n\nrepos(\"setup\")\nrepos(\"setup\", public = TRUE)\nrepos(\"run\")\nrepos(\"run\", script = \"build.sh\")\n\n\n\nrepos_setup()\nClone and configure repositories from a repos.list file.\nrepos_setup(\n  file        = NULL,   # path to a custom list file (default: repos.list)\n  public      = FALSE,  # create new repos as public\n  codespaces  = FALSE,  # configure Codespaces authentication\n  devcontainer = NULL,  # path(s) to devcontainer.json (implies codespaces = TRUE)\n  permissions = NULL,   # \"all\" or \"contents\" — passed to codespaces-auth-add.sh\n  tool        = NULL,   # force tool for codespaces-auth-add.sh (\"jq\" or \"python\")\n  debug       = FALSE,  # write debug output to stderr\n  debug_file  = NULL,   # write debug output to a file (TRUE = auto-name, or a path)\n  ...                   # additional raw flags forwarded to setup-repos.sh\n)\nParameters\n\n\n\n\n\n\n\n\n\nParameter\nType\nDefault\nDescription\n\n\n\n\nfile\ncharacter\nNULL\nPath to repos list file (default: repos.list)\n\n\npublic\nlogical\nFALSE\nCreate new repositories as public\n\n\ncodespaces\nlogical\nFALSE\nEnable Codespaces authentication\n\n\ndevcontainer\ncharacter or character vector\nNULL\nPath(s) to devcontainer.json\n\n\npermissions\ncharacter\nNULL\n\"all\" or \"contents\"\n\n\ntool\ncharacter\nNULL\nForce \"jq\" or \"python\" for auth helper\n\n\ndebug\nlogical\nFALSE\nPrint debug output to stderr\n\n\ndebug_file\nlogical or character\nNULL\nWrite debug output to a file\n\n\n...\n\n\nAdditional raw flags forwarded as-is\n\n\n\nReturns: Invisibly returns the exit status of the script (0 for success).\nExamples:\nlibrary(repos)\n\n# Default — reads repos.list in the current directory\nrepos_setup()\n\n# Use a custom list file\nrepos_setup(file = \"my-repos.list\")\n\n# Create new repositories as public\nrepos_setup(public = TRUE)\n\n# Enable Codespaces auth\nrepos_setup(codespaces = TRUE)\n\n# Specify devcontainer paths (also enables Codespaces auth)\nrepos_setup(devcontainer = \".devcontainer/devcontainer.json\")\n\n# Combine options\nrepos_setup(public = TRUE, codespaces = TRUE, debug = TRUE)\n\n# Backward compatibility — raw flag passing still works\nrepos_setup(\"--public\", \"--codespaces\")\nFor the full behavioural description, see the repos setup guide.\n\n\n\nrepos_run()\nExecute a script inside each cloned repository.\nrepos_run(\n  file             = NULL,   # path to a custom list file (default: repos.list)\n  script           = NULL,   # script to run in each repo (default: run.sh)\n  include          = NULL,   # repo name(s) to include\n  exclude          = NULL,   # repo name(s) to skip\n  ensure_setup     = FALSE,  # run repos_setup() before executing scripts\n  skip_deps        = FALSE,  # skip install-r-deps.sh\n  dry_run          = FALSE,  # print what would run without executing\n  verbose          = FALSE,  # verbose logging\n  continue_on_error = FALSE, # keep running after a failure\n  ...                        # additional raw flags forwarded to run-pipeline.sh\n)\nParameters\n\n\n\n\n\n\n\n\n\nParameter\nType\nDefault\nDescription\n\n\n\n\nfile\ncharacter\nNULL\nPath to repos list file (default: repos.list)\n\n\nscript\ncharacter\nNULL\nScript file to run in each repo (default: run.sh)\n\n\ninclude\ncharacter or character vector\nNULL\nOnly run in these repos\n\n\nexclude\ncharacter or character vector\nNULL\nSkip these repos\n\n\nensure_setup\nlogical\nFALSE\nRun repos_setup() first\n\n\nskip_deps\nlogical\nFALSE\nSkip R dependency installation\n\n\ndry_run\nlogical\nFALSE\nPreview without executing\n\n\nverbose\nlogical\nFALSE\nVerbose logging\n\n\ncontinue_on_error\nlogical\nFALSE\nContinue past failures\n\n\n...\n\n\nAdditional raw flags forwarded as-is\n\n\n\nReturns: Invisibly returns the exit status of the script (0 for success).\nExamples:\nlibrary(repos)\n\n# Run the default script (run.sh) in every repo\nrepos_run()\n\n# Run a custom script\nrepos_run(script = \"build.sh\")\n\n# Only run in specific repos\nrepos_run(include = c(\"backend\", \"frontend\"))\n\n# Skip a repo\nrepos_run(exclude = \"docs\")\n\n# Continue even if one repo fails\nrepos_run(continue_on_error = TRUE)\n\n# Preview without running\nrepos_run(dry_run = TRUE)\n\n# Ensure repos are cloned before running\nrepos_run(ensure_setup = TRUE)\n\n# Combine options\nrepos_run(script = \"test.sh\", verbose = TRUE, ensure_setup = TRUE)\n\n# Backward compatibility — raw flag passing still works\nrepos_run(\"--script\", \"build.sh\", \"--dry-run\")\nFor the full behavioural description, see Running Pipelines."
+  },
+  {
+    "objectID": "r-package.html#github-authentication",
+    "href": "r-package.html#github-authentication",
+    "title": "R Package",
+    "section": "GitHub Authentication",
+    "text": "GitHub Authentication\nrepos_setup() needs a GitHub token to create repositories and clone private ones. Provide it via the GH_TOKEN environment variable or via the gh CLI:\nSys.setenv(GH_TOKEN = \"your_personal_access_token\")\nrepos_setup()\nOr set it in your shell before starting R:\nexport GH_TOKEN=\"your_personal_access_token\""
+  },
+  {
+    "objectID": "clone.html",
+    "href": "clone.html",
+    "title": "repos clone",
+    "section": "",
+    "text": "repos clone reads your repos.list file and clones all listed repositories into the parent directory of your current location. It is the simplest way to get started — no GitHub account or token required for public repositories."
+  },
+  {
+    "objectID": "clone.html#basic-usage",
+    "href": "clone.html#basic-usage",
+    "title": "repos clone",
+    "section": "Basic Usage",
+    "text": "Basic Usage\nrepos clone"
+  },
+  {
+    "objectID": "clone.html#options",
+    "href": "clone.html#options",
+    "title": "repos clone",
+    "section": "Options",
+    "text": "Options\n\n\n\nFlag\nDescription\n\n\n\n\n-f &lt;file&gt;\nUse a different list file (default: repos.list)\n\n\n\n# Use a custom list file\nrepos clone -f my-repos.list"
+  },
+  {
+    "objectID": "clone.html#repository-layout",
+    "href": "clone.html#repository-layout",
+    "title": "repos clone",
+    "section": "Repository Layout",
+    "text": "Repository Layout\nRepositories are cloned to the parent of your current directory:\nworkspace/\n├── my-project/          # your project (contains repos.list)\n├── backend/             # cloned from myorg/backend\n├── frontend-develop/    # cloned from myorg/frontend@develop\n└── docs/                # cloned from myorg/docs"
+  },
+  {
+    "objectID": "clone.html#whats-in-repos.list",
+    "href": "clone.html#whats-in-repos.list",
+    "title": "repos clone",
+    "section": "What’s in repos.list?",
+    "text": "What’s in repos.list?\nrepos.list lists the repositories (and optionally branches) to clone. See the repos.list reference for the full format, including cloning specific branches, creating worktrees, and setting per-repo visibility."
+  },
+  {
+    "objectID": "clone.html#github-authentication",
+    "href": "clone.html#github-authentication",
+    "title": "repos clone",
+    "section": "GitHub Authentication",
+    "text": "GitHub Authentication\nFor private repositories, provide a GitHub token:\nexport GH_TOKEN=\"your_personal_access_token\"\n# or\ngh auth login\nPublic repositories can be cloned without any token."
+  },
+  {
+    "objectID": "clone.html#going-further-with-repos-setup",
+    "href": "clone.html#going-further-with-repos-setup",
+    "title": "repos clone",
+    "section": "Going further with repos setup",
+    "text": "Going further with repos setup\nrepos clone only clones repositories. repos setup does everything repos clone does, plus:\n\nCreates any GitHub repositories listed in repos.list that do not exist yet (requires GH_TOKEN)\nGenerates a VS Code multi-root workspace file (entire-project.code-workspace)\nConfigures GitHub Codespaces authentication (with --codespaces)\n\nYou can also run these extra steps individually after cloning:\n\nGenerate the VS Code workspace: repos workspace\nRun all steps at once: repos setup\n\n→ repos setup guide"
   }
 ]

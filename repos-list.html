@@ -104,6 +104,10 @@ ul.task-list li input[type="checkbox"] {
 <span class="menu-text">repos.list</span></a>
   </li>  
   <li class="nav-item">
+    <a class="nav-link" href="./clone.html"> 
+<span class="menu-text">repos clone</span></a>
+  </li>  
+  <li class="nav-item">
     <a class="nav-link" href="./setup.html"> 
 <span class="menu-text">repos setup</span></a>
   </li>  
@@ -160,7 +164,7 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>The <code>repos.list</code> file lists the repositories (and optionally branches) that <code>repos setup</code> will clone. Place it in the root of your project directory.</p>
+<p>The <code>repos.list</code> file lists the repositories (and optionally branches) that <code>repos clone</code> (or <code>repos setup</code>) will clone. Place it in the root of your project directory.</p>
 <section id="basic-format" class="level2">
 <h2 class="anchored" data-anchor-id="basic-format">Basic Format</h2>
 <p>Each line is one repository:</p>
@@ -237,7 +241,7 @@ myorg/backend
 myorg/frontend@develop
 @staging                   # worktree of frontend at staging branch
 myorg/docs --public        # override: create docs repo as public</code></pre>
-<p>After <code>repos setup</code>, the parent directory looks like:</p>
+<p>After <code>repos clone</code> (or <code>repos setup</code>), the parent directory looks like:</p>
 <pre><code>workspace/
 ├── my-project/            # your project (contains repos.list)
 ├── backend/
