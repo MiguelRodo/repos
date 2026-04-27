@@ -1,0 +1,249 @@
+---
+title: "Python Package"
+toc: true
+---
+
+The `repos` Python package wraps the same Bash scripts used by the command-line
+tool, so every feature available at the terminal is also available from Python.
+
+## Installation
+
+```bash
+pip install git+https://github.com/MiguelRodo/repos.git
+```
+
+Or from a local clone:
+
+```bash
+git clone https://github.com/MiguelRodo/repos.git
+cd repos
+pip install .
+```
+
+**System requirements:** `bash`, `git`, `curl`, and `jq` must be available on
+your `PATH`.  On Windows, use [Git for Windows](https://git-scm.com/download/win)
+or WSL.
+
+## End-to-End Workflow
+
+### Step 1 — Create a `repos.list` file
+
+Place a `repos.list` file in your project directory listing the repositories
+you want to manage (one per line):
+
+```
+myorg/data-curation
+myorg/analysis
+myorg/documentation
+```
+
+See the [repos.list reference](repos-list.html) for the full syntax — branch
+pinning, worktrees, visibility flags, and more.
+
+### Step 2 — Clone and configure repositories
+
+```python
+from repos import setup
+
+setup()
+```
+
+This reads `repos.list`, creates any missing GitHub repositories, clones
+everything to the **parent directory** of your current location, and generates a
+VS Code workspace file.  See [`setup()`](#setup) below for all options.
+
+### Step 3 — Run a pipeline
+
+Once the repositories are cloned, run a script inside each one:
+
+```python
+from repos import run
+
+run()          # executes run.sh in every repo
+```
+
+See [`run()`](#run) below for all options.
+
+## API Reference
+
+### `setup()` {#setup}
+
+Clone and configure repositories from a `repos.list` file.
+
+```python
+from repos import setup
+
+setup(
+    file=None,            # path to a custom list file (default: repos.list)
+    public=False,         # create new repos as public
+    codespaces=False,     # configure Codespaces authentication
+    devcontainer=None,    # path(s) to devcontainer.json (implies codespaces=True)
+    permissions=None,     # "all" or "contents" — passed to codespaces-auth-add.sh
+    tool=None,            # force tool for codespaces-auth-add.sh ("jq" or "python")
+    debug=False,          # write debug output to stderr
+    debug_file=None,      # write debug output to a file (True = auto-name, or pass a path)
+)
+```
+
+**Parameters**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `file` | `str` | `None` | Path to repos list file (default: `repos.list`) |
+| `public` | `bool` | `False` | Create new repositories as public |
+| `codespaces` | `bool` | `False` | Enable Codespaces authentication |
+| `devcontainer` | `str` or `list[str]` | `None` | Path(s) to `devcontainer.json` |
+| `permissions` | `str` | `None` | `"all"` or `"contents"` |
+| `tool` | `str` | `None` | Force `"jq"` or `"python"` for auth helper |
+| `debug` | `bool` | `False` | Print debug output to stderr |
+| `debug_file` | `bool` or `str` | `None` | Write debug output to a file |
+
+**Returns:** `subprocess.CompletedProcess`
+
+**Examples:**
+
+```python
+from repos import setup
+
+# Default — reads repos.list in the current directory
+setup()
+
+# Use a custom list file
+setup(file="my-repos.list")
+
+# Create new repositories as public
+setup(public=True)
+
+# Enable Codespaces auth
+setup(codespaces=True)
+
+# Specify devcontainer paths (also enables Codespaces auth)
+setup(devcontainer=[".devcontainer/devcontainer.json"])
+
+# Combine options
+setup(public=True, codespaces=True, debug=True)
+```
+
+For the full behavioural description, see the [repos setup guide](setup.html).
+
+### `run()` {#run}
+
+Execute a script inside each cloned repository.
+
+```python
+from repos import run
+
+run(
+    file=None,              # path to a custom list file (default: repos.list)
+    script=None,            # script to run in each repo (default: run.sh)
+    include=None,           # repo name(s) to include
+    exclude=None,           # repo name(s) to skip
+    ensure_setup=False,     # run setup() before executing scripts
+    skip_deps=False,        # skip install-r-deps.sh
+    dry_run=False,          # print what would run without executing
+    verbose=False,          # verbose logging
+    continue_on_error=False # keep running after a failure
+)
+```
+
+**Parameters**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `file` | `str` | `None` | Path to repos list file (default: `repos.list`) |
+| `script` | `str` | `None` | Script file to run in each repo (default: `run.sh`) |
+| `include` | `str` or `list[str]` | `None` | Only run in these repos |
+| `exclude` | `str` or `list[str]` | `None` | Skip these repos |
+| `ensure_setup` | `bool` | `False` | Run `setup()` first |
+| `skip_deps` | `bool` | `False` | Skip R dependency installation |
+| `dry_run` | `bool` | `False` | Preview without executing |
+| `verbose` | `bool` | `False` | Verbose logging |
+| `continue_on_error` | `bool` | `False` | Continue past failures |
+
+**Returns:** `subprocess.CompletedProcess`
+
+**Examples:**
+
+```python
+from repos import run
+
+# Run the default script (run.sh) in every repo
+run()
+
+# Run a custom script
+run(script="build.sh")
+
+# Only run in specific repos
+run(include=["backend", "frontend"])
+
+# Skip a repo
+run(exclude="docs")
+
+# Continue even if one repo fails
+run(continue_on_error=True)
+
+# Preview without running
+run(dry_run=True)
+
+# Ensure repos are cloned before running
+run(ensure_setup=True)
+
+# Combine options
+run(script="test.sh", verbose=True, ensure_setup=True)
+```
+
+For the full behavioural description, see [Running Pipelines](pipelines.html).
+
+### Raw argument passing
+
+If you need to pass flags not yet exposed as keyword arguments, use the raw
+helpers:
+
+```python
+from repos import setup_raw, run_raw
+
+setup_raw("--public", "--codespaces")
+setup_raw("-f", "custom.list", "--public")
+
+run_raw("--script", "build.sh", "--dry-run")
+run_raw("-f", "custom.list", "--continue-on-error")
+```
+
+These functions forward all positional arguments directly to the underlying
+Bash script without any processing.
+
+## CLI Usage
+
+Installing the Python package also registers a `repos` command that delegates
+directly to the same Bash scripts:
+
+```bash
+repos setup
+repos setup --public
+repos run
+repos run --script build.sh
+repos run --include "backend,frontend"
+```
+
+This is the same interface documented in the [repos setup guide](setup.html) and
+[Running Pipelines](pipelines.html).
+
+## GitHub Authentication
+
+`setup()` needs a GitHub token to create repositories and clone private ones.
+Provide it via the `GH_TOKEN` environment variable or via the `gh` CLI:
+
+```python
+import os, subprocess
+from repos import setup
+
+os.environ["GH_TOKEN"] = "your_personal_access_token"
+setup()
+```
+
+Or in a shell before starting Python:
+
+```bash
+export GH_TOKEN="your_personal_access_token"
+python my_script.py
+```
