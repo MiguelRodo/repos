@@ -1138,7 +1138,7 @@ main() {
 
   local start_dir parent_dir
   start_dir="$(pwd)"
-  parent_dir="$(dirname -- "$start_dir")"
+  parent_dir="$(dirname "$start_dir")"
 
   plan_forward "$REPOS_FILE" "$parent_dir" "$DEBUG"
 
