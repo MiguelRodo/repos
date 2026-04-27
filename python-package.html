@@ -181,10 +181,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#installation" id="toc-installation" class="nav-link active" data-scroll-target="#installation">Installation</a>
-  <ul class="collapse">
-  <li><a href="#does-installing-the-python-package-also-install-the-repos-cli" id="toc-does-installing-the-python-package-also-install-the-repos-cli" class="nav-link" data-scroll-target="#does-installing-the-python-package-also-install-the-repos-cli">Does installing the Python package also install the <code>repos</code> CLI?</a></li>
-  </ul></li>
+  <li><a href="#installation" id="toc-installation" class="nav-link active" data-scroll-target="#installation">Installation</a></li>
   <li><a href="#end-to-end-workflow" id="toc-end-to-end-workflow" class="nav-link" data-scroll-target="#end-to-end-workflow">End-to-End Workflow</a>
   <ul class="collapse">
   <li><a href="#step-1-create-a-repos.list-file" id="toc-step-1-create-a-repos.list-file" class="nav-link" data-scroll-target="#step-1-create-a-repos.list-file">Step 1 — Create a <code>repos.list</code> file</a></li>
@@ -194,13 +191,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul></li>
   <li><a href="#api-reference" id="toc-api-reference" class="nav-link" data-scroll-target="#api-reference">API Reference</a>
   <ul class="collapse">
+  <li><a href="#install_cli" id="toc-install_cli" class="nav-link" data-scroll-target="#install_cli"><code>install_cli()</code></a></li>
+  <li><a href="#bundled_cli_version" id="toc-bundled_cli_version" class="nav-link" data-scroll-target="#bundled_cli_version"><code>bundled_cli_version()</code></a></li>
+  <li><a href="#installed_cli_version" id="toc-installed_cli_version" class="nav-link" data-scroll-target="#installed_cli_version"><code>installed_cli_version()</code></a></li>
   <li><a href="#workspace" id="toc-workspace" class="nav-link" data-scroll-target="#workspace"><code>workspace()</code></a></li>
   <li><a href="#codespace" id="toc-codespace" class="nav-link" data-scroll-target="#codespace"><code>codespace()</code></a></li>
   <li><a href="#run" id="toc-run" class="nav-link" data-scroll-target="#run"><code>run()</code></a></li>
   <li><a href="#raw-argument-passing" id="toc-raw-argument-passing" class="nav-link" data-scroll-target="#raw-argument-passing">Raw argument passing</a></li>
   </ul></li>
-  <li><a href="#cli-usage" id="toc-cli-usage" class="nav-link" data-scroll-target="#cli-usage">CLI Usage</a></li>
   <li><a href="#github-authentication" id="toc-github-authentication" class="nav-link" data-scroll-target="#github-authentication">GitHub Authentication</a></li>
+  <li><a href="#bundled-cli-vs.-system-cli" id="toc-bundled-cli-vs.-system-cli" class="nav-link" data-scroll-target="#bundled-cli-vs.-system-cli">Bundled CLI vs.&nbsp;System CLI</a>
+  <ul class="collapse">
+  <li><a href="#does-installing-the-python-package-also-install-the-repos-cli" id="toc-does-installing-the-python-package-also-install-the-repos-cli" class="nav-link" data-scroll-target="#does-installing-the-python-package-also-install-the-repos-cli">Does installing the Python package also install the <code>repos</code> CLI?</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -227,6 +230,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 <p>The <code>repos</code> Python package wraps the same Bash scripts used by the command-line tool, so every feature available at the terminal is also available from Python.</p>
+<p>The package ships its own <strong>bundled copy</strong> of the CLI scripts, so all Python functions work without requiring <code>repos</code> to be installed on your system <code>PATH</code>.</p>
 <section id="installation" class="level2">
 <h2 class="anchored" data-anchor-id="installation">Installation</h2>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install git+https://github.com/MiguelRodo/repos.git</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -235,11 +239,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> repos</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install .</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>System requirements:</strong> <code>bash</code>, <code>git</code>, <code>curl</code>, and <code>jq</code> must be available on your <code>PATH</code>. On Windows, use <a href="https://git-scm.com/download/win">Git for Windows</a> or WSL.</p>
-<section id="does-installing-the-python-package-also-install-the-repos-cli" class="level3">
-<h3 class="anchored" data-anchor-id="does-installing-the-python-package-also-install-the-repos-cli">Does installing the Python package also install the <code>repos</code> CLI?</h3>
-<p><strong>Yes.</strong> Installing the package via <code>pip</code> registers a <code>repos</code> entry point, so you can run <code>repos clone</code>, <code>repos run</code>, etc. directly from your terminal straight away — no separate installation required.</p>
-<p>The package also bundles its own copies of the Bash scripts, so all Python functions (<code>run()</code>, <code>workspace()</code>, etc.) work without any additional setup.</p>
-</section>
 </section>
 <section id="end-to-end-workflow" class="level2">
 <h2 class="anchored" data-anchor-id="end-to-end-workflow">End-to-End Workflow</h2>
@@ -256,38 +255,112 @@ myorg/documentation</code></pre>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> run_script</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>run_script(<span class="st">"helper/clone-repos.sh"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Or using the CLI installed by the package:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> clone</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>This reads <code>repos.list</code> and clones everything to the <strong>parent directory</strong> of your current location.</p>
 </section>
 <section id="step-3-open-in-your-ide-optional" class="level3">
 <h3 class="anchored" data-anchor-id="step-3-open-in-your-ide-optional">Step 3 — Open in your IDE (optional)</h3>
 <p>Generate a VS Code multi-root workspace file:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> workspace</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>workspace()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> workspace</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>workspace()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="step-4-run-a-pipeline" class="level3">
 <h3 class="anchored" data-anchor-id="step-4-run-a-pipeline">Step 4 — Run a pipeline</h3>
 <p>Once the repositories are cloned, run a script inside each one:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> run</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>run()          <span class="co"># executes run.sh in every repo</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> run</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>run()          <span class="co"># executes run.sh in every repo</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>See <a href="#run"><code>run()</code></a> below for all options.</p>
 </section>
 </section>
 <section id="api-reference" class="level2">
 <h2 class="anchored" data-anchor-id="api-reference">API Reference</h2>
+<section id="install_cli" class="level3">
+<h3 class="anchored" data-anchor-id="install_cli"><code>install_cli()</code></h3>
+<p>Print OS-appropriate instructions for installing the <code>repos</code> CLI globally, and optionally run the installer.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> install_cli</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>install_cli(</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    run<span class="op">=</span><span class="va">False</span>  <span class="co"># if True, run the installer automatically</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Parameters</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>run</code></td>
+<td><code>bool</code></td>
+<td><code>False</code></td>
+<td>If <code>True</code>, attempt to run the installer automatically</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Details</strong></p>
+<p>The Python package uses its own bundled copy of the CLI for all Python functions. However, if you also want to use <code>repos</code> directly from your terminal, this function installs the CLI system-wide. On Linux and macOS, passing <code>run=True</code> will also execute the installer. On Windows, only instructions are printed.</p>
+<p><strong>Returns:</strong> <code>None</code></p>
+<p><strong>Examples:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> install_cli</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Print installation instructions for your OS</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>install_cli()</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Print instructions AND run the installer</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>install_cli(run<span class="op">=</span><span class="va">True</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="bundled_cli_version" class="level3">
+<h3 class="anchored" data-anchor-id="bundled_cli_version"><code>bundled_cli_version()</code></h3>
+<p>Return the version of the <code>repos</code> CLI bundled inside this package.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> bundled_cli_version</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>bundled_cli_version()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Returns:</strong> <code>str</code> — the bundled CLI version string (e.g.&nbsp;<code>"1.1.0"</code>).</p>
+<p><strong>Examples:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> bundled_cli_version</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(bundled_cli_version())  <span class="co"># e.g. "1.1.0"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+<section id="installed_cli_version" class="level3">
+<h3 class="anchored" data-anchor-id="installed_cli_version"><code>installed_cli_version()</code></h3>
+<p>Return the version of the <code>repos</code> CLI installed on the system <code>PATH</code>, or <code>None</code> if not found.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> installed_cli_version</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>installed_cli_version()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Returns:</strong> <code>str</code> or <code>None</code> — the system-installed CLI version, or <code>None</code>.</p>
+<p><strong>Examples:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> installed_cli_version</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>ver <span class="op">=</span> installed_cli_version()</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> ver <span class="kw">is</span> <span class="va">None</span>:</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"repos CLI is not installed on this system."</span>)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Installed CLI version: </span><span class="sc">{</span>ver<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
 <section id="workspace" class="level3">
 <h3 class="anchored" data-anchor-id="workspace"><code>workspace()</code></h3>
 <p>Generate or update the VS Code multi-root workspace file.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> workspace</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>workspace(</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">file</span><span class="op">=</span><span class="va">None</span>,            <span class="co"># path to a custom list file (default: repos.list)</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    debug<span class="op">=</span><span class="va">False</span>,          <span class="co"># write debug output to stderr</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    debug_file<span class="op">=</span><span class="va">None</span>,      <span class="co"># write debug output to a file (True = auto-name, or pass a path)</span></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> workspace</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>workspace(</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">file</span><span class="op">=</span><span class="va">None</span>,            <span class="co"># path to a custom list file (default: repos.list)</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    debug<span class="op">=</span><span class="va">False</span>,          <span class="co"># write debug output to stderr</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    debug_file<span class="op">=</span><span class="va">None</span>,      <span class="co"># write debug output to a file (True = auto-name, or pass a path)</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Parameters</strong></p>
 <table class="caption-top table">
 <colgroup>
@@ -327,28 +400,28 @@ myorg/documentation</code></pre>
 </table>
 <p><strong>Returns:</strong> <code>subprocess.CompletedProcess</code></p>
 <p><strong>Examples:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> workspace</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate workspace from default repos.list</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>workspace()</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Use a custom list file</span></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>workspace(<span class="bu">file</span><span class="op">=</span><span class="st">"my-repos.list"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> workspace</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate workspace from default repos.list</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>workspace()</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Use a custom list file</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>workspace(<span class="bu">file</span><span class="op">=</span><span class="st">"my-repos.list"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>For the full description, see the <a href="vscode.html">VS Code integration guide</a>.</p>
 </section>
 <section id="codespace" class="level3">
 <h3 class="anchored" data-anchor-id="codespace"><code>codespace()</code></h3>
 <p>Configure GitHub Codespaces authentication.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> codespace</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>codespace(</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">file</span><span class="op">=</span><span class="va">None</span>,            <span class="co"># path to a custom list file (default: repos.list)</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    devcontainer<span class="op">=</span><span class="va">None</span>,    <span class="co"># path(s) to devcontainer.json (str or list[str])</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    permissions<span class="op">=</span><span class="va">None</span>,     <span class="co"># "all" or "contents" — passed to codespaces-auth-add.sh</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    tool<span class="op">=</span><span class="va">None</span>,            <span class="co"># force tool for codespaces-auth-add.sh ("jq" or "python")</span></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    debug<span class="op">=</span><span class="va">False</span>,          <span class="co"># write debug output to stderr</span></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    debug_file<span class="op">=</span><span class="va">None</span>,      <span class="co"># write debug output to a file (True = auto-name, or pass a path)</span></span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> codespace</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>codespace(</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">file</span><span class="op">=</span><span class="va">None</span>,            <span class="co"># path to a custom list file (default: repos.list)</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    devcontainer<span class="op">=</span><span class="va">None</span>,    <span class="co"># path(s) to devcontainer.json (str or list[str])</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    permissions<span class="op">=</span><span class="va">None</span>,     <span class="co"># "all" or "contents" — passed to codespaces-auth-add.sh</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>    tool<span class="op">=</span><span class="va">None</span>,            <span class="co"># force tool for codespaces-auth-add.sh ("jq" or "python")</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    debug<span class="op">=</span><span class="va">False</span>,          <span class="co"># write debug output to stderr</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    debug_file<span class="op">=</span><span class="va">None</span>,      <span class="co"># write debug output to a file (True = auto-name, or pass a path)</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Parameters</strong></p>
 <table class="caption-top table">
 <colgroup>
@@ -406,35 +479,35 @@ myorg/documentation</code></pre>
 </table>
 <p><strong>Returns:</strong> <code>subprocess.CompletedProcess</code></p>
 <p><strong>Examples:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> codespace</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Configure with default devcontainer path</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>codespace()</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Specify a devcontainer.json path</span></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>codespace(devcontainer<span class="op">=</span><span class="st">".devcontainer/devcontainer.json"</span>)</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Multiple devcontainer paths</span></span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>codespace(devcontainer<span class="op">=</span>[<span class="st">".devcontainer/devcontainer.json"</span>,</span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>                        <span class="st">".devcontainer/prebuild/devcontainer.json"</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> codespace</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Configure with default devcontainer path</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>codespace()</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Specify a devcontainer.json path</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>codespace(devcontainer<span class="op">=</span><span class="st">".devcontainer/devcontainer.json"</span>)</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Multiple devcontainer paths</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>codespace(devcontainer<span class="op">=</span>[<span class="st">".devcontainer/devcontainer.json"</span>,</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>                        <span class="st">".devcontainer/prebuild/devcontainer.json"</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>For the full description, see the <a href="vscode.html">VS Code integration guide</a>.</p>
 </section>
 <section id="run" class="level3">
 <h3 class="anchored" data-anchor-id="run"><code>run()</code></h3>
 <p>Execute a script inside each cloned repository.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> run</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>run(</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">file</span><span class="op">=</span><span class="va">None</span>,              <span class="co"># path to a custom list file (default: repos.list)</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    script<span class="op">=</span><span class="va">None</span>,            <span class="co"># script to run in each repo (default: run.sh)</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    include<span class="op">=</span><span class="va">None</span>,           <span class="co"># repo name(s) to include</span></span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    exclude<span class="op">=</span><span class="va">None</span>,           <span class="co"># repo name(s) to skip</span></span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    ensure_setup<span class="op">=</span><span class="va">False</span>,     <span class="co"># run setup() before executing scripts</span></span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    skip_deps<span class="op">=</span><span class="va">False</span>,        <span class="co"># skip install-r-deps.sh</span></span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    dry_run<span class="op">=</span><span class="va">False</span>,          <span class="co"># print what would run without executing</span></span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    verbose<span class="op">=</span><span class="va">False</span>,          <span class="co"># verbose logging</span></span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    continue_on_error<span class="op">=</span><span class="va">False</span> <span class="co"># keep running after a failure</span></span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> run</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>run(</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">file</span><span class="op">=</span><span class="va">None</span>,              <span class="co"># path to a custom list file (default: repos.list)</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    script<span class="op">=</span><span class="va">None</span>,            <span class="co"># script to run in each repo (default: run.sh)</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    include<span class="op">=</span><span class="va">None</span>,           <span class="co"># repo name(s) to include</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    exclude<span class="op">=</span><span class="va">None</span>,           <span class="co"># repo name(s) to skip</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    ensure_setup<span class="op">=</span><span class="va">False</span>,     <span class="co"># run setup() before executing scripts</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>    skip_deps<span class="op">=</span><span class="va">False</span>,        <span class="co"># skip install-r-deps.sh</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>    dry_run<span class="op">=</span><span class="va">False</span>,          <span class="co"># print what would run without executing</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>    verbose<span class="op">=</span><span class="va">False</span>,          <span class="co"># verbose logging</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>    continue_on_error<span class="op">=</span><span class="va">False</span> <span class="co"># keep running after a failure</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Parameters</strong></p>
 <table class="caption-top table">
 <colgroup>
@@ -510,72 +583,82 @@ myorg/documentation</code></pre>
 </table>
 <p><strong>Returns:</strong> <code>subprocess.CompletedProcess</code></p>
 <p><strong>Examples:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> run</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Run the default script (run.sh) in every repo</span></span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>run()</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Run a custom script</span></span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>run(script<span class="op">=</span><span class="st">"build.sh"</span>)</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Only run in specific repos</span></span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>run(include<span class="op">=</span>[<span class="st">"backend"</span>, <span class="st">"frontend"</span>])</span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Skip a repo</span></span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>run(exclude<span class="op">=</span><span class="st">"docs"</span>)</span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Continue even if one repo fails</span></span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>run(continue_on_error<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Preview without running</span></span>
-<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>run(dry_run<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Ensure repos are cloned before running</span></span>
-<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>run(ensure_setup<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Combine options</span></span>
-<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>run(script<span class="op">=</span><span class="st">"test.sh"</span>, verbose<span class="op">=</span><span class="va">True</span>, ensure_setup<span class="op">=</span><span class="va">True</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> run</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Run the default script (run.sh) in every repo</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>run()</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Run a custom script</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>run(script<span class="op">=</span><span class="st">"build.sh"</span>)</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Only run in specific repos</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>run(include<span class="op">=</span>[<span class="st">"backend"</span>, <span class="st">"frontend"</span>])</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Skip a repo</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>run(exclude<span class="op">=</span><span class="st">"docs"</span>)</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Continue even if one repo fails</span></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>run(continue_on_error<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Preview without running</span></span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>run(dry_run<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Ensure repos are cloned before running</span></span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>run(ensure_setup<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Combine options</span></span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>run(script<span class="op">=</span><span class="st">"test.sh"</span>, verbose<span class="op">=</span><span class="va">True</span>, ensure_setup<span class="op">=</span><span class="va">True</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>For the full behavioural description, see <a href="pipelines.html">Running Pipelines</a>.</p>
 </section>
 <section id="raw-argument-passing" class="level3">
 <h3 class="anchored" data-anchor-id="raw-argument-passing">Raw argument passing</h3>
 <p>If you need to pass flags not yet exposed as keyword arguments, use the raw helpers:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> workspace_raw, codespace_raw, run_raw</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>workspace_raw(<span class="st">"-f"</span>, <span class="st">"custom.list"</span>)</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>codespace_raw(<span class="st">"-d"</span>, <span class="st">".devcontainer/devcontainer.json"</span>)</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>run_raw(<span class="st">"--script"</span>, <span class="st">"build.sh"</span>, <span class="st">"--dry-run"</span>)</span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>run_raw(<span class="st">"-f"</span>, <span class="st">"custom.list"</span>, <span class="st">"--continue-on-error"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> workspace_raw, codespace_raw, run_raw</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>workspace_raw(<span class="st">"-f"</span>, <span class="st">"custom.list"</span>)</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>codespace_raw(<span class="st">"-d"</span>, <span class="st">".devcontainer/devcontainer.json"</span>)</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>run_raw(<span class="st">"--script"</span>, <span class="st">"build.sh"</span>, <span class="st">"--dry-run"</span>)</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>run_raw(<span class="st">"-f"</span>, <span class="st">"custom.list"</span>, <span class="st">"--continue-on-error"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>These functions forward all positional arguments directly to the underlying Bash script without any processing.</p>
 </section>
-</section>
-<section id="cli-usage" class="level2">
-<h2 class="anchored" data-anchor-id="cli-usage">CLI Usage</h2>
-<p>Installing the Python package also registers a <code>repos</code> command that delegates directly to the same Bash scripts:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> clone</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> workspace</span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> codespace</span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> codespace <span class="at">-d</span> .devcontainer/devcontainer.json</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> run</span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> run <span class="at">--script</span> build.sh</span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> run <span class="at">--include</span> <span class="st">"backend,frontend"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>This is the same interface documented in the <a href="vscode.html">VS Code integration guide</a> and <a href="pipelines.html">Running Pipelines</a>.</p>
 </section>
 <section id="github-authentication" class="level2">
 <h2 class="anchored" data-anchor-id="github-authentication">GitHub Authentication</h2>
 <p><code>codespace()</code> needs a GitHub token with Codespaces permissions. Provide it via the <code>GH_TOKEN</code> environment variable or via the <code>gh</code> CLI:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os, subprocess</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> setup</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>os.environ[<span class="st">"GH_TOKEN"</span>] <span class="op">=</span> <span class="st">"your_personal_access_token"</span></span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>setup()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os, subprocess</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> codespace</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>os.environ[<span class="st">"GH_TOKEN"</span>] <span class="op">=</span> <span class="st">"your_personal_access_token"</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>codespace()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Or in a shell before starting Python:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GH_TOKEN</span><span class="op">=</span><span class="st">"your_personal_access_token"</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> my_script.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GH_TOKEN</span><span class="op">=</span><span class="st">"your_personal_access_token"</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> my_script.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="bundled-cli-vs.-system-cli" class="level2">
+<h2 class="anchored" data-anchor-id="bundled-cli-vs.-system-cli">Bundled CLI vs.&nbsp;System CLI</h2>
+<p>The Python package ships a <strong>bundled copy</strong> of the Bash scripts that it uses for all Python functions (<code>run()</code>, <code>workspace()</code>, etc.). This bundled version is independent of any <code>repos</code> binary you may have installed on your system <code>PATH</code>.</p>
+<p>You can inspect both versions at any time:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> bundled_cli_version, installed_cli_version</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Bundled:"</span>, bundled_cli_version())</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"System: "</span>, installed_cli_version())  <span class="co"># None if not installed</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="does-installing-the-python-package-also-install-the-repos-cli" class="level3">
+<h3 class="anchored" data-anchor-id="does-installing-the-python-package-also-install-the-repos-cli">Does installing the Python package also install the <code>repos</code> CLI?</h3>
+<p><strong>No.</strong> Installing the package via <code>pip</code> does <strong>not</strong> place a <code>repos</code> command on your system <code>PATH</code>. All Python functions work immediately through the package’s own bundled scripts, but you will need to install the CLI separately if you also want to use <code>repos</code> directly from a terminal.</p>
+<p>The easiest way is to call <code>install_cli()</code> from Python:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> install_cli</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Print OS-appropriate installation instructions</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>install_cli()</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Or print instructions AND run the installer automatically</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>install_cli(run<span class="op">=</span><span class="va">True</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>See <a href="#install_cli"><code>install_cli()</code></a> above for details, or visit the <a href="install.html">Installation guide</a> for all options.</p>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->
