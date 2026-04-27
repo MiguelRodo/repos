@@ -6,6 +6,9 @@ toc: true
 The `repos` Python package wraps the same Bash scripts used by the command-line
 tool, so every feature available at the terminal is also available from Python.
 
+The package ships its own **bundled copy** of the CLI scripts, so all Python
+functions work without requiring `repos` to be installed on your system `PATH`.
+
 ## Installation
 
 ```bash
@@ -23,15 +26,6 @@ pip install .
 **System requirements:** `bash`, `git`, `curl`, and `jq` must be available on
 your `PATH`.  On Windows, use [Git for Windows](https://git-scm.com/download/win)
 or WSL.
-
-### Does installing the Python package also install the `repos` CLI?
-
-**Yes.** Installing the package via `pip` registers a `repos` entry point, so
-you can run `repos clone`, `repos run`, etc. directly from your terminal
-straight away — no separate installation required.
-
-The package also bundles its own copies of the Bash scripts, so all Python
-functions (`run()`, `workspace()`, etc.) work without any additional setup.
 
 ## End-to-End Workflow
 
@@ -55,12 +49,6 @@ pinning, worktrees, visibility flags, and more.
 from repos import run_script
 
 run_script("helper/clone-repos.sh")
-```
-
-Or using the CLI installed by the package:
-
-```bash
-repos clone
 ```
 
 This reads `repos.list` and clones everything to the **parent directory** of
@@ -89,6 +77,98 @@ run()          # executes run.sh in every repo
 See [`run()`](#run) below for all options.
 
 ## API Reference
+
+### `install_cli()` {#install_cli}
+
+Print OS-appropriate instructions for installing the `repos` CLI globally, and
+optionally run the installer.
+
+```python
+from repos import install_cli
+
+install_cli(
+    run=False  # if True, run the installer automatically
+)
+```
+
+**Parameters**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `run` | `bool` | `False` | If `True`, attempt to run the installer automatically |
+
+**Details**
+
+The Python package uses its own bundled copy of the CLI for all Python
+functions.  However, if you also want to use `repos` directly from your
+terminal, this function installs the CLI system-wide.  On Linux and macOS,
+passing `run=True` will also execute the installer.  On Windows, only
+instructions are printed.
+
+**Returns:** `None`
+
+**Examples:**
+
+```python
+from repos import install_cli
+
+# Print installation instructions for your OS
+install_cli()
+
+# Print instructions AND run the installer
+install_cli(run=True)
+```
+
+---
+
+### `bundled_cli_version()` {#bundled_cli_version}
+
+Return the version of the `repos` CLI bundled inside this package.
+
+```python
+from repos import bundled_cli_version
+
+bundled_cli_version()
+```
+
+**Returns:** `str` — the bundled CLI version string (e.g. `"1.1.0"`).
+
+**Examples:**
+
+```python
+from repos import bundled_cli_version
+
+print(bundled_cli_version())  # e.g. "1.1.0"
+```
+
+---
+
+### `installed_cli_version()` {#installed_cli_version}
+
+Return the version of the `repos` CLI installed on the system `PATH`, or
+`None` if not found.
+
+```python
+from repos import installed_cli_version
+
+installed_cli_version()
+```
+
+**Returns:** `str` or `None` — the system-installed CLI version, or `None`.
+
+**Examples:**
+
+```python
+from repos import installed_cli_version
+
+ver = installed_cli_version()
+if ver is None:
+    print("repos CLI is not installed on this system.")
+else:
+    print(f"Installed CLI version: {ver}")
+```
+
+---
 
 ### `workspace()` {#workspace}
 
@@ -263,24 +343,6 @@ run_raw("-f", "custom.list", "--continue-on-error")
 These functions forward all positional arguments directly to the underlying
 Bash script without any processing.
 
-## CLI Usage
-
-Installing the Python package also registers a `repos` command that delegates
-directly to the same Bash scripts:
-
-```bash
-repos clone
-repos workspace
-repos codespace
-repos codespace -d .devcontainer/devcontainer.json
-repos run
-repos run --script build.sh
-repos run --include "backend,frontend"
-```
-
-This is the same interface documented in the [VS Code integration guide](vscode.html)
-and [Running Pipelines](pipelines.html).
-
 ## GitHub Authentication
 
 `codespace()` needs a GitHub token with Codespaces permissions.
@@ -288,10 +350,10 @@ Provide it via the `GH_TOKEN` environment variable or via the `gh` CLI:
 
 ```python
 import os, subprocess
-from repos import setup
+from repos import codespace
 
 os.environ["GH_TOKEN"] = "your_personal_access_token"
-setup()
+codespace()
 ```
 
 Or in a shell before starting Python:
@@ -300,3 +362,42 @@ Or in a shell before starting Python:
 export GH_TOKEN="your_personal_access_token"
 python my_script.py
 ```
+
+## Bundled CLI vs. System CLI
+
+The Python package ships a **bundled copy** of the Bash scripts that it uses
+for all Python functions (`run()`, `workspace()`, etc.).  This bundled version
+is independent of any `repos` binary you may have installed on your system
+`PATH`.
+
+You can inspect both versions at any time:
+
+```python
+from repos import bundled_cli_version, installed_cli_version
+
+print("Bundled:", bundled_cli_version())
+print("System: ", installed_cli_version())  # None if not installed
+```
+
+### Does installing the Python package also install the `repos` CLI?
+
+**No.** Installing the package via `pip` does **not** place a `repos` command
+on your system `PATH`.  All Python functions work immediately through the
+package's own bundled scripts, but you will need to install the CLI separately
+if you also want to use `repos` directly from a terminal.
+
+The easiest way is to call `install_cli()` from Python:
+
+```python
+from repos import install_cli
+
+# Print OS-appropriate installation instructions
+install_cli()
+
+# Or print instructions AND run the installer automatically
+install_cli(run=True)
+```
+
+See [`install_cli()`](#install_cli) above for details, or visit
+the [Installation guide](install.html) for all options.
+

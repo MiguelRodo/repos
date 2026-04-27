@@ -294,15 +294,21 @@ jobs:
           # Update Python wrapper version
           sed -i "s/^version = \"[^\"]*\"/version = \"${PY_VERSION}\"/" pyproject.toml
 
+          # Update Python bundled CLI version
+          sed -i "s/^_BUNDLED_CLI_VERSION = \"[^\"]*\"/_BUNDLED_CLI_VERSION = \"${VERSION}\"/" src/repos/__init__.py
+
           # Update R wrapper version
           sed -i "s/^Version: .*/Version: ${R_VERSION}/" DESCRIPTION
 
-          if git diff --quiet -- README.md pyproject.toml DESCRIPTION; then
+          # Update R bundled CLI version
+          sed -i "s/^\.bundled_cli_version <- \"[^\"]*\"/.bundled_cli_version <- \"${VERSION}\"/" R/wrappers.R
+
+          if git diff --quiet -- README.md pyproject.toml DESCRIPTION src/repos/__init__.py R/wrappers.R; then
             echo "All versions already up to date."
             exit 0
           fi
 
-          git add README.md pyproject.toml DESCRIPTION
+          git add README.md pyproject.toml DESCRIPTION src/repos/__init__.py R/wrappers.R
           git commit -m "Bump versions: CLI ${VERSION}, Python ${PY_VERSION}, R ${R_VERSION}"
           git push origin "${{ github.event.repository.default_branch }}"
 
