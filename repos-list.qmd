@@ -34,9 +34,9 @@ owner/repo my-data
 
 ## Worktrees
 
-Use `@branch` without a repository name to create a
-[Git worktree](https://git-scm.com/docs/git-worktree) from the most recently
-listed repository (or the current repository if none has been listed yet):
+Use `@branch` without a repository name to clone only that branch from the most
+recently listed repository (or the current repository if none has been listed
+yet):
 
 ```
 owner/repo
@@ -44,15 +44,21 @@ owner/repo
 @bugfix-123
 ```
 
+This produces a full clone of `owner/repo` plus two single-branch clones — no
+extra network clones of the full repository required.
+
+Add `--worktree` to an `@branch` line to create a
+[Git worktree](https://git-scm.com/docs/git-worktree) instead of a separate
+clone:
+
+```
+owner/repo
+@feature-x --worktree
+@bugfix-123 --worktree
+```
+
 This produces a full clone of `owner/repo` plus two worktrees — no extra network
 clones required.
-
-Add `--worktree` to a full `owner/repo@branch` line to create a worktree instead
-of a separate clone:
-
-```
-owner/repo@staging --worktree
-```
 
 ## Visibility
 
@@ -85,7 +91,7 @@ Per-line `--public`/`--private` flags always override the global default.
 
 myorg/backend
 myorg/frontend@develop
-@staging                   # worktree of frontend at staging branch
+@staging --worktree        # worktree of frontend at staging branch
 myorg/docs --public        # override: create docs repo as public
 ```
 
