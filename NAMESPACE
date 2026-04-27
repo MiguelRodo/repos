@@ -1,5 +1,6 @@
 export(repos)
 export(repos_bundled_cli_version)
+export(repos_clone)
 export(repos_codespace)
 export(repos_install_cli)
 export(repos_installed_cli_version)
