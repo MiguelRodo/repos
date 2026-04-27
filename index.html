@@ -109,7 +109,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 </head>
 
-<body class="nav-fixed fullcontent quarto-light">
+<body class="nav-fixed quarto-light">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
@@ -143,12 +143,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="menu-text">repos clone</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./setup.html"> 
-<span class="menu-text">repos setup</span></a>
+    <a class="nav-link" href="./vscode.html"> 
+<span class="menu-text">VS Code</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./pipelines.html"> 
-<span class="menu-text">Running Pipelines</span></a>
+<span class="menu-text">Pipelines</span></a>
   </li>  
   <li class="nav-item dropdown ">
     <a class="nav-link dropdown-toggle" href="#" id="nav-menu-language-packages" role="link" data-bs-toggle="dropdown" aria-expanded="false">
@@ -176,7 +176,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#quick-start" id="toc-quick-start" class="nav-link active" data-scroll-target="#quick-start">Quick Start</a></li>
+  <li><a href="#what-else-can-you-do" id="toc-what-else-can-you-do" class="nav-link" data-scroll-target="#what-else-can-you-do">What else can you do?</a></li>
+  <li><a href="#language-packages" id="toc-language-packages" class="nav-link" data-scroll-target="#language-packages">Language Packages</a></li>
+  <li><a href="#installation" id="toc-installation" class="nav-link" data-scroll-target="#installation">Installation</a></li>
+  </ul>
+</nav>
+    </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
@@ -214,7 +225,7 @@ myorg/documentation</code></pre>
 <section id="what-else-can-you-do" class="level2">
 <h2 class="anchored" data-anchor-id="what-else-can-you-do">What else can you do?</h2>
 <p><strong>Customise <code>repos.list</code></strong> — clone specific branches (<code>owner/repo@branch</code>), use worktrees (<code>@branch-name</code>), set repository visibility (<code>--public</code>/<code>--private</code>), and more. → <a href="repos-list.html">repos.list reference</a></p>
-<p><strong><code>repos setup</code></strong> — the all-in-one command: creates any missing GitHub repositories, clones them, generates a VS Code workspace file, and optionally configures Codespaces authentication. → <a href="setup.html">repos setup guide</a></p>
+<p><strong>IDE integration</strong> — generate a VS Code / Positron multi-root workspace file (<code>repos workspace</code>) and configure GitHub Codespaces authentication (<code>repos codespace</code>). → <a href="vscode.html">VS Code &amp; Positron integration</a></p>
 <p><strong>Run a pipeline across all repos</strong> — if your repositories contain a <code>run.sh</code> script (or any script you specify), <code>repos run</code> executes it in each one. → <a href="pipelines.html">Running pipelines</a></p>
 </section>
 <section id="language-packages" class="level2">

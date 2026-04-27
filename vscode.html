@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>repos setup (removed) – repos</title>
+<title>VS Code &amp; Positron Integration – repos</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -22,6 +22,41 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -108,7 +143,7 @@ ul.task-list li input[type="checkbox"] {
 <span class="menu-text">repos clone</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./vscode.html"> 
+    <a class="nav-link active" href="./vscode.html" aria-current="page"> 
 <span class="menu-text">VS Code</span></a>
   </li>  
   <li class="nav-item">
@@ -141,15 +176,35 @@ ul.task-list li input[type="checkbox"] {
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#repos-workspace" id="toc-repos-workspace" class="nav-link active" data-scroll-target="#repos-workspace"><code>repos workspace</code></a>
+  <ul class="collapse">
+  <li><a href="#options" id="toc-options" class="nav-link" data-scroll-target="#options">Options</a></li>
+  <li><a href="#repository-layout" id="toc-repository-layout" class="nav-link" data-scroll-target="#repository-layout">Repository Layout</a></li>
+  </ul></li>
+  <li><a href="#repos-codespace" id="toc-repos-codespace" class="nav-link" data-scroll-target="#repos-codespace"><code>repos codespace</code></a>
+  <ul class="collapse">
+  <li><a href="#options-1" id="toc-options-1" class="nav-link" data-scroll-target="#options-1">Options</a></li>
+  <li><a href="#github-authentication" id="toc-github-authentication" class="nav-link" data-scroll-target="#github-authentication">GitHub Authentication</a></li>
+  </ul></li>
+  <li><a href="#r-and-python-apis" id="toc-r-and-python-apis" class="nav-link" data-scroll-target="#r-and-python-apis">R and Python APIs</a>
+  <ul class="collapse">
+  <li><a href="#r" id="toc-r" class="nav-link" data-scroll-target="#r">R</a></li>
+  <li><a href="#python" id="toc-python" class="nav-link" data-scroll-target="#python">Python</a></li>
+  </ul></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">repos setup (removed)</h1>
+<h1 class="title">VS Code &amp; Positron Integration</h1>
 </div>
 
 
@@ -166,32 +221,127 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p><code>repos setup</code> has been removed. Its individual steps are now available as separate commands:</p>
+<p><code>repos</code> provides two commands for IDE integration — generating a multi-root workspace file and configuring GitHub Codespaces authentication. Both work with <a href="https://code.visualstudio.com/">VS Code</a>, <a href="https://positron.posit.co/">Positron</a>, and any other IDE that supports the VS Code workspace format.</p>
+<section id="repos-workspace" class="level2">
+<h2 class="anchored" data-anchor-id="repos-workspace"><code>repos workspace</code></h2>
+<p>Generate (or refresh) the <code>entire-project.code-workspace</code> file in your project directory. Open it to load all cloned repositories as a multi-root workspace:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> workspace</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Once the file is written, open it in your IDE:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">code</span> entire-project.code-workspace      <span class="co"># VS Code</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">positron</span> entire-project.code-workspace  <span class="co"># Positron</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="options" class="level3">
+<h3 class="anchored" data-anchor-id="options">Options</h3>
 <table class="caption-top table">
 <thead>
 <tr class="header">
-<th>What you want to do</th>
-<th>Command</th>
+<th>Flag</th>
+<th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td>Clone repositories</td>
-<td><a href="clone.html"><code>repos clone</code></a></td>
-</tr>
-<tr class="even">
-<td>Generate VS Code workspace</td>
-<td><a href="vscode.html"><code>repos workspace</code></a></td>
-</tr>
-<tr class="odd">
-<td>Configure Codespaces auth</td>
-<td><a href="vscode.html"><code>repos codespace</code></a></td>
+<td><code>-f &lt;file&gt;</code></td>
+<td>Use a different list file (default: <code>repos.list</code>)</td>
 </tr>
 </tbody>
 </table>
-<p>See the <a href="vscode.html">VS Code integration guide</a> for <code>repos workspace</code> and <code>repos codespace</code>, and the <a href="clone.html">repos clone guide</a> for cloning.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Use a custom list file</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> workspace <span class="at">-f</span> my-repos.list</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="repository-layout" class="level3">
+<h3 class="anchored" data-anchor-id="repository-layout">Repository Layout</h3>
+<p>The workspace file reflects the repository layout in the parent directory:</p>
+<pre><code>workspace/
+├── my-project/          # your project (contains repos.list)
+├── backend/             # cloned from myorg/backend
+├── frontend-develop/    # cloned from myorg/frontend@develop
+└── docs/                # cloned from myorg/docs</code></pre>
+<hr>
+</section>
+</section>
+<section id="repos-codespace" class="level2">
+<h2 class="anchored" data-anchor-id="repos-codespace"><code>repos codespace</code></h2>
+<p>Inject the <code>GH_TOKEN</code> Codespaces secret into every cloned repository that has a <code>devcontainer.json</code>. <code>repos codespaces</code> is an alias for <code>repos codespace</code>.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> codespace</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="options-1" class="level3">
+<h3 class="anchored" data-anchor-id="options-1">Options</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>-f &lt;file&gt;</code></td>
+<td>Use a different list file (default: <code>repos.list</code>)</td>
+</tr>
+<tr class="even">
+<td><code>-d &lt;path&gt;</code></td>
+<td>Path to a <code>devcontainer.json</code> file (repeatable)</td>
+</tr>
+<tr class="odd">
+<td><code>--permissions &lt;all\|contents&gt;</code></td>
+<td>Codespaces permission level</td>
+</tr>
+<tr class="even">
+<td><code>-t &lt;tool&gt;</code></td>
+<td>Force tool used for JSON processing (<code>jq</code> or <code>python</code>)</td>
+</tr>
+</tbody>
+</table>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Use a custom list file</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> codespace <span class="at">-f</span> my-repos.list</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Specify a devcontainer.json path</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> codespace <span class="at">-d</span> .devcontainer/devcontainer.json</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Multiple devcontainer paths</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> codespace <span class="at">-d</span> path1/devcontainer.json <span class="at">-d</span> path2/devcontainer.json</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="github-authentication" class="level3">
+<h3 class="anchored" data-anchor-id="github-authentication">GitHub Authentication</h3>
+<p><code>repos codespace</code> requires a GitHub token with Codespaces permissions:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GH_TOKEN</span><span class="op">=</span><span class="st">"your_personal_access_token"</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co"># or</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="ex">gh</span> auth login</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="r-and-python-apis" class="level2">
+<h2 class="anchored" data-anchor-id="r-and-python-apis">R and Python APIs</h2>
+<section id="r" class="level3">
+<h3 class="anchored" data-anchor-id="r">R</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(repos)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate VS Code workspace</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_workspace</span>()</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_workspace</span>(<span class="at">file =</span> <span class="st">"my-repos.list"</span>)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Configure Codespaces authentication</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_codespace</span>()</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_codespace</span>(<span class="at">devcontainer =</span> <span class="st">".devcontainer/devcontainer.json"</span>)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_codespace</span>(<span class="at">devcontainer =</span> <span class="fu">c</span>(<span class="st">"path1/devcontainer.json"</span>,</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>                                 <span class="st">"path2/devcontainer.json"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="python" class="level3">
+<h3 class="anchored" data-anchor-id="python">Python</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> workspace, codespace</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate VS Code workspace</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>workspace()</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>workspace(<span class="bu">file</span><span class="op">=</span><span class="st">"my-repos.list"</span>)</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Configure Codespaces authentication</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>codespace()</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>codespace(devcontainer<span class="op">=</span><span class="st">".devcontainer/devcontainer.json"</span>)</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>codespace(devcontainer<span class="op">=</span>[<span class="st">"path1/devcontainer.json"</span>,</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>                        <span class="st">"path2/devcontainer.json"</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
+</section>
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">

@@ -109,7 +109,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 </head>
 
-<body class="nav-fixed fullcontent quarto-light">
+<body class="nav-fixed quarto-light">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
@@ -143,12 +143,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="menu-text">repos clone</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./setup.html"> 
-<span class="menu-text">repos setup</span></a>
+    <a class="nav-link" href="./vscode.html"> 
+<span class="menu-text">VS Code</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./pipelines.html"> 
-<span class="menu-text">Running Pipelines</span></a>
+<span class="menu-text">Pipelines</span></a>
   </li>  
   <li class="nav-item dropdown ">
     <a class="nav-link dropdown-toggle" href="#" id="nav-menu-language-packages" role="link" data-bs-toggle="dropdown" aria-expanded="false">
@@ -176,7 +176,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#basic-usage" id="toc-basic-usage" class="nav-link active" data-scroll-target="#basic-usage">Basic Usage</a></li>
+  <li><a href="#options" id="toc-options" class="nav-link" data-scroll-target="#options">Options</a></li>
+  <li><a href="#repository-layout" id="toc-repository-layout" class="nav-link" data-scroll-target="#repository-layout">Repository Layout</a></li>
+  <li><a href="#whats-in-repos.list" id="toc-whats-in-repos.list" class="nav-link" data-scroll-target="#whats-in-repos.list">What’s in repos.list?</a></li>
+  <li><a href="#github-authentication" id="toc-github-authentication" class="nav-link" data-scroll-target="#github-authentication">GitHub Authentication</a></li>
+  <li><a href="#going-further" id="toc-going-further" class="nav-link" data-scroll-target="#going-further">Going further</a></li>
+  </ul>
+</nav>
+    </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
@@ -244,20 +257,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="ex">gh</span> auth login</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Public repositories can be cloned without any token.</p>
 </section>
-<section id="going-further-with-repos-setup" class="level2">
-<h2 class="anchored" data-anchor-id="going-further-with-repos-setup">Going further with repos setup</h2>
-<p><code>repos clone</code> only clones repositories. <code>repos setup</code> does everything <code>repos clone</code> does, plus:</p>
+<section id="going-further" class="level2">
+<h2 class="anchored" data-anchor-id="going-further">Going further</h2>
+<p><code>repos clone</code> only clones repositories. For IDE integration, two additional commands are available:</p>
 <ul>
-<li><strong>Creates</strong> any GitHub repositories listed in <code>repos.list</code> that do not exist yet (requires <code>GH_TOKEN</code>)</li>
-<li><strong>Generates</strong> a VS Code multi-root workspace file (<code>entire-project.code-workspace</code>)</li>
-<li><strong>Configures</strong> GitHub Codespaces authentication (with <code>--codespaces</code>)</li>
+<li>Generate a VS Code / Positron workspace: <code>repos workspace</code></li>
+<li>Configure GitHub Codespaces authentication: <code>repos codespace</code></li>
 </ul>
-<p>You can also run these extra steps individually after cloning:</p>
-<ul>
-<li>Generate the VS Code workspace: <code>repos workspace</code></li>
-<li>Run all steps at once: <code>repos setup</code></li>
-</ul>
-<p>→ <a href="setup.html">repos setup guide</a></p>
+<p>→ <a href="vscode.html">VS Code &amp; Positron integration</a></p>
 
 
 </section>

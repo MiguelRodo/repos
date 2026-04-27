@@ -109,7 +109,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 </head>
 
-<body class="nav-fixed fullcontent quarto-light">
+<body class="nav-fixed quarto-light">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
@@ -143,12 +143,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="menu-text">repos clone</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./setup.html"> 
-<span class="menu-text">repos setup</span></a>
+    <a class="nav-link" href="./vscode.html"> 
+<span class="menu-text">VS Code</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link active" href="./pipelines.html" aria-current="page"> 
-<span class="menu-text">Running Pipelines</span></a>
+<span class="menu-text">Pipelines</span></a>
   </li>  
   <li class="nav-item dropdown ">
     <a class="nav-link dropdown-toggle" href="#" id="nav-menu-language-packages" role="link" data-bs-toggle="dropdown" aria-expanded="false">
@@ -176,7 +176,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#basic-usage" id="toc-basic-usage" class="nav-link active" data-scroll-target="#basic-usage">Basic Usage</a></li>
+  <li><a href="#options" id="toc-options" class="nav-link" data-scroll-target="#options">Options</a></li>
+  <li><a href="#writing-a-pipeline-script" id="toc-writing-a-pipeline-script" class="nav-link" data-scroll-target="#writing-a-pipeline-script">Writing a Pipeline Script</a></li>
+  <li><a href="#r-and-python-apis" id="toc-r-and-python-apis" class="nav-link" data-scroll-target="#r-and-python-apis">R and Python APIs</a>
+  <ul class="collapse">
+  <li><a href="#r" id="toc-r" class="nav-link" data-scroll-target="#r">R</a></li>
+  <li><a href="#python" id="toc-python" class="nav-link" data-scroll-target="#python">Python</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
@@ -245,7 +260,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr class="odd">
 <td><code>--ensure-setup</code></td>
-<td>Run <code>repos setup</code> before executing the pipeline</td>
+<td>Clone repositories before running the pipeline</td>
 </tr>
 </tbody>
 </table>

@@ -74,7 +74,7 @@ ul.task-list li input[type="checkbox"] {
 
 </head>
 
-<body class="nav-fixed fullcontent quarto-light">
+<body class="nav-fixed quarto-light">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
@@ -108,12 +108,12 @@ ul.task-list li input[type="checkbox"] {
 <span class="menu-text">repos clone</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./setup.html"> 
-<span class="menu-text">repos setup</span></a>
+    <a class="nav-link" href="./vscode.html"> 
+<span class="menu-text">VS Code</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./pipelines.html"> 
-<span class="menu-text">Running Pipelines</span></a>
+<span class="menu-text">Pipelines</span></a>
   </li>  
   <li class="nav-item dropdown ">
     <a class="nav-link dropdown-toggle" href="#" id="nav-menu-language-packages" role="link" data-bs-toggle="dropdown" aria-expanded="false">
@@ -141,7 +141,21 @@ ul.task-list li input[type="checkbox"] {
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#basic-format" id="toc-basic-format" class="nav-link active" data-scroll-target="#basic-format">Basic Format</a></li>
+  <li><a href="#cloning-a-specific-branch" id="toc-cloning-a-specific-branch" class="nav-link" data-scroll-target="#cloning-a-specific-branch">Cloning a Specific Branch</a></li>
+  <li><a href="#custom-target-directory" id="toc-custom-target-directory" class="nav-link" data-scroll-target="#custom-target-directory">Custom Target Directory</a></li>
+  <li><a href="#worktrees" id="toc-worktrees" class="nav-link" data-scroll-target="#worktrees">Worktrees</a></li>
+  <li><a href="#visibility" id="toc-visibility" class="nav-link" data-scroll-target="#visibility">Visibility</a></li>
+  <li><a href="#global-flags" id="toc-global-flags" class="nav-link" data-scroll-target="#global-flags">Global Flags</a></li>
+  <li><a href="#example" id="toc-example" class="nav-link" data-scroll-target="#example">Example</a></li>
+  </ul>
+</nav>
+    </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
@@ -164,7 +178,7 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>The <code>repos.list</code> file lists the repositories (and optionally branches) that <code>repos clone</code> (or <code>repos setup</code>) will clone. Place it in the root of your project directory.</p>
+<p>The <code>repos.list</code> file lists the repositories (and optionally branches) that <code>repos clone</code> will clone. Place it in the root of your project directory.</p>
 <section id="basic-format" class="level2">
 <h2 class="anchored" data-anchor-id="basic-format">Basic Format</h2>
 <p>Each line is one repository:</p>
@@ -241,7 +255,7 @@ myorg/backend
 myorg/frontend@develop
 @staging                   # worktree of frontend at staging branch
 myorg/docs --public        # override: create docs repo as public</code></pre>
-<p>After <code>repos clone</code> (or <code>repos setup</code>), the parent directory looks like:</p>
+<p>After <code>repos clone</code>, the parent directory looks like:</p>
 <pre><code>workspace/
 ├── my-project/            # your project (contains repos.list)
 ├── backend/
