@@ -68,7 +68,7 @@ your current location.
 
 ### Step 3 — Open in your IDE (optional)
 
-Generate a VS Code / Positron multi-root workspace file:
+Generate a VS Code multi-root workspace file:
 
 ```python
 from repos import workspace
@@ -92,7 +92,7 @@ See [`run()`](#run) below for all options.
 
 ### `workspace()` {#workspace}
 
-Generate or update the VS Code / Positron multi-root workspace file.
+Generate or update the VS Code multi-root workspace file.
 
 ```python
 from repos import workspace

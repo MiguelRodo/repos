@@ -68,7 +68,7 @@ your current location.
 
 ### Step 3 — Open in your IDE (optional)
 
-Generate a VS Code / Positron multi-root workspace file:
+Generate a VS Code multi-root workspace file:
 
 ```r
 repos_workspace()
@@ -160,7 +160,7 @@ repos("run", script = "build.sh")
 
 ### `repos_workspace()` {#repos_workspace}
 
-Generate or update the VS Code / Positron multi-root workspace file.
+Generate or update the VS Code multi-root workspace file.
 
 ```r
 repos_workspace(
