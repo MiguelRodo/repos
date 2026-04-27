@@ -1,13 +1,15 @@
 ---
-title: "VS Code & Positron Integration"
+title: "VS Code Integration"
 toc: true
 ---
 
 `repos` provides two commands for IDE integration — generating a multi-root
-workspace file and configuring GitHub Codespaces authentication.  Both work
-with [VS Code](https://code.visualstudio.com/),
-[Positron](https://positron.posit.co/), and any other IDE that supports the
-VS Code workspace format.
+workspace file and configuring GitHub Codespaces authentication.
+
+`repos workspace` works with [VS Code](https://code.visualstudio.com/) and any
+other IDE that supports the VS Code workspace format (such as
+[Positron](https://positron.posit.co/)).  `repos codespace` is specific to
+GitHub Codespaces and VS Code.
 
 ## `repos workspace`
 

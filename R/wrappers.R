@@ -176,7 +176,7 @@ repos <- function(command, ...) {
 #' This function is a wrapper around \code{vscode-workspace-add.sh}.
 #' It writes (or refreshes) the \code{entire-project.code-workspace} file in
 #' your project directory so you can open all cloned repositories as a
-#' multi-root workspace in VS Code or Positron.
+#' multi-root workspace in VS Code or other IDEs that support the VS Code workspace format.
 #'
 #' @examples
 #' \dontrun{

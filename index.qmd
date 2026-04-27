@@ -34,9 +34,9 @@ location.
 worktrees (`@branch-name`), set repository visibility (`--public`/`--private`),
 and more. → [repos.list reference](repos-list.html)
 
-**IDE integration** — generate a VS Code / Positron multi-root workspace file
+**IDE integration** — generate a VS Code multi-root workspace file
 (`repos workspace`) and configure GitHub Codespaces authentication
-(`repos codespace`). → [VS Code & Positron integration](vscode.html)
+(`repos codespace`). → [VS Code integration](vscode.html)
 
 **Run a pipeline across all repos** — if your repositories contain a `run.sh`
 script (or any script you specify), `repos run` executes it in each one.

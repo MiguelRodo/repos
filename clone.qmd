@@ -59,7 +59,7 @@ Public repositories can be cloned without any token.
 `repos clone` only clones repositories.  For IDE integration, two additional
 commands are available:
 
-- Generate a VS Code / Positron workspace: `repos workspace`
+- Generate a VS Code workspace: `repos workspace`
 - Configure GitHub Codespaces authentication: `repos codespace`
 
-→ [VS Code & Positron integration](vscode.html)
+→ [VS Code integration](vscode.html)
