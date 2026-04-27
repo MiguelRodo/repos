@@ -1,5 +1,6 @@
 ---
 title: "repos"
+toc: true
 ---
 
 [![Test Installation Methods](https://github.com/MiguelRodo/repos/actions/workflows/test-installation.yml/badge.svg)](https://github.com/MiguelRodo/repos/actions/workflows/test-installation.yml)
@@ -33,10 +34,9 @@ location.
 worktrees (`@branch-name`), set repository visibility (`--public`/`--private`),
 and more. → [repos.list reference](repos-list.html)
 
-**`repos setup`** — the all-in-one command: creates any missing GitHub
-repositories, clones them, generates a VS Code workspace file, and optionally
-configures Codespaces authentication.
-→ [repos setup guide](setup.html)
+**IDE integration** — generate a VS Code / Positron multi-root workspace file
+(`repos workspace`) and configure GitHub Codespaces authentication
+(`repos codespace`). → [VS Code & Positron integration](vscode.html)
 
 **Run a pipeline across all repos** — if your repositories contain a `run.sh`
 script (or any script you specify), `repos run` executes it in each one.

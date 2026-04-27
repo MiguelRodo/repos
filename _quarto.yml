@@ -13,10 +13,10 @@ website:
         text: repos.list
       - href: clone.qmd
         text: repos clone
-      - href: setup.qmd
-        text: repos setup
+      - href: vscode.qmd
+        text: VS Code
       - href: pipelines.qmd
-        text: Running Pipelines
+        text: Pipelines
       - text: "Language Packages"
         menu:
           - href: python-package.qmd
@@ -27,3 +27,4 @@ website:
 format:
   html:
     theme: cosmo
+    toc: true

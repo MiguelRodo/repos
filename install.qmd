@@ -1,5 +1,6 @@
 ---
 title: "Installation"
+toc: true
 ---
 
 You can install `repos` as a system package (Ubuntu/Debian, macOS, Windows), from
