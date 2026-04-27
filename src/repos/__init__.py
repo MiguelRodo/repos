@@ -14,7 +14,7 @@ __version__ = "1.1.0"
 
 # Version of the repos CLI bundled inside this package.
 # Updated automatically by the version-and-release workflow.
-_BUNDLED_CLI_VERSION = "1.3.1"
+_BUNDLED_CLI_VERSION = "1.3.2"
 
 
 def bundled_cli_version() -> str:

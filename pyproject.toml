@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "repos"
-version = "1.3.1"
+version = "1.3.2"
 description = "Multi-repository management tool for Git"
 readme = "README.md"
 requires-python = ">=3.7"
