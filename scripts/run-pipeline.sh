@@ -407,7 +407,7 @@ main() {
     [ $FAIL_COUNT -gt 0 ] && exit 1
   else
     printf "Warning: No workspace file or jq not available. Cannot execute scripts.\n"
-    printf "Run 'repos setup' first to generate the workspace file.\n"
+    printf "Run 'repos clone' first to clone repos, then 'repos workspace' to generate the workspace file.\n"
     exit 1
   fi
 }
