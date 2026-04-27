@@ -11,6 +11,8 @@ website:
         text: Installation
       - href: repos-list.qmd
         text: repos.list
+      - href: clone.qmd
+        text: repos clone
       - href: setup.qmd
         text: repos setup
       - href: pipelines.qmd

@@ -21,7 +21,7 @@ myorg/documentation
 Then run:
 
 ```bash
-repos setup
+repos clone
 ```
 
 This clones all listed repositories into the parent directory of your current
@@ -33,9 +33,10 @@ location.
 worktrees (`@branch-name`), set repository visibility (`--public`/`--private`),
 and more. → [repos.list reference](repos-list.html)
 
-**`repos setup`** — beyond cloning, it generates a VS Code workspace file,
-configures GitHub Codespaces authentication (`--codespaces`), and handles
-devcontainer paths. → [repos setup guide](setup.html)
+**`repos setup`** — the all-in-one command: creates any missing GitHub
+repositories, clones them, generates a VS Code workspace file, and optionally
+configures Codespaces authentication.
+→ [repos setup guide](setup.html)
 
 **Run a pipeline across all repos** — if your repositories contain a `run.sh`
 script (or any script you specify), `repos run` executes it in each one.
@@ -51,3 +52,4 @@ Use `repos` directly from R or Python — all the same commands, no terminal req
 ## Installation
 
 → [Installation guide](install.html)
+

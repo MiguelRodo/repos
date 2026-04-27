@@ -2,10 +2,20 @@
 title: "repos setup"
 ---
 
-`repos setup` reads your `repos.list` file, clones all listed repositories into
-the **parent directory** of your current location, creates any missing GitHub
-repositories, generates a VS Code workspace file, and optionally configures
-GitHub Codespaces authentication.
+`repos setup` is the all-in-one command that reads your `repos.list` file and
+runs every bootstrapping step in sequence:
+
+1. **Create** — creates any missing GitHub repositories (`repos create`)
+2. **Clone** — clones all listed repositories into the parent directory
+   ([repos clone](clone.html))
+3. **Workspace** — generates a VS Code multi-root workspace file
+   (`repos workspace`)
+4. **Codespaces** — configures GitHub Codespaces authentication (when
+   `--codespaces` is set)
+
+If you don't need VS Code or Codespaces support, consider using
+[`repos clone`](clone.html) instead — it is simpler and requires no GitHub
+token for public repositories.
 
 ## Basic Usage
 
@@ -58,6 +68,13 @@ multi-root workspace:
 code entire-project.code-workspace
 ```
 
+You can also generate or refresh the workspace file at any time without
+re-running the full setup:
+
+```bash
+repos workspace
+```
+
 ## Codespaces Authentication
 
 Pass `--codespaces` to inject the `GH_TOKEN` Codespaces secret into every
@@ -79,3 +96,4 @@ workspace/
 ├── frontend-develop/    # cloned from myorg/frontend@develop
 └── docs/                # cloned from myorg/docs
 ```
+
