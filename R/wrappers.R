@@ -1,3 +1,59 @@
+# Version of the repos CLI bundled inside this package.
+# Updated automatically by the version-and-release workflow.
+.bundled_cli_version <- "1.1.0"
+
+#' Return the version of the repos CLI bundled in this package
+#'
+#' The R package ships its own copy of the Bash scripts at a specific CLI
+#' version.  This function returns that pinned version string.
+#'
+#' @return A character string with the bundled CLI version (e.g. \code{"1.1.0"}).
+#'
+#' @examples
+#' repos_bundled_cli_version()
+#'
+#' @export
+repos_bundled_cli_version <- function() {
+  .bundled_cli_version
+}
+
+#' Return the version of the repos CLI installed on the system PATH
+#'
+#' Runs \code{repos --version} using the system-wide \code{repos} binary.  If
+#' no system-wide \code{repos} CLI is found, returns \code{NULL} instead of
+#' raising an error.
+#'
+#' @return A character string with the installed CLI version, or \code{NULL}
+#'   if \code{repos} is not found on the system \code{PATH}.
+#'
+#' @examples
+#' \dontrun{
+#' ver <- repos_installed_cli_version()
+#' if (is.null(ver)) {
+#'   message("repos CLI is not installed on this system.")
+#' } else {
+#'   message("Installed CLI version: ", ver)
+#' }
+#' }
+#'
+#' @export
+repos_installed_cli_version <- function() {
+  # Check whether `repos` is on PATH
+  found <- nchar(Sys.which("repos")) > 0L
+  if (!found) {
+    return(NULL)
+  }
+  out <- tryCatch(
+    system2("repos", "--version", stdout = TRUE, stderr = TRUE),
+    error = function(e) NULL
+  )
+  if (is.null(out) || length(out) == 0L) {
+    return(NULL)
+  }
+  # Strip a leading "v" if present (e.g. "v1.1.0" → "1.1.0")
+  sub("^v", "", trimws(out[[1L]]))
+}
+
 #' Install the repos CLI
 #'
 #' Prints OS-appropriate instructions for installing the \code{repos} command-line

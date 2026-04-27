@@ -12,6 +12,146 @@ from typing import Optional, List, Union
 
 __version__ = "1.1.0"
 
+# Version of the repos CLI bundled inside this package.
+# Updated automatically by the version-and-release workflow.
+_BUNDLED_CLI_VERSION = "1.1.0"
+
+
+def bundled_cli_version() -> str:
+    """
+    Return the version of the repos CLI bundled inside this package.
+
+    The Python package ships its own copy of the Bash scripts at a specific
+    CLI version.  This function returns that pinned version string.
+
+    Returns:
+        str: The bundled CLI version (e.g. ``"1.1.0"``).
+
+    Examples:
+        >>> from repos import bundled_cli_version
+        >>> bundled_cli_version()
+        '1.1.0'
+    """
+    return _BUNDLED_CLI_VERSION
+
+
+def installed_cli_version() -> Optional[str]:
+    """
+    Return the version of the repos CLI installed on the system PATH, or None.
+
+    Runs ``repos --version`` using the system-wide ``repos`` binary.  If no
+    system-wide ``repos`` CLI is found, returns ``None`` instead of raising an
+    exception.
+
+    Returns:
+        str or None: The installed CLI version string, or ``None`` if not found.
+
+    Examples:
+        >>> from repos import installed_cli_version
+        >>> ver = installed_cli_version()
+        >>> print(ver)   # e.g. "1.1.0" or None
+    """
+    import shutil
+    if shutil.which("repos") is None:
+        return None
+    try:
+        result = subprocess.run(
+            ["repos", "--version"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        output = result.stdout.strip() or result.stderr.strip()
+        # Strip a leading "v" if present (e.g. "v1.1.0" → "1.1.0")
+        return output.lstrip("v") if output else None
+    except Exception:
+        return None
+
+
+def install_cli(run: bool = False) -> None:
+    """
+    Print OS-appropriate instructions for installing the repos CLI globally.
+
+    The Python package uses its own bundled copy of the CLI for all Python
+    functions (``run()``, ``workspace()``, etc.).  However, if you also want
+    to use ``repos`` directly from your terminal, you need to install the CLI
+    system-wide.  This function prints the recommended installation command for
+    your platform and, when *run* is ``True``, also executes it.
+
+    Args:
+        run (bool): If ``True``, attempt to run the installer automatically
+            (Linux and macOS only; ignored on Windows).  Default is ``False``.
+
+    Returns:
+        None
+
+    Examples:
+        >>> from repos import install_cli
+        >>> # Print installation instructions for your OS
+        >>> install_cli()
+
+        >>> # Print instructions AND run the installer
+        >>> install_cli(run=True)
+    """
+    import platform
+    import shutil
+
+    system = platform.system()
+
+    if system == "Linux":
+        print("To install the repos CLI on Ubuntu/Debian, choose one of:\n")
+        print("  # Option 1: APT repository (recommended — keeps repos up to date):")
+        print("  curl -fsSL https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/KEY.gpg \\")
+        print("     | sudo gpg --dearmor -o /usr/share/keyrings/miguelrodo-repos.gpg")
+        print('  echo "deb [signed-by=/usr/share/keyrings/miguelrodo-repos.gpg] '
+              'https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/ ./" \\')
+        print("     | sudo tee /etc/apt/sources.list.d/miguelrodo-repos.list >/dev/null")
+        print("  sudo apt-get update && sudo apt-get install -y repos\n")
+        print("  # Option 2: User-level install (no sudo required):")
+        print("  git clone https://github.com/MiguelRodo/repos.git /tmp/repos-cli")
+        print("  bash /tmp/repos-cli/install-local.sh\n")
+        if run:
+            print("Running user-level installer...")
+            import tempfile
+            tmp = os.path.join(tempfile.mkdtemp(), "repos-cli")
+            ret = subprocess.run(
+                f"git clone https://github.com/MiguelRodo/repos.git {tmp!r}"
+                f" && bash {os.path.join(tmp, 'install-local.sh')!r}",
+                shell=True,
+            ).returncode
+            if ret != 0:
+                print(
+                    f"Warning: installer exited with status {ret}."
+                    " Check the output above for details.",
+                    file=sys.stderr,
+                )
+    elif system == "Darwin":
+        print("To install the repos CLI on macOS, run:\n")
+        print("  brew tap MiguelRodo/repos")
+        print("  brew install repos\n")
+        if run:
+            print("Running Homebrew installer...")
+            ret = subprocess.run(
+                "brew tap MiguelRodo/repos && brew install repos", shell=True
+            ).returncode
+            if ret != 0:
+                print(
+                    f"Warning: installer exited with status {ret}."
+                    " Check the output above for details.",
+                    file=sys.stderr,
+                )
+    elif system == "Windows":
+        print("To install the repos CLI on Windows, run in PowerShell:\n")
+        print("  scoop bucket add repos https://github.com/MiguelRodo/scoop-bucket")
+        print("  scoop install repos\n")
+        print("Or download and run install.ps1 from the releases page:")
+        print("  https://github.com/MiguelRodo/repos/releases\n")
+        print("(Automatic installation via run=True is not supported on Windows.)")
+    else:
+        print("To install the repos CLI, see the installation guide:")
+        print("  https://miguelrodo.github.io/repos/install.html\n")
+
+
 def get_script_path(script_name="run-pipeline.sh"):
     """
     Find the path to a repos script.
@@ -340,73 +480,3 @@ def run_raw(*args):
         >>> run_raw("-f", "custom.list", "--continue-on-error")
     """
     return run_script("run-pipeline.sh", list(args))
-
-
-USAGE = """\
-Usage: repos <command> [options]
-
-Commands:
-  clone       Clone repositories listed in repos.list into the parent directory
-  workspace   Generate (or update) the VS Code multi-root workspace file
-  codespace   Configure GitHub Codespaces authentication
-  codespaces  Alias for codespace
-  run         Execute a script inside each cloned repository
-
-Run 'repos <command> --help' for more information on a command.
-"""
-
-SUBCOMMAND_SCRIPTS = {
-    "clone":      "helper/clone-repos.sh",
-    "workspace":  "helper/vscode-workspace-add.sh",
-    "codespace":  "helper/codespaces-auth-add.sh",
-    "codespaces": "helper/codespaces-auth-add.sh",
-    "run":        "run-pipeline.sh",
-}
-
-
-def main():
-    """
-    Main entry point for the repos CLI command.
-    
-    This function is registered as a console script entry point,
-    allowing users to run 'repos' from the command line after installation.
-
-    Supports subcommands:
-      repos clone [flags]      — delegates to clone-repos.sh
-      repos workspace [flags]  — delegates to vscode-workspace-add.sh
-      repos codespace [flags]  — delegates to codespaces-auth-add.sh
-      repos codespaces [flags] — alias for codespace
-      repos run [flags]        — delegates to run-pipeline.sh
-    """
-    args = sys.argv[1:]
-
-    # No arguments or help flag → print usage
-    if not args or args[0] in ("-h", "--help"):
-        print(USAGE, end="")
-        sys.exit(0 if args else 1)
-
-    subcommand = args[0]
-    remaining = args[1:]
-
-    if subcommand not in SUBCOMMAND_SCRIPTS:
-        print(f"Error: unknown command '{subcommand}'\n", file=sys.stderr)
-        print(USAGE, end="", file=sys.stderr)
-        sys.exit(1)
-
-    script = SUBCOMMAND_SCRIPTS[subcommand]
-
-    try:
-        run_script(script, remaining)
-        sys.exit(0)
-    except subprocess.CalledProcessError as e:
-        sys.exit(e.returncode)
-    except FileNotFoundError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
-    except Exception as e:
-        print(f"Unexpected error: {e}", file=sys.stderr)
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
