@@ -104,16 +104,19 @@ set -e
 print_info "Exit code: $exit_code"
 print_info "Output: $output"
 
-if echo "$output" | grep -q "File not found:.*installed-repos"; then
-  print_fail "Script looked for repos.list in script install dir instead of CWD"
-fi
-
+# A "File not found" error means the script couldn't find repos.list (either in the
+# install dir or in CWD); either way the test should fail.
 if echo "$output" | grep -q "Error: File not found"; then
-  print_fail "Script could not find repos.list in CWD"
+  print_fail "Script could not find repos.list (looked in wrong location or CWD lookup failed)"
 fi
 
-if [ "$exit_code" -ne 0 ] && ! echo "$output" | grep -q "Updated\|dry-run\|testowner/testrepo"; then
-  print_fail "Script failed unexpectedly: $output"
+# The script must succeed (exit 0) and output evidence that it processed the repo.
+if [ "$exit_code" -ne 0 ]; then
+  print_fail "Script exited with code $exit_code; output: $output"
+fi
+
+if ! echo "$output" | grep -q "testowner/testrepo"; then
+  print_fail "Expected 'testowner/testrepo' in output but got: $output"
 fi
 
 print_pass "Script reads repos.list from CWD, not from script installation directory"
