@@ -165,13 +165,15 @@ run_repos_script <- function(script_name, args = character()) {
 #'
 #' @param command Character string specifying the subcommand to run.
 #'   Must be one of \code{"clone"}, \code{"workspace"}, \code{"codespace"},
-#'   \code{"codespaces"}, or \code{"run"}.
+#'   \code{"codespaces"}, \code{"run"}, \code{"setup"}, \code{"add_branch"},
+#'   \code{"update_branches"}, or \code{"update_scripts"}.
 #' @param ... Additional arguments passed to the underlying script.
 #'
 #' @return Invisibly returns the exit status of the script (0 for success).
 #'
 #' @details
-#' \code{repos("clone", ...)} delegates to \code{clone-repos.sh}.
+#' \code{repos("clone", ...)} delegates to \code{clone-repos.sh} (see
+#' \code{\link{repos_clone}}).
 #'
 #' \code{repos("workspace", ...)} delegates to \code{vscode-workspace-add.sh} (see
 #' \code{\link{repos_workspace}}).
@@ -182,6 +184,18 @@ run_repos_script <- function(script_name, args = character()) {
 #' \code{repos("run", ...)} delegates to \code{run-pipeline.sh} (see
 #' \code{\link{repos_run}}).
 #'
+#' \code{repos("setup", ...)} delegates to \code{setup-repos.sh} (see
+#' \code{\link{repos_setup}}).
+#'
+#' \code{repos("add_branch", ...)} delegates to \code{add-branch.sh} (see
+#' \code{\link{repos_add_branch}}).
+#'
+#' \code{repos("update_branches", ...)} delegates to \code{update-branches.sh} (see
+#' \code{\link{repos_update_branches}}).
+#'
+#' \code{repos("update_scripts", ...)} delegates to \code{update-scripts.sh} (see
+#' \code{\link{repos_update_scripts}}).
+#'
 #' @examples
 #' \dontrun{
 #' repos("clone")
@@ -189,28 +203,43 @@ run_repos_script <- function(script_name, args = character()) {
 #' repos("codespace")
 #' repos("run")
 #' repos("run", script = "build.sh")
+#' repos("setup")
+#' repos("add_branch", "data-tidy")
+#' repos("update_branches")
+#' repos("update_scripts")
 #' }
 #'
 #' @export
 repos <- function(command, ...) {
-  valid <- c("clone", "workspace", "codespace", "codespaces", "run")
+  valid <- c("clone", "workspace", "codespace", "codespaces", "run",
+             "setup", "add_branch", "update_branches", "update_scripts")
   if (missing(command) || !(command %in% valid)) {
     message("Usage: repos(command, ...)\n")
     message("Commands:")
-    message("  \"clone\"      Clone repositories listed in repos.list")
-    message("  \"workspace\"  Generate or update the VS Code workspace file")
-    message("  \"codespace\"  Configure GitHub Codespaces authentication")
-    message("  \"run\"        Execute a script inside each cloned repository")
-    message("\nSee ?repos_workspace, ?repos_codespace and ?repos_run for details.")
+    message("  \"clone\"           Clone repositories listed in repos.list")
+    message("  \"workspace\"       Generate or update the VS Code workspace file")
+    message("  \"codespace\"       Configure GitHub Codespaces authentication")
+    message("  \"run\"             Execute a script inside each cloned repository")
+    message("  \"setup\"           Create repos on GitHub and clone them")
+    message("  \"add_branch\"      Create a new worktree/branch off the current repo")
+    message("  \"update_branches\" Update all worktrees with the latest devcontainer config")
+    message("  \"update_scripts\"  Update scripts from the upstream CompTemplate repository")
+    message("\nSee ?repos_clone, ?repos_workspace, ?repos_codespace, ?repos_run,")
+    message("?repos_setup, ?repos_add_branch, ?repos_update_branches,")
+    message("and ?repos_update_scripts for details.")
     return(invisible(1L))
   }
 
   switch(command,
-    clone      = run_repos_script("helper/clone-repos.sh", args = c(...)),
-    workspace  = repos_workspace(...),
-    codespace  = repos_codespace(...),
-    codespaces = repos_codespace(...),
-    run        = repos_run(...)
+    clone           = repos_clone(...),
+    workspace       = repos_workspace(...),
+    codespace       = repos_codespace(...),
+    codespaces      = repos_codespace(...),
+    run             = repos_run(...),
+    setup           = repos_setup(...),
+    add_branch      = repos_add_branch(...),
+    update_branches = repos_update_branches(...),
+    update_scripts  = repos_update_scripts(...)
   )
 }
 
@@ -455,4 +484,261 @@ repos_run <- function(file = NULL, script = NULL, include = NULL, exclude = NULL
   }
   
   run_repos_script("run-pipeline.sh", args = args)
+}
+
+#' Clone Repositories
+#'
+#' Clone repositories listed in a \code{repos.list} file.
+#'
+#' @param file Path to repos list file (default: repos.list, or
+#'   repos-to-clone.list if repos.list is absent)
+#' @param debug Logical. If \code{TRUE}, enable debug tracing to stderr
+#' @param debug_file Character string or logical. Enable debug tracing to file
+#'   (auto-generated if \code{TRUE})
+#' @param ... Additional arguments passed directly to \code{clone-repos.sh}.
+#'
+#' @return Invisibly returns the exit status of the script (0 for success).
+#'
+#' @examples
+#' \dontrun{
+#' repos_clone()
+#' repos_clone(file = "my-repos.list")
+#' repos_clone(debug = TRUE)
+#' }
+#'
+#' @export
+repos_clone <- function(file = NULL, debug = FALSE, debug_file = NULL, ...) {
+  args <- character()
+
+  if (!is.null(file)) {
+    args <- c(args, "-f", file)
+  }
+
+  if (isTRUE(debug)) {
+    args <- c(args, "--debug")
+  }
+
+  if (!is.null(debug_file)) {
+    if (isTRUE(debug_file)) {
+      args <- c(args, "--debug-file")
+    } else {
+      args <- c(args, "--debug-file", debug_file)
+    }
+  }
+
+  additional_args <- c(...)
+  if (length(additional_args) > 0) {
+    args <- c(args, additional_args)
+  }
+
+  run_repos_script("helper/clone-repos.sh", args = args)
+}
+
+#' Set Up the Workspace
+#'
+#' Create missing GitHub repositories, clone them, generate a VS Code workspace
+#' file, and optionally configure Codespaces authentication.
+#'
+#' @param file Path to repos list file (default: repos.list)
+#' @param public Logical. If \code{TRUE}, create repositories as public
+#'   (default is private)
+#' @param codespaces Logical. If \code{TRUE}, enable Codespaces authentication
+#'   configuration
+#' @param devcontainer Character vector of paths to devcontainer.json files;
+#'   also implies \code{codespaces = TRUE}
+#' @param permissions Character string. \code{"all"} or \code{"contents"}
+#' @param tool Character string. Force tool for codespaces-auth-add.sh
+#'   (e.g., \code{"jq"}, \code{"python"})
+#' @param debug Logical. If \code{TRUE}, enable debug output to stderr
+#' @param debug_file Character string or logical. Enable debug output to file
+#'   (auto-generated if \code{TRUE})
+#' @param ... Additional arguments passed directly to \code{setup-repos.sh}.
+#'
+#' @return Invisibly returns the exit status of the script (0 for success).
+#'
+#' @examples
+#' \dontrun{
+#' repos_setup()
+#' repos_setup(public = TRUE)
+#' repos_setup(codespaces = TRUE)
+#' repos_setup(devcontainer = ".devcontainer/devcontainer.json")
+#' }
+#'
+#' @export
+repos_setup <- function(file = NULL, public = FALSE, codespaces = FALSE,
+                        devcontainer = NULL, permissions = NULL, tool = NULL,
+                        debug = FALSE, debug_file = NULL, ...) {
+  args <- character()
+
+  if (!is.null(file)) {
+    args <- c(args, "-f", file)
+  }
+
+  if (isTRUE(public)) {
+    args <- c(args, "--public")
+  }
+
+  if (isTRUE(codespaces)) {
+    args <- c(args, "--codespaces")
+  }
+
+  if (!is.null(devcontainer)) {
+    for (dc in devcontainer) {
+      args <- c(args, "-d", dc)
+    }
+  }
+
+  if (!is.null(permissions)) {
+    args <- c(args, "--permissions", permissions)
+  }
+
+  if (!is.null(tool)) {
+    args <- c(args, "-t", tool)
+  }
+
+  if (isTRUE(debug)) {
+    args <- c(args, "--debug")
+  }
+
+  if (!is.null(debug_file)) {
+    if (isTRUE(debug_file)) {
+      args <- c(args, "--debug-file")
+    } else {
+      args <- c(args, "--debug-file", debug_file)
+    }
+  }
+
+  additional_args <- c(...)
+  if (length(additional_args) > 0) {
+    args <- c(args, additional_args)
+  }
+
+  run_repos_script("setup-repos.sh", args = args)
+}
+
+#' Create a New Worktree/Branch
+#'
+#' Create a new worktree (or branch) off the current repository, push it to
+#' origin, clean the worktree, update devcontainer.json, add the branch to
+#' repos.list, and refresh the VS Code workspace file.
+#'
+#' @param branch_name Character string. Name of the new branch to create.
+#' @param target_dir Character string. Optional custom directory name
+#'   (default: \code{<repo>-<branch>}).
+#' @param use_branch Logical. If \code{TRUE}, create as a separate branch
+#'   instead of a worktree.
+#' @param ... Additional arguments passed directly to \code{add-branch.sh}.
+#'
+#' @return Invisibly returns the exit status of the script (0 for success).
+#'
+#' @examples
+#' \dontrun{
+#' repos_add_branch("data-tidy")
+#' repos_add_branch("analysis", target_dir = "my-analysis")
+#' repos_add_branch("paper", use_branch = TRUE)
+#' }
+#'
+#' @export
+repos_add_branch <- function(branch_name, target_dir = NULL, use_branch = FALSE, ...) {
+  args <- branch_name
+
+  if (!is.null(target_dir)) {
+    args <- c(args, target_dir)
+  }
+
+  if (isTRUE(use_branch)) {
+    args <- c(args, "--branch")
+  }
+
+  additional_args <- c(...)
+  if (length(additional_args) > 0) {
+    args <- c(args, additional_args)
+  }
+
+  run_repos_script("add-branch.sh", args = args)
+}
+
+#' Update All Worktrees
+#'
+#' Update all worktrees with the latest devcontainer prebuild configuration.
+#' Reads \code{.devcontainer/prebuild/devcontainer.json} from the base repo,
+#' strips the codespaces repositories section, writes the result to
+#' \code{.devcontainer/devcontainer.json} in each worktree, then commits and
+#' pushes.
+#'
+#' @param dry_run Logical. If \code{TRUE}, show what would be done without
+#'   making changes.
+#' @param ... Additional arguments passed directly to \code{update-branches.sh}.
+#'
+#' @return Invisibly returns the exit status of the script (0 for success).
+#'
+#' @examples
+#' \dontrun{
+#' repos_update_branches()
+#' repos_update_branches(dry_run = TRUE)
+#' }
+#'
+#' @export
+repos_update_branches <- function(dry_run = FALSE, ...) {
+  args <- character()
+
+  if (isTRUE(dry_run)) {
+    args <- c(args, "--dry-run")
+  }
+
+  additional_args <- c(...)
+  if (length(additional_args) > 0) {
+    args <- c(args, additional_args)
+  }
+
+  run_repos_script("update-branches.sh", args = args)
+}
+
+#' Update Scripts from Upstream
+#'
+#' Update scripts from the upstream CompTemplate repository. Clones/pulls
+#' \code{MiguelRodo/CompTemplate} and copies all scripts from its
+#' \code{scripts/} directory into the local scripts directory, then creates a
+#' commit with the updates.
+#'
+#' @param branch Character string. Upstream branch to pull from
+#'   (default: main).
+#' @param dry_run Logical. If \code{TRUE}, show what would be updated without
+#'   making changes.
+#' @param force Logical. If \code{TRUE}, overwrite local changes without
+#'   prompting.
+#' @param ... Additional arguments passed directly to \code{update-scripts.sh}.
+#'
+#' @return Invisibly returns the exit status of the script (0 for success).
+#'
+#' @examples
+#' \dontrun{
+#' repos_update_scripts()
+#' repos_update_scripts(branch = "dev")
+#' repos_update_scripts(dry_run = TRUE)
+#' repos_update_scripts(force = TRUE)
+#' }
+#'
+#' @export
+repos_update_scripts <- function(branch = NULL, dry_run = FALSE, force = FALSE, ...) {
+  args <- character()
+
+  if (!is.null(branch)) {
+    args <- c(args, "--branch", branch)
+  }
+
+  if (isTRUE(dry_run)) {
+    args <- c(args, "--dry-run")
+  }
+
+  if (isTRUE(force)) {
+    args <- c(args, "--force")
+  }
+
+  additional_args <- c(...)
+  if (length(additional_args) > 0) {
+    args <- c(args, additional_args)
+  }
+
+  run_repos_script("update-scripts.sh", args = args)
 }
