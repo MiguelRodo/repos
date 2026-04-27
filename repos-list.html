@@ -42,7 +42,7 @@ ul.task-list li input[type="checkbox"] {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-92ccca19d14c0bd04edafc1952284584.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-4897d45d2f75ed4f519693be625836c5.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -201,13 +201,16 @@ ul.task-list li input[type="checkbox"] {
 </section>
 <section id="worktrees" class="level2">
 <h2 class="anchored" data-anchor-id="worktrees">Worktrees</h2>
-<p>Use <code>@branch</code> without a repository name to create a <a href="https://git-scm.com/docs/git-worktree">Git worktree</a> from the most recently listed repository (or the current repository if none has been listed yet):</p>
+<p>Use <code>@branch</code> without a repository name to clone only that branch from the most recently listed repository (or the current repository if none has been listed yet):</p>
 <pre><code>owner/repo
 @feature-x
 @bugfix-123</code></pre>
+<p>This produces a full clone of <code>owner/repo</code> plus two single-branch clones — no extra network clones of the full repository required.</p>
+<p>Add <code>--worktree</code> to an <code>@branch</code> line to create a <a href="https://git-scm.com/docs/git-worktree">Git worktree</a> instead of a separate clone:</p>
+<pre><code>owner/repo
+@feature-x --worktree
+@bugfix-123 --worktree</code></pre>
 <p>This produces a full clone of <code>owner/repo</code> plus two worktrees — no extra network clones required.</p>
-<p>Add <code>--worktree</code> to a full <code>owner/repo@branch</code> line to create a worktree instead of a separate clone:</p>
-<pre><code>owner/repo@staging --worktree</code></pre>
 </section>
 <section id="visibility" class="level2">
 <h2 class="anchored" data-anchor-id="visibility">Visibility</h2>
@@ -257,7 +260,7 @@ owner/other-repo --private</code></pre>
 
 myorg/backend
 myorg/frontend@develop
-@staging                   # worktree of frontend at staging branch
+@staging --worktree        # worktree of frontend at staging branch
 myorg/docs --public        # override: create docs repo as public</code></pre>
 <p>After <code>repos clone</code>, the parent directory looks like:</p>
 <pre><code>workspace/
