@@ -1,0 +1,100 @@
+---
+title: "repos.list Reference"
+---
+
+The `repos.list` file lists the repositories (and optionally branches) that
+`repos setup` will clone.  Place it in the root of your project directory.
+
+## Basic Format
+
+Each line is one repository:
+
+```
+owner/repo
+```
+
+Lines starting with `#` are comments and are ignored.
+
+## Cloning a Specific Branch
+
+Append `@branch` to clone only that branch:
+
+```
+owner/repo@develop
+```
+
+## Custom Target Directory
+
+Add a name after the repository to clone into a different directory:
+
+```
+owner/repo my-data
+```
+
+## Worktrees
+
+Use `@branch` without a repository name to create a
+[Git worktree](https://git-scm.com/docs/git-worktree) from the most recently
+listed repository (or the current repository if none has been listed yet):
+
+```
+owner/repo
+@feature-x
+@bugfix-123
+```
+
+This produces a full clone of `owner/repo` plus two worktrees — no extra network
+clones required.
+
+Add `--worktree` to a full `owner/repo@branch` line to create a worktree instead
+of a separate clone:
+
+```
+owner/repo@staging --worktree
+```
+
+## Visibility
+
+Control whether new repositories are created as public or private:
+
+```
+owner/repo --public
+owner/other-repo --private
+```
+
+## Global Flags
+
+Place a flag on its own line (with nothing else except optional comments) to apply
+it to every subsequent repository:
+
+| Flag | Effect |
+|---|---|
+| `--public` | Create all repositories as public by default |
+| `--private` | Create all repositories as private by default (the default) |
+| `--codespaces` | Configure Codespaces authentication for all repositories |
+| `--worktree` | Use worktrees instead of separate clones for all `@branch` lines |
+
+Per-line `--public`/`--private` flags always override the global default.
+
+## Example
+
+```
+--private        # default visibility for new repos
+--codespaces     # set up Codespaces auth for all repos
+
+myorg/backend
+myorg/frontend@develop
+@staging                   # worktree of frontend at staging branch
+myorg/docs --public        # override: create docs repo as public
+```
+
+After `repos setup`, the parent directory looks like:
+
+```
+workspace/
+├── my-project/            # your project (contains repos.list)
+├── backend/
+├── frontend-develop/
+├── frontend-staging/      # worktree
+└── docs/
+```

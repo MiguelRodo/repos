@@ -1,0 +1,188 @@
+---
+title: "Installation"
+---
+
+You can install `repos` as a system package (Ubuntu/Debian, macOS, Windows), from
+source, or as a language-specific wrapper (R or Python).
+
+## Ubuntu / Debian
+
+### Option 1: Install from APT Repository (Recommended)
+
+Install and keep `repos` up to date directly via `apt`:
+
+```bash
+# Add repository signing key
+curl -fsSL https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/KEY.gpg \
+   | sudo gpg --dearmor -o /usr/share/keyrings/miguelrodo-repos.gpg
+
+# Add apt source
+echo "deb [signed-by=/usr/share/keyrings/miguelrodo-repos.gpg] https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/ ./" \
+   | sudo tee /etc/apt/sources.list.d/miguelrodo-repos.list >/dev/null
+
+# Install repos
+sudo apt-get update
+sudo apt-get install -y repos
+```
+
+To uninstall:
+
+```bash
+sudo apt-get remove repos
+```
+
+### Option 2: Local Installation (No sudo required)
+
+Install to your user directory (`~/.local/bin`):
+
+```bash
+git clone https://github.com/MiguelRodo/repos.git
+cd repos
+bash install-local.sh
+```
+
+If `~/.local/bin` is not on your PATH, add this to `~/.bashrc` or `~/.profile`:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Then reload:
+
+```bash
+source ~/.bashrc
+```
+
+To uninstall:
+
+```bash
+bash uninstall-local.sh
+```
+
+### Option 3: System-wide from Release `.deb` (requires sudo)
+
+Download and install the latest `.deb` from the
+[Releases page](https://github.com/MiguelRodo/repos/releases):
+
+```bash
+VERSION_REPOS=1.2.6
+wget https://github.com/MiguelRodo/repos/releases/download/v${VERSION_REPOS}/repos_${VERSION_REPOS}_all.deb
+sudo dpkg -i repos_${VERSION_REPOS}_all.deb
+rm repos_${VERSION_REPOS}_all.deb
+
+# Fix any dependency issues
+sudo apt-get install -f
+```
+
+To uninstall:
+
+```bash
+sudo dpkg -r repos
+```
+
+### Dependencies
+
+All Ubuntu/Debian methods require `bash`, `git`, `curl`, and `jq`.  These are
+typically pre-installed.  If not:
+
+```bash
+sudo apt-get install bash git curl jq
+```
+
+---
+
+## macOS (Homebrew)
+
+```bash
+brew tap MiguelRodo/repos
+brew install repos
+```
+
+The formula automatically handles the `jq` dependency. Git is typically
+pre-installed on macOS.
+
+---
+
+## Windows
+
+### Scoop (recommended)
+
+```powershell
+scoop bucket add repos https://github.com/MiguelRodo/scoop-bucket
+scoop install repos
+```
+
+`git` and `jq` are installed automatically by Scoop. You will also need
+[Git for Windows](https://git-scm.com/download/win) for Bash support.
+
+### Manual
+
+1. Clone the repository:
+   ```powershell
+   git clone https://github.com/MiguelRodo/repos.git
+   cd repos
+   ```
+2. Run the installer:
+   ```powershell
+   .\install.ps1
+   ```
+3. Restart your PowerShell session.
+
+**Dependencies:**
+
+- [Git for Windows](https://git-scm.com/download/win) — provides `bash`, `git`, and `curl`
+- [jq](https://jqlang.github.io/jq/download/) — JSON processor
+
+---
+
+## From Source
+
+```bash
+git clone https://github.com/MiguelRodo/repos.git
+cd repos
+
+# Local install (no sudo)
+bash install-local.sh
+
+# Or system-wide on Ubuntu/Debian
+sudo dpkg-buildpackage -us -uc -b
+sudo dpkg -i ../repos_*.deb
+```
+
+---
+
+## Language Wrappers
+
+### R Package
+
+```r
+install.packages("devtools")
+devtools::install_github("MiguelRodo/repos")
+```
+
+Requires `bash`, `git`, `curl`, and `jq` on your system.
+
+### Python Package
+
+```bash
+pip install git+https://github.com/MiguelRodo/repos.git
+```
+
+Or from a local clone:
+
+```bash
+git clone https://github.com/MiguelRodo/repos.git
+cd repos
+pip install .
+```
+
+Requires `bash`, `git`, `curl`, and `jq` on your system.  On Windows, use
+[Git for Windows](https://git-scm.com/download/win) or WSL.
+
+---
+
+## Verify Installation
+
+```bash
+repos --help
+```
