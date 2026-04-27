@@ -1,0 +1,81 @@
+---
+title: "repos setup"
+---
+
+`repos setup` reads your `repos.list` file, clones all listed repositories into
+the **parent directory** of your current location, creates any missing GitHub
+repositories, generates a VS Code workspace file, and optionally configures
+GitHub Codespaces authentication.
+
+## Basic Usage
+
+```bash
+repos setup
+```
+
+## Options
+
+| Flag | Description |
+|---|---|
+| `-f <file>` | Use a different list file (default: `repos.list`) |
+| `--public` | Create new repositories as public (default is private) |
+| `--codespaces` | Configure Codespaces authentication |
+| `-d <path>` | Path to a `devcontainer.json` file (repeatable) |
+
+```bash
+# Use a custom list file
+repos setup -f my-repos.list
+
+# Create new repos as public
+repos setup --public
+
+# Enable Codespaces auth with default devcontainer path
+repos setup --codespaces
+
+# Specify one or more devcontainer.json paths
+repos setup -d .devcontainer/devcontainer.json
+repos setup -d path1/devcontainer.json -d path2/devcontainer.json
+```
+
+## GitHub Authentication
+
+`repos setup` needs a GitHub token to create repositories and clone private ones.
+Provide it via the `GH_TOKEN` environment variable or via the `gh` CLI:
+
+```bash
+export GH_TOKEN="your_personal_access_token"
+# or
+gh auth login
+```
+
+## VS Code Workspace
+
+After `repos setup` completes, a file called `entire-project.code-workspace` is
+written in your project directory.  Open it to load all cloned repositories as a
+multi-root workspace:
+
+```bash
+code entire-project.code-workspace
+```
+
+## Codespaces Authentication
+
+Pass `--codespaces` to inject the `GH_TOKEN` Codespaces secret into every
+cloned repository that has a `devcontainer.json`.  You can override which
+`devcontainer.json` files are targeted with one or more `-d` flags:
+
+```bash
+repos setup --codespaces -d .devcontainer/prebuild/devcontainer.json
+```
+
+## Repository Layout
+
+Repositories are always cloned to the **parent** of your current directory:
+
+```
+workspace/
+├── my-project/          # your project (contains repos.list)
+├── backend/             # cloned from myorg/backend
+├── frontend-develop/    # cloned from myorg/frontend@develop
+└── docs/                # cloned from myorg/docs
+```

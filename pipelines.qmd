@@ -1,0 +1,89 @@
+---
+title: "Running Pipelines"
+---
+
+`repos run` executes a script inside each repository listed in your `repos.list`
+file.  This lets you run a build, test, or any other task across your entire
+workspace with a single command.
+
+## Basic Usage
+
+By default, `repos run` looks for a file called `run.sh` in each cloned
+repository and executes it:
+
+```bash
+repos run
+```
+
+## Options
+
+| Flag | Description |
+|---|---|
+| `--script <file>` | Run a different script (default: `run.sh`) |
+| `-f <file>` | Use a different list file (default: `repos.list`) |
+| `--include <repos>` | Comma-separated list of repositories to include |
+| `--exclude <repos>` | Comma-separated list of repositories to skip |
+| `--continue-on-error` | Keep running even if a repository fails |
+| `--dry-run` | Print what would be run without executing anything |
+| `--ensure-setup` | Run `repos setup` before executing the pipeline |
+
+```bash
+# Run a custom script in each repo
+repos run --script build.sh
+
+# Only run in specific repos
+repos run --include "backend,frontend"
+
+# Skip a repo
+repos run --exclude "docs"
+
+# Continue even if one repo fails, then report all results
+repos run --continue-on-error
+
+# Preview without running
+repos run --dry-run
+
+# Make sure repos are cloned before running
+repos run --ensure-setup
+```
+
+## Writing a Pipeline Script
+
+Each repository should contain the script that `repos run` will call.  The
+script receives no arguments by default, but can read environment variables or
+accept flags if needed.  A minimal `run.sh`:
+
+```bash
+#!/usr/bin/env bash
+set -e
+
+# Install dependencies
+Rscript -e "renv::restore()"
+
+# Run analysis
+Rscript analysis.R
+```
+
+## R and Python APIs
+
+### R
+
+```r
+library(repos)
+
+repos_run()                                 # run run.sh in every repo
+repos_run(script = "build.sh")              # custom script
+repos_run(dry_run = TRUE, verbose = TRUE)   # preview
+repos_run(include = c("backend", "frontend"))
+```
+
+### Python
+
+```python
+from repos import run
+
+run()                              # run run.sh in every repo
+run(script="build.sh")             # custom script
+run(dry_run=True, verbose=True)    # preview
+run(include=["backend", "frontend"])
+```
