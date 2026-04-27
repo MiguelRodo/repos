@@ -14,3 +14,11 @@
 ^MANIFEST\.in$
 ^src$
 ^scripts$
+^\.jules$
+^.*\.qmd$
+^_quarto\.yml$
+^.*\.sh$
+^.*\.log$
+^entire-project\.code-workspace$
+^AGENTS\.md$
+^repos\.list$

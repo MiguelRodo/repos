@@ -10,4 +10,4 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 SystemRequirements: bash, git, curl, jq
-RoxygenNote: 7.0.0
+RoxygenNote: 7.3.1
