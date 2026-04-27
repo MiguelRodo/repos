@@ -1,0 +1,72 @@
+---
+title: "repos clone"
+---
+
+`repos clone` reads your `repos.list` file and clones all listed repositories
+into the **parent directory** of your current location.  It is the simplest
+way to get started — no GitHub account or token required for public repositories.
+
+## Basic Usage
+
+```bash
+repos clone
+```
+
+## Options
+
+| Flag | Description |
+|---|---|
+| `-f <file>` | Use a different list file (default: `repos.list`) |
+
+```bash
+# Use a custom list file
+repos clone -f my-repos.list
+```
+
+## Repository Layout
+
+Repositories are cloned to the **parent** of your current directory:
+
+```
+workspace/
+├── my-project/          # your project (contains repos.list)
+├── backend/             # cloned from myorg/backend
+├── frontend-develop/    # cloned from myorg/frontend@develop
+└── docs/                # cloned from myorg/docs
+```
+
+## What's in repos.list?
+
+`repos.list` lists the repositories (and optionally branches) to clone.
+See the [repos.list reference](repos-list.html) for the full format, including
+cloning specific branches, creating worktrees, and setting per-repo visibility.
+
+## GitHub Authentication
+
+For **private** repositories, provide a GitHub token:
+
+```bash
+export GH_TOKEN="your_personal_access_token"
+# or
+gh auth login
+```
+
+Public repositories can be cloned without any token.
+
+## Going further with repos setup
+
+`repos clone` only clones repositories.  `repos setup` does everything
+`repos clone` does, plus:
+
+- **Creates** any GitHub repositories listed in `repos.list` that do not
+  exist yet (requires `GH_TOKEN`)
+- **Generates** a VS Code multi-root workspace file
+  (`entire-project.code-workspace`)
+- **Configures** GitHub Codespaces authentication (with `--codespaces`)
+
+You can also run these extra steps individually after cloning:
+
+- Generate the VS Code workspace: `repos workspace`
+- Run all steps at once: `repos setup`
+
+→ [repos setup guide](setup.html)

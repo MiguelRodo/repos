@@ -1,13 +1,16 @@
 #!/usr/bin/env pwsh
 # repos.ps1 - Multi-repository management tool wrapper for Windows
-# This script launches setup-repos.sh or run-pipeline.sh using Git Bash
+# This script launches the appropriate script using Git Bash
 
 $Usage = @"
 Usage: repos <command> [options]
 
 Commands:
-  setup    Clone and configure repositories from a repos.list file
-  run      Execute a script inside each cloned repository
+  clone      Clone repositories listed in repos.list into the parent directory
+  setup      Clone and configure repositories (includes VS Code workspace and
+             optional Codespaces authentication)
+  workspace  Generate (or update) the VS Code multi-root workspace file
+  run        Execute a script inside each cloned repository
 
 Run 'repos <command> --help' for more information on a command.
 "@
@@ -17,8 +20,10 @@ $ScriptRoot = Split-Path -Parent $PSCommandPath
 $ScriptsDir = Join-Path (Split-Path -Parent $ScriptRoot) "scripts"
 
 $SubcommandScripts = @{
-    "setup" = "setup-repos.sh"
-    "run"   = "run-pipeline.sh"
+    "clone"     = "helper/clone-repos.sh"
+    "setup"     = "setup-repos.sh"
+    "workspace" = "helper/vscode-workspace-add.sh"
+    "run"       = "run-pipeline.sh"
 }
 
 # Parse subcommand

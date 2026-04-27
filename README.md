@@ -18,7 +18,7 @@ myorg/documentation
 Then run:
 
 ```bash
-repos setup
+repos clone
 ```
 
 This clones all listed repositories into the parent directory of your current location.
@@ -29,9 +29,9 @@ This clones all listed repositories into the parent directory of your current lo
 worktrees (`@branch-name`), set repository visibility (`--public`/`--private`),
 and more. → [repos.list reference](https://miguelrodo.github.io/repos/repos-list.html)
 
-**`repos setup`** — beyond cloning, it generates a VS Code workspace file, configures
-GitHub Codespaces authentication (`--codespaces`), and handles devcontainer paths.
-→ [repos setup guide](https://miguelrodo.github.io/repos/setup.html)
+**`repos setup`** — the all-in-one command: creates any missing GitHub repositories,
+clones them, generates a VS Code workspace file, and optionally configures Codespaces
+authentication. → [repos setup guide](https://miguelrodo.github.io/repos/setup.html)
 
 **Run a pipeline across all repos** — if your repositories contain a `run.sh` script
 (or any script you specify), `repos run` executes it in each one.
