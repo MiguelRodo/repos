@@ -50,7 +50,7 @@ jobs:
       - name: Test Python API
         run: |
           python -c "from repos import get_script_path, run_script; print('Python API works')"
-          python -c "from repos import get_script_path; path = get_script_path('setup-repos.sh'); print(f'Script path: {path}')"
+          python -c "from repos import get_script_path; path = get_script_path('run-pipeline.sh'); print(f'Script path: {path}')"
       
       - name: Create test repos.list
         run: |
@@ -152,7 +152,6 @@ jobs:
       
       - name: Verify script installation
         run: |
-          test -f /usr/share/repos/scripts/setup-repos.sh || exit 1
           test -f /usr/share/repos/scripts/run-pipeline.sh || exit 1
           echo "Debian package installation test passed"
       
@@ -191,7 +190,6 @@ jobs:
         run: |
           test -f $HOME/.local/bin/repos || exit 1
           test -d $HOME/.local/share/repos/scripts || exit 1
-          test -f $HOME/.local/share/repos/scripts/setup-repos.sh || exit 1
           test -f $HOME/.local/share/repos/scripts/run-pipeline.sh || exit 1
           echo "Local installation test passed"
       
@@ -283,17 +281,11 @@ jobs:
         run: |
           chmod +x scripts/*.sh
       
-      - name: Test setup-repos.sh directly
-        run: |
-          ./scripts/setup-repos.sh --help || true
-          echo "setup-repos.sh works"
-      
       - name: Run test suite
         run: |
           cd tests
           # Run a subset of tests to verify functionality
           ./test-auth-check.sh
-          ./test-setup-repos-local.sh
           echo "From source tests passed"
       
       - name: Test other scripts

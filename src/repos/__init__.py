@@ -480,3 +480,228 @@ def run_raw(*args):
         >>> run_raw("-f", "custom.list", "--continue-on-error")
     """
     return run_script("run-pipeline.sh", list(args))
+
+
+def clone(
+    file: Optional[str] = None,
+    debug: bool = False,
+    debug_file: Optional[Union[bool, str]] = None,
+    **kwargs
+):
+    """
+    Clone repositories listed in a repos.list file.
+
+    Each non-empty, non-comment line in the list file describes one cloning
+    instruction (full repo, specific branch, or worktree branch).  See the
+    `repos.list format <https://miguelrodo.github.io/repos/repos-list.html>`_
+    for the full syntax.
+
+    Global flags in repos.list (``--worktree``) are automatically applied.
+
+    Args:
+        file: Path to repos list file (default: repos.list, or
+            repos-to-clone.list if repos.list is absent)
+        debug: If True, enable debug tracing to stderr
+        debug_file: Enable debug tracing to file (auto-generated if True,
+            or specify an explicit path)
+        **kwargs: Additional keyword arguments (captured but ignored, for extensibility)
+
+    Returns:
+        subprocess.CompletedProcess object
+
+    Examples:
+        >>> clone()
+        >>> clone(file="my-repos.list")
+        >>> clone(debug=True)
+    """
+    script_args = []
+
+    if file is not None:
+        script_args.extend(["-f", file])
+
+    if debug:
+        script_args.append("--debug")
+
+    if debug_file is not None:
+        if debug_file is True:
+            script_args.append("--debug-file")
+        else:
+            script_args.extend(["--debug-file", debug_file])
+
+    return run_script("helper/clone-repos.sh", script_args)
+
+
+def clone_raw(*args):
+    """
+    Clone repositories listed in a repos.list file (raw argument passing).
+
+    Args:
+        *args: Command-line arguments to pass directly to clone-repos.sh
+
+    Returns:
+        subprocess.CompletedProcess object
+
+    Examples:
+        >>> clone_raw("-f", "my-repos.list")
+        >>> clone_raw("--debug")
+    """
+    return run_script("helper/clone-repos.sh", list(args))
+
+
+def add_branch(
+    branch_name: str,
+    target_dir: Optional[str] = None,
+    use_branch: bool = False,
+    **kwargs
+):
+    """
+    Create a new worktree/branch off the current repository.
+
+    Creates a new worktree at ``../<repo>-<branch>`` (or ``../<target_dir>``),
+    pushes the branch to origin, cleans the worktree, updates devcontainer.json,
+    adds the branch to repos.list, and refreshes the VS Code workspace file.
+
+    Args:
+        branch_name: Name of the new branch to create
+        target_dir: Optional custom directory name (default: <repo>-<branch>)
+        use_branch: If True, create as a separate branch instead of worktree
+        **kwargs: Additional keyword arguments (captured but ignored, for extensibility)
+
+    Returns:
+        subprocess.CompletedProcess object
+
+    Examples:
+        >>> add_branch("data-tidy")
+        >>> add_branch("analysis", target_dir="my-analysis")
+        >>> add_branch("paper", use_branch=True)
+    """
+    script_args = [branch_name]
+
+    if target_dir is not None:
+        script_args.append(target_dir)
+
+    if use_branch:
+        script_args.append("--branch")
+
+    return run_script("add-branch.sh", script_args)
+
+
+def add_branch_raw(*args):
+    """
+    Create a new worktree/branch off the current repository (raw argument passing).
+
+    Args:
+        *args: Command-line arguments to pass directly to add-branch.sh
+
+    Returns:
+        subprocess.CompletedProcess object
+
+    Examples:
+        >>> add_branch_raw("data-tidy")
+        >>> add_branch_raw("analysis", "my-analysis")
+    """
+    return run_script("add-branch.sh", list(args))
+
+
+def update_branches(
+    dry_run: bool = False,
+    **kwargs
+):
+    """
+    Update all worktrees with the latest devcontainer prebuild configuration.
+
+    Reads ``.devcontainer/prebuild/devcontainer.json`` from the base repository,
+    strips the codespaces repositories section, and writes the result to
+    ``.devcontainer/devcontainer.json`` in each worktree, then commits and pushes.
+
+    Args:
+        dry_run: If True, show what would be done without making changes
+        **kwargs: Additional keyword arguments (captured but ignored, for extensibility)
+
+    Returns:
+        subprocess.CompletedProcess object
+
+    Examples:
+        >>> update_branches()
+        >>> update_branches(dry_run=True)
+    """
+    script_args = []
+
+    if dry_run:
+        script_args.append("--dry-run")
+
+    return run_script("update-branches.sh", script_args)
+
+
+def update_branches_raw(*args):
+    """
+    Update all worktrees with the latest devcontainer prebuild configuration (raw argument passing).
+
+    Args:
+        *args: Command-line arguments to pass directly to update-branches.sh
+
+    Returns:
+        subprocess.CompletedProcess object
+
+    Examples:
+        >>> update_branches_raw("--dry-run")
+    """
+    return run_script("update-branches.sh", list(args))
+
+
+def update_scripts(
+    branch: Optional[str] = None,
+    dry_run: bool = False,
+    force: bool = False,
+    **kwargs
+):
+    """
+    Update scripts from the upstream CompTemplate repository.
+
+    Clones/pulls the latest ``MiguelRodo/CompTemplate`` repository and copies
+    all scripts from its ``scripts/`` directory (including ``helper/``) into
+    the local scripts directory, then creates a commit with the updates.
+
+    Args:
+        branch: Upstream branch to pull from (default: main)
+        dry_run: If True, show what would be updated without making changes
+        force: If True, overwrite local changes without prompting
+        **kwargs: Additional keyword arguments (captured but ignored, for extensibility)
+
+    Returns:
+        subprocess.CompletedProcess object
+
+    Examples:
+        >>> update_scripts()
+        >>> update_scripts(branch="dev")
+        >>> update_scripts(dry_run=True)
+        >>> update_scripts(force=True)
+    """
+    script_args = []
+
+    if branch is not None:
+        script_args.extend(["--branch", branch])
+
+    if dry_run:
+        script_args.append("--dry-run")
+
+    if force:
+        script_args.append("--force")
+
+    return run_script("update-scripts.sh", script_args)
+
+
+def update_scripts_raw(*args):
+    """
+    Update scripts from the upstream CompTemplate repository (raw argument passing).
+
+    Args:
+        *args: Command-line arguments to pass directly to update-scripts.sh
+
+    Returns:
+        subprocess.CompletedProcess object
+
+    Examples:
+        >>> update_scripts_raw("--branch", "dev", "--dry-run")
+    """
+    return run_script("update-scripts.sh", list(args))

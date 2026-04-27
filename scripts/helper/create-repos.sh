@@ -84,10 +84,11 @@ EOF
 }
 
 PRIVATE_FLAG=true
+CLI_PUBLIC_FLAG_SET=false
 while [ $# -gt 0 ]; do
   case $1 in
     -f)           shift; REPOS_FILE="$1"; shift ;;
-    -p|--public)  PRIVATE_FLAG=false; shift ;;
+    -p|--public)  PRIVATE_FLAG=false; CLI_PUBLIC_FLAG_SET=true; shift ;;
     --debug)      DEBUG=true; shift ;;
     --debug-file)
       DEBUG=true
@@ -118,9 +119,35 @@ fi
 
 debug "=== create-repos.sh Debug Session Started ==="
 debug "Repos file: $REPOS_FILE"
-debug "Private flag: $PRIVATE_FLAG"
+debug "Private flag (from CLI): $PRIVATE_FLAG"
 
 [ -f "$REPOS_FILE" ] || { printf "Error: '%s' not found.\n" "$REPOS_FILE" >&2; exit 1; }
+
+# Parse global --public / --private flags from repos.list.
+# CLI flag (-p / --public) takes precedence; repos.list is only consulted when
+# the user has not already provided a visibility flag on the command line.
+# This mirrors the behaviour that setup-repos.sh used to provide.
+if [ "$CLI_PUBLIC_FLAG_SET" = "false" ]; then
+  while IFS= read -r _line || [ -n "$_line" ]; do
+    _trimmed="${_line#"${_line%%[![:space:]]*}"}"
+    case "$_trimmed" in \#*|"") continue ;; esac
+    case "$_trimmed" in *" # "*) _trimmed="${_trimmed%% # *}" ;; *" #"*) _trimmed="${_trimmed%% #*}" ;; esac
+    _trimmed="${_trimmed%"${_trimmed##*[![:space:]]}"}"; _trimmed="${_trimmed%$'\r'}"
+    [ -z "$_trimmed" ] && continue
+    case "$_trimmed" in
+      --public|--public[[:space:]]*)
+        PRIVATE_FLAG=false
+        debug "Enabled --public from repos.list"
+        ;;
+      --private|--private[[:space:]]*)
+        PRIVATE_FLAG=true
+        debug "Enabled --private from repos.list"
+        ;;
+    esac
+  done < "$REPOS_FILE"
+fi
+
+debug "Private flag (effective): $PRIVATE_FLAG"
 
 # ── CREDENTIALS WITH FALLBACK (will be retrieved only if needed) ────────────────
 # Returns 0 if credentials are available, 1 if not
@@ -342,7 +369,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   trimmed_line="${line#"${line%%[![:space:]]*}"}"
   trimmed_line="${trimmed_line%"${trimmed_line##*[![:space:]]}"}"; trimmed_line=${trimmed_line%$'\r'}
   
-  # Skip lines that are just global flags
+  # Skip lines that are just global flags (already applied before this loop)
   case "$trimmed_line" in
     --codespaces|--codespaces[[:space:]]*|\
     --public|--public[[:space:]]*|\

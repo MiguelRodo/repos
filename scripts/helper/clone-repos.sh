@@ -1006,6 +1006,29 @@ parse_args() {
   fi
 
   debug "Argument parsing complete."
+
+  # Parse global flags from the repos list file (CLI flags take precedence)
+  # This reads --worktree from repos.list so users don't need to pass it on the
+  # command line; the flag was previously parsed by setup-repos.sh.
+  if [ -f "$REPOS_FILE" ]; then
+    local _line _trimmed
+    while IFS= read -r _line || [ -n "$_line" ]; do
+      _trimmed="${_line#"${_line%%[![:space:]]*}"}"
+      case "$_trimmed" in \#*|"") continue ;; esac
+      case "$_trimmed" in *" # "*) _trimmed="${_trimmed%% # *}" ;; *" #"*) _trimmed="${_trimmed%% #*}" ;; esac
+      _trimmed="${_trimmed%"${_trimmed##*[![:space:]]}"}"; _trimmed="${_trimmed%$'\r'}"
+      [ -z "$_trimmed" ] && continue
+      case "$_trimmed" in
+        --worktree|--worktree[[:space:]]*)
+          if [ "$GLOBAL_WORKTREE" = "false" ]; then
+            GLOBAL_WORKTREE=true
+            debug "Enabled --worktree from repos.list"
+          fi
+          ;;
+      esac
+    done < "$REPOS_FILE"
+  fi
+
   return 0
 }
 
@@ -1031,7 +1054,7 @@ plan_forward() {
     trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"; trimmed=${trimmed%$'\r'}
     [ -z "$trimmed" ] && continue
     
-    # Skip global flag lines (they're handled by setup-repos.sh)
+    # Skip global flag lines (already applied during argument parsing above)
     case "$trimmed" in
       --codespaces|--codespaces[[:space:]]*|\
       --public|--public[[:space:]]*|\
@@ -1164,7 +1187,7 @@ main() {
       continue
     fi
     
-    # Skip global flag lines (they're handled by setup-repos.sh)
+    # Skip global flag lines (already applied during argument parsing above)
     case "$trimmed" in
       --codespaces|--codespaces[[:space:]]*|\
       --public|--public[[:space:]]*|\

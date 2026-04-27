@@ -333,7 +333,7 @@ build_paths_list() {
     trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"; trimmed=${trimmed%$'\r'}
     [ -z "$trimmed" ] && continue
     
-    # Skip global flag lines (they're handled by setup-repos.sh)
+    # Skip global flag lines (not relevant to workspace generation)
     case "$trimmed" in
       --codespaces|--codespaces[[:space:]]*|\
       --public|--public[[:space:]]*|\
@@ -472,7 +472,7 @@ build_paths_list() {
     
     [[ "$debug" == true ]] && printf "[DEBUG] Processing line: %s\n" "$trimmed" >&2
 
-    # Skip global flag lines (they're handled by setup-repos.sh)
+    # Skip global flag lines (not relevant to workspace generation)
     case "$trimmed" in
       --codespaces|--codespaces[[:space:]]*|\
       --public|--public[[:space:]]*|\

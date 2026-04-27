@@ -9,7 +9,7 @@ Configuration for AI coding agents (e.g., Google Jules, GitHub Copilot) working 
 `repos` is a command-line tool for managing multiple related Git repositories as a unified workspace. The primary workflow is:
 
 1. A user creates a `repos.list` file listing repositories (and optionally branches) they want cloned.
-2. Running `repos setup` clones them all into the **parent directory** of the current location, creating the remote repositories on GitHub (via the API) if they do not already exist.
+2. Running `repos clone` clones them all into the **parent directory** of the current location, creating the remote repositories on GitHub (via the API) if they do not already exist.
 3. Running `repos run` executes a script inside each cloned repository.
 
 The codebase is built around **Bash scripts** as the core engine. Language wrappers (R and Python) exist to expose the same functionality from those runtimes by bundling and invoking the Bash scripts via `system2()` / `subprocess.run()`.
@@ -94,7 +94,7 @@ Tests are plain Bash scripts located in `tests/`. Run them individually or all a
 
 ```bash
 # Run a specific test
-bash tests/test-setup-repos-local.sh
+bash tests/test-clone-variations-comprehensive.sh
 
 # Run all tests (from the repo root)
 for t in tests/test-*.sh; do
@@ -106,8 +106,7 @@ done
 Notable test files:
 | File | What it covers |
 |---|---|
-| `tests/test-setup-repos-local.sh` | Full integration test using local bare git remotes (no network required) |
-| `tests/test-repos-list-flags.sh` | Parsing of global and per-line flags in `repos.list` |
+| `tests/test-local-repo-comprehensive.sh` | Full integration test using local bare git remotes (no network required) |
 | `tests/test-auth-check.sh` | GitHub token validation logic |
 | `tests/test-clone-repos-flags.sh` | Flag handling in `clone-repos.sh` |
 | `tests/test-worktree-tracking.sh` | Worktree creation and tracking |
@@ -122,7 +121,7 @@ sudo apt-get install shellcheck   # Ubuntu/Debian
 brew install shellcheck           # macOS
 
 # Lint a script
-shellcheck scripts/setup-repos.sh
+shellcheck scripts/run-pipeline.sh
 shellcheck scripts/helper/clone-repos.sh
 ```
 
