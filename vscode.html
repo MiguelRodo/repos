@@ -191,11 +191,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#options-1" id="toc-options-1" class="nav-link" data-scroll-target="#options-1">Options</a></li>
   <li><a href="#github-authentication" id="toc-github-authentication" class="nav-link" data-scroll-target="#github-authentication">GitHub Authentication</a></li>
   </ul></li>
-  <li><a href="#r-and-python-apis" id="toc-r-and-python-apis" class="nav-link" data-scroll-target="#r-and-python-apis">R and Python APIs</a>
-  <ul class="collapse">
-  <li><a href="#r" id="toc-r" class="nav-link" data-scroll-target="#r">R</a></li>
-  <li><a href="#python" id="toc-python" class="nav-link" data-scroll-target="#python">Python</a></li>
-  </ul></li>
+  <li><a href="#r-and-python-apis" id="toc-r-and-python-apis" class="nav-link" data-scroll-target="#r-and-python-apis">R and Python APIs</a></li>
   </ul>
 </nav>
     </div>
@@ -311,36 +307,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="r-and-python-apis" class="level2">
 <h2 class="anchored" data-anchor-id="r-and-python-apis">R and Python APIs</h2>
-<section id="r" class="level3">
-<h3 class="anchored" data-anchor-id="r">R</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(repos)</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate VS Code workspace</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_workspace</span>()</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_workspace</span>(<span class="at">file =</span> <span class="st">"my-repos.list"</span>)</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Configure Codespaces authentication</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_codespace</span>()</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_codespace</span>(<span class="at">devcontainer =</span> <span class="st">".devcontainer/devcontainer.json"</span>)</span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_codespace</span>(<span class="at">devcontainer =</span> <span class="fu">c</span>(<span class="st">"path1/devcontainer.json"</span>,</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>                                 <span class="st">"path2/devcontainer.json"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="python" class="level3">
-<h3 class="anchored" data-anchor-id="python">Python</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> workspace, codespace</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate VS Code workspace</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>workspace()</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>workspace(<span class="bu">file</span><span class="op">=</span><span class="st">"my-repos.list"</span>)</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Configure Codespaces authentication</span></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>codespace()</span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>codespace(devcontainer<span class="op">=</span><span class="st">".devcontainer/devcontainer.json"</span>)</span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>codespace(devcontainer<span class="op">=</span>[<span class="st">"path1/devcontainer.json"</span>,</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>                        <span class="st">"path2/devcontainer.json"</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>For the R or Python API, see the language-specific wrapper pages:</p>
+<p>→ <a href="r-package.html">R package</a><br>
+→ <a href="python-package.html">Python package</a></p>
 
 
-</section>
 </section>
 
 </main> <!-- /main -->

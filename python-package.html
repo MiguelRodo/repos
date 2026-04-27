@@ -181,7 +181,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#installation" id="toc-installation" class="nav-link active" data-scroll-target="#installation">Installation</a></li>
+  <li><a href="#installation" id="toc-installation" class="nav-link active" data-scroll-target="#installation">Installation</a>
+  <ul class="collapse">
+  <li><a href="#does-installing-the-python-package-also-install-the-repos-cli" id="toc-does-installing-the-python-package-also-install-the-repos-cli" class="nav-link" data-scroll-target="#does-installing-the-python-package-also-install-the-repos-cli">Does installing the Python package also install the <code>repos</code> CLI?</a></li>
+  </ul></li>
   <li><a href="#end-to-end-workflow" id="toc-end-to-end-workflow" class="nav-link" data-scroll-target="#end-to-end-workflow">End-to-End Workflow</a>
   <ul class="collapse">
   <li><a href="#step-1-create-a-repos.list-file" id="toc-step-1-create-a-repos.list-file" class="nav-link" data-scroll-target="#step-1-create-a-repos.list-file">Step 1 — Create a <code>repos.list</code> file</a></li>
@@ -232,6 +235,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> repos</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install .</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>System requirements:</strong> <code>bash</code>, <code>git</code>, <code>curl</code>, and <code>jq</code> must be available on your <code>PATH</code>. On Windows, use <a href="https://git-scm.com/download/win">Git for Windows</a> or WSL.</p>
+<section id="does-installing-the-python-package-also-install-the-repos-cli" class="level3">
+<h3 class="anchored" data-anchor-id="does-installing-the-python-package-also-install-the-repos-cli">Does installing the Python package also install the <code>repos</code> CLI?</h3>
+<p><strong>Yes.</strong> Installing the package via <code>pip</code> registers a <code>repos</code> entry point, so you can run <code>repos clone</code>, <code>repos run</code>, etc. directly from your terminal straight away — no separate installation required.</p>
+<p>The package also bundles its own copies of the Bash scripts, so all Python functions (<code>run()</code>, <code>workspace()</code>, etc.) work without any additional setup.</p>
+</section>
 </section>
 <section id="end-to-end-workflow" class="level2">
 <h2 class="anchored" data-anchor-id="end-to-end-workflow">End-to-End Workflow</h2>

@@ -184,11 +184,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#basic-usage" id="toc-basic-usage" class="nav-link active" data-scroll-target="#basic-usage">Basic Usage</a></li>
   <li><a href="#options" id="toc-options" class="nav-link" data-scroll-target="#options">Options</a></li>
   <li><a href="#writing-a-pipeline-script" id="toc-writing-a-pipeline-script" class="nav-link" data-scroll-target="#writing-a-pipeline-script">Writing a Pipeline Script</a></li>
-  <li><a href="#r-and-python-apis" id="toc-r-and-python-apis" class="nav-link" data-scroll-target="#r-and-python-apis">R and Python APIs</a>
-  <ul class="collapse">
-  <li><a href="#r" id="toc-r" class="nav-link" data-scroll-target="#r">R</a></li>
-  <li><a href="#python" id="toc-python" class="nav-link" data-scroll-target="#python">Python</a></li>
-  </ul></li>
+  <li><a href="#r-and-python-apis" id="toc-r-and-python-apis" class="nav-link" data-scroll-target="#r-and-python-apis">R and Python APIs</a></li>
   </ul>
 </nav>
     </div>
@@ -296,26 +292,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="r-and-python-apis" class="level2">
 <h2 class="anchored" data-anchor-id="r-and-python-apis">R and Python APIs</h2>
-<section id="r" class="level3">
-<h3 class="anchored" data-anchor-id="r">R</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(repos)</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>()                                 <span class="co"># run run.sh in every repo</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>(<span class="at">script =</span> <span class="st">"build.sh"</span>)              <span class="co"># custom script</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>(<span class="at">dry_run =</span> <span class="cn">TRUE</span>, <span class="at">verbose =</span> <span class="cn">TRUE</span>)   <span class="co"># preview</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>(<span class="at">include =</span> <span class="fu">c</span>(<span class="st">"backend"</span>, <span class="st">"frontend"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="python" class="level3">
-<h3 class="anchored" data-anchor-id="python">Python</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> run</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>run()                              <span class="co"># run run.sh in every repo</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>run(script<span class="op">=</span><span class="st">"build.sh"</span>)             <span class="co"># custom script</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>run(dry_run<span class="op">=</span><span class="va">True</span>, verbose<span class="op">=</span><span class="va">True</span>)    <span class="co"># preview</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>run(include<span class="op">=</span>[<span class="st">"backend"</span>, <span class="st">"frontend"</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>For the R or Python API, see the language-specific wrapper pages:</p>
+<p>→ <a href="r-package.html">R package</a><br>
+→ <a href="python-package.html">Python package</a></p>
 
 
-</section>
 </section>
 
 </main> <!-- /main -->

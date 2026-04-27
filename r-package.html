@@ -181,7 +181,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#installation" id="toc-installation" class="nav-link active" data-scroll-target="#installation">Installation</a></li>
+  <li><a href="#installation" id="toc-installation" class="nav-link active" data-scroll-target="#installation">Installation</a>
+  <ul class="collapse">
+  <li><a href="#does-installing-the-r-package-also-install-the-repos-cli" id="toc-does-installing-the-r-package-also-install-the-repos-cli" class="nav-link" data-scroll-target="#does-installing-the-r-package-also-install-the-repos-cli">Does installing the R package also install the <code>repos</code> CLI?</a></li>
+  </ul></li>
   <li><a href="#end-to-end-workflow" id="toc-end-to-end-workflow" class="nav-link" data-scroll-target="#end-to-end-workflow">End-to-End Workflow</a>
   <ul class="collapse">
   <li><a href="#step-1-create-a-repos.list-file" id="toc-step-1-create-a-repos.list-file" class="nav-link" data-scroll-target="#step-1-create-a-repos.list-file">Step 1 — Create a <code>repos.list</code> file</a></li>
@@ -191,6 +194,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul></li>
   <li><a href="#api-reference" id="toc-api-reference" class="nav-link" data-scroll-target="#api-reference">API Reference</a>
   <ul class="collapse">
+  <li><a href="#repos_install_cli" id="toc-repos_install_cli" class="nav-link" data-scroll-target="#repos_install_cli"><code>repos_install_cli()</code></a></li>
   <li><a href="#repos" id="toc-repos" class="nav-link" data-scroll-target="#repos"><code>repos()</code></a></li>
   <li><a href="#repos_workspace" id="toc-repos_workspace" class="nav-link" data-scroll-target="#repos_workspace"><code>repos_workspace()</code></a></li>
   <li><a href="#repos_codespace" id="toc-repos_codespace" class="nav-link" data-scroll-target="#repos_codespace"><code>repos_codespace()</code></a></li>
@@ -228,6 +232,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">"devtools"</span>)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"MiguelRodo/repos"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>System requirements:</strong> <code>bash</code>, <code>git</code>, <code>curl</code>, and <code>jq</code> must be available on your <code>PATH</code>.</p>
+<section id="does-installing-the-r-package-also-install-the-repos-cli" class="level3">
+<h3 class="anchored" data-anchor-id="does-installing-the-r-package-also-install-the-repos-cli">Does installing the R package also install the <code>repos</code> CLI?</h3>
+<p><strong>No.</strong> The R package bundles its own copies of the Bash scripts, so all R functions (<code>repos_run()</code>, <code>repos_workspace()</code>, etc.) work without the <code>repos</code> command being on your <code>PATH</code>.</p>
+<p>If you also want to run <code>repos clone</code>, <code>repos run</code>, etc. directly from a terminal, install the CLI separately. The easiest way is to call <code>repos_install_cli()</code> from R:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(repos)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Print OS-appropriate installation instructions</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_install_cli</span>()</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Or print instructions AND run the installer automatically</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_install_cli</span>(<span class="at">run =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>See <a href="#repos_install_cli"><code>repos_install_cli()</code></a> below for details, or visit the <a href="install.html">Installation guide</a> for all options.</p>
+</section>
 </section>
 <section id="end-to-end-workflow" class="level2">
 <h2 class="anchored" data-anchor-id="end-to-end-workflow">End-to-End Workflow</h2>
@@ -241,30 +258,74 @@ myorg/documentation</code></pre>
 </section>
 <section id="step-2-clone-repositories" class="level3">
 <h3 class="anchored" data-anchor-id="step-2-clone-repositories">Step 2 — Clone repositories</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(repos)</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">repos</span>(<span class="st">"clone"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(repos)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">repos</span>(<span class="st">"clone"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>This reads <code>repos.list</code> and clones everything to the <strong>parent directory</strong> of your current location.</p>
 </section>
 <section id="step-3-open-in-your-ide-optional" class="level3">
 <h3 class="anchored" data-anchor-id="step-3-open-in-your-ide-optional">Step 3 — Open in your IDE (optional)</h3>
 <p>Generate a VS Code / Positron multi-root workspace file:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_workspace</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_workspace</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>See <a href="#repos_workspace"><code>repos_workspace()</code></a> below for all options.</p>
 </section>
 <section id="step-4-run-a-pipeline" class="level3">
 <h3 class="anchored" data-anchor-id="step-4-run-a-pipeline">Step 4 — Run a pipeline</h3>
 <p>Once the repositories are cloned, run a script inside each one:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>()          <span class="co"># executes run.sh in every repo</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>()          <span class="co"># executes run.sh in every repo</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>See <a href="#repos_run"><code>repos_run()</code></a> below for all options.</p>
 </section>
 </section>
 <section id="api-reference" class="level2">
 <h2 class="anchored" data-anchor-id="api-reference">API Reference</h2>
+<section id="repos_install_cli" class="level3">
+<h3 class="anchored" data-anchor-id="repos_install_cli"><code>repos_install_cli()</code></h3>
+<p>Print OS-appropriate instructions for installing the <code>repos</code> CLI, and optionally run the installer.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_install_cli</span>(</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">run =</span> <span class="cn">FALSE</span>  <span class="co"># if TRUE, run the installer automatically</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Parameters</strong></p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>run</code></td>
+<td><code>logical</code></td>
+<td><code>FALSE</code></td>
+<td>If <code>TRUE</code>, attempt to run the installer automatically</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Details</strong></p>
+<p>Detects the operating system and prints the recommended installation command for that platform. On Linux and macOS, passing <code>run = TRUE</code> will also execute the installer. On Windows, only instructions are printed.</p>
+<p><strong>Returns:</strong> Invisibly returns <code>NULL</code>.</p>
+<p><strong>Examples:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(repos)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Print installation instructions for your OS</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_install_cli</span>()</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Print instructions AND run the installer</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_install_cli</span>(<span class="at">run =</span> <span class="cn">TRUE</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
 <section id="repos" class="level3">
 <h3 class="anchored" data-anchor-id="repos"><code>repos()</code></h3>
 <p>Top-level dispatcher that delegates to the appropriate subcommand.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">repos</span>(command, ...)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">repos</span>(command, ...)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Parameters</strong></p>
 <table class="caption-top table">
 <colgroup>
@@ -294,24 +355,24 @@ myorg/documentation</code></pre>
 </table>
 <p><strong>Returns:</strong> Invisibly returns the exit status of the script (0 for success).</p>
 <p><strong>Examples:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(repos)</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">repos</span>(<span class="st">"clone"</span>)</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="fu">repos</span>(<span class="st">"workspace"</span>)</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">repos</span>(<span class="st">"codespace"</span>)</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="fu">repos</span>(<span class="st">"run"</span>)</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="fu">repos</span>(<span class="st">"run"</span>, <span class="at">script =</span> <span class="st">"build.sh"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(repos)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">repos</span>(<span class="st">"clone"</span>)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="fu">repos</span>(<span class="st">"workspace"</span>)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="fu">repos</span>(<span class="st">"codespace"</span>)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="fu">repos</span>(<span class="st">"run"</span>)</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="fu">repos</span>(<span class="st">"run"</span>, <span class="at">script =</span> <span class="st">"build.sh"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <hr>
 </section>
 <section id="repos_workspace" class="level3">
 <h3 class="anchored" data-anchor-id="repos_workspace"><code>repos_workspace()</code></h3>
 <p>Generate or update the VS Code / Positron multi-root workspace file.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_workspace</span>(</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">file       =</span> <span class="cn">NULL</span>,   <span class="co"># path to a custom list file (default: repos.list)</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">debug      =</span> <span class="cn">FALSE</span>,  <span class="co"># write debug output to stderr</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">debug_file =</span> <span class="cn">NULL</span>,   <span class="co"># write debug output to a file (TRUE = auto-name, or a path)</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  ...                  <span class="co"># additional raw flags forwarded to vscode-workspace-add.sh</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_workspace</span>(</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">file       =</span> <span class="cn">NULL</span>,   <span class="co"># path to a custom list file (default: repos.list)</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">debug      =</span> <span class="cn">FALSE</span>,  <span class="co"># write debug output to stderr</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">debug_file =</span> <span class="cn">NULL</span>,   <span class="co"># write debug output to a file (TRUE = auto-name, or a path)</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  ...                  <span class="co"># additional raw flags forwarded to vscode-workspace-add.sh</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Parameters</strong></p>
 <table class="caption-top table">
 <colgroup>
@@ -357,28 +418,28 @@ myorg/documentation</code></pre>
 </table>
 <p><strong>Returns:</strong> Invisibly returns the exit status of the script (0 for success).</p>
 <p><strong>Examples:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(repos)</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate workspace from default repos.list</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_workspace</span>()</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Use a custom list file</span></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_workspace</span>(<span class="at">file =</span> <span class="st">"my-repos.list"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(repos)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate workspace from default repos.list</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_workspace</span>()</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Use a custom list file</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_workspace</span>(<span class="at">file =</span> <span class="st">"my-repos.list"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>For the full description, see the <a href="vscode.html">VS Code integration guide</a>.</p>
 <hr>
 </section>
 <section id="repos_codespace" class="level3">
 <h3 class="anchored" data-anchor-id="repos_codespace"><code>repos_codespace()</code></h3>
 <p>Configure GitHub Codespaces authentication.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_codespace</span>(</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">file         =</span> <span class="cn">NULL</span>,  <span class="co"># path to a custom list file (default: repos.list)</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">devcontainer =</span> <span class="cn">NULL</span>,  <span class="co"># path(s) to devcontainer.json</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">permissions  =</span> <span class="cn">NULL</span>,  <span class="co"># "all" or "contents" — passed to codespaces-auth-add.sh</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">tool         =</span> <span class="cn">NULL</span>,  <span class="co"># force tool for codespaces-auth-add.sh ("jq" or "python")</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">debug        =</span> <span class="cn">FALSE</span>, <span class="co"># write debug output to stderr</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">debug_file   =</span> <span class="cn">NULL</span>,  <span class="co"># write debug output to a file (TRUE = auto-name, or a path)</span></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  ...                   <span class="co"># additional raw flags forwarded to codespaces-auth-add.sh</span></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_codespace</span>(</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">file         =</span> <span class="cn">NULL</span>,  <span class="co"># path to a custom list file (default: repos.list)</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">devcontainer =</span> <span class="cn">NULL</span>,  <span class="co"># path(s) to devcontainer.json</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">permissions  =</span> <span class="cn">NULL</span>,  <span class="co"># "all" or "contents" — passed to codespaces-auth-add.sh</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">tool         =</span> <span class="cn">NULL</span>,  <span class="co"># force tool for codespaces-auth-add.sh ("jq" or "python")</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">debug        =</span> <span class="cn">FALSE</span>, <span class="co"># write debug output to stderr</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">debug_file   =</span> <span class="cn">NULL</span>,  <span class="co"># write debug output to a file (TRUE = auto-name, or a path)</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>  ...                   <span class="co"># additional raw flags forwarded to codespaces-auth-add.sh</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Parameters</strong></p>
 <table class="caption-top table">
 <colgroup>
@@ -442,35 +503,35 @@ myorg/documentation</code></pre>
 </table>
 <p><strong>Returns:</strong> Invisibly returns the exit status of the script (0 for success).</p>
 <p><strong>Examples:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(repos)</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Configure with default devcontainer path</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_codespace</span>()</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Specify a devcontainer.json path</span></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_codespace</span>(<span class="at">devcontainer =</span> <span class="st">".devcontainer/devcontainer.json"</span>)</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Multiple devcontainer paths</span></span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_codespace</span>(<span class="at">devcontainer =</span> <span class="fu">c</span>(<span class="st">"path1/devcontainer.json"</span>,</span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>                                 <span class="st">"path2/devcontainer.json"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(repos)</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Configure with default devcontainer path</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_codespace</span>()</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Specify a devcontainer.json path</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_codespace</span>(<span class="at">devcontainer =</span> <span class="st">".devcontainer/devcontainer.json"</span>)</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Multiple devcontainer paths</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_codespace</span>(<span class="at">devcontainer =</span> <span class="fu">c</span>(<span class="st">"path1/devcontainer.json"</span>,</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>                                 <span class="st">"path2/devcontainer.json"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>For the full description, see the <a href="vscode.html">VS Code integration guide</a>.</p>
 <hr>
 </section>
 <section id="repos_run" class="level3">
 <h3 class="anchored" data-anchor-id="repos_run"><code>repos_run()</code></h3>
 <p>Execute a script inside each cloned repository.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>(</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">file             =</span> <span class="cn">NULL</span>,   <span class="co"># path to a custom list file (default: repos.list)</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">script           =</span> <span class="cn">NULL</span>,   <span class="co"># script to run in each repo (default: run.sh)</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">include          =</span> <span class="cn">NULL</span>,   <span class="co"># repo name(s) to include</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">exclude          =</span> <span class="cn">NULL</span>,   <span class="co"># repo name(s) to skip</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">ensure_setup     =</span> <span class="cn">FALSE</span>,  <span class="co"># clone repos first (via repos clone)</span></span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">skip_deps        =</span> <span class="cn">FALSE</span>,  <span class="co"># skip install-r-deps.sh</span></span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">dry_run          =</span> <span class="cn">FALSE</span>,  <span class="co"># print what would run without executing</span></span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">verbose          =</span> <span class="cn">FALSE</span>,  <span class="co"># verbose logging</span></span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">continue_on_error =</span> <span class="cn">FALSE</span>, <span class="co"># keep running after a failure</span></span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>  ...                        <span class="co"># additional raw flags forwarded to run-pipeline.sh</span></span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>(</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">file             =</span> <span class="cn">NULL</span>,   <span class="co"># path to a custom list file (default: repos.list)</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">script           =</span> <span class="cn">NULL</span>,   <span class="co"># script to run in each repo (default: run.sh)</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">include          =</span> <span class="cn">NULL</span>,   <span class="co"># repo name(s) to include</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">exclude          =</span> <span class="cn">NULL</span>,   <span class="co"># repo name(s) to skip</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">ensure_setup     =</span> <span class="cn">FALSE</span>,  <span class="co"># clone repos first (via repos clone)</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">skip_deps        =</span> <span class="cn">FALSE</span>,  <span class="co"># skip install-r-deps.sh</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">dry_run          =</span> <span class="cn">FALSE</span>,  <span class="co"># print what would run without executing</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">verbose          =</span> <span class="cn">FALSE</span>,  <span class="co"># verbose logging</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">continue_on_error =</span> <span class="cn">FALSE</span>, <span class="co"># keep running after a failure</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>  ...                        <span class="co"># additional raw flags forwarded to run-pipeline.sh</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Parameters</strong></p>
 <table class="caption-top table">
 <colgroup>
@@ -552,44 +613,44 @@ myorg/documentation</code></pre>
 </table>
 <p><strong>Returns:</strong> Invisibly returns the exit status of the script (0 for success).</p>
 <p><strong>Examples:</strong></p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(repos)</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Run the default script (run.sh) in every repo</span></span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>()</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Run a custom script</span></span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>(<span class="at">script =</span> <span class="st">"build.sh"</span>)</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Only run in specific repos</span></span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>(<span class="at">include =</span> <span class="fu">c</span>(<span class="st">"backend"</span>, <span class="st">"frontend"</span>))</span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Skip a repo</span></span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>(<span class="at">exclude =</span> <span class="st">"docs"</span>)</span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Continue even if one repo fails</span></span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>(<span class="at">continue_on_error =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Preview without running</span></span>
-<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>(<span class="at">dry_run =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Ensure repos are cloned before running</span></span>
-<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>(<span class="at">ensure_setup =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Combine options</span></span>
-<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>(<span class="at">script =</span> <span class="st">"test.sh"</span>, <span class="at">verbose =</span> <span class="cn">TRUE</span>, <span class="at">ensure_setup =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Backward compatibility — raw flag passing still works</span></span>
-<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>(<span class="st">"--script"</span>, <span class="st">"build.sh"</span>, <span class="st">"--dry-run"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(repos)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Run the default script (run.sh) in every repo</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>()</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Run a custom script</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>(<span class="at">script =</span> <span class="st">"build.sh"</span>)</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Only run in specific repos</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>(<span class="at">include =</span> <span class="fu">c</span>(<span class="st">"backend"</span>, <span class="st">"frontend"</span>))</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Skip a repo</span></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>(<span class="at">exclude =</span> <span class="st">"docs"</span>)</span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Continue even if one repo fails</span></span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>(<span class="at">continue_on_error =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Preview without running</span></span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>(<span class="at">dry_run =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Ensure repos are cloned before running</span></span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>(<span class="at">ensure_setup =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Combine options</span></span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>(<span class="at">script =</span> <span class="st">"test.sh"</span>, <span class="at">verbose =</span> <span class="cn">TRUE</span>, <span class="at">ensure_setup =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-27"><a href="#cb16-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Backward compatibility — raw flag passing still works</span></span>
+<span id="cb16-28"><a href="#cb16-28" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>(<span class="st">"--script"</span>, <span class="st">"build.sh"</span>, <span class="st">"--dry-run"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>For the full description, see <a href="pipelines.html">Running Pipelines</a>.</p>
 </section>
 </section>
 <section id="github-authentication" class="level2">
 <h2 class="anchored" data-anchor-id="github-authentication">GitHub Authentication</h2>
 <p><code>repos_codespace()</code> needs a GitHub token with Codespaces permissions. Provide it via the <code>GH_TOKEN</code> environment variable or via the <code>gh</code> CLI:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">GH_TOKEN =</span> <span class="st">"your_personal_access_token"</span>)</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_codespace</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">GH_TOKEN =</span> <span class="st">"your_personal_access_token"</span>)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_codespace</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Or set it in your shell before starting R:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GH_TOKEN</span><span class="op">=</span><span class="st">"your_personal_access_token"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GH_TOKEN</span><span class="op">=</span><span class="st">"your_personal_access_token"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
 </section>
