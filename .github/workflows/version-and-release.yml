@@ -20,18 +20,15 @@ on:
         required: false
       cli_version:
         description: >
-          Exact CLI version to release (e.g. v1.2.3 or 1.2.3).
-          Mutually exclusive with bump_type.
+          Override: exact version to set for the CLI (e.g. 1.2.3).
         required: false
       python_version:
         description: >
           Override: exact version to set for the Python package (e.g. 1.2.3).
-          Leave empty to apply the same bump type as the CLI.
         required: false
       r_version:
         description: >
           Override: exact version to set for the R package (e.g. 1.2.3).
-          Leave empty to apply the same bump type as the CLI.
         required: false
 
 jobs:
