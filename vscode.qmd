@@ -93,34 +93,7 @@ gh auth login
 
 ## R and Python APIs
 
-### R
+For the R or Python API, see the language-specific wrapper pages:
 
-```r
-library(repos)
-
-# Generate VS Code workspace
-repos_workspace()
-repos_workspace(file = "my-repos.list")
-
-# Configure Codespaces authentication
-repos_codespace()
-repos_codespace(devcontainer = ".devcontainer/devcontainer.json")
-repos_codespace(devcontainer = c("path1/devcontainer.json",
-                                 "path2/devcontainer.json"))
-```
-
-### Python
-
-```python
-from repos import workspace, codespace
-
-# Generate VS Code workspace
-workspace()
-workspace(file="my-repos.list")
-
-# Configure Codespaces authentication
-codespace()
-codespace(devcontainer=".devcontainer/devcontainer.json")
-codespace(devcontainer=["path1/devcontainer.json",
-                        "path2/devcontainer.json"])
-```
+→ [R package](r-package.html)  
+→ [Python package](python-package.html)
