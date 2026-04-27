@@ -50,7 +50,7 @@ repos_installed_cli_version <- function() {
   if (is.null(out) || length(out) == 0L) {
     return(NULL)
   }
-  # Strip a leading "v" if present (e.g. "v1.1.0" → "1.1.0")
+  # Strip a leading "v" if present (e.g. "v1.1.0" -> "1.1.0")
   sub("^v", "", trimws(out[[1L]]))
 }
 
@@ -89,7 +89,7 @@ repos_install_cli <- function(run = FALSE) {
 
   if (sysname == "Linux") {
     message("To install the repos CLI on Ubuntu/Debian, choose one of:\n")
-    message("  # Option 1: APT repository (recommended — keeps repos up to date):")
+    message("  # Option 1: APT repository (recommended -- keeps repos up to date):")
     message("  curl -fsSL https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/KEY.gpg \\")
     message("     | sudo gpg --dearmor -o /usr/share/keyrings/miguelrodo-repos.gpg")
     message('  echo "deb [signed-by=/usr/share/keyrings/miguelrodo-repos.gpg] https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/ ./" \\')
@@ -235,6 +235,83 @@ repos <- function(command, ...) {
     update_branches = repos_update_branches(...),
     update_scripts  = repos_update_scripts(...)
   )
+}
+
+#' Clone Repositories Listed in repos.list
+#'
+#' Clone all repositories (and branches) described in a \code{repos.list} file
+#' into the parent directory of the current working directory.
+#'
+#' @param file Path to repos list file (default: \code{repos.list}, falling
+#'   back to \code{repos-to-clone.list} if absent).
+#' @param worktree Logical. If \code{TRUE}, pass \code{--worktree} globally so
+#'   that every \code{@branch} line creates a Git worktree instead of a fresh
+#'   clone.
+#' @param debug Logical. If \code{TRUE}, enable debug tracing to stderr.
+#' @param debug_file Character string or logical. Enable debug tracing to a
+#'   file.  If \code{TRUE}, an auto-generated filename is used; if a non-empty
+#'   string, that path is used as the log file.
+#' @param ... Additional arguments passed directly to the
+#'   \code{clone-repos.sh} script as-is.
+#'
+#' @return Invisibly returns the exit status of the script (0 for success).
+#'
+#' @details
+#' This function is a wrapper around \code{clone-repos.sh}.  Each non-empty,
+#' non-comment line in the repos list file describes one of three operations:
+#' \enumerate{
+#'   \item Clone a repository (default or all branches): \code{owner/repo}
+#'   \item Clone a specific branch: \code{owner/repo@branch}
+#'   \item Clone or create a worktree for a branch from the fallback repo:
+#'     \code{@branch}
+#' }
+#' Repositories are always cloned into the \strong{parent} directory of the
+#' current working directory (i.e. the directory containing the project that
+#' holds \code{repos.list}).
+#'
+#' @examples
+#' \dontrun{
+#' # Clone from the default repos.list
+#' repos_clone()
+#'
+#' # Use a different list file
+#' repos_clone(file = "my-repos.list")
+#'
+#' # Use worktrees globally for all @branch lines
+#' repos_clone(worktree = TRUE)
+#' }
+#'
+#' @export
+repos_clone <- function(file = NULL, worktree = FALSE, debug = FALSE,
+                        debug_file = NULL, ...) {
+  args <- character()
+
+  if (!is.null(file)) {
+    args <- c(args, "-f", file)
+  }
+
+  if (isTRUE(worktree)) {
+    args <- c(args, "--worktree")
+  }
+
+  if (isTRUE(debug)) {
+    args <- c(args, "--debug")
+  }
+
+  if (!is.null(debug_file)) {
+    if (isTRUE(debug_file)) {
+      args <- c(args, "--debug-file")
+    } else {
+      args <- c(args, "--debug-file", debug_file)
+    }
+  }
+
+  additional_args <- c(...)
+  if (length(additional_args) > 0) {
+    args <- c(args, additional_args)
+  }
+
+  run_repos_script("helper/clone-repos.sh", args = args)
 }
 
 #' Generate VS Code Workspace File
@@ -478,54 +555,6 @@ repos_run <- function(file = NULL, script = NULL, include = NULL, exclude = NULL
   }
   
   run_repos_script("run-pipeline.sh", args = args)
-}
-
-#' Clone Repositories
-#'
-#' Clone repositories listed in a \code{repos.list} file.
-#'
-#' @param file Path to repos list file (default: repos.list, or
-#'   repos-to-clone.list if repos.list is absent)
-#' @param debug Logical. If \code{TRUE}, enable debug tracing to stderr
-#' @param debug_file Character string or logical. Enable debug tracing to file
-#'   (auto-generated if \code{TRUE})
-#' @param ... Additional arguments passed directly to \code{clone-repos.sh}.
-#'
-#' @return Invisibly returns the exit status of the script (0 for success).
-#'
-#' @examples
-#' \dontrun{
-#' repos_clone()
-#' repos_clone(file = "my-repos.list")
-#' repos_clone(debug = TRUE)
-#' }
-#'
-#' @export
-repos_clone <- function(file = NULL, debug = FALSE, debug_file = NULL, ...) {
-  args <- character()
-
-  if (!is.null(file)) {
-    args <- c(args, "-f", file)
-  }
-
-  if (isTRUE(debug)) {
-    args <- c(args, "--debug")
-  }
-
-  if (!is.null(debug_file)) {
-    if (isTRUE(debug_file)) {
-      args <- c(args, "--debug-file")
-    } else {
-      args <- c(args, "--debug-file", debug_file)
-    }
-  }
-
-  additional_args <- c(...)
-  if (length(additional_args) > 0) {
-    args <- c(args, additional_args)
-  }
-
-  run_repos_script("helper/clone-repos.sh", args = args)
 }
 
 #' Create a New Worktree/Branch
