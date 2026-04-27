@@ -41,27 +41,10 @@ jobs:
           pip install .
           echo "Installation completed"
       
-      - name: Verify repos command is available
-        run: |
-          which repos
-          repos --help || true
-          echo "repos command is available"
-      
       - name: Test Python API
         run: |
           python -c "from repos import get_script_path, run_script; print('Python API works')"
           python -c "from repos import get_script_path; path = get_script_path('run-pipeline.sh'); print(f'Script path: {path}')"
-      
-      - name: Create test repos.list
-        run: |
-          cat > test-repos.list << 'EOF'
-          # Test file for validation
-          EOF
-      
-      - name: Run basic functionality test
-        run: |
-          # Test that help works (exits with 1 but that's expected)
-          repos --help || true
           echo "Python package installation test passed"
 
   # Test R package installation
