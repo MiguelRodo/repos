@@ -171,7 +171,8 @@ run_repos_script <- function(script_name, args = character()) {
 #' @return Invisibly returns the exit status of the script (0 for success).
 #'
 #' @details
-#' \code{repos("clone", ...)} delegates to \code{clone-repos.sh}.
+#' \code{repos("clone", ...)} delegates to \code{clone-repos.sh} (see
+#' \code{\link{repos_clone}}).
 #'
 #' \code{repos("workspace", ...)} delegates to \code{vscode-workspace-add.sh} (see
 #' \code{\link{repos_workspace}}).
@@ -201,17 +202,94 @@ repos <- function(command, ...) {
     message("  \"workspace\"  Generate or update the VS Code workspace file")
     message("  \"codespace\"  Configure GitHub Codespaces authentication")
     message("  \"run\"        Execute a script inside each cloned repository")
-    message("\nSee ?repos_workspace, ?repos_codespace and ?repos_run for details.")
+    message("\nSee ?repos_clone, ?repos_workspace, ?repos_codespace and ?repos_run for details.")
     return(invisible(1L))
   }
 
   switch(command,
-    clone      = run_repos_script("helper/clone-repos.sh", args = c(...)),
+    clone      = repos_clone(...),
     workspace  = repos_workspace(...),
     codespace  = repos_codespace(...),
     codespaces = repos_codespace(...),
     run        = repos_run(...)
   )
+}
+
+#' Clone Repositories Listed in repos.list
+#'
+#' Clone all repositories (and branches) described in a \code{repos.list} file
+#' into the parent directory of the current working directory.
+#'
+#' @param file Path to repos list file (default: \code{repos.list}, falling
+#'   back to \code{repos-to-clone.list} if absent).
+#' @param worktree Logical. If \code{TRUE}, pass \code{--worktree} globally so
+#'   that every \code{@branch} line creates a Git worktree instead of a fresh
+#'   clone.
+#' @param debug Logical. If \code{TRUE}, enable debug tracing to stderr.
+#' @param debug_file Character string or logical. Enable debug tracing to a
+#'   file.  If \code{TRUE}, an auto-generated filename is used; if a non-empty
+#'   string, that path is used as the log file.
+#' @param ... Additional arguments passed directly to the
+#'   \code{clone-repos.sh} script as-is.
+#'
+#' @return Invisibly returns the exit status of the script (0 for success).
+#'
+#' @details
+#' This function is a wrapper around \code{clone-repos.sh}.  Each non-empty,
+#' non-comment line in the repos list file describes one of three operations:
+#' \enumerate{
+#'   \item Clone a repository (default or all branches): \code{owner/repo}
+#'   \item Clone a specific branch: \code{owner/repo@branch}
+#'   \item Clone or create a worktree for a branch from the fallback repo:
+#'     \code{@branch}
+#' }
+#' Repositories are always cloned into the \strong{parent} directory of the
+#' current working directory (i.e. the directory containing the project that
+#' holds \code{repos.list}).
+#'
+#' @examples
+#' \dontrun{
+#' # Clone from the default repos.list
+#' repos_clone()
+#'
+#' # Use a different list file
+#' repos_clone(file = "my-repos.list")
+#'
+#' # Use worktrees globally for all @branch lines
+#' repos_clone(worktree = TRUE)
+#' }
+#'
+#' @export
+repos_clone <- function(file = NULL, worktree = FALSE, debug = FALSE,
+                        debug_file = NULL, ...) {
+  args <- character()
+
+  if (!is.null(file)) {
+    args <- c(args, "-f", file)
+  }
+
+  if (isTRUE(worktree)) {
+    args <- c(args, "--worktree")
+  }
+
+  if (isTRUE(debug)) {
+    args <- c(args, "--debug")
+  }
+
+  if (!is.null(debug_file)) {
+    if (isTRUE(debug_file)) {
+      args <- c(args, "--debug-file")
+    } else {
+      args <- c(args, "--debug-file", debug_file)
+    }
+  }
+
+  additional_args <- c(...)
+  if (length(additional_args) > 0) {
+    args <- c(args, additional_args)
+  }
+
+  run_repos_script("helper/clone-repos.sh", args = args)
 }
 
 #' Generate VS Code Workspace File
