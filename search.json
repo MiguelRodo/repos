@@ -1,86 +1,219 @@
 [
   {
+    "objectID": "install.html",
+    "href": "install.html",
+    "title": "Installation",
+    "section": "",
+    "text": "You can install repos as a system package (Ubuntu/Debian, macOS, Windows), from source, or as a language-specific wrapper (R or Python)."
+  },
+  {
+    "objectID": "install.html#ubuntu-debian",
+    "href": "install.html#ubuntu-debian",
+    "title": "Installation",
+    "section": "Ubuntu / Debian",
+    "text": "Ubuntu / Debian\n\nOption 1: Install from APT Repository (Recommended)\nInstall and keep repos up to date directly via apt:\n# Add repository signing key\ncurl -fsSL https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/KEY.gpg \\\n   | sudo gpg --dearmor -o /usr/share/keyrings/miguelrodo-repos.gpg\n\n# Add apt source\necho \"deb [signed-by=/usr/share/keyrings/miguelrodo-repos.gpg] https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/ ./\" \\\n   | sudo tee /etc/apt/sources.list.d/miguelrodo-repos.list &gt;/dev/null\n\n# Install repos\nsudo apt-get update\nsudo apt-get install -y repos\nTo uninstall:\nsudo apt-get remove repos\n\n\nOption 2: Local Installation (No sudo required)\nInstall to your user directory (~/.local/bin):\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\nbash install-local.sh\nIf ~/.local/bin is not on your PATH, add this to ~/.bashrc or ~/.profile:\nexport PATH=\"$HOME/.local/bin:$PATH\"\nThen reload:\nsource ~/.bashrc\nTo uninstall:\nbash uninstall-local.sh\n\n\nOption 3: System-wide from Release .deb (requires sudo)\nDownload and install the latest .deb from the Releases page:\nVERSION_REPOS=1.2.6\nwget https://github.com/MiguelRodo/repos/releases/download/v${VERSION_REPOS}/repos_${VERSION_REPOS}_all.deb\nsudo dpkg -i repos_${VERSION_REPOS}_all.deb\nrm repos_${VERSION_REPOS}_all.deb\n\n# Fix any dependency issues\nsudo apt-get install -f\nTo uninstall:\nsudo dpkg -r repos\n\n\nDependencies\nAll Ubuntu/Debian methods require bash, git, curl, and jq. These are typically pre-installed. If not:\nsudo apt-get install bash git curl jq"
+  },
+  {
+    "objectID": "install.html#macos-homebrew",
+    "href": "install.html#macos-homebrew",
+    "title": "Installation",
+    "section": "macOS (Homebrew)",
+    "text": "macOS (Homebrew)\nbrew tap MiguelRodo/repos\nbrew install repos\nThe formula automatically handles the jq dependency. Git is typically pre-installed on macOS."
+  },
+  {
+    "objectID": "install.html#windows",
+    "href": "install.html#windows",
+    "title": "Installation",
+    "section": "Windows",
+    "text": "Windows\n\nScoop (recommended)\nscoop bucket add repos https://github.com/MiguelRodo/scoop-bucket\nscoop install repos\ngit and jq are installed automatically by Scoop. You will also need Git for Windows for Bash support.\n\n\nManual\n\nClone the repository:\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\nRun the installer:\n.\\install.ps1\nRestart your PowerShell session.\n\nDependencies:\n\nGit for Windows — provides bash, git, and curl\njq — JSON processor"
+  },
+  {
+    "objectID": "install.html#from-source",
+    "href": "install.html#from-source",
+    "title": "Installation",
+    "section": "From Source",
+    "text": "From Source\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\n\n# Local install (no sudo)\nbash install-local.sh\n\n# Or system-wide on Ubuntu/Debian\nsudo dpkg-buildpackage -us -uc -b\nsudo dpkg -i ../repos_*.deb"
+  },
+  {
+    "objectID": "install.html#language-wrappers",
+    "href": "install.html#language-wrappers",
+    "title": "Installation",
+    "section": "Language Wrappers",
+    "text": "Language Wrappers\n\nR Package\ninstall.packages(\"devtools\")\ndevtools::install_github(\"MiguelRodo/repos\")\nRequires bash, git, curl, and jq on your system.\n\n\nPython Package\npip install git+https://github.com/MiguelRodo/repos.git\nOr from a local clone:\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\npip install .\nRequires bash, git, curl, and jq on your system. On Windows, use Git for Windows or WSL."
+  },
+  {
+    "objectID": "install.html#verify-installation",
+    "href": "install.html#verify-installation",
+    "title": "Installation",
+    "section": "Verify Installation",
+    "text": "Verify Installation\nrepos --help"
+  },
+  {
+    "objectID": "setup.html",
+    "href": "setup.html",
+    "title": "repos setup",
+    "section": "",
+    "text": "repos setup reads your repos.list file, clones all listed repositories into the parent directory of your current location, creates any missing GitHub repositories, generates a VS Code workspace file, and optionally configures GitHub Codespaces authentication."
+  },
+  {
+    "objectID": "setup.html#basic-usage",
+    "href": "setup.html#basic-usage",
+    "title": "repos setup",
+    "section": "Basic Usage",
+    "text": "Basic Usage\nrepos setup"
+  },
+  {
+    "objectID": "setup.html#options",
+    "href": "setup.html#options",
+    "title": "repos setup",
+    "section": "Options",
+    "text": "Options\n\n\n\nFlag\nDescription\n\n\n\n\n-f &lt;file&gt;\nUse a different list file (default: repos.list)\n\n\n--public\nCreate new repositories as public (default is private)\n\n\n--codespaces\nConfigure Codespaces authentication\n\n\n-d &lt;path&gt;\nPath to a devcontainer.json file (repeatable)\n\n\n\n# Use a custom list file\nrepos setup -f my-repos.list\n\n# Create new repos as public\nrepos setup --public\n\n# Enable Codespaces auth with default devcontainer path\nrepos setup --codespaces\n\n# Specify one or more devcontainer.json paths\nrepos setup -d .devcontainer/devcontainer.json\nrepos setup -d path1/devcontainer.json -d path2/devcontainer.json"
+  },
+  {
+    "objectID": "setup.html#github-authentication",
+    "href": "setup.html#github-authentication",
+    "title": "repos setup",
+    "section": "GitHub Authentication",
+    "text": "GitHub Authentication\nrepos setup needs a GitHub token to create repositories and clone private ones. Provide it via the GH_TOKEN environment variable or via the gh CLI:\nexport GH_TOKEN=\"your_personal_access_token\"\n# or\ngh auth login"
+  },
+  {
+    "objectID": "setup.html#vs-code-workspace",
+    "href": "setup.html#vs-code-workspace",
+    "title": "repos setup",
+    "section": "VS Code Workspace",
+    "text": "VS Code Workspace\nAfter repos setup completes, a file called entire-project.code-workspace is written in your project directory. Open it to load all cloned repositories as a multi-root workspace:\ncode entire-project.code-workspace"
+  },
+  {
+    "objectID": "setup.html#codespaces-authentication",
+    "href": "setup.html#codespaces-authentication",
+    "title": "repos setup",
+    "section": "Codespaces Authentication",
+    "text": "Codespaces Authentication\nPass --codespaces to inject the GH_TOKEN Codespaces secret into every cloned repository that has a devcontainer.json. You can override which devcontainer.json files are targeted with one or more -d flags:\nrepos setup --codespaces -d .devcontainer/prebuild/devcontainer.json"
+  },
+  {
+    "objectID": "setup.html#repository-layout",
+    "href": "setup.html#repository-layout",
+    "title": "repos setup",
+    "section": "Repository Layout",
+    "text": "Repository Layout\nRepositories are always cloned to the parent of your current directory:\nworkspace/\n├── my-project/          # your project (contains repos.list)\n├── backend/             # cloned from myorg/backend\n├── frontend-develop/    # cloned from myorg/frontend@develop\n└── docs/                # cloned from myorg/docs"
+  },
+  {
+    "objectID": "pipelines.html",
+    "href": "pipelines.html",
+    "title": "Running Pipelines",
+    "section": "",
+    "text": "repos run executes a script inside each repository listed in your repos.list file. This lets you run a build, test, or any other task across your entire workspace with a single command."
+  },
+  {
+    "objectID": "pipelines.html#basic-usage",
+    "href": "pipelines.html#basic-usage",
+    "title": "Running Pipelines",
+    "section": "Basic Usage",
+    "text": "Basic Usage\nBy default, repos run looks for a file called run.sh in each cloned repository and executes it:\nrepos run"
+  },
+  {
+    "objectID": "pipelines.html#options",
+    "href": "pipelines.html#options",
+    "title": "Running Pipelines",
+    "section": "Options",
+    "text": "Options\n\n\n\n\n\n\n\nFlag\nDescription\n\n\n\n\n--script &lt;file&gt;\nRun a different script (default: run.sh)\n\n\n-f &lt;file&gt;\nUse a different list file (default: repos.list)\n\n\n--include &lt;repos&gt;\nComma-separated list of repositories to include\n\n\n--exclude &lt;repos&gt;\nComma-separated list of repositories to skip\n\n\n--continue-on-error\nKeep running even if a repository fails\n\n\n--dry-run\nPrint what would be run without executing anything\n\n\n--ensure-setup\nRun repos setup before executing the pipeline\n\n\n\n# Run a custom script in each repo\nrepos run --script build.sh\n\n# Only run in specific repos\nrepos run --include \"backend,frontend\"\n\n# Skip a repo\nrepos run --exclude \"docs\"\n\n# Continue even if one repo fails, then report all results\nrepos run --continue-on-error\n\n# Preview without running\nrepos run --dry-run\n\n# Make sure repos are cloned before running\nrepos run --ensure-setup"
+  },
+  {
+    "objectID": "pipelines.html#writing-a-pipeline-script",
+    "href": "pipelines.html#writing-a-pipeline-script",
+    "title": "Running Pipelines",
+    "section": "Writing a Pipeline Script",
+    "text": "Writing a Pipeline Script\nEach repository should contain the script that repos run will call. The script receives no arguments by default, but can read environment variables or accept flags if needed. A minimal run.sh:\n#!/usr/bin/env bash\nset -e\n\n# Install dependencies\nRscript -e \"renv::restore()\"\n\n# Run analysis\nRscript analysis.R"
+  },
+  {
+    "objectID": "pipelines.html#r-and-python-apis",
+    "href": "pipelines.html#r-and-python-apis",
+    "title": "Running Pipelines",
+    "section": "R and Python APIs",
+    "text": "R and Python APIs\n\nR\nlibrary(repos)\n\nrepos_run()                                 # run run.sh in every repo\nrepos_run(script = \"build.sh\")              # custom script\nrepos_run(dry_run = TRUE, verbose = TRUE)   # preview\nrepos_run(include = c(\"backend\", \"frontend\"))\n\n\nPython\nfrom repos import run\n\nrun()                              # run run.sh in every repo\nrun(script=\"build.sh\")             # custom script\nrun(dry_run=True, verbose=True)    # preview\nrun(include=[\"backend\", \"frontend\"])"
+  },
+  {
+    "objectID": "repos-list.html",
+    "href": "repos-list.html",
+    "title": "repos.list Reference",
+    "section": "",
+    "text": "The repos.list file lists the repositories (and optionally branches) that repos setup will clone. Place it in the root of your project directory."
+  },
+  {
+    "objectID": "repos-list.html#basic-format",
+    "href": "repos-list.html#basic-format",
+    "title": "repos.list Reference",
+    "section": "Basic Format",
+    "text": "Basic Format\nEach line is one repository:\nowner/repo\nLines starting with # are comments and are ignored."
+  },
+  {
+    "objectID": "repos-list.html#cloning-a-specific-branch",
+    "href": "repos-list.html#cloning-a-specific-branch",
+    "title": "repos.list Reference",
+    "section": "Cloning a Specific Branch",
+    "text": "Cloning a Specific Branch\nAppend @branch to clone only that branch:\nowner/repo@develop"
+  },
+  {
+    "objectID": "repos-list.html#custom-target-directory",
+    "href": "repos-list.html#custom-target-directory",
+    "title": "repos.list Reference",
+    "section": "Custom Target Directory",
+    "text": "Custom Target Directory\nAdd a name after the repository to clone into a different directory:\nowner/repo my-data"
+  },
+  {
+    "objectID": "repos-list.html#worktrees",
+    "href": "repos-list.html#worktrees",
+    "title": "repos.list Reference",
+    "section": "Worktrees",
+    "text": "Worktrees\nUse @branch without a repository name to create a Git worktree from the most recently listed repository (or the current repository if none has been listed yet):\nowner/repo\n@feature-x\n@bugfix-123\nThis produces a full clone of owner/repo plus two worktrees — no extra network clones required.\nAdd --worktree to a full owner/repo@branch line to create a worktree instead of a separate clone:\nowner/repo@staging --worktree"
+  },
+  {
+    "objectID": "repos-list.html#visibility",
+    "href": "repos-list.html#visibility",
+    "title": "repos.list Reference",
+    "section": "Visibility",
+    "text": "Visibility\nControl whether new repositories are created as public or private:\nowner/repo --public\nowner/other-repo --private"
+  },
+  {
+    "objectID": "repos-list.html#global-flags",
+    "href": "repos-list.html#global-flags",
+    "title": "repos.list Reference",
+    "section": "Global Flags",
+    "text": "Global Flags\nPlace a flag on its own line (with nothing else except optional comments) to apply it to every subsequent repository:\n\n\n\n\n\n\n\nFlag\nEffect\n\n\n\n\n--public\nCreate all repositories as public by default\n\n\n--private\nCreate all repositories as private by default (the default)\n\n\n--codespaces\nConfigure Codespaces authentication for all repositories\n\n\n--worktree\nUse worktrees instead of separate clones for all @branch lines\n\n\n\nPer-line --public/--private flags always override the global default."
+  },
+  {
+    "objectID": "repos-list.html#example",
+    "href": "repos-list.html#example",
+    "title": "repos.list Reference",
+    "section": "Example",
+    "text": "Example\n--private        # default visibility for new repos\n--codespaces     # set up Codespaces auth for all repos\n\nmyorg/backend\nmyorg/frontend@develop\n@staging                   # worktree of frontend at staging branch\nmyorg/docs --public        # override: create docs repo as public\nAfter repos setup, the parent directory looks like:\nworkspace/\n├── my-project/            # your project (contains repos.list)\n├── backend/\n├── frontend-develop/\n├── frontend-staging/      # worktree\n└── docs/"
+  },
+  {
     "objectID": "index.html",
     "href": "index.html",
-    "title": "repos - Multi-Repository Management Tool",
+    "title": "repos",
     "section": "",
-    "text": "A command-line tool for managing multiple related Git repositories as a unified workspace."
-  },
-  {
-    "objectID": "index.html#overview",
-    "href": "index.html#overview",
-    "title": "repos - Multi-Repository Management Tool",
-    "section": "Overview",
-    "text": "Overview\nMany projects consist of multiple repositories. For instance, an analysis project might have one repository for data curation and another for analysis. To facilitate this workflow, you can create a repos.list file that specifies the repositories and their branches, and then run repos setup to clone them (creating repositories and branches as needed).\nHere’s an example repos.list file:\nmyorg/data-curation\nmyorg/analysis\nmyorg/documentation\nRun repos setup to clone them, and create them if they do not exist:\nrepos setup\nThis creates the following directory structure:\nworkspace/\n├── my-project/          # Your main project (contains repos.list)\n├── data-curation/       # Cloned from myorg/data-curation\n├── analysis/            # Cloned from myorg/analysis\n└── documentation/       # Cloned from myorg/documentation\n\nCustomizations\n\nrepos.list\n\nClone to a specific path, e.g. myorg/data-curation data\nClone specific branches, e.g. owner/repo@branch\nCreate worktrees from the current repository using --worktree, e.g. owner/repo@branch --worktree\nSkip specifying repository in repos.list, as previous repo listed or current repo used as default.\n\nFor example, specifying @data-curation in the first line would use the current repository as its repository\nAlternately, specifying @dev in the line after myorg/analysis would clone the dev branch from myorg/analysis\n\nCreate repositories as public using the --public flag, e.g. owner/repo --public\n\n\nGlobal Flags in repos.list\nYou can specify global flags at the start of any line in repos.list (with only blank space or comments after the flag):\n\n--codespaces - Enable Codespaces authentication for all repositories\n--public - Create all repositories as public by default\n--private - Create all repositories as private by default\n--worktree - Create all branch clones as worktrees instead of separate clones\n\nExample:\n--public\n--codespaces\nmyorg/repo1\nmyorg/repo2\n\n\nPer-Line Flags\nYou can also specify --public or --private on individual repository lines to override the global setting:\nExample:\n--private             # Default to private\nmyorg/public-repo --public   # Override: create as public\nmyorg/private-repo    # Use default: private\n\n\n\nrepos setup\n\nEnable Codespaces authentication with --codespaces, e.g. repos setup --codespaces\nSpecify custom devcontainer.json paths with -d, e.g. repos setup -d .devcontainer/prebuild/devcontainer.json\n\nUse multiple -d flags to specify multiple devcontainer.json files"
-  },
-  {
-    "objectID": "index.html#installation",
-    "href": "index.html#installation",
-    "title": "repos - Multi-Repository Management Tool",
-    "section": "Installation",
-    "text": "Installation\nYou can install repos as a system package (Ubuntu/Debian, macOS, Windows), from source, or as a language-specific wrapper (R or Python).\n\nUbuntu/Debian\nInstall the .deb package to use the repos command system-wide.\nDownload and install the latest .deb package from the Releases page:\n# Download the latest release (replace VERSION_REPOS with desired version; we try to ensure this is the latest one)\nVERSION_REPOS=1.0.9\nwget https://github.com/MiguelRodo/repos/releases/download/v${VERSION_REPOS}/repos_${VERSION_REPOS}_all.deb\n\n# Install the package\nsudo dpkg -i repos_${VERSION_REPOS}_all.deb\n\n# Remove installation file\nrm repos_${VERSION_REPOS}_all.deb\n\n# If there are dependency issues, run:\nsudo apt-get install -f\nRun the repos command:\nrepos setup\n\nDependencies\nThe package automatically handles dependencies, but requires: - bash - Shell interpreter - git - Version control - curl - HTTP client - jq - JSON processor\nThese are typically pre-installed on Ubuntu/Debian systems. If not:\nsudo apt-get install bash git curl jq\n\n\n\nWindows (Scoop)\nInstall using Scoop to use the repos command in your shell.\nInstall using Scoop:\n# Add the repos bucket (replace &lt;username&gt; with the bucket owner)\nscoop bucket add repos https://github.com/&lt;username&gt;/scoop-bucket\n\n# Install repos\nscoop install repos\nRun the repos command:\nrepos setup\nDependencies (git and jq) are automatically installed by Scoop. You’ll also need Git for Windows for bash support.\n\n\nWindows (Manual)\nInstall manually to use the repos command in PowerShell or Git Bash.\n\nClone the repository:\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\nRun the installer:\n.\\install.ps1\nRestart your PowerShell session for the PATH changes to take effect.\nVerify installation:\nrepos --help\n\nRun the repos command:\nrepos setup\n\nWindows Dependencies\n\nGit for Windows (required for bash, git, and curl): Download here\njq (required for JSON processing): Download here\n\n\n\n\nmacOS (Homebrew)\nInstall using Homebrew to use the repos command system-wide.\nInstall using Homebrew:\n# Add the repos tap (replace &lt;username&gt; with the tap owner)\nbrew tap &lt;username&gt;/repos\n\n# Install repos\nbrew install repos\nRun the repos command:\nrepos setup\nThe formula automatically handles the jq dependency. Git is typically pre-installed on macOS.\n\n\nFrom Source\nInstall from source to use the repos command or run scripts directly.\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\n\n# For Ubuntu/Debian\nsudo dpkg-buildpackage -us -uc -b\nsudo dpkg -i ../repos_*.deb\n\n# For other systems, use the scripts directly\n./scripts/setup-repos.sh\nRun the repos command:\nrepos setup\n\n\nLanguage Wrappers\nThe repository also provides native R and Python packages that wrap the underlying Bash scripts, making it easy to use repos from your preferred language environment.\n\nR Package\nInstall the R package to use repos from within R.\nInstall directly from GitHub using devtools:\n# Install devtools if you haven't already\ninstall.packages(\"devtools\")\n\n# Install repos package\ndevtools::install_github(\"MiguelRodo/repos\")\n\n# Use the repos functions with idiomatic R syntax\nlibrary(repos)\n\n# Setup repositories\nrepos_setup()                              # Setup with defaults\nrepos_setup(file = \"my-repos.list\")        # Use a different file\nrepos_setup(public = TRUE)                 # Create repos as public\nrepos_setup(public = TRUE, codespaces = TRUE)  # Multiple options\n\n# Run pipeline in each repo\nrepos_run()                                # Run with defaults\nrepos_run(script = \"build.sh\")             # Run custom script\nrepos_run(dry_run = TRUE, verbose = TRUE)  # Dry run with verbose output\nrepos_run(include = c(\"repo1\", \"repo2\"))   # Run only in specific repos\nRun the repos command:\nlibrary(repos)\nrepos_setup()\nSystem Requirements: The R package requires bash, git, curl, and jq to be installed on your system.\nHow it works: The R package bundles the Bash scripts in inst/scripts/ and provides wrapper functions that locate and execute them using system2().\n\n\nPython Package\nInstall the Python package to use repos from Python or the command line.\nInstall using pip:\n# Install from local clone\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\npip install .\n\n# Or install in development mode\npip install -e .\n\n# Use the repos command\nrepos setup                    # Run with default repos.list\nrepos setup -f my-repos.list\nrepos setup --public\nrepos run\nrepos --help\nRun the repos command:\nrepos setup\nSystem Requirements: The Python package requires bash, git, curl, and jq to be installed on your system. On Windows, you need Git for Windows (which includes Git Bash) or WSL (Windows Subsystem for Linux).\nHow it works: The Python package bundles the Bash scripts in src/repos/scripts/ and provides both a CLI entry point and a Python API using subprocess.run().\nPython API:\nfrom repos import setup, run\n\n# Setup repositories\nsetup()                              # Setup with defaults\nsetup(file=\"my-repos.list\")          # Use a different file\nsetup(public=True)                   # Create repos as public\nsetup(public=True, codespaces=True)  # Multiple options\n\n# Run pipeline in each repo\nrun()                                # Run with defaults\nrun(script=\"build.sh\")               # Run custom script\nrun(dry_run=True, verbose=True)      # Dry run with verbose output\nrun(include=[\"repo1\", \"repo2\"])      # Run only in specific repos"
+    "text": "Manage multiple Git repositories as a unified workspace from a single repos.list file."
   },
   {
     "objectID": "index.html#quick-start",
     "href": "index.html#quick-start",
-    "title": "repos - Multi-Repository Management Tool",
+    "title": "repos",
     "section": "Quick Start",
-    "text": "Quick Start\n\n1. Create a repos.list file\nCreate a repos.list file in your project directory:\n# Clone full repository\nowner/repo\n\n# Clone specific branch\nowner/repo@branch\n\n# Create worktree from current repo\n@branch-name\n\n# Clone with custom directory name\nowner/repo custom-name\nExample:\n# repos.list\nmyorg/backend\nmyorg/frontend@develop\nmyorg/docs\n\n\n2. Run setup\nrepos setup\nThis will: 1. Create any missing repositories on GitHub (if you have permissions) 2. Clone all specified repositories to the parent directory 3. Generate a VS Code workspace file\nTo also configure authentication for GitHub Codespaces, use the --codespaces flag or specify devcontainer paths with -d:\n# Enable Codespaces authentication with default path\nrepos setup --codespaces\n\n# Specify custom devcontainer.json paths\nrepos setup -d .devcontainer/devcontainer.json\nrepos setup -d path1/devcontainer.json -d path2/devcontainer.json"
+    "text": "Quick Start\nCreate a repos.list file in your project directory listing the repositories you want:\nmyorg/data-curation\nmyorg/analysis\nmyorg/documentation\nThen run:\nrepos setup\nThis clones all listed repositories into the parent directory of your current location."
   },
   {
-    "objectID": "index.html#usage",
-    "href": "index.html#usage",
-    "title": "repos - Multi-Repository Management Tool",
-    "section": "Usage",
-    "text": "Usage\n\nSubcommands\nThe repos CLI uses subcommands:\nrepos setup [flags]   # Clone and configure repositories\nrepos run [flags]     # Execute a script in each repository\nrepos --help          # Show available subcommands\n\n\nrepos setup\nSet up repositories from a repos.list file:\n# Setup repositories from repos.list\nrepos setup\n\n# Use a different file\nrepos setup -f my-repos.list\n\n# Create repositories as public (default is private)\nrepos setup --public\n\n# Enable Codespaces authentication\nrepos setup --codespaces\n\n# Specify custom devcontainer.json paths\nrepos setup -d .devcontainer/devcontainer.json\n\n# Show help\nrepos setup --help\n\n\nrepos run\nExecute a script inside each cloned repository:\n# Run the default script (run.sh) in each repository\nrepos run\n\n# Run a custom script in each repository\nrepos run --script pipeline.sh\n\n# Include/exclude specific repos\nrepos run --include \"backend,frontend\"\nrepos run --exclude \"docs\"\n\n# Continue past failures and report all results\nrepos run --continue-on-error\n\n# Dry-run mode\nrepos run --dry-run\n\n# Show help\nrepos run --help\n\n\nAdvanced Features\nThe package installs additional scripts to /usr/share/repos/scripts/ that you can call directly:\n# Execute pipeline across all repositories\n/usr/share/repos/scripts/run-pipeline.sh\n\n# Create worktrees for parallel development\n/usr/share/repos/scripts/add-branch.sh feature-x\n\n# Sync devcontainer across worktrees\n/usr/share/repos/scripts/update-branches.sh\n\n# Pull latest scripts from template\n/usr/share/repos/scripts/update-scripts.sh\nNote for contributors: When developing/testing from the repository, you can run scripts directly:\nscripts/setup-repos.sh\nscripts/run-pipeline.sh\n\n\nRepository Layout\nAll repositories are cloned to the parent directory of your current location:\nworkspace/\n├── my-project/          # Your main project (contains repos.list)\n├── backend/             # Cloned from myorg/backend\n├── frontend-develop/    # Cloned from myorg/frontend@develop\n└── docs/                # Cloned from myorg/docs\n\n\nrepos.list Format\n# Full repository clone\nowner/repo\n\n# Specific branch clone\nowner/repo@branch\n\n# Worktree from current repository\n@branch-name [optional-target-directory]\n\n# External repository with custom directory\nowner/repo custom-directory\n\n\nRunning Pipelines\nIf your repositories contain run.sh scripts, you can execute them across all repositories:\nrepos run\n\n# With options\nrepos run --include \"backend,frontend\"\nrepos run --dry-run\nrepos run --script pipeline.sh\nrepos run --continue-on-error"
+    "objectID": "index.html#what-else-can-you-do",
+    "href": "index.html#what-else-can-you-do",
+    "title": "repos",
+    "section": "What else can you do?",
+    "text": "What else can you do?\nCustomise repos.list — clone specific branches (owner/repo@branch), use worktrees (@branch-name), set repository visibility (--public/--private), and more. → repos.list reference\nrepos setup — beyond cloning, it generates a VS Code workspace file, configures GitHub Codespaces authentication (--codespaces), and handles devcontainer paths. → repos setup guide\nRun a pipeline across all repos — if your repositories contain a run.sh script (or any script you specify), repos run executes it in each one. → Running pipelines"
   },
   {
-    "objectID": "index.html#configuration",
-    "href": "index.html#configuration",
-    "title": "repos - Multi-Repository Management Tool",
-    "section": "Configuration",
-    "text": "Configuration\n\nGitHub Authentication\nFor private repositories or creating repos, you need GitHub credentials:\n# Set GitHub token\nexport GH_TOKEN=\"your_github_personal_access_token\"\n\n# Or use gh CLI\ngh auth login\n\n# For Codespaces, add GH_TOKEN as a secret\n\n\nVS Code Workspace\nAfter running repos setup, open the generated workspace:\ncode entire-project.code-workspace"
-  },
-  {
-    "objectID": "index.html#examples",
-    "href": "index.html#examples",
-    "title": "repos - Multi-Repository Management Tool",
-    "section": "Examples",
-    "text": "Examples\n\nExample 1: Clone multiple repositories\n# repos.list\nuser/web-app\nuser/api-server\nuser/database-scripts\n\n# Run\nrepos setup\n\n\nExample 2: Work on multiple branches\n# repos.list\nmyorg/main-project\n@feature-a\n@feature-b\n@bugfix-123\n\n# Run\nrepos setup\n\n# Now you have:\n# - myorg/main-project (main branch)\n# - main-project-feature-a (feature-a worktree)\n# - main-project-feature-b (feature-b worktree)\n# - main-project-bugfix-123 (bugfix-123 worktree)\n\n\nExample 3: Mixed repositories and worktrees\n# repos.list\ncompany/backend\ncompany/frontend@develop\n@staging\ncompany/docs\n@preview\n\n# This creates:\n# - backend/ (full clone)\n# - frontend-develop/ (develop branch only)\n# - backend-staging/ (worktree from backend)\n# - docs/ (full clone)\n# - docs-preview/ (worktree from docs)"
-  },
-  {
-    "objectID": "index.html#troubleshooting",
-    "href": "index.html#troubleshooting",
-    "title": "repos - Multi-Repository Management Tool",
-    "section": "Troubleshooting",
-    "text": "Troubleshooting\n\nAuthentication Errors\nIf you see “could not read Username” errors:\nexport GH_TOKEN=\"your_token\"\n# or\ngh auth login\n\n\nPermission Issues\nAfter installation, if /usr/bin/repos is not executable:\nsudo chmod +x /usr/bin/repos\n\n\nMissing Dependencies\nsudo apt-get install bash git curl jq"
-  },
-  {
-    "objectID": "index.html#uninstallation",
-    "href": "index.html#uninstallation",
-    "title": "repos - Multi-Repository Management Tool",
-    "section": "Uninstallation",
-    "text": "Uninstallation\nsudo dpkg -r repos"
-  },
-  {
-    "objectID": "index.html#license",
-    "href": "index.html#license",
-    "title": "repos - Multi-Repository Management Tool",
-    "section": "License",
-    "text": "License\nMIT License - see debian/copyright for details"
-  },
-  {
-    "objectID": "index.html#contributing",
-    "href": "index.html#contributing",
-    "title": "repos - Multi-Repository Management Tool",
-    "section": "Contributing",
-    "text": "Contributing\nIssues and pull requests welcome at https://github.com/MiguelRodo/repos"
-  },
-  {
-    "objectID": "index.html#author",
-    "href": "index.html#author",
-    "title": "repos - Multi-Repository Management Tool",
-    "section": "Author",
-    "text": "Author\nMiguel Rodo miguel.rodo@uct.ac.za"
+    "objectID": "index.html#installation",
+    "href": "index.html#installation",
+    "title": "repos",
+    "section": "Installation",
+    "text": "Installation\n→ Installation guide"
   }
 ]

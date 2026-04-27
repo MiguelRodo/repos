@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>repos</title>
+<title>Running Pipelines – repos</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -127,7 +127,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link active" href="./index.html" aria-current="page"> 
+    <a class="nav-link" href="./index.html"> 
 <span class="menu-text">Home</span></a>
   </li>  
   <li class="nav-item">
@@ -143,7 +143,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="menu-text">repos setup</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./pipelines.html"> 
+    <a class="nav-link active" href="./pipelines.html" aria-current="page"> 
 <span class="menu-text">Running Pipelines</span></a>
   </li>  
 </ul>
@@ -163,7 +163,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">repos</h1>
+<h1 class="title">Running Pipelines</h1>
 </div>
 
 
@@ -180,29 +180,108 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p><a href="https://github.com/MiguelRodo/repos/actions/workflows/test-installation.yml"><img src="https://github.com/MiguelRodo/repos/actions/workflows/test-installation.yml/badge.svg" class="img-fluid" alt="Test Installation Methods"></a> <a href="https://github.com/MiguelRodo/repos/actions/workflows/test-suite.yml"><img src="https://github.com/MiguelRodo/repos/actions/workflows/test-suite.yml/badge.svg" class="img-fluid" alt="Test Suite"></a></p>
-<p>Manage multiple Git repositories as a unified workspace from a single <code>repos.list</code> file.</p>
-<section id="quick-start" class="level2">
-<h2 class="anchored" data-anchor-id="quick-start">Quick Start</h2>
-<p>Create a <code>repos.list</code> file in your project directory listing the repositories you want:</p>
-<pre><code>myorg/data-curation
-myorg/analysis
-myorg/documentation</code></pre>
-<p>Then run:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> setup</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>This clones all listed repositories into the parent directory of your current location.</p>
+<p><code>repos run</code> executes a script inside each repository listed in your <code>repos.list</code> file. This lets you run a build, test, or any other task across your entire workspace with a single command.</p>
+<section id="basic-usage" class="level2">
+<h2 class="anchored" data-anchor-id="basic-usage">Basic Usage</h2>
+<p>By default, <code>repos run</code> looks for a file called <code>run.sh</code> in each cloned repository and executes it:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> run</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="what-else-can-you-do" class="level2">
-<h2 class="anchored" data-anchor-id="what-else-can-you-do">What else can you do?</h2>
-<p><strong>Customise <code>repos.list</code></strong> — clone specific branches (<code>owner/repo@branch</code>), use worktrees (<code>@branch-name</code>), set repository visibility (<code>--public</code>/<code>--private</code>), and more. → <a href="repos-list.html">repos.list reference</a></p>
-<p><strong><code>repos setup</code></strong> — beyond cloning, it generates a VS Code workspace file, configures GitHub Codespaces authentication (<code>--codespaces</code>), and handles devcontainer paths. → <a href="setup.html">repos setup guide</a></p>
-<p><strong>Run a pipeline across all repos</strong> — if your repositories contain a <code>run.sh</code> script (or any script you specify), <code>repos run</code> executes it in each one. → <a href="pipelines.html">Running pipelines</a></p>
+<section id="options" class="level2">
+<h2 class="anchored" data-anchor-id="options">Options</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Flag</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>--script &lt;file&gt;</code></td>
+<td>Run a different script (default: <code>run.sh</code>)</td>
+</tr>
+<tr class="even">
+<td><code>-f &lt;file&gt;</code></td>
+<td>Use a different list file (default: <code>repos.list</code>)</td>
+</tr>
+<tr class="odd">
+<td><code>--include &lt;repos&gt;</code></td>
+<td>Comma-separated list of repositories to include</td>
+</tr>
+<tr class="even">
+<td><code>--exclude &lt;repos&gt;</code></td>
+<td>Comma-separated list of repositories to skip</td>
+</tr>
+<tr class="odd">
+<td><code>--continue-on-error</code></td>
+<td>Keep running even if a repository fails</td>
+</tr>
+<tr class="even">
+<td><code>--dry-run</code></td>
+<td>Print what would be run without executing anything</td>
+</tr>
+<tr class="odd">
+<td><code>--ensure-setup</code></td>
+<td>Run <code>repos setup</code> before executing the pipeline</td>
+</tr>
+</tbody>
+</table>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Run a custom script in each repo</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> run <span class="at">--script</span> build.sh</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Only run in specific repos</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> run <span class="at">--include</span> <span class="st">"backend,frontend"</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Skip a repo</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> run <span class="at">--exclude</span> <span class="st">"docs"</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Continue even if one repo fails, then report all results</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> run <span class="at">--continue-on-error</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Preview without running</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> run <span class="at">--dry-run</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Make sure repos are cloned before running</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> run <span class="at">--ensure-setup</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="installation" class="level2">
-<h2 class="anchored" data-anchor-id="installation">Installation</h2>
-<p>→ <a href="install.html">Installation guide</a></p>
+<section id="writing-a-pipeline-script" class="level2">
+<h2 class="anchored" data-anchor-id="writing-a-pipeline-script">Writing a Pipeline Script</h2>
+<p>Each repository should contain the script that <code>repos run</code> will call. The script receives no arguments by default, but can read environment variables or accept flags if needed. A minimal <code>run.sh</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/usr/bin/env bash</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="bu">set</span> <span class="at">-e</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Install dependencies</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"renv::restore()"</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Run analysis</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> analysis.R</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="r-and-python-apis" class="level2">
+<h2 class="anchored" data-anchor-id="r-and-python-apis">R and Python APIs</h2>
+<section id="r" class="level3">
+<h3 class="anchored" data-anchor-id="r">R</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(repos)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>()                                 <span class="co"># run run.sh in every repo</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>(<span class="at">script =</span> <span class="st">"build.sh"</span>)              <span class="co"># custom script</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>(<span class="at">dry_run =</span> <span class="cn">TRUE</span>, <span class="at">verbose =</span> <span class="cn">TRUE</span>)   <span class="co"># preview</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_run</span>(<span class="at">include =</span> <span class="fu">c</span>(<span class="st">"backend"</span>, <span class="st">"frontend"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="python" class="level3">
+<h3 class="anchored" data-anchor-id="python">Python</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> run</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>run()                              <span class="co"># run run.sh in every repo</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>run(script<span class="op">=</span><span class="st">"build.sh"</span>)             <span class="co"># custom script</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>run(dry_run<span class="op">=</span><span class="va">True</span>, verbose<span class="op">=</span><span class="va">True</span>)    <span class="co"># preview</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>run(include<span class="op">=</span>[<span class="st">"backend"</span>, <span class="st">"frontend"</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->

@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>repos</title>
+<title>repos.list Reference – repos</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -22,41 +22,6 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
-}
-/* CSS for syntax highlighting */
-html { -webkit-text-size-adjust: 100%; }
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-  }
-pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -127,7 +92,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link active" href="./index.html" aria-current="page"> 
+    <a class="nav-link" href="./index.html"> 
 <span class="menu-text">Home</span></a>
   </li>  
   <li class="nav-item">
@@ -135,7 +100,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span class="menu-text">Installation</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./repos-list.html"> 
+    <a class="nav-link active" href="./repos-list.html" aria-current="page"> 
 <span class="menu-text">repos.list</span></a>
   </li>  
   <li class="nav-item">
@@ -163,7 +128,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">repos</h1>
+<h1 class="title">repos.list Reference</h1>
 </div>
 
 
@@ -180,27 +145,90 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p><a href="https://github.com/MiguelRodo/repos/actions/workflows/test-installation.yml"><img src="https://github.com/MiguelRodo/repos/actions/workflows/test-installation.yml/badge.svg" class="img-fluid" alt="Test Installation Methods"></a> <a href="https://github.com/MiguelRodo/repos/actions/workflows/test-suite.yml"><img src="https://github.com/MiguelRodo/repos/actions/workflows/test-suite.yml/badge.svg" class="img-fluid" alt="Test Suite"></a></p>
-<p>Manage multiple Git repositories as a unified workspace from a single <code>repos.list</code> file.</p>
-<section id="quick-start" class="level2">
-<h2 class="anchored" data-anchor-id="quick-start">Quick Start</h2>
-<p>Create a <code>repos.list</code> file in your project directory listing the repositories you want:</p>
-<pre><code>myorg/data-curation
-myorg/analysis
-myorg/documentation</code></pre>
-<p>Then run:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> setup</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>This clones all listed repositories into the parent directory of your current location.</p>
+<p>The <code>repos.list</code> file lists the repositories (and optionally branches) that <code>repos setup</code> will clone. Place it in the root of your project directory.</p>
+<section id="basic-format" class="level2">
+<h2 class="anchored" data-anchor-id="basic-format">Basic Format</h2>
+<p>Each line is one repository:</p>
+<pre><code>owner/repo</code></pre>
+<p>Lines starting with <code>#</code> are comments and are ignored.</p>
 </section>
-<section id="what-else-can-you-do" class="level2">
-<h2 class="anchored" data-anchor-id="what-else-can-you-do">What else can you do?</h2>
-<p><strong>Customise <code>repos.list</code></strong> — clone specific branches (<code>owner/repo@branch</code>), use worktrees (<code>@branch-name</code>), set repository visibility (<code>--public</code>/<code>--private</code>), and more. → <a href="repos-list.html">repos.list reference</a></p>
-<p><strong><code>repos setup</code></strong> — beyond cloning, it generates a VS Code workspace file, configures GitHub Codespaces authentication (<code>--codespaces</code>), and handles devcontainer paths. → <a href="setup.html">repos setup guide</a></p>
-<p><strong>Run a pipeline across all repos</strong> — if your repositories contain a <code>run.sh</code> script (or any script you specify), <code>repos run</code> executes it in each one. → <a href="pipelines.html">Running pipelines</a></p>
+<section id="cloning-a-specific-branch" class="level2">
+<h2 class="anchored" data-anchor-id="cloning-a-specific-branch">Cloning a Specific Branch</h2>
+<p>Append <code>@branch</code> to clone only that branch:</p>
+<pre><code>owner/repo@develop</code></pre>
 </section>
-<section id="installation" class="level2">
-<h2 class="anchored" data-anchor-id="installation">Installation</h2>
-<p>→ <a href="install.html">Installation guide</a></p>
+<section id="custom-target-directory" class="level2">
+<h2 class="anchored" data-anchor-id="custom-target-directory">Custom Target Directory</h2>
+<p>Add a name after the repository to clone into a different directory:</p>
+<pre><code>owner/repo my-data</code></pre>
+</section>
+<section id="worktrees" class="level2">
+<h2 class="anchored" data-anchor-id="worktrees">Worktrees</h2>
+<p>Use <code>@branch</code> without a repository name to create a <a href="https://git-scm.com/docs/git-worktree">Git worktree</a> from the most recently listed repository (or the current repository if none has been listed yet):</p>
+<pre><code>owner/repo
+@feature-x
+@bugfix-123</code></pre>
+<p>This produces a full clone of <code>owner/repo</code> plus two worktrees — no extra network clones required.</p>
+<p>Add <code>--worktree</code> to a full <code>owner/repo@branch</code> line to create a worktree instead of a separate clone:</p>
+<pre><code>owner/repo@staging --worktree</code></pre>
+</section>
+<section id="visibility" class="level2">
+<h2 class="anchored" data-anchor-id="visibility">Visibility</h2>
+<p>Control whether new repositories are created as public or private:</p>
+<pre><code>owner/repo --public
+owner/other-repo --private</code></pre>
+</section>
+<section id="global-flags" class="level2">
+<h2 class="anchored" data-anchor-id="global-flags">Global Flags</h2>
+<p>Place a flag on its own line (with nothing else except optional comments) to apply it to every subsequent repository:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Flag</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>--public</code></td>
+<td>Create all repositories as public by default</td>
+</tr>
+<tr class="even">
+<td><code>--private</code></td>
+<td>Create all repositories as private by default (the default)</td>
+</tr>
+<tr class="odd">
+<td><code>--codespaces</code></td>
+<td>Configure Codespaces authentication for all repositories</td>
+</tr>
+<tr class="even">
+<td><code>--worktree</code></td>
+<td>Use worktrees instead of separate clones for all <code>@branch</code> lines</td>
+</tr>
+</tbody>
+</table>
+<p>Per-line <code>--public</code>/<code>--private</code> flags always override the global default.</p>
+</section>
+<section id="example" class="level2">
+<h2 class="anchored" data-anchor-id="example">Example</h2>
+<pre><code>--private        # default visibility for new repos
+--codespaces     # set up Codespaces auth for all repos
+
+myorg/backend
+myorg/frontend@develop
+@staging                   # worktree of frontend at staging branch
+myorg/docs --public        # override: create docs repo as public</code></pre>
+<p>After <code>repos setup</code>, the parent directory looks like:</p>
+<pre><code>workspace/
+├── my-project/            # your project (contains repos.list)
+├── backend/
+├── frontend-develop/
+├── frontend-staging/      # worktree
+└── docs/</code></pre>
 
 
 </section>
