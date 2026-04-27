@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test-stale-worktree.sh — Test that setup-repos handles stale worktree references
+# test-stale-worktree.sh — Test that clone-repos handles stale worktree references
 # This test simulates the scenario where a worktree directory is manually deleted
 # but git still has a record of it, then verifies the script can recover.
 

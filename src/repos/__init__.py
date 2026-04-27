@@ -484,60 +484,40 @@ def run_raw(*args):
 
 def clone(
     file: Optional[str] = None,
-    public: bool = False,
-    codespaces: bool = False,
-    devcontainer: Optional[Union[str, List[str]]] = None,
-    permissions: Optional[str] = None,
-    tool: Optional[str] = None,
     debug: bool = False,
     debug_file: Optional[Union[bool, str]] = None,
     **kwargs
 ):
     """
-    Set up the workspace: create missing GitHub repositories, clone them, generate
-    a VS Code workspace file, and optionally configure Codespaces authentication.
+    Clone repositories listed in a repos.list file.
+
+    Each non-empty, non-comment line in the list file describes one cloning
+    instruction (full repo, specific branch, or worktree branch).  See the
+    `repos.list format <https://miguelrodo.github.io/repos/repos-list.html>`_
+    for the full syntax.
+
+    Global flags in repos.list (``--worktree``) are automatically applied.
 
     Args:
-        file: Path to repos list file (default: repos.list)
-        public: If True, create repositories as public (default is private)
-        codespaces: If True, enable Codespaces authentication configuration
-        devcontainer: Path(s) to devcontainer.json file(s); also implies codespaces=True
-        permissions: Permissions to pass to codespaces-auth-add.sh ("all" or "contents")
-        tool: Force tool for codespaces-auth-add.sh (e.g. "jq", "python")
-        debug: If True, enable debug output to stderr
-        debug_file: Enable debug output to file (auto-generated if True, or specify path)
+        file: Path to repos list file (default: repos.list, or
+            repos-to-clone.list if repos.list is absent)
+        debug: If True, enable debug tracing to stderr
+        debug_file: Enable debug tracing to file (auto-generated if True,
+            or specify an explicit path)
         **kwargs: Additional keyword arguments (captured but ignored, for extensibility)
 
     Returns:
         subprocess.CompletedProcess object
 
     Examples:
-        >>> setup()
-        >>> setup(public=True)
-        >>> setup(codespaces=True)
-        >>> setup(devcontainer=".devcontainer/devcontainer.json")
+        >>> clone()
+        >>> clone(file="my-repos.list")
+        >>> clone(debug=True)
     """
     script_args = []
 
     if file is not None:
         script_args.extend(["-f", file])
-
-    if public:
-        script_args.append("--public")
-
-    if codespaces:
-        script_args.append("--codespaces")
-
-    if devcontainer is not None:
-        devcontainers = [devcontainer] if isinstance(devcontainer, str) else devcontainer
-        for dc in devcontainers:
-            script_args.extend(["-d", dc])
-
-    if permissions is not None:
-        script_args.extend(["--permissions", permissions])
-
-    if tool is not None:
-        script_args.extend(["-t", tool])
 
     if debug:
         script_args.append("--debug")
@@ -548,23 +528,24 @@ def clone(
         else:
             script_args.extend(["--debug-file", debug_file])
 
-    return run_script("setup-repos.sh", script_args)
+    return run_script("helper/clone-repos.sh", script_args)
 
 
-def setup_raw(*args):
+def clone_raw(*args):
     """
-    Set up the workspace (raw argument passing).
+    Clone repositories listed in a repos.list file (raw argument passing).
 
     Args:
-        *args: Command-line arguments to pass directly to setup-repos.sh
+        *args: Command-line arguments to pass directly to clone-repos.sh
 
     Returns:
         subprocess.CompletedProcess object
 
     Examples:
-        >>> setup_raw("--public", "--codespaces")
+        >>> clone_raw("-f", "my-repos.list")
+        >>> clone_raw("--debug")
     """
-    return run_script("setup-repos.sh", list(args))
+    return run_script("helper/clone-repos.sh", list(args))
 
 
 def add_branch(

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test-local-repo-comprehensive.sh — Comprehensive test suite for local git repo creation
-# Tests clone-repos.sh and setup-repos.sh with various local repo scenarios
+# Tests clone-repos.sh and create-repos.sh with various local repo scenarios
 
 set -e
 
@@ -46,7 +46,6 @@ print_info() {
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-SETUP_SCRIPT="$PROJECT_ROOT/scripts/setup-repos.sh"
 CLONE_SCRIPT="$PROJECT_ROOT/scripts/helper/clone-repos.sh"
 CREATE_SCRIPT="$PROJECT_ROOT/scripts/helper/create-repos.sh"
 
@@ -56,7 +55,7 @@ trap 'rm -rf "$TEST_ROOT"' EXIT
 
 print_header "Comprehensive Local Git Repo Creation Test Suite"
 print_info "Test root: $TEST_ROOT"
-print_info "Testing clone-repos.sh and setup-repos.sh with local git remotes"
+print_info "Testing clone-repos.sh with local git remotes"
 
 # Helper function to create a bare repo with branches
 create_bare_repo() {
@@ -491,58 +490,7 @@ else
 fi
 
 # ============================================
-# Test 10: setup-repos.sh integration with local remotes
-# ============================================
-print_test "Full setup-repos.sh workflow with local remotes"
-
-WORKSPACE9="$TEST_ROOT/ws9"
-mkdir -p "$WORKSPACE9"
-cd "$WORKSPACE9"
-
-git init -q
-git config user.email "test@example.com"
-git config user.name "Test User"
-git remote add origin "$REPO1_BARE"
-echo "# WS9" > README.md
-git add README.md
-git commit -q -m "Init"
-
-cat > repos.list <<EOF
-file://$REPO1_BARE
-@dev
-file://$REPO2_BARE
-EOF
-
-OUTPUT=$("$SETUP_SCRIPT" -f repos.list 2>&1 || true)
-
-# Check that it doesn't say "Creating repos on GitHub"
-if echo "$OUTPUT" | grep -q "Creating repos on GitHub"; then
-  print_fail "Still says 'Creating repos on GitHub' (should just say 'Creating repos')"
-else
-  print_pass "Correctly says 'Creating repos' (not 'on GitHub')"
-fi
-
-# Verify repos were cloned
-REPOS_FOUND=0
-[ -d "$TEST_ROOT/repo1" ] && REPOS_FOUND=$((REPOS_FOUND + 1))
-[ -d "$TEST_ROOT/repo1-dev" ] && REPOS_FOUND=$((REPOS_FOUND + 1))
-[ -d "$TEST_ROOT/repo2" ] && REPOS_FOUND=$((REPOS_FOUND + 1))
-
-if [ "$REPOS_FOUND" -eq 3 ]; then
-  print_pass "All repos cloned via setup-repos.sh"
-else
-  print_fail "Not all repos cloned (found $REPOS_FOUND/3)"
-fi
-
-# Check workspace file was created
-if [ -f "$WORKSPACE9/entire-project.code-workspace" ]; then
-  print_pass "Workspace file created"
-else
-  print_info "Workspace file not created (may be expected)"
-fi
-
-# ============================================
-# Test 11: Branch name sanitization in directory names
+# Test 10: Branch name sanitization in directory names
 # ============================================
 print_test "Branch names with slashes are sanitized for directory names"
 
@@ -584,7 +532,7 @@ else
 fi
 
 # ============================================
-# Test 12: Mixed GitHub and local repos (create-repos.sh skips local)
+# Test 11: Mixed GitHub and local repos (create-repos.sh skips local)
 # ============================================
 print_test "create-repos.sh skips local remotes without GitHub API calls"
 
@@ -640,6 +588,5 @@ else
   echo "✓ Multiple references to same repo work correctly"
   echo "✓ Worktree fallback behavior works as expected"
   echo "✓ Branch names with slashes are handled correctly"
-  echo "✓ setup-repos.sh works end-to-end with local remotes"
   echo "✓ create-repos.sh skips local remotes appropriately"
 fi

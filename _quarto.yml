@@ -17,6 +17,8 @@ website:
         text: VS Code
       - href: pipelines.qmd
         text: Pipelines
+      - href: worktrees.qmd
+        text: Worktrees
       - text: "Language Packages"
         menu:
           - href: python-package.qmd
