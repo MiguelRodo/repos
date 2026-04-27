@@ -47,19 +47,16 @@ get_temp_dir() {
   fi
 }
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-
 # Global array for temporary files to clean up on exit
 declare -a CLEANUP_FILES=()
 # Use Bash 3.2-safe array expansion to avoid "unbound variable" error with set -u
 trap 'for f in ${CLEANUP_FILES[@]+"${CLEANUP_FILES[@]}"}; do rm -f -- "$f"; done' EXIT
 
 DEVCONTAINER_PATHS=()  # Array of devcontainer.json paths to update
-if [ ! -f "$PROJECT_ROOT/repos.list" ] && [ -f "$PROJECT_ROOT/repos-to-clone.list" ]; then
-  REPOS_FILE="$PROJECT_ROOT/repos-to-clone.list"
+if [ ! -f "repos.list" ] && [ -f "repos-to-clone.list" ]; then
+  REPOS_FILE="repos-to-clone.list"
 else
-  REPOS_FILE="$PROJECT_ROOT/repos.list"
+  REPOS_FILE="repos.list"
 fi
 REPOS_OVERRIDE=""
 PERMISSIONS="default"    # default | all | contents
@@ -204,7 +201,6 @@ normalise_remote_to_https() {
 
 # ——— Get current repo's remote as https URL —————————————————————————
 get_current_repo_remote_https() {
-  cd "$PROJECT_ROOT" || return 1
   git rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
     printf "Error: not inside a Git working tree; cannot derive fallback repo.\n" >&2
     return 1

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# test-codespaces-path-resolution.sh — Test that codespaces-auth-add.sh resolves PROJECT_ROOT correctly
-# This verifies the fix for the issue where DEVFILE was incorrectly pointing to scripts/.devcontainer/devcontainer.json
+# test-codespaces-path-resolution.sh — Test that codespaces-auth-add.sh resolves paths correctly
+# This verifies the fix for two bugs:
+#   1. Default repos.list was looked up relative to the script installation dir, not CWD
+#   2. get_current_repo_remote_https() cd'd into the script install dir instead of using CWD
 
 set -e
 
@@ -48,37 +50,35 @@ print_info "Test directory: $TEST_DIR"
 print_info "Project root: $PROJECT_ROOT"
 
 # ============================================
-# Test: PROJECT_ROOT resolves correctly
+# Test: Script uses CWD-relative repos.list by default
 # ============================================
-print_test "codespaces-auth-add.sh calculates PROJECT_ROOT correctly"
+print_test "codespaces-auth-add.sh uses CWD-relative repos.list (not script installation dir)"
 
 cd "$TEST_DIR"
 
-# Create a minimal test project structure mimicking the real layout
-mkdir -p test-project/scripts/helper
-mkdir -p test-project/.devcontainer
+# Create a user project directory (simulates ~/projects/my-project)
+mkdir -p user-project/.devcontainer
 
-# Create a minimal repos.list
-cat > test-project/repos.list <<'EOF'
+# Create repos.list in the user project dir
+cat > user-project/repos.list <<'EOF'
 # Test repository
 testowner/testrepo
 EOF
 
 # Create a minimal devcontainer.json
-cat > test-project/.devcontainer/devcontainer.json <<'EOF'
+cat > user-project/.devcontainer/devcontainer.json <<'EOF'
 {
   "name": "Test Container"
 }
 EOF
 
-# Copy the codespaces-auth-add.sh script
-cp "$PROJECT_ROOT/scripts/helper/codespaces-auth-add.sh" test-project/scripts/helper/
+# Simulate an "installed" location for the script (like /usr/share/repos/scripts/helper)
+mkdir -p installed-repos/scripts/helper
+cp "$PROJECT_ROOT/scripts/helper/codespaces-auth-add.sh" installed-repos/scripts/helper/
+chmod +x installed-repos/scripts/helper/codespaces-auth-add.sh
 
-# Make it executable
-chmod +x test-project/scripts/helper/codespaces-auth-add.sh
-
-# Initialize git repo (required by the script to detect current repo)
-cd test-project
+# Initialize git repo in user-project (required by the script to detect current repo)
+cd user-project
 git -c init.defaultBranch=main init -q
 git config user.name "Test User"
 git config user.email "test@example.com"
@@ -87,89 +87,88 @@ echo "# Test" > README.md
 git add README.md .devcontainer/devcontainer.json repos.list
 git commit -m "Initial commit"
 
-print_info "Created test project structure"
-print_info "  - test-project/"
-print_info "    - scripts/helper/codespaces-auth-add.sh"
-print_info "    - .devcontainer/devcontainer.json"
+print_info "Created test structure:"
+print_info "  - user-project/       (simulated user CWD, is a git repo)"
 print_info "    - repos.list"
+print_info "    - .devcontainer/devcontainer.json"
+print_info "  - installed-repos/scripts/helper/codespaces-auth-add.sh  (simulated install dir)"
 
-# ============================================
-# Test: Script can find devcontainer.json
-# ============================================
-print_test "Script finds devcontainer.json at correct path when specified with -d"
-
-# Run the script with dry-run and explicit -d flag
+# Run the script WITHOUT -f, from the user project directory.
+# The script should find repos.list in CWD, not in the script's install dir.
 set +e
-output=$(./scripts/helper/codespaces-auth-add.sh -f repos.list -d .devcontainer/devcontainer.json --dry-run 2>&1)
+output=$("$TEST_DIR/installed-repos/scripts/helper/codespaces-auth-add.sh" \
+  -d .devcontainer/devcontainer.json --dry-run 2>&1)
 exit_code=$?
 set -e
 
 print_info "Exit code: $exit_code"
+print_info "Output: $output"
 
-# Check the output doesn't contain the error about devcontainer.json not found
+if echo "$output" | grep -q "File not found:.*installed-repos"; then
+  print_fail "Script looked for repos.list in script install dir instead of CWD"
+fi
+
+if echo "$output" | grep -q "Error: File not found"; then
+  print_fail "Script could not find repos.list in CWD"
+fi
+
+if [ "$exit_code" -ne 0 ] && ! echo "$output" | grep -q "Updated\|dry-run\|testowner/testrepo"; then
+  print_fail "Script failed unexpectedly: $output"
+fi
+
+print_pass "Script reads repos.list from CWD, not from script installation directory"
+
+# ============================================
+# Test: get_current_repo_remote_https uses CWD git context
+# ============================================
+print_test "Script detects git repo from CWD (not from script installation directory)"
+
+# The installed-repos directory is NOT a git repo; user-project is.
+# Verify the script does not error with "not inside a Git working tree"
+if echo "$output" | grep -q "not inside a Git working tree"; then
+  print_fail "Script ran git commands against the script installation dir (not a git repo)"
+fi
+
+print_pass "Script correctly uses CWD git context for fallback repo detection"
+
+# ============================================
+# Test: Script can find devcontainer.json when -d is specified
+# ============================================
+print_test "Script finds devcontainer.json at correct path when specified with -d"
+
+# Run the script with dry-run and explicit -d and -f flags
+set +e
+output=$("$TEST_DIR/installed-repos/scripts/helper/codespaces-auth-add.sh" \
+  -f repos.list -d .devcontainer/devcontainer.json --dry-run 2>&1)
+exit_code=$?
+set -e
+
+print_info "Exit code: $exit_code"
+print_info "Output: $output"
+
+# Check the output doesn't contain an error about devcontainer.json not found
 if echo "$output" | grep -q "Error: devcontainer.json not found"; then
   print_fail "Script could not find devcontainer.json"
 fi
 
-# Check that the error is NOT pointing to scripts/.devcontainer/devcontainer.json
-if echo "$output" | grep -q "scripts/.devcontainer/devcontainer.json"; then
-  print_fail "Script is still looking in wrong path: scripts/.devcontainer/"
-fi
-
 print_pass "Script finds devcontainer.json at correct path"
-
-# ============================================
-# Test: Verify the actual path used
-# ============================================
-print_test "Verify DEVFILE variable resolves to correct path"
-
-# Just check what SCRIPT_DIR and PROJECT_ROOT would be from scripts/helper
-SCRIPT_DIR_TEST="$(cd scripts/helper && pwd)"
-PROJECT_ROOT_TEST="$(cd "$SCRIPT_DIR_TEST/../.." && pwd)"
-DEVFILE_TEST="$PROJECT_ROOT_TEST/.devcontainer/devcontainer.json"
-
-print_info "Path resolution:"
-print_info "  SCRIPT_DIR=$SCRIPT_DIR_TEST"
-print_info "  PROJECT_ROOT=$PROJECT_ROOT_TEST"
-print_info "  DEVFILE=$DEVFILE_TEST"
-
-# Verify the paths
-if [[ "$PROJECT_ROOT_TEST" == *"test-project" ]] && [[ "$PROJECT_ROOT_TEST" != *"scripts"* ]]; then
-  print_pass "PROJECT_ROOT resolves to project root (not scripts/)"
-else
-  print_fail "PROJECT_ROOT does not resolve correctly: $PROJECT_ROOT_TEST"
-fi
-
-if [[ "$DEVFILE_TEST" == *"test-project/.devcontainer/devcontainer.json" ]]; then
-  print_pass "DEVFILE resolves to .devcontainer/devcontainer.json (not scripts/.devcontainer/)"
-else
-  print_fail "DEVFILE does not resolve correctly: $DEVFILE_TEST"
-fi
-
-# Verify the file exists at that path
-if [ -f "$DEVFILE_TEST" ]; then
-  print_pass "devcontainer.json exists at the resolved path"
-else
-  print_fail "devcontainer.json not found at resolved path: $DEVFILE_TEST"
-fi
 
 # ============================================
 # Test: Script executes successfully with correct path
 # ============================================
 print_test "Script executes successfully with the correct devcontainer.json path"
 
-# Install jq if not available (needed by the script)
 if ! command -v jq >/dev/null 2>&1; then
   if ! command -v python3 >/dev/null 2>&1 && ! command -v python >/dev/null 2>&1; then
     print_info "Neither jq nor python available, skipping execution test"
   else
     print_info "Using Python fallback for JSON processing"
-    # Run with python tool
     set +e
-    output=$(./scripts/helper/codespaces-auth-add.sh -f repos.list -d .devcontainer/devcontainer.json -t python3 --dry-run 2>&1)
+    output=$("$TEST_DIR/installed-repos/scripts/helper/codespaces-auth-add.sh" \
+      -f repos.list -d .devcontainer/devcontainer.json -t python3 --dry-run 2>&1)
     exit_code=$?
     set -e
-    
+
     if [ "$exit_code" -eq 0 ]; then
       print_pass "Script executed successfully with Python"
     else
@@ -182,12 +181,12 @@ if ! command -v jq >/dev/null 2>&1; then
     fi
   fi
 else
-  # Run with jq
   set +e
-  output=$(./scripts/helper/codespaces-auth-add.sh -f repos.list -d .devcontainer/devcontainer.json -t jq --dry-run 2>&1)
+  output=$("$TEST_DIR/installed-repos/scripts/helper/codespaces-auth-add.sh" \
+    -f repos.list -d .devcontainer/devcontainer.json -t jq --dry-run 2>&1)
   exit_code=$?
   set -e
-  
+
   if [ "$exit_code" -eq 0 ]; then
     print_pass "Script executed successfully with jq"
   else
