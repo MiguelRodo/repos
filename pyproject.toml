@@ -35,6 +35,9 @@ Homepage = "https://github.com/MiguelRodo/repos"
 Repository = "https://github.com/MiguelRodo/repos"
 Issues = "https://github.com/MiguelRodo/repos/issues"
 
+[project.scripts]
+repos = "repos:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
