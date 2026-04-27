@@ -49,6 +49,12 @@ get_temp_dir() {
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# Global array for temporary files to clean up on exit
+declare -a CLEANUP_FILES=()
+# Use Bash 3.2-safe array expansion to avoid "unbound variable" error with set -u
+trap 'for f in ${CLEANUP_FILES[@]+"${CLEANUP_FILES[@]}"}; do rm -f -- "$f"; done' EXIT
+
 DEVCONTAINER_PATHS=()  # Array of devcontainer.json paths to update
 if [ ! -f "$PROJECT_ROOT/repos.list" ] && [ -f "$PROJECT_ROOT/repos-to-clone.list" ]; then
   REPOS_FILE="$PROJECT_ROOT/repos-to-clone.list"
@@ -435,61 +441,58 @@ filter_valid_list(){
   [ -n "$VALID_LIST" ] || { printf "Error: No valid repos found.\n" >&2; exit 1; }
 }
 
-# ——— Build a newline-delimited JSON array for jq ———————————————
-build_jq_array(){
+# ——— Generate the repos JSON object and save to a file —————————————
+build_repos_json_file(){
+  local output_file="$1"
   printf '%s\n' "$VALID_LIST" \
     | jq -R 'select(length>0)' \
-    | jq -s .
-}
-
-# ——— Generate the per-repo permissions object via jq —————————————
-build_jq_obj(){
-  local arr_json="$1"
-  jq -n --argjson arr "$arr_json" --arg perms "$PERMISSIONS" '
-    reduce $arr[] as $repo ({}; 
-      . + {
-        ($repo): (
-          if $perms == "all" then
-            { permissions:"write-all" }
-          elif $perms == "contents" then
-            { permissions:{ contents:"write" } }
-          else
-            {
-              permissions: {
-                actions:  "write",
-                contents: "write",
-                packages: "read",
-                workflows:"write"
-              }
-            }
-          end
+    | jq -s . \
+    | jq --arg perms "$PERMISSIONS" '
+        reduce .[] as $repo ({};
+          . + {
+            ($repo): (
+              if $perms == "all" then
+                { permissions:"write-all" }
+              elif $perms == "contents" then
+                { permissions:{ contents:"write" } }
+              else
+                {
+                  permissions: {
+                    actions:  "write",
+                    contents: "write",
+                    packages: "read",
+                    workflows:"write"
+                  }
+                }
+              end
+            )
+          }
         )
-      }
-    )
-  '
+      ' > "$output_file"
 }
 
 # ——— Merge into devcontainer.json (jq variant) —————————————————————
 update_with_jq(){
   local file="$1"
-  local arr_json repos_obj tmp
+  local tmp="" repos_file=""
 
-  arr_json=$(build_jq_array)
-  repos_obj=$(build_jq_obj "$arr_json")
+  repos_file="$(mktemp "$(get_temp_dir)/repos-json-XXXXXX")"
+  CLEANUP_FILES+=("$repos_file")
+  build_repos_json_file "$repos_file"
 
   if [ ! -f "$file" ]; then
-    jq -n --argjson repos "$repos_obj" '
-      { customizations:{ codespaces:{ repositories:$repos } } }
+    jq -n --slurpfile repos "$repos_file" '
+      { customizations:{ codespaces:{ repositories:$repos[0] } } }
     ' >"$file"
   else
     tmp="$(mktemp "$(get_temp_dir)/repos-auth-XXXXXX")"
-    trap 'rm -f -- "$tmp"' EXIT
-    jq --argjson repos "$repos_obj" '
+    CLEANUP_FILES+=("$tmp")
+    jq --slurpfile repos "$repos_file" '
       .customizations.codespaces.repositories
-        |= ( (. // {}) + $repos )
+        |= ( (. // {}) + $repos[0] )
     ' -- "$file" >"$tmp" && mv -- "$tmp" "$file"
-    trap - EXIT
   fi
+  rm -f -- "$repos_file" "$tmp"
 
   printf "Updated '%s' with jq.\n" "$file"
 }
@@ -499,18 +502,15 @@ update_with_jq(){
 update_with_python(){
   local file="$1"
   local py_cmd="${2:-python}"
-  local arr_json repos_obj
+  local repos_file=""
 
-  # 1) Build the JSON array & object as jq would
-  arr_json=$(build_jq_array)
-  repos_obj=$(build_jq_obj "$arr_json")
+  repos_file="$(mktemp "$(get_temp_dir)/repos-json-XXXXXX")"
+  CLEANUP_FILES+=("$repos_file")
+  build_repos_json_file "$repos_file"
 
-  # 2) Export it so the Python process can see it
-  export REPOS_JSON="$repos_obj"
-
-  # 3) Run Python: strip comments & trailing commas, parse, merge, emit JSON
+  # Run Python: strip comments & trailing commas, parse, merge, emit JSON
   # Using -- after the interpreter or - ensures that $file is not interpreted as a flag
-  "$py_cmd" - "$file" <<'PYCODE'
+  "$py_cmd" - "$file" "$repos_file" <<'PYCODE'
 import sys, json, re, os
 
 def strip_jsonc(text):
@@ -529,6 +529,7 @@ def strip_jsonc(text):
     return pattern.sub(replace, text)
 
 fname = sys.argv[1]
+repos_fname = sys.argv[2]
 with open(fname, 'r') as f:
     text = f.read()
 
@@ -538,8 +539,9 @@ text = strip_jsonc(text)
 # Now parse clean JSON
 data = json.loads(text)
 
-# Load the new repos block from the env var
-new = json.loads(os.environ['REPOS_JSON'])
+# Load the new repos block from the temporary file
+with open(repos_fname, 'r') as f:
+    new = json.load(f)
 
 # Merge into data
 cs = data.setdefault('customizations', {})
@@ -550,6 +552,7 @@ repos.update(new)
 # Output the merged JSON
 print(json.dumps(data, indent=2))
 PYCODE
+  rm -f -- "$repos_file"
 }
 
 # In your update_devfile(), make sure you capture that stdout into the file:
@@ -562,23 +565,23 @@ PYCODE
 # ——— Rscript fallback (env-var merge, no duplicates) —————————————————————
 update_with_rscript(){
   local file="$1"
-  local arr_json repos_obj
+  local repos_file=""
 
-  # Build the same JSON array & object as jq
-  arr_json=$(build_jq_array)
-  repos_obj=$(build_jq_obj "$arr_json")
+  repos_file="$(mktemp "$(get_temp_dir)/repos-json-XXXXXX")"
+  CLEANUP_FILES+=("$repos_file")
+  build_repos_json_file "$repos_file"
 
-  # Pass the JSON via env var to Rscript
-  REPOS_OBJ="$repos_obj" Rscript --vanilla - "$file" <<'RSCRIPT'
+  # Pass the JSON file to Rscript
+  Rscript --vanilla - "$file" "$repos_file" <<'RSCRIPT'
 library(jsonlite)
 
 # Read args
 args <- commandArgs(trailingOnly=TRUE)
 file <- args[1]
+repos_file <- args[2]
 
-# Parse the new repos block from the environment
-repos_json <- Sys.getenv("REPOS_OBJ")
-new <- fromJSON(repos_json)
+# Parse the new repos block from the file
+new <- fromJSON(repos_file)
 
 # Load or initialise existing JSON
 if (file.exists(file)) {
@@ -602,6 +605,7 @@ data$customizations <- cs
 
 write_json(data, file, pretty = TRUE, auto_unbox = TRUE)
 RSCRIPT
+  rm -f -- "$repos_file"
 
   printf "Updated '%s' with Rscript.\n" "$file"
 }
@@ -636,11 +640,12 @@ update_devfile(){
         update_with_python "$devfile" "$tool"
       else
         # Safely write via a temporary file, then move into place
+        local tmp=""
         tmp="$(mktemp "$(get_temp_dir)/repos-auth-XXXXXX")"
-        trap 'rm -f -- "$tmp"' EXIT
+        CLEANUP_FILES+=("$tmp")
         update_with_python "$devfile" "$tool" > "$tmp"
         mv -- "$tmp" "$devfile"
-        trap - EXIT
+        rm -f -- "$tmp"
         printf "Updated '%s' with %s.\n" "$devfile" "$tool"
       fi
       ;;

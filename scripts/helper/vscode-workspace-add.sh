@@ -21,6 +21,11 @@
 
 set -euo pipefail
 
+# Global array for temporary files to clean up on exit
+declare -a CLEANUP_FILES=()
+# Use Bash 3.2-safe array expansion to avoid "unbound variable" error with set -u
+trap 'for f in ${CLEANUP_FILES[@]+"${CLEANUP_FILES[@]}"}; do rm -f -- "$f"; done' EXIT
+
 # — Debug support —
 DEBUG=false
 DEBUG_FILE=""
@@ -96,28 +101,32 @@ EOF
 update_with_jq() {
   local workspace_file="$1"
   local paths_list="$2"
-  local folders_json
-  local tmp
+  local folders_json_file=""
+  local tmp_file=""
 
-  # build an array of {path: "..."} objects
-  folders_json=$(printf '%s\n' "$paths_list" \
+  folders_json_file="$(mktemp "$(get_temp_dir)/repos-folders-XXXXXX")"
+  CLEANUP_FILES+=("$folders_json_file")
+
+  # build an array of {path: "..."} objects and save to file
+  printf '%s\n' "$paths_list" \
     | jq -R . \
-    | jq -s '[ .[] | { path: . } ]'
-  )
+    | jq -s '[ .[] | { path: . } ]' > "$folders_json_file"
 
   if [ ! -f "$workspace_file" ]; then
     # create a brand-new workspace file
-    jq -n --argjson folders "$folders_json" \
-      '{ folders: $folders }' \
+    jq -n --slurpfile folders "$folders_json_file" \
+      '{ folders: $folders[0] }' \
       > "$workspace_file"
   else
     # merge into existing file: set .folders = $folders
-    tmp="$(mktemp "$(get_temp_dir)/repos-workspace-XXXXXX")"
-    jq --argjson folders "$folders_json" \
-       '.folders = $folders' \
-       -- "$workspace_file" > "$tmp" \
-      && mv -- "$tmp" "$workspace_file"
+    tmp_file="$(mktemp "$(get_temp_dir)/repos-workspace-XXXXXX")"
+    CLEANUP_FILES+=("$tmp_file")
+    jq --slurpfile folders "$folders_json_file" \
+       '.folders = $folders[0]' \
+       -- "$workspace_file" > "$tmp_file" \
+      && mv -- "$tmp_file" "$workspace_file"
   fi
+  rm -f -- "$folders_json_file" "$tmp_file"
 
   printf "Updated '%s' with jq.\n" "$workspace_file"
 }
@@ -126,7 +135,9 @@ update_with_jq() {
 PYTHON_UPDATE_SCRIPT=$(cat <<'PYCODE'
 import sys, json, os
 ws = sys.argv[1]
-paths = [line for line in os.environ['PATHS_LIST'].splitlines() if line.strip()]
+paths_file = sys.argv[2]
+with open(paths_file, 'r') as f:
+    paths = [line.strip() for line in f if line.strip()]
 try:
     with open(ws) as f:
         data = json.load(f)
@@ -142,22 +153,37 @@ PYCODE
 update_with_python() {
   local workspace_file="$1"
   local paths_list="$2"
+  local paths_file=""
+  paths_file="$(mktemp "$(get_temp_dir)/repos-paths-XXXXXX")"
+  CLEANUP_FILES+=("$paths_file")
+  printf '%s\n' "$paths_list" > "$paths_file"
   # Use - and passing filename as argument, without redundant -- which can break indexing
-  PATHS_LIST="$paths_list" python - "$workspace_file" <<<"$PYTHON_UPDATE_SCRIPT"
+  python - "$workspace_file" "$paths_file" <<<"$PYTHON_UPDATE_SCRIPT"
+  rm -f -- "$paths_file"
   printf "Updated '%s' with Python.\n" "$workspace_file"
 }
 
 update_with_python3() {
   local workspace_file="$1"
   local paths_list="$2"
-  PATHS_LIST="$paths_list" python3 - "$workspace_file" <<<"$PYTHON_UPDATE_SCRIPT"
+  local paths_file=""
+  paths_file="$(mktemp "$(get_temp_dir)/repos-paths-XXXXXX")"
+  CLEANUP_FILES+=("$paths_file")
+  printf '%s\n' "$paths_list" > "$paths_file"
+  python3 - "$workspace_file" "$paths_file" <<<"$PYTHON_UPDATE_SCRIPT"
+  rm -f -- "$paths_file"
   printf "Updated '%s' with Python3.\n" "$workspace_file"
 }
 
 update_with_py() {
   local workspace_file="$1"
   local paths_list="$2"
-  PATHS_LIST="$paths_list" py - "$workspace_file" <<<"$PYTHON_UPDATE_SCRIPT"
+  local paths_file=""
+  paths_file="$(mktemp "$(get_temp_dir)/repos-paths-XXXXXX")"
+  CLEANUP_FILES+=("$paths_file")
+  printf '%s\n' "$paths_list" > "$paths_file"
+  py - "$workspace_file" "$paths_file" <<<"$PYTHON_UPDATE_SCRIPT"
+  rm -f -- "$paths_file"
   printf "Updated '%s' with py launcher.\n" "$workspace_file"
 }
 
@@ -166,12 +192,17 @@ update_with_py() {
 update_with_rscript() {
   local workspace_file="$1"
   local paths_list="$2"
-  PATHS_LIST="$paths_list" Rscript --vanilla - "$workspace_file" <<'RSCRIPT'
+  local paths_file=""
+  paths_file="$(mktemp "$(get_temp_dir)/repos-paths-XXXXXX")"
+  CLEANUP_FILES+=("$paths_file")
+  printf '%s\n' "$paths_list" > "$paths_file"
+  Rscript --vanilla - "$workspace_file" "$paths_file" <<'RSCRIPT'
 args <- commandArgs(trailingOnly=TRUE)
 ws <- args[1]
+paths_file <- args[2]
 
 # Read and clean paths list
-paths <- strsplit(Sys.getenv("PATHS_LIST"), "\n", fixed=TRUE)[[1]]
+paths <- readLines(paths_file, warn = FALSE)
 paths <- paths[nzchar(paths)]
 folders <- lapply(paths, function(p) list(path = p))
 
@@ -210,6 +241,8 @@ jsonlite::write_json(
   auto_unbox  = TRUE
 )
 RSCRIPT
+  rm -f -- "$paths_file"
+
   printf "Updated '%s' with Rscript.\n" "$workspace_file"
 }
 
