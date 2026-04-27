@@ -77,11 +77,11 @@ jobs:
             fi
 
             if [ -n "$BUMP_INPUT" ]; then
-              # Bump mode: derive next version from README
-              CURRENT=$(grep -E '^VERSION_REPOS=' README.md | head -1 | sed 's/^VERSION_REPOS=//')
+              # Bump mode: derive current version from latest semver git tag
+              PREV_TAG=$(git tag --sort=version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | tail -1)
+              CURRENT="${PREV_TAG#v}"
               if [ -z "$CURRENT" ]; then
-                echo "Error: could not read VERSION_REPOS from README.md" >&2
-                exit 1
+                CURRENT="0.0.0"
               fi
               IFS='.' read -r cur_major cur_minor cur_patch <<< "$CURRENT"
               cur_major="${cur_major:-0}"; cur_minor="${cur_minor:-0}"; cur_patch="${cur_patch:-0}"
