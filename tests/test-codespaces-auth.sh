@@ -66,7 +66,7 @@ testowner/testrepo
 EOF
 
 cd test-project
-git init
+git -c init.defaultBranch=main init -q
 git config user.name "Test User"
 git config user.email "test@example.com"
 git remote add origin "https://github.com/testowner/testrepo.git"
@@ -102,7 +102,7 @@ cat > test-project/.devcontainer/devcontainer.json <<'EOF'
 EOF
 
 cd test-project
-git init
+git -c init.defaultBranch=main init -q
 git config user.name "Test User"
 git config user.email "test@example.com"
 git remote add origin "https://github.com/testowner/testrepo.git"
@@ -173,7 +173,7 @@ cat > test-project/subdir/.devcontainer/devcontainer.json <<'EOF'
 EOF
 
 cd test-project
-git init
+git -c init.defaultBranch=main init -q
 git config user.name "Test User"
 git config user.email "test@example.com"
 git remote add origin "https://github.com/testowner/testrepo.git"
@@ -222,7 +222,7 @@ testowner/testrepo
 EOF
 
 cd test-project
-git init
+git -c init.defaultBranch=main init -q
 git config user.name "Test User"
 git config user.email "test@example.com"
 git remote add origin "https://github.com/testowner/testrepo.git"
@@ -258,7 +258,7 @@ cat > test-project/.devcontainer/devcontainer.json <<'EOF'
 EOF
 
 cd test-project
-git init
+git -c init.defaultBranch=main init -q
 git config user.name "Test User"
 git config user.email "test@example.com"
 git remote add origin "https://github.com/testowner/testrepo.git"
@@ -304,7 +304,7 @@ cat > test-project/.devcontainer/devcontainer.json <<'EOF'
 EOF
 
 cd test-project
-git init
+git -c init.defaultBranch=main init -q
 git config user.name "Test User"
 git config user.email "test@example.com"
 git remote add origin "https://github.com/testowner/testrepo.git"

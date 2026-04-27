@@ -57,7 +57,7 @@ print_test "Auth check fails when no credentials are available"
 cd "$TEST_DIR"
 
 # 1. Create a minimal test repo
-git init test-repo
+git -c init.defaultBranch=main init -q test-repo
 cd test-repo
 git config user.name "Test User"
 git config user.email "test@example.com"

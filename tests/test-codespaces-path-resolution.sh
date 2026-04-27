@@ -79,7 +79,7 @@ chmod +x test-project/scripts/helper/codespaces-auth-add.sh
 
 # Initialize git repo (required by the script to detect current repo)
 cd test-project
-git init
+git -c init.defaultBranch=main init -q
 git config user.name "Test User"
 git config user.email "test@example.com"
 git remote add origin "https://github.com/testowner/testrepo.git"
