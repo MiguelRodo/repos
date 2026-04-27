@@ -146,6 +146,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <a class="nav-link" href="./pipelines.html"> 
 <span class="menu-text">Running Pipelines</span></a>
   </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-language-packages" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Language Packages</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-language-packages">    
+        <li>
+    <a class="dropdown-item" href="./python-package.html">
+ <span class="dropdown-text">Python Package</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="./r-package.html">
+ <span class="dropdown-text">R Package</span></a>
+  </li>  
+    </ul>
+  </li>
 </ul>
           </div> <!-- /navcollapse -->
             <div class="quarto-navbar-tools">
@@ -197,6 +212,12 @@ myorg/documentation</code></pre>
 <p><strong>Customise <code>repos.list</code></strong> — clone specific branches (<code>owner/repo@branch</code>), use worktrees (<code>@branch-name</code>), set repository visibility (<code>--public</code>/<code>--private</code>), and more. → <a href="repos-list.html">repos.list reference</a></p>
 <p><strong><code>repos setup</code></strong> — beyond cloning, it generates a VS Code workspace file, configures GitHub Codespaces authentication (<code>--codespaces</code>), and handles devcontainer paths. → <a href="setup.html">repos setup guide</a></p>
 <p><strong>Run a pipeline across all repos</strong> — if your repositories contain a <code>run.sh</code> script (or any script you specify), <code>repos run</code> executes it in each one. → <a href="pipelines.html">Running pipelines</a></p>
+</section>
+<section id="language-packages" class="level2">
+<h2 class="anchored" data-anchor-id="language-packages">Language Packages</h2>
+<p>Use <code>repos</code> directly from R or Python — all the same commands, no terminal required.</p>
+<p>→ <a href="python-package.html">Python package</a><br>
+→ <a href="r-package.html">R package</a></p>
 </section>
 <section id="installation" class="level2">
 <h2 class="anchored" data-anchor-id="installation">Installation</h2>
