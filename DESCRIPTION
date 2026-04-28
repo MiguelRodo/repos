@@ -1,7 +1,7 @@
 Package: repos
 Type: Package
 Title: Multi-Repository Management Tool
-Version: 1.3.2
+Version: 1.3.3
 Authors@R: person("Miguel", "Rodo", email = "miguel.rodo@uct.ac.za", role = c("aut", "cre"))
 Description: A command-line tool for managing multiple related Git repositories as a unified workspace.
     Provides wrappers for Bash scripts that handle multi-repository management, Git worktrees,
