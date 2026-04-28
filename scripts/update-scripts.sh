@@ -19,7 +19,7 @@ UPSTREAM_BRANCH="${UPSTREAM_BRANCH:-main}"
 SCRIPTS_SUBDIR="scripts"
 
 # --- Paths ---
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname -- "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 TARGET_DIR="$SCRIPT_DIR"
 
@@ -219,7 +219,7 @@ copy_scripts() {
     elif [ -f "$item" ]; then
       # Copy file and preserve permissions
       cp -- "$item" "$dst_dir/$item_name"
-      chmod +x -- "$dst_dir/$item_name"
+      chmod -- +x "$dst_dir/$item_name"
       printf '  ✓ Updated %s\n' "$rel_item"
     fi
   done

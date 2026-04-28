@@ -21,7 +21,7 @@ fi
 INVOKE_DIR="$PWD"
 
 # 2. Where this script lives (to locate the workspace file)
-SCRIPT_DIR="$(cd "$(dirname "$0")" >/dev/null 2>&1 && pwd)"
+SCRIPT_DIR="$(cd "$(dirname -- "$0")" >/dev/null 2>&1 && pwd)"
 
 # 3. Locate the workspace JSON (two levels up from scripts/helper/)
 WS1="$SCRIPT_DIR/../../entire-project.code-workspace"
