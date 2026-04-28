@@ -10,7 +10,7 @@ The `repos.list` file lists the repositories (and optionally branches) that
 
 Each line is one repository:
 
-```
+```text
 owner/repo
 ```
 
@@ -20,7 +20,7 @@ Lines starting with `#` are comments and are ignored.
 
 Append `@branch` to clone only that branch:
 
-```
+```text
 owner/repo@develop
 ```
 
@@ -28,7 +28,7 @@ owner/repo@develop
 
 Add a name after the repository to clone into a different directory:
 
-```
+```text
 owner/repo my-data
 ```
 
@@ -38,7 +38,7 @@ Use `@branch` without a repository name to clone only that branch from the most
 recently listed repository (or the current repository if none has been listed
 yet):
 
-```
+```text
 owner/repo
 @feature-x
 @bugfix-123
@@ -51,7 +51,7 @@ Add `--worktree` to an `@branch` line to create a
 [Git worktree](https://git-scm.com/docs/git-worktree) instead of a separate
 clone:
 
-```
+```text
 owner/repo
 @feature-x --worktree
 @bugfix-123 --worktree
@@ -64,7 +64,7 @@ clones required.
 
 Control whether new repositories are created as public or private:
 
-```
+```text
 owner/repo --public
 owner/other-repo --private
 ```
@@ -85,7 +85,7 @@ Per-line `--public`/`--private` flags always override the global default.
 
 ## Example
 
-```
+```text
 --private        # default visibility for new repos
 --codespaces     # set up Codespaces auth for all repos
 
@@ -97,7 +97,7 @@ myorg/docs --public        # override: create docs repo as public
 
 After `repos clone`, the parent directory looks like:
 
-```
+```text
 workspace/
 ├── my-project/            # your project (contains repos.list)
 ├── backend/

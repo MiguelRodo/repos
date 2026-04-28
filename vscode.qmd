@@ -42,7 +42,7 @@ repos workspace -f my-repos.list
 
 The workspace file reflects the repository layout in the parent directory:
 
-```
+```text
 workspace/
 ├── my-project/          # your project (contains repos.list)
 ├── backend/             # cloned from myorg/backend

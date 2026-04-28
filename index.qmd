@@ -13,7 +13,7 @@ Manage multiple Git repositories as a unified workspace from a single `repos.lis
 Create a `repos.list` file in your project directory listing the repositories
 you want:
 
-```
+```text
 myorg/data-curation
 myorg/analysis
 myorg/documentation

@@ -9,16 +9,20 @@ website:
         text: Home
       - href: install.qmd
         text: Installation
-      - href: repos-list.qmd
-        text: repos.list
-      - href: clone.qmd
-        text: repos clone
-      - href: vscode.qmd
-        text: VS Code
-      - href: pipelines.qmd
-        text: Pipelines
-      - href: worktrees.qmd
-        text: Worktrees
+      - text: "Reference/API"
+        menu:
+          - href: repos-list.qmd
+            text: repos.list
+          - href: clone.qmd
+            text: repos clone
+          - href: vscode.qmd
+            text: VS Code
+      - text: "Guides"
+        menu:
+          - href: pipelines.qmd
+            text: Pipelines
+          - href: worktrees.qmd
+            text: Worktrees
       - text: "Language Packages"
         menu:
           - href: python-package.qmd

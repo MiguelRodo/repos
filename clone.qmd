@@ -28,7 +28,7 @@ repos clone -f my-repos.list
 
 Repositories are cloned to the **parent** of your current directory:
 
-```
+```text
 workspace/
 ├── my-project/          # your project (contains repos.list)
 ├── backend/             # cloned from myorg/backend

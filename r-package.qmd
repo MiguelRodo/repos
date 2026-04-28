@@ -26,7 +26,7 @@ your `PATH`.
 Place a `repos.list` file in your project directory listing the repositories
 you want to manage (one per line):
 
-```
+```text
 myorg/data-curation
 myorg/analysis
 myorg/documentation
