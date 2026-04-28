@@ -1,43 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://MiguelRodo.github.io/repos/install.html</loc>
-    <lastmod>2026-04-27T21:47:31.490Z</lastmod>
-  </url>
-  <url>
-    <loc>https://MiguelRodo.github.io/repos/clone.html</loc>
-    <lastmod>2026-04-27T21:47:31.489Z</lastmod>
-  </url>
-  <url>
-    <loc>https://MiguelRodo.github.io/repos/vscode.html</loc>
-    <lastmod>2026-04-27T21:47:31.494Z</lastmod>
-  </url>
-  <url>
-    <loc>https://MiguelRodo.github.io/repos/python-package.html</loc>
-    <lastmod>2026-04-27T21:47:31.490Z</lastmod>
-  </url>
-  <url>
-    <loc>https://MiguelRodo.github.io/repos/worktrees.html</loc>
-    <lastmod>2026-04-27T21:47:31.494Z</lastmod>
-  </url>
-  <url>
     <loc>https://MiguelRodo.github.io/repos/pipelines.html</loc>
-    <lastmod>2026-04-27T21:47:31.490Z</lastmod>
-  </url>
-  <url>
-    <loc>https://MiguelRodo.github.io/repos/repos-list.html</loc>
-    <lastmod>2026-04-27T21:47:31.490Z</lastmod>
-  </url>
-  <url>
-    <loc>https://MiguelRodo.github.io/repos/r-package.html</loc>
-    <lastmod>2026-04-27T21:47:31.490Z</lastmod>
-  </url>
-  <url>
-    <loc>https://MiguelRodo.github.io/repos/index.html</loc>
-    <lastmod>2026-04-27T21:47:31.490Z</lastmod>
+    <lastmod>2026-04-28T08:49:38.724Z</lastmod>
   </url>
   <url>
     <loc>https://MiguelRodo.github.io/repos/LICENSE.html</loc>
-    <lastmod>2026-04-27T21:47:31.488Z</lastmod>
+    <lastmod>2026-04-28T08:49:38.722Z</lastmod>
+  </url>
+  <url>
+    <loc>https://MiguelRodo.github.io/repos/clone.html</loc>
+    <lastmod>2026-04-28T08:49:38.723Z</lastmod>
+  </url>
+  <url>
+    <loc>https://MiguelRodo.github.io/repos/r-package.html</loc>
+    <lastmod>2026-04-28T08:49:38.724Z</lastmod>
+  </url>
+  <url>
+    <loc>https://MiguelRodo.github.io/repos/vscode.html</loc>
+    <lastmod>2026-04-28T08:49:38.727Z</lastmod>
+  </url>
+  <url>
+    <loc>https://MiguelRodo.github.io/repos/repos-list.html</loc>
+    <lastmod>2026-04-28T08:49:38.724Z</lastmod>
+  </url>
+  <url>
+    <loc>https://MiguelRodo.github.io/repos/python-package.html</loc>
+    <lastmod>2026-04-28T08:49:38.724Z</lastmod>
+  </url>
+  <url>
+    <loc>https://MiguelRodo.github.io/repos/worktrees.html</loc>
+    <lastmod>2026-04-28T08:49:38.727Z</lastmod>
+  </url>
+  <url>
+    <loc>https://MiguelRodo.github.io/repos/install.html</loc>
+    <lastmod>2026-04-28T08:49:38.723Z</lastmod>
+  </url>
+  <url>
+    <loc>https://MiguelRodo.github.io/repos/index.html</loc>
+    <lastmod>2026-04-28T08:49:38.723Z</lastmod>
   </url>
 </urlset>
