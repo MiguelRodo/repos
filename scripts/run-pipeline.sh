@@ -12,7 +12,7 @@
 set -Eeuo pipefail
 
 # --- Paths ---
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname -- "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CLONE_SCRIPT="$SCRIPT_DIR/helper/clone-repos.sh"
 INSTALL_DEPS_SCRIPT="$SCRIPT_DIR/helper/install-r-deps.sh"
@@ -258,11 +258,11 @@ run_in_repo() {
     if [ -f "$target" ]; then
       printf "⏵ %s: %s found\n" "$repo_name" "$script_name"
       if $DRY_RUN; then
-        printf "  DRY-RUN: would chmod +x and execute %s\n" "$target"
+        printf "  DRY-RUN: would chmod -- +x and execute %s\n" "$target"
         record_success "$repo_name" "$script_name"
       else
-        $VERBOSE && printf "  chmod +x \"%s\"\n" "$target"
-        chmod +x "$target"
+        $VERBOSE && printf "  chmod -- +x \"%s\"\n" "$target"
+        chmod -- +x "$target"
         $VERBOSE && printf "  cd \"%s\" && ./%s\n" "$full_path" "$script_name"
         local rc=0
         ( cd -- "$full_path" && "./$script_name" ) || rc=$?

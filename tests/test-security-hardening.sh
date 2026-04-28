@@ -77,7 +77,7 @@ cat > bin/Rscript <<'EOF'
 #!/bin/bash
 exit 0
 EOF
-chmod +x bin/Rscript
+chmod -- +x bin/Rscript
 export PATH="$PWD/bin:$PATH"
 
 # ============================================
