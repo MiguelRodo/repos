@@ -153,6 +153,7 @@ list_scripts() {
       # Recursively process subdirectories
       list_scripts "$item" "$dst_dir/$item_name" "$rel_item"
     elif [ -f "$item" ]; then
+      # Compare files using diff
       if [ -f "$dst_dir/$item_name" ]; then
         if ! diff -q -- "$item" "$dst_dir/$item_name" >/dev/null 2>&1; then
           printf '  ✓ %s (modified)\n' "$rel_item"

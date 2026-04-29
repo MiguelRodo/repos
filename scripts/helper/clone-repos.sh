@@ -457,6 +457,7 @@ has_non_local_remotes() {
     # Check if it's a local remote (handling Windows paths, relative paths, and file://)
     case "$repo_spec" in
       file://*|[a-zA-Z]:/*|[a-zA-Z]:\\*|/*|\\*|./*|../*|.\\*|..\\*) continue ;;  # Local path
+      # https:// must come before */* because */* also matches https://... URLs
       https://*)
         return 0  # Found non-local remote
         ;;
