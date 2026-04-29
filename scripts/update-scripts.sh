@@ -145,14 +145,14 @@ list_scripts() {
   for item in "$src_dir"/*; do
     [ ! -e "$item" ] && continue
     
-    local item_name="$(basename -- "$item")"
+    local item_name
+    item_name="$(basename -- "$item")"
     local rel_item="${rel_path:+$rel_path/}$item_name"
     
     if [ -d "$item" ]; then
       # Recursively process subdirectories
       list_scripts "$item" "$dst_dir/$item_name" "$rel_item"
     elif [ -f "$item" ]; then
-      # Compare files using diff
       if [ -f "$dst_dir/$item_name" ]; then
         if ! diff -q -- "$item" "$dst_dir/$item_name" >/dev/null 2>&1; then
           printf '  ✓ %s (modified)\n' "$rel_item"
@@ -208,7 +208,8 @@ copy_scripts() {
   for item in "$src_dir"/*; do
     [ ! -e "$item" ] && continue
     
-    local item_name="$(basename -- "$item")"
+    local item_name
+    item_name="$(basename -- "$item")"
     local rel_item="${rel_path:+$rel_path/}$item_name"
     
     if [ -d "$item" ]; then

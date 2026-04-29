@@ -77,7 +77,8 @@ create_bare_repo() {
   echo "# $repo_name" > README.md
   git add README.md
   git commit -q -m "Initial commit"
-  local default_branch=$(git symbolic-ref --short HEAD)
+  local default_branch
+  default_branch=$(git symbolic-ref --short HEAD)
   git push -q origin "$default_branch"
   
   # Create additional branches
@@ -361,6 +362,7 @@ if [ -d "$TEST_ROOT/custom-repo3" ]; then
 else
   print_fail "Clone to custom directory failed"
   print_info "Looking for: $TEST_ROOT/custom-repo3"
+  # shellcheck disable=SC2010
   ls -la "$TEST_ROOT" | grep -i repo3 || true
 fi
 
@@ -418,6 +420,7 @@ if [ "$BRANCHES_CREATED" -ge 2 ]; then
 else
   print_fail "Not all worktrees created (found only $BRANCHES_CREATED)"
   print_info "Expected: repo1, repo1-dev, repo1-feature-test"
+  # shellcheck disable=SC2010
   ls -la "$TEST_ROOT" | grep -E "repo1|ws7" || true
 fi
 
@@ -486,6 +489,7 @@ if [ -d "$TEST_ROOT/repo2-staging" ]; then
 else
   print_fail "Second worktree not created"
   print_info "Looking for: $TEST_ROOT/repo2-staging"
+  # shellcheck disable=SC2010
   ls -la "$TEST_ROOT" | grep -E "repo2|ws8" || true
 fi
 
@@ -528,6 +532,7 @@ if [ -d "$TEST_ROOT/repo1-feature-test" ]; then
 else
   print_fail "Worktree with sanitized name not found"
   print_info "Looking for: $TEST_ROOT/repo1-feature-test"
+  # shellcheck disable=SC2010
   ls -la "$TEST_ROOT" | grep ws10 || true
 fi
 

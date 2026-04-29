@@ -130,7 +130,8 @@ create_bare_repo() {
     git commit -q -m "Initial commit"
     
     # Get default branch and validate it exists
-    local default_branch=$(git symbolic-ref --short HEAD 2>/dev/null)
+    local default_branch
+    default_branch=$(git symbolic-ref --short HEAD 2>/dev/null)
     if [ -z "$default_branch" ]; then
       echo "Error: Could not determine default branch for $repo_name" >&2
       return 1

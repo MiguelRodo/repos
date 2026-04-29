@@ -19,12 +19,10 @@ INSTALL_DEPS_SCRIPT="$SCRIPT_DIR/helper/install-r-deps.sh"
 
 # --- Prerequisites ---
 check_prerequisites() {
-  for cmd in git; do
-    if ! command -v "$cmd" >/dev/null 2>&1; then
-      printf "Error: '%s' is required but not found in PATH.\n" "$cmd" >&2
-      exit 1
-    fi
-  done
+  if ! command -v git >/dev/null 2>&1; then
+    printf "Error: 'git' is required but not found in PATH.\n" >&2
+    exit 1
+  fi
 }
 
 # --- Usage ---

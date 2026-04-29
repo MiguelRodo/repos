@@ -97,7 +97,6 @@ print_info "Testing with invalid token: $GH_TOKEN"
 # Run the script and capture output
 set +e
 output=$("$CREATE_SCRIPT" -f repos.list 2>&1)
-exit_code=$?
 set -e
 
 print_info "Script output:"

@@ -457,14 +457,14 @@ has_non_local_remotes() {
     # Check if it's a local remote (handling Windows paths, relative paths, and file://)
     case "$repo_spec" in
       file://*|[a-zA-Z]:/*|[a-zA-Z]:\\*|/*|\\*|./*|../*|.\\*|..\\*) continue ;;  # Local path
+      https://*)
+        return 0  # Found non-local remote
+        ;;
       */*)
         # Check if it looks like owner/repo (GitHub format)
         if [[ "$repo_spec" =~ ^[^/]+/[^/]+$ ]]; then
           return 0  # Found non-local remote
         fi
-        ;;
-      https://*)
-        return 0  # Found non-local remote
         ;;
     esac
   done <"$file"
@@ -1034,7 +1034,7 @@ parse_args() {
 
 plan_forward() {
   local file="$1" parent_dir="$2" debug="$3"
-  local line trimmed tok1 tok2 remote_spec remote_https repo ref target is_opt no_worktree
+  local line trimmed tok1 tok2 remote_spec remote_https repo ref target is_opt
   local current_repo_https fallback_https
   
   # Initialize fallback to current repo

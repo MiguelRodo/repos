@@ -50,6 +50,7 @@ get_temp_dir() {
 # Global array for temporary files to clean up on exit
 declare -a CLEANUP_FILES=()
 # Use Bash 3.2-safe array expansion to avoid "unbound variable" error with set -u
+# shellcheck disable=SC2154  # f is the for-loop variable inside the trap string
 trap 'for f in ${CLEANUP_FILES[@]+"${CLEANUP_FILES[@]}"}; do rm -f -- "$f"; done' EXIT
 
 DEVCONTAINER_PATHS=()  # Array of devcontainer.json paths to update
