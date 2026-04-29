@@ -1,45 +1,52 @@
 [
   {
-    "objectID": "pipelines.html",
-    "href": "pipelines.html",
-    "title": "Running Pipelines",
+    "objectID": "install.html",
+    "href": "install.html",
+    "title": "Installation",
     "section": "",
-    "text": "repos run executes a script inside each repository listed in your repos.list file. This lets you run a build, test, or any other task across your entire workspace with a single command."
+    "text": "You can install repos as a system package (Ubuntu/Debian, macOS, Windows), from source, or as a language-specific wrapper (R or Python)."
   },
   {
-    "objectID": "pipelines.html#basic-usage",
-    "href": "pipelines.html#basic-usage",
-    "title": "Running Pipelines",
-    "section": "Basic Usage",
-    "text": "Basic Usage\nBy default, repos run looks for a file called run.sh in each cloned repository and executes it:\nrepos run"
+    "objectID": "install.html#ubuntu-debian",
+    "href": "install.html#ubuntu-debian",
+    "title": "Installation",
+    "section": "Ubuntu / Debian",
+    "text": "Ubuntu / Debian\n\nOption 1: Install from APT Repository (Recommended)\nInstall and keep repos up to date directly via apt:\n# Add repository signing key\ncurl -fsSL https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/KEY.gpg \\\n   | sudo gpg --dearmor -o /usr/share/keyrings/miguelrodo-repos.gpg\n\n# Add apt source\necho \"deb [signed-by=/usr/share/keyrings/miguelrodo-repos.gpg] https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/ ./\" \\\n   | sudo tee /etc/apt/sources.list.d/miguelrodo-repos.list &gt;/dev/null\n\n# Install repos\nsudo apt-get update\nsudo apt-get install -y repos\nTo uninstall:\nsudo apt-get remove repos\n\n\nOption 2: Local Installation (No sudo required)\nInstall to your user directory (~/.local/bin):\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\nbash install-local.sh\nIf ~/.local/bin is not on your PATH, add this to ~/.bashrc or ~/.profile:\nexport PATH=\"$HOME/.local/bin:$PATH\"\nThen reload:\nsource ~/.bashrc\nTo uninstall:\nbash uninstall-local.sh\n\n\nOption 3: System-wide from Release .deb (requires sudo)\nDownload and install the latest .deb from the Releases page:\nVERSION_REPOS=1.2.6\nwget https://github.com/MiguelRodo/repos/releases/download/v${VERSION_REPOS}/repos_${VERSION_REPOS}_all.deb\nsudo dpkg -i repos_${VERSION_REPOS}_all.deb\nrm repos_${VERSION_REPOS}_all.deb\n\n# Fix any dependency issues\nsudo apt-get install -f\nTo uninstall:\nsudo dpkg -r repos\n\n\nDependencies\nAll Ubuntu/Debian methods require bash, git, curl, and jq. These are typically pre-installed. If not:\nsudo apt-get install bash git curl jq"
   },
   {
-    "objectID": "pipelines.html#options",
-    "href": "pipelines.html#options",
-    "title": "Running Pipelines",
-    "section": "Options",
-    "text": "Options\n\n\n\n\n\n\n\nFlag\nDescription\n\n\n\n\n--script &lt;file&gt;\nRun a different script (default: run.sh)\n\n\n-f &lt;file&gt;\nUse a different list file (default: repos.list)\n\n\n--include &lt;repos&gt;\nComma-separated list of repositories to include\n\n\n--exclude &lt;repos&gt;\nComma-separated list of repositories to skip\n\n\n--continue-on-error\nKeep running even if a repository fails\n\n\n--dry-run\nPrint what would be run without executing anything\n\n\n--ensure-setup\nClone repositories before running the pipeline\n\n\n\n# Run a custom script in each repo\nrepos run --script build.sh\n\n# Only run in specific repos\nrepos run --include \"backend,frontend\"\n\n# Skip a repo\nrepos run --exclude \"docs\"\n\n# Continue even if one repo fails, then report all results\nrepos run --continue-on-error\n\n# Preview without running\nrepos run --dry-run\n\n# Make sure repos are cloned before running\nrepos run --ensure-setup"
+    "objectID": "install.html#macos-homebrew",
+    "href": "install.html#macos-homebrew",
+    "title": "Installation",
+    "section": "macOS (Homebrew)",
+    "text": "macOS (Homebrew)\nbrew tap MiguelRodo/repos\nbrew install repos\nThe formula automatically handles the jq dependency. Git is typically pre-installed on macOS."
   },
   {
-    "objectID": "pipelines.html#writing-a-pipeline-script",
-    "href": "pipelines.html#writing-a-pipeline-script",
-    "title": "Running Pipelines",
-    "section": "Writing a Pipeline Script",
-    "text": "Writing a Pipeline Script\nEach repository should contain the script that repos run will call. The script receives no arguments by default, but can read environment variables or accept flags if needed. A minimal run.sh:\n#!/usr/bin/env bash\nset -e\n\n# Install dependencies\nRscript -e \"renv::restore()\"\n\n# Run analysis\nRscript analysis.R"
+    "objectID": "install.html#windows",
+    "href": "install.html#windows",
+    "title": "Installation",
+    "section": "Windows",
+    "text": "Windows\n\nScoop (recommended)\nscoop bucket add repos https://github.com/MiguelRodo/scoop-bucket\nscoop install repos\ngit and jq are installed automatically by Scoop. You will also need Git for Windows for Bash support.\n\n\nManual\n\nClone the repository:\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\nRun the installer:\n.\\install.ps1\nRestart your PowerShell session.\n\nDependencies:\n\nGit for Windows — provides bash, git, and curl\njq — JSON processor"
   },
   {
-    "objectID": "pipelines.html#r-and-python-apis",
-    "href": "pipelines.html#r-and-python-apis",
-    "title": "Running Pipelines",
-    "section": "R and Python APIs",
-    "text": "R and Python APIs\nFor the R or Python API, see the language-specific wrapper pages:\n→ R package\n→ Python package"
+    "objectID": "install.html#from-source",
+    "href": "install.html#from-source",
+    "title": "Installation",
+    "section": "From Source",
+    "text": "From Source\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\n\n# Local install (no sudo)\nbash install-local.sh\n\n# Or system-wide on Ubuntu/Debian\nsudo dpkg-buildpackage -us -uc -b\nsudo dpkg -i ../repos_*.deb"
   },
   {
-    "objectID": "LICENSE.html",
-    "href": "LICENSE.html",
-    "title": "MIT License",
-    "section": "",
-    "text": "MIT License\nCopyright (c) 2024 Miguel Rodo\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\nTHE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE."
+    "objectID": "install.html#language-wrappers",
+    "href": "install.html#language-wrappers",
+    "title": "Installation",
+    "section": "Language Wrappers",
+    "text": "Language Wrappers\n\nR Package\ninstall.packages(\"devtools\")\ndevtools::install_github(\"MiguelRodo/repos\")\nRequires bash, git, curl, and jq on your system.\n\n\nPython Package\npip install git+https://github.com/MiguelRodo/repos.git\nOr from a local clone:\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\npip install .\nRequires bash, git, curl, and jq on your system. On Windows, use Git for Windows or WSL."
+  },
+  {
+    "objectID": "install.html#verify-installation",
+    "href": "install.html#verify-installation",
+    "title": "Installation",
+    "section": "Verify Installation",
+    "text": "Verify Installation\nrepos --help"
   },
   {
     "objectID": "clone.html",
@@ -91,48 +98,6 @@
     "text": "Going further\nrepos clone only clones repositories. For IDE integration, two additional commands are available:\n\nGenerate a VS Code workspace: repos workspace\nConfigure GitHub Codespaces authentication: repos codespace\n\n→ VS Code integration"
   },
   {
-    "objectID": "r-package.html",
-    "href": "r-package.html",
-    "title": "R Package",
-    "section": "",
-    "text": "The repos R package wraps the same Bash scripts used by the command-line tool, so every feature available at the terminal is also available from R.\nThe package ships its own bundled copy of the CLI scripts, so all R functions work without requiring repos to be installed on your system PATH."
-  },
-  {
-    "objectID": "r-package.html#installation",
-    "href": "r-package.html#installation",
-    "title": "R Package",
-    "section": "Installation",
-    "text": "Installation\ninstall.packages(\"devtools\")\ndevtools::install_github(\"MiguelRodo/repos\")\nSystem requirements: bash, git, curl, and jq must be available on your PATH."
-  },
-  {
-    "objectID": "r-package.html#end-to-end-workflow",
-    "href": "r-package.html#end-to-end-workflow",
-    "title": "R Package",
-    "section": "End-to-End Workflow",
-    "text": "End-to-End Workflow\n\nStep 1 — Create a repos.list file\nPlace a repos.list file in your project directory listing the repositories you want to manage (one per line):\nmyorg/data-curation\nmyorg/analysis\nmyorg/documentation\nSee the repos.list reference for the full syntax — branch pinning, worktrees, visibility flags, and more.\n\n\nStep 2 — Clone repositories\nlibrary(repos)\n\nrepos(\"clone\")\nThis reads repos.list and clones everything to the parent directory of your current location.\n\n\nStep 3 — Open in your IDE (optional)\nGenerate a VS Code multi-root workspace file:\nrepos_workspace()\nSee repos_workspace() below for all options.\n\n\nStep 4 — Run a pipeline\nOnce the repositories are cloned, run a script inside each one:\nrepos_run()          # executes run.sh in every repo\nSee repos_run() below for all options."
-  },
-  {
-    "objectID": "r-package.html#api-reference",
-    "href": "r-package.html#api-reference",
-    "title": "R Package",
-    "section": "API Reference",
-    "text": "API Reference\n\nrepos_install_cli()\nPrint OS-appropriate instructions for installing the repos CLI, and optionally run the installer.\nrepos_install_cli(\n  run = FALSE  # if TRUE, run the installer automatically\n)\nParameters\n\n\n\n\n\n\n\n\n\nParameter\nType\nDefault\nDescription\n\n\n\n\nrun\nlogical\nFALSE\nIf TRUE, attempt to run the installer automatically\n\n\n\nDetails\nThe R package uses its own bundled copy of the CLI for all R functions. However, if you also want to use repos directly from your terminal, this function installs the CLI system-wide. Detects the operating system and prints the recommended installation command for that platform. On Linux and macOS, passing run = TRUE will also execute the installer. On Windows, only instructions are printed.\nReturns: Invisibly returns NULL.\nExamples:\nlibrary(repos)\n\n# Print installation instructions for your OS\nrepos_install_cli()\n\n# Print instructions AND run the installer\nrepos_install_cli(run = TRUE)\n\n\n\nrepos_bundled_cli_version()\nReturn the version of the repos CLI bundled inside this package.\nrepos_bundled_cli_version()\nReturns: A character string with the bundled CLI version (e.g. \"1.1.0\").\nExamples:\nlibrary(repos)\n\nrepos_bundled_cli_version()  # e.g. \"1.1.0\"\n\n\n\nrepos_installed_cli_version()\nReturn the version of the repos CLI installed on the system PATH, or NULL if not found.\nrepos_installed_cli_version()\nReturns: A character string with the installed CLI version, or NULL.\nExamples:\nlibrary(repos)\n\nver &lt;- repos_installed_cli_version()\nif (is.null(ver)) {\n  message(\"repos CLI is not installed on this system.\")\n} else {\n  message(\"Installed CLI version: \", ver)\n}\n\n\n\nrepos()\nTop-level dispatcher that delegates to the appropriate subcommand.\nrepos(command, ...)\nParameters\n\n\n\n\n\n\n\n\nParameter\nType\nDescription\n\n\n\n\ncommand\ncharacter\n\"clone\", \"workspace\", \"codespace\", \"codespaces\", or \"run\"\n\n\n...\n\nForwarded to the corresponding function\n\n\n\nReturns: Invisibly returns the exit status of the script (0 for success).\nExamples:\nlibrary(repos)\n\nrepos(\"clone\")\nrepos(\"workspace\")\nrepos(\"codespace\")\nrepos(\"run\")\nrepos(\"run\", script = \"build.sh\")\n\n\n\nrepos_workspace()\nGenerate or update the VS Code multi-root workspace file.\nrepos_workspace(\n  file       = NULL,   # path to a custom list file (default: repos.list)\n  debug      = FALSE,  # write debug output to stderr\n  debug_file = NULL,   # write debug output to a file (TRUE = auto-name, or a path)\n  ...                  # additional raw flags forwarded to vscode-workspace-add.sh\n)\nParameters\n\n\n\n\n\n\n\n\n\nParameter\nType\nDefault\nDescription\n\n\n\n\nfile\ncharacter\nNULL\nPath to repos list file (default: repos.list)\n\n\ndebug\nlogical\nFALSE\nPrint debug output to stderr\n\n\ndebug_file\nlogical or character\nNULL\nWrite debug output to a file\n\n\n...\n\n\nAdditional raw flags forwarded as-is\n\n\n\nReturns: Invisibly returns the exit status of the script (0 for success).\nExamples:\nlibrary(repos)\n\n# Generate workspace from default repos.list\nrepos_workspace()\n\n# Use a custom list file\nrepos_workspace(file = \"my-repos.list\")\nFor the full description, see the VS Code integration guide.\n\n\n\nrepos_codespace()\nConfigure GitHub Codespaces authentication.\nrepos_codespace(\n  file         = NULL,  # path to a custom list file (default: repos.list)\n  devcontainer = NULL,  # path(s) to devcontainer.json\n  permissions  = NULL,  # \"all\" or \"contents\" — passed to codespaces-auth-add.sh\n  tool         = NULL,  # force tool for codespaces-auth-add.sh (\"jq\" or \"python\")\n  debug        = FALSE, # write debug output to stderr\n  debug_file   = NULL,  # write debug output to a file (TRUE = auto-name, or a path)\n  ...                   # additional raw flags forwarded to codespaces-auth-add.sh\n)\nParameters\n\n\n\n\n\n\n\n\n\nParameter\nType\nDefault\nDescription\n\n\n\n\nfile\ncharacter\nNULL\nPath to repos list file (default: repos.list)\n\n\ndevcontainer\ncharacter or character vector\nNULL\nPath(s) to devcontainer.json\n\n\npermissions\ncharacter\nNULL\n\"all\" or \"contents\"\n\n\ntool\ncharacter\nNULL\nForce \"jq\" or \"python\" for auth helper\n\n\ndebug\nlogical\nFALSE\nPrint debug output to stderr\n\n\ndebug_file\nlogical or character\nNULL\nWrite debug output to a file\n\n\n...\n\n\nAdditional raw flags forwarded as-is\n\n\n\nReturns: Invisibly returns the exit status of the script (0 for success).\nExamples:\nlibrary(repos)\n\n# Configure with default devcontainer path\nrepos_codespace()\n\n# Specify a devcontainer.json path\nrepos_codespace(devcontainer = \".devcontainer/devcontainer.json\")\n\n# Multiple devcontainer paths\nrepos_codespace(devcontainer = c(\"path1/devcontainer.json\",\n                                 \"path2/devcontainer.json\"))\nFor the full description, see the VS Code integration guide.\n\n\n\nrepos_run()\nExecute a script inside each cloned repository.\nrepos_run(\n  file             = NULL,   # path to a custom list file (default: repos.list)\n  script           = NULL,   # script to run in each repo (default: run.sh)\n  include          = NULL,   # repo name(s) to include\n  exclude          = NULL,   # repo name(s) to skip\n  ensure_setup     = FALSE,  # clone repos first (via repos clone)\n  skip_deps        = FALSE,  # skip install-r-deps.sh\n  dry_run          = FALSE,  # print what would run without executing\n  verbose          = FALSE,  # verbose logging\n  continue_on_error = FALSE, # keep running after a failure\n  ...                        # additional raw flags forwarded to run-pipeline.sh\n)\nParameters\n\n\n\n\n\n\n\n\n\nParameter\nType\nDefault\nDescription\n\n\n\n\nfile\ncharacter\nNULL\nPath to repos list file (default: repos.list)\n\n\nscript\ncharacter\nNULL\nScript file to run in each repo (default: run.sh)\n\n\ninclude\ncharacter or character vector\nNULL\nOnly run in these repos\n\n\nexclude\ncharacter or character vector\nNULL\nSkip these repos\n\n\nensure_setup\nlogical\nFALSE\nClone repos first (via repos clone)\n\n\nskip_deps\nlogical\nFALSE\nSkip R dependency installation\n\n\ndry_run\nlogical\nFALSE\nPreview without executing\n\n\nverbose\nlogical\nFALSE\nVerbose logging\n\n\ncontinue_on_error\nlogical\nFALSE\nContinue past failures\n\n\n...\n\n\nAdditional raw flags forwarded as-is\n\n\n\nReturns: Invisibly returns the exit status of the script (0 for success).\nExamples:\nlibrary(repos)\n\n# Run the default script (run.sh) in every repo\nrepos_run()\n\n# Run a custom script\nrepos_run(script = \"build.sh\")\n\n# Only run in specific repos\nrepos_run(include = c(\"backend\", \"frontend\"))\n\n# Skip a repo\nrepos_run(exclude = \"docs\")\n\n# Continue even if one repo fails\nrepos_run(continue_on_error = TRUE)\n\n# Preview without running\nrepos_run(dry_run = TRUE)\n\n# Ensure repos are cloned before running\nrepos_run(ensure_setup = TRUE)\n\n# Combine options\nrepos_run(script = \"test.sh\", verbose = TRUE, ensure_setup = TRUE)\n\n# Backward compatibility — raw flag passing still works\nrepos_run(\"--script\", \"build.sh\", \"--dry-run\")\nFor the full description, see Running Pipelines."
-  },
-  {
-    "objectID": "r-package.html#github-authentication",
-    "href": "r-package.html#github-authentication",
-    "title": "R Package",
-    "section": "GitHub Authentication",
-    "text": "GitHub Authentication\nrepos_codespace() needs a GitHub token with Codespaces permissions. Provide it via the GH_TOKEN environment variable or via the gh CLI:\nSys.setenv(GH_TOKEN = \"your_personal_access_token\")\nrepos_codespace()\nOr set it in your shell before starting R:\nexport GH_TOKEN=\"your_personal_access_token\""
-  },
-  {
-    "objectID": "r-package.html#bundled-cli-vs.-system-cli",
-    "href": "r-package.html#bundled-cli-vs.-system-cli",
-    "title": "R Package",
-    "section": "Bundled CLI vs. System CLI",
-    "text": "Bundled CLI vs. System CLI\nThe R package ships a bundled copy of the Bash scripts that it uses for all R functions (repos_run(), repos_workspace(), etc.). This bundled version is independent of any repos binary you may have installed on your system PATH.\nYou can inspect both versions at any time:\nlibrary(repos)\n\nrepos_bundled_cli_version()     # version bundled in the package\nrepos_installed_cli_version()   # system PATH version, or NULL\n\nDoes installing the R package also install the repos CLI?\nNo. The R package bundles its own copies of the Bash scripts, so all R functions (repos_run(), repos_workspace(), etc.) work without the repos command being on your PATH.\nIf you also want to run repos clone, repos run, etc. directly from a terminal, install the CLI separately. The easiest way is to call repos_install_cli() from R:\nlibrary(repos)\n\n# Print OS-appropriate installation instructions\nrepos_install_cli()\n\n# Or print instructions AND run the installer automatically\nrepos_install_cli(run = TRUE)\nSee repos_install_cli() above for details, or visit the Installation guide for all options."
-  },
-  {
     "objectID": "vscode.html",
     "href": "vscode.html",
     "title": "VS Code Integration",
@@ -159,62 +124,6 @@
     "title": "VS Code Integration",
     "section": "R and Python APIs",
     "text": "R and Python APIs\nFor the R or Python API, see the language-specific wrapper pages:\n→ R package\n→ Python package"
-  },
-  {
-    "objectID": "repos-list.html",
-    "href": "repos-list.html",
-    "title": "repos.list Reference",
-    "section": "",
-    "text": "The repos.list file lists the repositories (and optionally branches) that repos clone will clone. Place it in the root of your project directory."
-  },
-  {
-    "objectID": "repos-list.html#basic-format",
-    "href": "repos-list.html#basic-format",
-    "title": "repos.list Reference",
-    "section": "Basic Format",
-    "text": "Basic Format\nEach line is one repository:\nowner/repo\nLines starting with # are comments and are ignored."
-  },
-  {
-    "objectID": "repos-list.html#cloning-a-specific-branch",
-    "href": "repos-list.html#cloning-a-specific-branch",
-    "title": "repos.list Reference",
-    "section": "Cloning a Specific Branch",
-    "text": "Cloning a Specific Branch\nAppend @branch to clone only that branch:\nowner/repo@develop"
-  },
-  {
-    "objectID": "repos-list.html#custom-target-directory",
-    "href": "repos-list.html#custom-target-directory",
-    "title": "repos.list Reference",
-    "section": "Custom Target Directory",
-    "text": "Custom Target Directory\nAdd a name after the repository to clone into a different directory:\nowner/repo my-data"
-  },
-  {
-    "objectID": "repos-list.html#worktrees",
-    "href": "repos-list.html#worktrees",
-    "title": "repos.list Reference",
-    "section": "Worktrees",
-    "text": "Worktrees\nUse @branch without a repository name to clone only that branch from the most recently listed repository (or the current repository if none has been listed yet):\nowner/repo\n@feature-x\n@bugfix-123\nThis produces a full clone of owner/repo plus two single-branch clones — no extra network clones of the full repository required.\nAdd --worktree to an @branch line to create a Git worktree instead of a separate clone:\nowner/repo\n@feature-x --worktree\n@bugfix-123 --worktree\nThis produces a full clone of owner/repo plus two worktrees — no extra network clones required."
-  },
-  {
-    "objectID": "repos-list.html#visibility",
-    "href": "repos-list.html#visibility",
-    "title": "repos.list Reference",
-    "section": "Visibility",
-    "text": "Visibility\nControl whether new repositories are created as public or private:\nowner/repo --public\nowner/other-repo --private"
-  },
-  {
-    "objectID": "repos-list.html#global-flags",
-    "href": "repos-list.html#global-flags",
-    "title": "repos.list Reference",
-    "section": "Global Flags",
-    "text": "Global Flags\nPlace a flag on its own line (with nothing else except optional comments) to apply it to every subsequent repository:\n\n\n\n\n\n\n\nFlag\nEffect\n\n\n\n\n--public\nCreate all repositories as public by default\n\n\n--private\nCreate all repositories as private by default (the default)\n\n\n--codespaces\nConfigure Codespaces authentication for all repositories\n\n\n--worktree\nUse worktrees instead of separate clones for all @branch lines\n\n\n\nPer-line --public/--private flags always override the global default."
-  },
-  {
-    "objectID": "repos-list.html#example",
-    "href": "repos-list.html#example",
-    "title": "repos.list Reference",
-    "section": "Example",
-    "text": "Example\n--private        # default visibility for new repos\n--codespaces     # set up Codespaces auth for all repos\n\nmyorg/backend\nmyorg/frontend@develop\n@staging --worktree        # worktree of frontend at staging branch\nmyorg/docs --public        # override: create docs repo as public\nAfter repos clone, the parent directory looks like:\nworkspace/\n├── my-project/            # your project (contains repos.list)\n├── backend/\n├── frontend-develop/\n├── frontend-staging/      # worktree\n└── docs/"
   },
   {
     "objectID": "python-package.html",
@@ -287,53 +196,137 @@
     "text": "repos update_scripts\nPull the latest helper scripts from the upstream CompTemplate repository:\nrepos update_scripts\nThe command:\n\nClones / pulls the latest MiguelRodo/CompTemplate repository\nCopies all scripts from its scripts/ directory (including helper/)\nPreserves executable permissions\nCreates a git commit with the updates\n\n\nOptions\n\n\n\n\n\n\n\nFlag\nDescription\n\n\n\n\n-b &lt;name&gt;, --branch &lt;name&gt;\nUse a specific upstream branch (default: main)\n\n\n-n, --dry-run\nShow what would be updated without making changes\n\n\n-f, --force\nOverwrite local changes without prompting\n\n\n\n\n\nEnvironment variables\n\n\n\nVariable\nDescription\n\n\n\n\nUPSTREAM_BRANCH\nOverride the default upstream branch\n\n\n\n\n\nExamples\n# Update from the default (main) branch\nrepos update_scripts\n\n# Update from a specific branch\nrepos update_scripts --branch dev\n\n# Preview what would change\nrepos update_scripts --dry-run\n\n# Force-overwrite local modifications\nrepos update_scripts --force"
   },
   {
-    "objectID": "install.html",
-    "href": "install.html",
-    "title": "Installation",
+    "objectID": "pipelines.html",
+    "href": "pipelines.html",
+    "title": "Running Pipelines",
     "section": "",
-    "text": "You can install repos as a system package (Ubuntu/Debian, macOS, Windows), from source, or as a language-specific wrapper (R or Python)."
+    "text": "repos run executes a script inside each repository listed in your repos.list file. This lets you run a build, test, or any other task across your entire workspace with a single command."
   },
   {
-    "objectID": "install.html#ubuntu-debian",
-    "href": "install.html#ubuntu-debian",
-    "title": "Installation",
-    "section": "Ubuntu / Debian",
-    "text": "Ubuntu / Debian\n\nOption 1: Install from APT Repository (Recommended)\nInstall and keep repos up to date directly via apt:\n# Add repository signing key\ncurl -fsSL https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/KEY.gpg \\\n   | sudo gpg --dearmor -o /usr/share/keyrings/miguelrodo-repos.gpg\n\n# Add apt source\necho \"deb [signed-by=/usr/share/keyrings/miguelrodo-repos.gpg] https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/ ./\" \\\n   | sudo tee /etc/apt/sources.list.d/miguelrodo-repos.list &gt;/dev/null\n\n# Install repos\nsudo apt-get update\nsudo apt-get install -y repos\nTo uninstall:\nsudo apt-get remove repos\n\n\nOption 2: Local Installation (No sudo required)\nInstall to your user directory (~/.local/bin):\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\nbash install-local.sh\nIf ~/.local/bin is not on your PATH, add this to ~/.bashrc or ~/.profile:\nexport PATH=\"$HOME/.local/bin:$PATH\"\nThen reload:\nsource ~/.bashrc\nTo uninstall:\nbash uninstall-local.sh\n\n\nOption 3: System-wide from Release .deb (requires sudo)\nDownload and install the latest .deb from the Releases page:\nVERSION_REPOS=1.2.6\nwget https://github.com/MiguelRodo/repos/releases/download/v${VERSION_REPOS}/repos_${VERSION_REPOS}_all.deb\nsudo dpkg -i repos_${VERSION_REPOS}_all.deb\nrm repos_${VERSION_REPOS}_all.deb\n\n# Fix any dependency issues\nsudo apt-get install -f\nTo uninstall:\nsudo dpkg -r repos\n\n\nDependencies\nAll Ubuntu/Debian methods require bash, git, curl, and jq. These are typically pre-installed. If not:\nsudo apt-get install bash git curl jq"
+    "objectID": "pipelines.html#basic-usage",
+    "href": "pipelines.html#basic-usage",
+    "title": "Running Pipelines",
+    "section": "Basic Usage",
+    "text": "Basic Usage\nBy default, repos run looks for a file called run.sh in each cloned repository and executes it:\nrepos run"
   },
   {
-    "objectID": "install.html#macos-homebrew",
-    "href": "install.html#macos-homebrew",
-    "title": "Installation",
-    "section": "macOS (Homebrew)",
-    "text": "macOS (Homebrew)\nbrew tap MiguelRodo/repos\nbrew install repos\nThe formula automatically handles the jq dependency. Git is typically pre-installed on macOS."
+    "objectID": "pipelines.html#options",
+    "href": "pipelines.html#options",
+    "title": "Running Pipelines",
+    "section": "Options",
+    "text": "Options\n\n\n\n\n\n\n\nFlag\nDescription\n\n\n\n\n--script &lt;file&gt;\nRun a different script (default: run.sh)\n\n\n-f &lt;file&gt;\nUse a different list file (default: repos.list)\n\n\n--include &lt;repos&gt;\nComma-separated list of repositories to include\n\n\n--exclude &lt;repos&gt;\nComma-separated list of repositories to skip\n\n\n--continue-on-error\nKeep running even if a repository fails\n\n\n--dry-run\nPrint what would be run without executing anything\n\n\n--ensure-setup\nClone repositories before running the pipeline\n\n\n\n# Run a custom script in each repo\nrepos run --script build.sh\n\n# Only run in specific repos\nrepos run --include \"backend,frontend\"\n\n# Skip a repo\nrepos run --exclude \"docs\"\n\n# Continue even if one repo fails, then report all results\nrepos run --continue-on-error\n\n# Preview without running\nrepos run --dry-run\n\n# Make sure repos are cloned before running\nrepos run --ensure-setup"
   },
   {
-    "objectID": "install.html#windows",
-    "href": "install.html#windows",
-    "title": "Installation",
-    "section": "Windows",
-    "text": "Windows\n\nScoop (recommended)\nscoop bucket add repos https://github.com/MiguelRodo/scoop-bucket\nscoop install repos\ngit and jq are installed automatically by Scoop. You will also need Git for Windows for Bash support.\n\n\nManual\n\nClone the repository:\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\nRun the installer:\n.\\install.ps1\nRestart your PowerShell session.\n\nDependencies:\n\nGit for Windows — provides bash, git, and curl\njq — JSON processor"
+    "objectID": "pipelines.html#writing-a-pipeline-script",
+    "href": "pipelines.html#writing-a-pipeline-script",
+    "title": "Running Pipelines",
+    "section": "Writing a Pipeline Script",
+    "text": "Writing a Pipeline Script\nEach repository should contain the script that repos run will call. The script receives no arguments by default, but can read environment variables or accept flags if needed. A minimal run.sh:\n#!/usr/bin/env bash\nset -e\n\n# Install dependencies\nRscript -e \"renv::restore()\"\n\n# Run analysis\nRscript analysis.R"
   },
   {
-    "objectID": "install.html#from-source",
-    "href": "install.html#from-source",
-    "title": "Installation",
-    "section": "From Source",
-    "text": "From Source\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\n\n# Local install (no sudo)\nbash install-local.sh\n\n# Or system-wide on Ubuntu/Debian\nsudo dpkg-buildpackage -us -uc -b\nsudo dpkg -i ../repos_*.deb"
+    "objectID": "pipelines.html#r-and-python-apis",
+    "href": "pipelines.html#r-and-python-apis",
+    "title": "Running Pipelines",
+    "section": "R and Python APIs",
+    "text": "R and Python APIs\nFor the R or Python API, see the language-specific wrapper pages:\n→ R package\n→ Python package"
   },
   {
-    "objectID": "install.html#language-wrappers",
-    "href": "install.html#language-wrappers",
-    "title": "Installation",
-    "section": "Language Wrappers",
-    "text": "Language Wrappers\n\nR Package\ninstall.packages(\"devtools\")\ndevtools::install_github(\"MiguelRodo/repos\")\nRequires bash, git, curl, and jq on your system.\n\n\nPython Package\npip install git+https://github.com/MiguelRodo/repos.git\nOr from a local clone:\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\npip install .\nRequires bash, git, curl, and jq on your system. On Windows, use Git for Windows or WSL."
+    "objectID": "repos-list.html",
+    "href": "repos-list.html",
+    "title": "repos.list Reference",
+    "section": "",
+    "text": "The repos.list file lists the repositories (and optionally branches) that repos clone will clone. Place it in the root of your project directory."
   },
   {
-    "objectID": "install.html#verify-installation",
-    "href": "install.html#verify-installation",
-    "title": "Installation",
-    "section": "Verify Installation",
-    "text": "Verify Installation\nrepos --help"
+    "objectID": "repos-list.html#basic-format",
+    "href": "repos-list.html#basic-format",
+    "title": "repos.list Reference",
+    "section": "Basic Format",
+    "text": "Basic Format\nEach line is one repository:\nowner/repo\nLines starting with # are comments and are ignored."
+  },
+  {
+    "objectID": "repos-list.html#cloning-a-specific-branch",
+    "href": "repos-list.html#cloning-a-specific-branch",
+    "title": "repos.list Reference",
+    "section": "Cloning a Specific Branch",
+    "text": "Cloning a Specific Branch\nAppend @branch to clone only that branch:\nowner/repo@develop"
+  },
+  {
+    "objectID": "repos-list.html#custom-target-directory",
+    "href": "repos-list.html#custom-target-directory",
+    "title": "repos.list Reference",
+    "section": "Custom Target Directory",
+    "text": "Custom Target Directory\nAdd a name after the repository to clone into a different directory:\nowner/repo my-data"
+  },
+  {
+    "objectID": "repos-list.html#worktrees",
+    "href": "repos-list.html#worktrees",
+    "title": "repos.list Reference",
+    "section": "Worktrees",
+    "text": "Worktrees\nUse @branch without a repository name to clone only that branch from the most recently listed repository (or the current repository if none has been listed yet):\nowner/repo\n@feature-x\n@bugfix-123\nThis produces a full clone of owner/repo plus two single-branch clones — no extra network clones of the full repository required.\nAdd --worktree to an @branch line to create a Git worktree instead of a separate clone:\nowner/repo\n@feature-x --worktree\n@bugfix-123 --worktree\nThis produces a full clone of owner/repo plus two worktrees — no extra network clones required."
+  },
+  {
+    "objectID": "repos-list.html#visibility",
+    "href": "repos-list.html#visibility",
+    "title": "repos.list Reference",
+    "section": "Visibility",
+    "text": "Visibility\nControl whether new repositories are created as public or private:\nowner/repo --public\nowner/other-repo --private"
+  },
+  {
+    "objectID": "repos-list.html#global-flags",
+    "href": "repos-list.html#global-flags",
+    "title": "repos.list Reference",
+    "section": "Global Flags",
+    "text": "Global Flags\nPlace a flag on its own line (with nothing else except optional comments) to apply it to every subsequent repository:\n\n\n\n\n\n\n\nFlag\nEffect\n\n\n\n\n--public\nCreate all repositories as public by default\n\n\n--private\nCreate all repositories as private by default (the default)\n\n\n--codespaces\nConfigure Codespaces authentication for all repositories\n\n\n--worktree\nUse worktrees instead of separate clones for all @branch lines\n\n\n\nPer-line --public/--private flags always override the global default."
+  },
+  {
+    "objectID": "repos-list.html#example",
+    "href": "repos-list.html#example",
+    "title": "repos.list Reference",
+    "section": "Example",
+    "text": "Example\n--private        # default visibility for new repos\n--codespaces     # set up Codespaces auth for all repos\n\nmyorg/backend\nmyorg/frontend@develop\n@staging --worktree        # worktree of frontend at staging branch\nmyorg/docs --public        # override: create docs repo as public\nAfter repos clone, the parent directory looks like:\nworkspace/\n├── my-project/            # your project (contains repos.list)\n├── backend/\n├── frontend-develop/\n├── frontend-staging/      # worktree\n└── docs/"
+  },
+  {
+    "objectID": "r-package.html",
+    "href": "r-package.html",
+    "title": "R Package",
+    "section": "",
+    "text": "The repos R package wraps the same Bash scripts used by the command-line tool, so every feature available at the terminal is also available from R.\nThe package ships its own bundled copy of the CLI scripts, so all R functions work without requiring repos to be installed on your system PATH."
+  },
+  {
+    "objectID": "r-package.html#installation",
+    "href": "r-package.html#installation",
+    "title": "R Package",
+    "section": "Installation",
+    "text": "Installation\ninstall.packages(\"devtools\")\ndevtools::install_github(\"MiguelRodo/repos\")\nSystem requirements: bash, git, curl, and jq must be available on your PATH."
+  },
+  {
+    "objectID": "r-package.html#end-to-end-workflow",
+    "href": "r-package.html#end-to-end-workflow",
+    "title": "R Package",
+    "section": "End-to-End Workflow",
+    "text": "End-to-End Workflow\n\nStep 1 — Create a repos.list file\nPlace a repos.list file in your project directory listing the repositories you want to manage (one per line):\nmyorg/data-curation\nmyorg/analysis\nmyorg/documentation\nSee the repos.list reference for the full syntax — branch pinning, worktrees, visibility flags, and more.\n\n\nStep 2 — Clone repositories\nlibrary(repos)\n\nrepos(\"clone\")\nThis reads repos.list and clones everything to the parent directory of your current location.\n\n\nStep 3 — Open in your IDE (optional)\nGenerate a VS Code multi-root workspace file:\nrepos_workspace()\nSee repos_workspace() below for all options.\n\n\nStep 4 — Run a pipeline\nOnce the repositories are cloned, run a script inside each one:\nrepos_run()          # executes run.sh in every repo\nSee repos_run() below for all options."
+  },
+  {
+    "objectID": "r-package.html#api-reference",
+    "href": "r-package.html#api-reference",
+    "title": "R Package",
+    "section": "API Reference",
+    "text": "API Reference\n\nrepos_install_cli()\nPrint OS-appropriate instructions for installing the repos CLI, and optionally run the installer.\nrepos_install_cli(\n  run = FALSE  # if TRUE, run the installer automatically\n)\nParameters\n\n\n\n\n\n\n\n\n\nParameter\nType\nDefault\nDescription\n\n\n\n\nrun\nlogical\nFALSE\nIf TRUE, attempt to run the installer automatically\n\n\n\nDetails\nThe R package uses its own bundled copy of the CLI for all R functions. However, if you also want to use repos directly from your terminal, this function installs the CLI system-wide. Detects the operating system and prints the recommended installation command for that platform. On Linux and macOS, passing run = TRUE will also execute the installer. On Windows, only instructions are printed.\nReturns: Invisibly returns NULL.\nExamples:\nlibrary(repos)\n\n# Print installation instructions for your OS\nrepos_install_cli()\n\n# Print instructions AND run the installer\nrepos_install_cli(run = TRUE)\n\n\n\nrepos_bundled_cli_version()\nReturn the version of the repos CLI bundled inside this package.\nrepos_bundled_cli_version()\nReturns: A character string with the bundled CLI version (e.g. \"1.1.0\").\nExamples:\nlibrary(repos)\n\nrepos_bundled_cli_version()  # e.g. \"1.1.0\"\n\n\n\nrepos_installed_cli_version()\nReturn the version of the repos CLI installed on the system PATH, or NULL if not found.\nrepos_installed_cli_version()\nReturns: A character string with the installed CLI version, or NULL.\nExamples:\nlibrary(repos)\n\nver &lt;- repos_installed_cli_version()\nif (is.null(ver)) {\n  message(\"repos CLI is not installed on this system.\")\n} else {\n  message(\"Installed CLI version: \", ver)\n}\n\n\n\nrepos()\nTop-level dispatcher that delegates to the appropriate subcommand.\nrepos(command, ...)\nParameters\n\n\n\n\n\n\n\n\nParameter\nType\nDescription\n\n\n\n\ncommand\ncharacter\n\"clone\", \"workspace\", \"codespace\", \"codespaces\", or \"run\"\n\n\n...\n\nForwarded to the corresponding function\n\n\n\nReturns: Invisibly returns the exit status of the script (0 for success).\nExamples:\nlibrary(repos)\n\nrepos(\"clone\")\nrepos(\"workspace\")\nrepos(\"codespace\")\nrepos(\"run\")\nrepos(\"run\", script = \"build.sh\")\n\n\n\nrepos_workspace()\nGenerate or update the VS Code multi-root workspace file.\nrepos_workspace(\n  file       = NULL,   # path to a custom list file (default: repos.list)\n  debug      = FALSE,  # write debug output to stderr\n  debug_file = NULL,   # write debug output to a file (TRUE = auto-name, or a path)\n  ...                  # additional raw flags forwarded to vscode-workspace-add.sh\n)\nParameters\n\n\n\n\n\n\n\n\n\nParameter\nType\nDefault\nDescription\n\n\n\n\nfile\ncharacter\nNULL\nPath to repos list file (default: repos.list)\n\n\ndebug\nlogical\nFALSE\nPrint debug output to stderr\n\n\ndebug_file\nlogical or character\nNULL\nWrite debug output to a file\n\n\n...\n\n\nAdditional raw flags forwarded as-is\n\n\n\nReturns: Invisibly returns the exit status of the script (0 for success).\nExamples:\nlibrary(repos)\n\n# Generate workspace from default repos.list\nrepos_workspace()\n\n# Use a custom list file\nrepos_workspace(file = \"my-repos.list\")\nFor the full description, see the VS Code integration guide.\n\n\n\nrepos_codespace()\nConfigure GitHub Codespaces authentication.\nrepos_codespace(\n  file         = NULL,  # path to a custom list file (default: repos.list)\n  devcontainer = NULL,  # path(s) to devcontainer.json\n  permissions  = NULL,  # \"all\" or \"contents\" — passed to codespaces-auth-add.sh\n  tool         = NULL,  # force tool for codespaces-auth-add.sh (\"jq\" or \"python\")\n  debug        = FALSE, # write debug output to stderr\n  debug_file   = NULL,  # write debug output to a file (TRUE = auto-name, or a path)\n  ...                   # additional raw flags forwarded to codespaces-auth-add.sh\n)\nParameters\n\n\n\n\n\n\n\n\n\nParameter\nType\nDefault\nDescription\n\n\n\n\nfile\ncharacter\nNULL\nPath to repos list file (default: repos.list)\n\n\ndevcontainer\ncharacter or character vector\nNULL\nPath(s) to devcontainer.json\n\n\npermissions\ncharacter\nNULL\n\"all\" or \"contents\"\n\n\ntool\ncharacter\nNULL\nForce \"jq\" or \"python\" for auth helper\n\n\ndebug\nlogical\nFALSE\nPrint debug output to stderr\n\n\ndebug_file\nlogical or character\nNULL\nWrite debug output to a file\n\n\n...\n\n\nAdditional raw flags forwarded as-is\n\n\n\nReturns: Invisibly returns the exit status of the script (0 for success).\nExamples:\nlibrary(repos)\n\n# Configure with default devcontainer path\nrepos_codespace()\n\n# Specify a devcontainer.json path\nrepos_codespace(devcontainer = \".devcontainer/devcontainer.json\")\n\n# Multiple devcontainer paths\nrepos_codespace(devcontainer = c(\"path1/devcontainer.json\",\n                                 \"path2/devcontainer.json\"))\nFor the full description, see the VS Code integration guide.\n\n\n\nrepos_run()\nExecute a script inside each cloned repository.\nrepos_run(\n  file             = NULL,   # path to a custom list file (default: repos.list)\n  script           = NULL,   # script to run in each repo (default: run.sh)\n  include          = NULL,   # repo name(s) to include\n  exclude          = NULL,   # repo name(s) to skip\n  ensure_setup     = FALSE,  # clone repos first (via repos clone)\n  skip_deps        = FALSE,  # skip install-r-deps.sh\n  dry_run          = FALSE,  # print what would run without executing\n  verbose          = FALSE,  # verbose logging\n  continue_on_error = FALSE, # keep running after a failure\n  ...                        # additional raw flags forwarded to run-pipeline.sh\n)\nParameters\n\n\n\n\n\n\n\n\n\nParameter\nType\nDefault\nDescription\n\n\n\n\nfile\ncharacter\nNULL\nPath to repos list file (default: repos.list)\n\n\nscript\ncharacter\nNULL\nScript file to run in each repo (default: run.sh)\n\n\ninclude\ncharacter or character vector\nNULL\nOnly run in these repos\n\n\nexclude\ncharacter or character vector\nNULL\nSkip these repos\n\n\nensure_setup\nlogical\nFALSE\nClone repos first (via repos clone)\n\n\nskip_deps\nlogical\nFALSE\nSkip R dependency installation\n\n\ndry_run\nlogical\nFALSE\nPreview without executing\n\n\nverbose\nlogical\nFALSE\nVerbose logging\n\n\ncontinue_on_error\nlogical\nFALSE\nContinue past failures\n\n\n...\n\n\nAdditional raw flags forwarded as-is\n\n\n\nReturns: Invisibly returns the exit status of the script (0 for success).\nExamples:\nlibrary(repos)\n\n# Run the default script (run.sh) in every repo\nrepos_run()\n\n# Run a custom script\nrepos_run(script = \"build.sh\")\n\n# Only run in specific repos\nrepos_run(include = c(\"backend\", \"frontend\"))\n\n# Skip a repo\nrepos_run(exclude = \"docs\")\n\n# Continue even if one repo fails\nrepos_run(continue_on_error = TRUE)\n\n# Preview without running\nrepos_run(dry_run = TRUE)\n\n# Ensure repos are cloned before running\nrepos_run(ensure_setup = TRUE)\n\n# Combine options\nrepos_run(script = \"test.sh\", verbose = TRUE, ensure_setup = TRUE)\n\n# Backward compatibility — raw flag passing still works\nrepos_run(\"--script\", \"build.sh\", \"--dry-run\")\nFor the full description, see Running Pipelines."
+  },
+  {
+    "objectID": "r-package.html#github-authentication",
+    "href": "r-package.html#github-authentication",
+    "title": "R Package",
+    "section": "GitHub Authentication",
+    "text": "GitHub Authentication\nrepos_codespace() needs a GitHub token with Codespaces permissions. Provide it via the GH_TOKEN environment variable or via the gh CLI:\nSys.setenv(GH_TOKEN = \"your_personal_access_token\")\nrepos_codespace()\nOr set it in your shell before starting R:\nexport GH_TOKEN=\"your_personal_access_token\""
+  },
+  {
+    "objectID": "r-package.html#bundled-cli-vs.-system-cli",
+    "href": "r-package.html#bundled-cli-vs.-system-cli",
+    "title": "R Package",
+    "section": "Bundled CLI vs. System CLI",
+    "text": "Bundled CLI vs. System CLI\nThe R package ships a bundled copy of the Bash scripts that it uses for all R functions (repos_run(), repos_workspace(), etc.). This bundled version is independent of any repos binary you may have installed on your system PATH.\nYou can inspect both versions at any time:\nlibrary(repos)\n\nrepos_bundled_cli_version()     # version bundled in the package\nrepos_installed_cli_version()   # system PATH version, or NULL\n\nDoes installing the R package also install the repos CLI?\nNo. The R package bundles its own copies of the Bash scripts, so all R functions (repos_run(), repos_workspace(), etc.) work without the repos command being on your PATH.\nIf you also want to run repos clone, repos run, etc. directly from a terminal, install the CLI separately. The easiest way is to call repos_install_cli() from R:\nlibrary(repos)\n\n# Print OS-appropriate installation instructions\nrepos_install_cli()\n\n# Or print instructions AND run the installer automatically\nrepos_install_cli(run = TRUE)\nSee repos_install_cli() above for details, or visit the Installation guide for all options."
   },
   {
     "objectID": "index.html",
@@ -369,5 +362,12 @@
     "title": "repos",
     "section": "Installation",
     "text": "Installation\n→ Installation guide"
+  },
+  {
+    "objectID": "LICENSE.html",
+    "href": "LICENSE.html",
+    "title": "MIT License",
+    "section": "",
+    "text": "MIT License\nCopyright (c) 2024 Miguel Rodo\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\nTHE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE."
   }
 ]
