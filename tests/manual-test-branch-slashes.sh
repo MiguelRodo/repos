@@ -130,7 +130,9 @@ echo ""
 print_header "Step 5: Verify directory structure"
 
 print_info "Parent directory contents:"
-ls -1 "$TEST_ROOT" | grep -E "workspace-|custom-" | while read -r dir; do
+for path in "$TEST_ROOT"/workspace-* "$TEST_ROOT"/custom-*; do
+  [ -e "$path" ] || continue
+  dir=$(basename "$path")
   if [ "$dir" = "workspace-feature-cool-feature" ]; then
     print_success "✓ $dir (sanitized: feature/cool-feature → feature-cool-feature)"
   elif [ "$dir" = "custom-hotfix" ]; then

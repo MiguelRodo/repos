@@ -145,7 +145,8 @@ list_scripts() {
   for item in "$src_dir"/*; do
     [ ! -e "$item" ] && continue
     
-    local item_name="$(basename -- "$item")"
+    local item_name
+    item_name="$(basename -- "$item")"
     local rel_item="${rel_path:+$rel_path/}$item_name"
     
     if [ -d "$item" ]; then
@@ -208,7 +209,8 @@ copy_scripts() {
   for item in "$src_dir"/*; do
     [ ! -e "$item" ] && continue
     
-    local item_name="$(basename -- "$item")"
+    local item_name
+    item_name="$(basename -- "$item")"
     local rel_item="${rel_path:+$rel_path/}$item_name"
     
     if [ -d "$item" ]; then

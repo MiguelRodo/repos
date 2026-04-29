@@ -141,7 +141,7 @@ git config user.name "Test User"
 echo "# Test" > README.md
 git add README.md
 git commit -q -m "Initial"
-git push -q origin $(git symbolic-ref --short HEAD)
+git push -q origin "$(git symbolic-ref --short HEAD)"
 cd "$TEST_ROOT"
 rm -rf "$TEMP_CLONE"
 

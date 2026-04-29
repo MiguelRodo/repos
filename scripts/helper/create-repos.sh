@@ -195,7 +195,6 @@ get_credentials() {
 }
 
 API_URL="https://api.github.com"
-if $PRIVATE_FLAG; then JSON_PRIVATE=true; else JSON_PRIVATE=false; fi
 
 # ── Token validation ───────────────────────────────────────────────────────────
 # Validates that the provided token is valid by making a test API call

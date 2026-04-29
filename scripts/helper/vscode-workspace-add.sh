@@ -24,6 +24,7 @@ set -euo pipefail
 # Global array for temporary files to clean up on exit
 declare -a CLEANUP_FILES=()
 # Use Bash 3.2-safe array expansion to avoid "unbound variable" error with set -u
+# shellcheck disable=SC2154  # f is the for-loop variable inside the trap string
 trap 'for f in ${CLEANUP_FILES[@]+"${CLEANUP_FILES[@]}"}; do rm -f -- "$f"; done' EXIT
 
 # — Debug support —
@@ -312,13 +313,13 @@ build_paths_list() {
   
   local paths_list="."
   local line trimmed first target_dir branch repo_spec repo_no_ref ref
-  local fallback_repo_name repo_name is_worktree no_worktree repo_path relative_repo_path
+  local fallback_repo_name repo_name is_worktree repo_path relative_repo_path
   
   # --- Planning phase: count references per repo ---
   declare -a plan_repo_names=()
   declare -a plan_ref_counts=()
   
-  local plan_repo_idx plan_repo_name plan_fallback_name no_worktree use_worktree target_dir repo_path
+  local plan_repo_idx plan_repo_name plan_fallback_name use_worktree target_dir repo_path
   
   # Initialize fallback to current repo
   plan_fallback_name="$(basename -- "$current_dir")"

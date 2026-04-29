@@ -1,0 +1,34 @@
+name: ShellCheck
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install ShellCheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Run ShellCheck on scripts
+        run: |
+          shellcheck --severity=warning \
+            scripts/*.sh \
+            scripts/helper/*.sh \
+            install-local.sh \
+            uninstall-local.sh
+
+      - name: Run ShellCheck on tests
+        run: |
+          shellcheck --severity=warning \
+            tests/*.sh
