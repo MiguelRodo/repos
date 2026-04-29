@@ -104,13 +104,17 @@ update_with_jq() {
   local paths_list="$2"
   local folders_json_file=""
   local tmp_file=""
+  local paths_list_file=""
 
   folders_json_file="$(mktemp "$(get_temp_dir)/repos-folders-XXXXXX")"
   CLEANUP_FILES+=("$folders_json_file")
+  paths_list_file="$(mktemp "$(get_temp_dir)/repos-paths-list-XXXXXX")"
+  CLEANUP_FILES+=("$paths_list_file")
+
+  printf '%s\n' "$paths_list" > "$paths_list_file"
 
   # build an array of {path: "..."} objects and save to file
-  printf '%s\n' "$paths_list" \
-    | jq -R . \
+  jq -R . -- "$paths_list_file" \
     | jq -s '[ .[] | { path: . } ]' > "$folders_json_file"
 
   if [ ! -f "$workspace_file" ]; then
