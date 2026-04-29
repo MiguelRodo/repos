@@ -441,8 +441,12 @@ filter_valid_list(){
 # ——— Generate the repos JSON object and save to a file —————————————
 build_repos_json_file(){
   local output_file="$1"
-  printf '%s\n' "$VALID_LIST" \
-    | jq -R 'select(length>0)' \
+  local valid_list_file
+  valid_list_file="$(mktemp "$(get_temp_dir)/repos-valid-list-XXXXXX")"
+  CLEANUP_FILES+=("$valid_list_file")
+  printf '%s\n' "$VALID_LIST" > "$valid_list_file"
+
+  jq -R 'select(length>0)' -- "$valid_list_file" \
     | jq -s . \
     | jq --arg perms "$PERMISSIONS" '
         reduce .[] as $repo ({};
@@ -466,6 +470,7 @@ build_repos_json_file(){
           }
         )
       ' > "$output_file"
+  rm -f -- "$valid_list_file"
 }
 
 # ——— Merge into devcontainer.json (jq variant) —————————————————————
