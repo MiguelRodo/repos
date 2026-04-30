@@ -21,8 +21,8 @@ validate_devcontainer_path() {
   local path="$1"
   if [ -n "$path" ]; then
     case "$path" in
-      /*|*..*)
-        printf "Error: devcontainer path cannot be absolute or contain '..': %s\n" "$path" >&2
+      /*|*..*|-*)
+        printf "Error: devcontainer path cannot be absolute, contain '..', or start with a hyphen: %s\n" "$path" >&2
         return 1
         ;;
     esac
@@ -476,7 +476,7 @@ build_repos_json_file(){
 # ——— Merge into devcontainer.json (jq variant) —————————————————————
 update_with_jq(){
   local file="$1"
-  local tmp="" repos_file=""
+  local repos_file=""
 
   repos_file="$(mktemp "$(get_temp_dir)/repos-json-XXXXXX")"
   CLEANUP_FILES+=("$repos_file")
@@ -485,18 +485,14 @@ update_with_jq(){
   if [ ! -f "$file" ]; then
     jq -n --slurpfile repos "$repos_file" '
       { customizations:{ codespaces:{ repositories:$repos[0] } } }
-    ' >"$file"
+    '
   else
-    tmp="$(mktemp "$(get_temp_dir)/repos-auth-XXXXXX")"
-    CLEANUP_FILES+=("$tmp")
     jq --slurpfile repos "$repos_file" '
       .customizations.codespaces.repositories
         |= ( (. // {}) + $repos[0] )
-    ' -- "$file" >"$tmp" && mv -- "$tmp" "$file"
+    ' -- "$file"
   fi
-  rm -f -- "$repos_file" "$tmp"
-
-  printf "Updated '%s' with jq.\n" "$file"
+  rm -f -- "$repos_file"
 }
 
 # ——— Python (or python3 / py) fallback, JSONC-aware + trailing-comma strip —————
@@ -605,11 +601,9 @@ cp$repositories     <- repos
 cs$codespaces       <- cp
 data$customizations <- cs
 
-write_json(data, file, pretty = TRUE, auto_unbox = TRUE)
+cat(toJSON(data, pretty = TRUE, auto_unbox = TRUE), "\n")
 RSCRIPT
   rm -f -- "$repos_file"
-
-  printf "Updated '%s' with Rscript.\n" "$file"
 }
 
 # ——— Dispatch to the first available tool ——————————————————————
@@ -632,34 +626,35 @@ update_devfile(){
   fi
 
   # 2) Invoke the updater
-  case "$tool" in
-    jq)
-      update_with_jq "$devfile"
-      ;;
-    python|python3|py)
-      if [ "$DRY_RUN" -eq 1 ]; then
-        # In dry-run, just print what Python would output
-        update_with_python "$devfile" "$tool"
-      else
-        # Safely write via a temporary file, then move into place
-        local tmp=""
-        tmp="$(mktemp "$(get_temp_dir)/repos-auth-XXXXXX")"
-        CLEANUP_FILES+=("$tmp")
-        update_with_python "$devfile" "$tool" > "$tmp"
-        mv -- "$tmp" "$devfile"
-        rm -f -- "$tmp"
-        printf "Updated '%s' with %s.\n" "$devfile" "$tool"
-      fi
-      ;;
-    Rscript)
-      update_with_rscript "$devfile"
-      ;;
-  esac
-
-  # 3) In dry-run mode, show the result
   if [ "$DRY_RUN" -eq 1 ]; then
     printf "=== DRY-RUN OUTPUT for %s ===\n" "$devfile"
-    cat -- "$devfile"
+    case "$tool" in
+      jq)                update_with_jq "$devfile" ;;
+      python|python3|py) update_with_python "$devfile" "$tool" ;;
+      Rscript)           update_with_rscript "$devfile" ;;
+    esac
+  else
+    # Safely write via a temporary file, then move into place
+    local tmp=""
+    tmp="$(mktemp "$(get_temp_dir)/repos-auth-XXXXXX")"
+    CLEANUP_FILES+=("$tmp")
+
+    local rc=0
+    case "$tool" in
+      jq)                update_with_jq "$devfile" > "$tmp" || rc=$? ;;
+      python|python3|py) update_with_python "$devfile" "$tool" > "$tmp" || rc=$? ;;
+      Rscript)           update_with_rscript "$devfile" > "$tmp" || rc=$? ;;
+    esac
+
+    if [ "$rc" -eq 0 ] && [ -s "$tmp" ]; then
+      mv -- "$tmp" "$devfile"
+      printf "Updated '%s' with %s.\n" "$devfile" "$tool"
+    else
+      printf "Error: Failed to update '%s' with %s (exit code %d).\n" "$devfile" "$tool" "$rc" >&2
+      rm -f -- "$tmp"
+      return 1
+    fi
+    rm -f -- "$tmp"
   fi
 }
 
