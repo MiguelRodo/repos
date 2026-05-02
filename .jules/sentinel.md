@@ -100,6 +100,11 @@
 **Learning:** Error suppression with `trap` is dangerous in security-critical scripts as it masks failures in validation or authentication. Automated tests must be strictly isolated from the host's environment (e.g. `HOME`, `GIT_CONFIG_NOSYSTEM`) to ensure they truly verify the script's logic.
 **Prevention:** Avoid `trap '' ERR`. Capture script output to variables before processing with `grep` to avoid `SIGPIPE`. Use temporary `HOME` directories and `GIT_CONFIG_NOSYSTEM=1` for all tests involving Git authentication or configuration.
 
+## 2029-05-19 - [Medium] Temporary Log File Persistence
+**Vulnerability:** Auto-generated temporary debug files were not registered for cleanup, potentially leaving sensitive debug information on the filesystem after script execution.
+**Learning:** While the scripts used `mktemp` for secure creation, they failed to ensure these files were removed upon completion unless manually deleted by the user.
+**Prevention:** Use a global `CLEANUP_FILES` array and a `trap ... EXIT` routine to ensure all auto-generated temporary files are automatically removed. Always register `mktemp` outputs in this array if they are not intended to persist.
+
 ## 2025-07-15 - [High] Insecure Credential Parsing and Header Injection
 **Vulnerability:** `get_credentials` used `awk -F=` to parse `git credential fill` output, which truncated tokens containing equals signs. It also lacked CRLF sanitization for `GH_USER` and `GH_TOKEN` environment variables.
 **Learning:** Using a single character delimiter like `=` for parsing key-value pairs is fragile if the value itself can contain that delimiter. GitHub tokens frequently contain `=` characters. Lack of sanitization of user-provided environment variables in scripts that interact with web APIs can lead to header injection vulnerabilities.

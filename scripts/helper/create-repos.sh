@@ -107,6 +107,7 @@ while [ $# -gt 0 ]; do
         # Auto-generate debug file securely
         TEMP_DIR=$(get_temp_dir)
         DEBUG_FILE=$(mktemp "${TEMP_DIR}/repos-create-debug-XXXXXX")
+        CLEANUP_FILES+=("$DEBUG_FILE")
       fi
       ;;
     -h|--help)    usage 0 ;;
