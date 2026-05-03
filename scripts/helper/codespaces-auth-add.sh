@@ -512,19 +512,21 @@ update_with_python(){
 import sys, json, re, os
 
 def strip_jsonc(text):
-    # Match strings or comments.
-    # For single-line comments, we use [^\n]* to avoid matching across lines
-    # even when re.DOTALL is active.
-    pattern = re.compile(
-        r'(?P<string>"([^"\\\n]|\\.)*")|(?P<comment_ml>/\*.*?\*/)|(?P<comment_sl>//[^\n]*)|(?P<comma>,\s*(?=[}\]]))',
+    # Pass 1: Strip comments (multi-line and single-line)
+    # We must preserve strings to avoid stripping // inside URLs
+    comment_pattern = re.compile(
+        r'(?P<string>"([^"\\\n]|\\.)*")|(?P<comment_ml>/\*.*?\*/)|(?P<comment_sl>//[^\n]*)',
         re.DOTALL | re.MULTILINE
     )
-    def replace(match):
-        if match.group('string'):
-            return match.group('string')
-        else:
-            return ""
-    return pattern.sub(replace, text)
+    text = comment_pattern.sub(lambda m: m.group('string') if m.group('string') else "", text)
+
+    # Pass 2: Strip trailing commas
+    # Now that comments are gone, trailing commas are reliably followed by } or ]
+    comma_pattern = re.compile(
+        r'(?P<string>"([^"\\\n]|\\.)*")|(?P<comma>,\s*(?=[}\]]))',
+        re.DOTALL | re.MULTILINE
+    )
+    return comma_pattern.sub(lambda m: m.group('string') if m.group('string') else "", text)
 
 fname = sys.argv[1]
 repos_fname = sys.argv[2]
