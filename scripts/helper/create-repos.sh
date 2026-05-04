@@ -38,6 +38,9 @@ debug() {
   fi
 }
 
+# Global variable for the Authorization header file
+AUTH_HDR_FILE=""
+
 # Get platform-independent temp directory
 get_temp_dir() {
   # Try various temp directory variables in order of preference
@@ -197,7 +200,15 @@ get_credentials() {
     debug "Environment GH_TOKEN: ${GH_TOKEN:+<present>}"
   fi
 
-  debug "Credentials successfully obtained"
+  # Create a temporary file for the Authorization header to avoid exposing the token in process lists
+  if [ -z "$AUTH_HDR_FILE" ]; then
+    AUTH_HDR_FILE="$(mktemp "$(get_temp_dir)/repos-auth-hdr-XXXXXX")"
+    CLEANUP_FILES+=("$AUTH_HDR_FILE")
+    printf "Authorization: token %s\n" "$GH_TOKEN" > "$AUTH_HDR_FILE"
+    chmod 600 "$AUTH_HDR_FILE"
+  fi
+
+  debug "Credentials successfully obtained and header file created"
   return 0
 }
 
@@ -442,7 +453,7 @@ while IFS= read -r line || [ -n "$line" ]; do
         printf "Skipping branch check for @%s (no credentials)\n" "$branch"
         continue
       fi
-      AUTH_HDR="Authorization: token $GH_TOKEN"
+      AUTH_HDR="@$AUTH_HDR_FILE"
       
       # Validate token
       if ! validate_token "$AUTH_HDR"; then
@@ -557,7 +568,7 @@ while IFS= read -r line || [ -n "$line" ]; do
     debug "Line $line_num: Updated fallback to: $fallback_owner/$fallback_repo"
     continue
   fi
-  AUTH_HDR="Authorization: token $GH_TOKEN"
+  AUTH_HDR="@$AUTH_HDR_FILE"
 
   # Validate token before making API calls
   if ! validate_token "$AUTH_HDR"; then

@@ -29,7 +29,7 @@
 ## 2027-02-28 - [Medium] Insecure Shell Interpolation in jq Filters
 **Vulnerability:** Shell variables were interpolated directly into `jq` filter strings (e.g., `jq -r ".${field}"` or `if "'"$PERMISSIONS"'" == "all"`), potentially leading to injection vulnerabilities.
 **Learning:** Interpolating shell variables into `jq` filters is insecure as it allows the variable content to be parsed as part of the filter logic. Simple replacement with `.[$field]` also fails for nested paths (e.g., `commit.sha`).
-**Prevention:** Always use `jq`'s `--arg` or `--argjson` flags to pass values into the `jq` environment. For dynamic field access that may include nested paths, use `getpath($field | split("."))` to safely traverse the object.
+**Prevention:** Always use `jq`'s `--arg" or "--argjson" flags to pass values into the `jq` environment. For dynamic field access that may include nested paths, use `getpath($field | split("."))` to safely traverse the object.
 
 ## 2026-03-05 - [Medium] Argument Injection in Git Command Invocations
 **Vulnerability:** Git commands like `git clone`, `git worktree add`, and `git push` were invoked with user-provided or variable-based arguments (e.g., branch names or repository URLs) without the `--` separator. This allowed an attacker to inject command-line flags (e.g., using a branch name like `-h`).
@@ -119,3 +119,8 @@
 **Vulnerability:** User-provided target directory names and repository specifications were validated for path traversal but not for leading hyphens. This allowed for potential argument injection if these strings were passed to Git or other shell commands without the `--` separator.
 **Learning:** Hardening against argument injection requires two layers: (1) strict input validation to block metacharacters and leading hyphens, and (2) consistent use of the `--` option terminator in all command invocations. Encountering "Warning" instead of "Error" for unknown options in parsers can also mask injection attempts.
 **Prevention:** Always include `-*` in path and identifier validation `case` statements. Upgrade unknown option warnings to errors to "fail securely". Consistently apply `--` before any variable-based positional argument in Git, curl, awk, and other standard utilities.
+
+## 2026-04-23 - [Medium] Credential Exposure in Process Lists via Command-Line Headers
+**Vulnerability:** Passing authentication tokens (e.g., GitHub tokens) directly as command-line arguments to `curl` using the `-H` flag (e.g., `curl -H "Authorization: token $TOKEN"`) exposes the token in the system's process list (viewable via `ps`).
+**Learning:** While environment variables are generally safer than command-line arguments, many commands (including `curl`) allow passing sensitive data via files. This is the most secure method for local processes as it avoids exposure in the process table.
+**Prevention:** Use `curl`'s `@filename" syntax for headers (`-H @headerfile`) when passing sensitive data like tokens. Create the header file as a temporary file with restricted permissions (`600`) and ensure it is cleaned up on script exit.
