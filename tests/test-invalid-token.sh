@@ -60,7 +60,7 @@ fi
 
 # Test 3: Verify the function is called after AUTH_HDR is set
 print_test "validate_token is called after AUTH_HDR is set"
-if grep -A5 'AUTH_HDR="Authorization: token' "$CREATE_SCRIPT" | grep -q 'validate_token'; then
+if grep -A5 'AUTH_HDR="@$AUTH_HDR_FILE"' "$CREATE_SCRIPT" | grep -q 'validate_token'; then
   print_pass "validate_token is called after setting AUTH_HDR"
 else
   print_fail "validate_token is not called after setting AUTH_HDR"
