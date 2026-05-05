@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install system dependencies
         run: |
@@ -58,11 +58,6 @@ jobs:
         run: |
           cd tests
           ./test-auth-check.sh
-
-      - name: Run setup-repos local test
-        run: |
-          cd tests
-          ./test-setup-repos-local.sh
 
       - name: Run branch with slashes test
         run: |
@@ -171,7 +166,7 @@ jobs:
         run: dnf install -y git
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install remaining system dependencies
         run: dnf install -y curl jq bash
@@ -196,11 +191,6 @@ jobs:
         run: |
           cd tests
           ./test-auth-check.sh
-
-      - name: Run setup-repos local test
-        run: |
-          cd tests
-          ./test-setup-repos-local.sh
 
       - name: Run branch with slashes test
         run: |

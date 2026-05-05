@@ -19,7 +19,7 @@ UPSTREAM_BRANCH="${UPSTREAM_BRANCH:-main}"
 SCRIPTS_SUBDIR="scripts"
 
 # --- Paths ---
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname -- "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 TARGET_DIR="$SCRIPT_DIR"
 
@@ -145,7 +145,8 @@ list_scripts() {
   for item in "$src_dir"/*; do
     [ ! -e "$item" ] && continue
     
-    local item_name="$(basename -- "$item")"
+    local item_name
+    item_name="$(basename -- "$item")"
     local rel_item="${rel_path:+$rel_path/}$item_name"
     
     if [ -d "$item" ]; then
@@ -208,7 +209,8 @@ copy_scripts() {
   for item in "$src_dir"/*; do
     [ ! -e "$item" ] && continue
     
-    local item_name="$(basename -- "$item")"
+    local item_name
+    item_name="$(basename -- "$item")"
     local rel_item="${rel_path:+$rel_path/}$item_name"
     
     if [ -d "$item" ]; then
@@ -219,7 +221,7 @@ copy_scripts() {
     elif [ -f "$item" ]; then
       # Copy file and preserve permissions
       cp -- "$item" "$dst_dir/$item_name"
-      chmod +x -- "$dst_dir/$item_name"
+      chmod -- +x "$dst_dir/$item_name"
       printf '  ✓ Updated %s\n' "$rel_item"
     fi
   done

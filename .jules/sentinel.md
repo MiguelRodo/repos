@@ -29,7 +29,7 @@
 ## 2027-02-28 - [Medium] Insecure Shell Interpolation in jq Filters
 **Vulnerability:** Shell variables were interpolated directly into `jq` filter strings (e.g., `jq -r ".${field}"` or `if "'"$PERMISSIONS"'" == "all"`), potentially leading to injection vulnerabilities.
 **Learning:** Interpolating shell variables into `jq` filters is insecure as it allows the variable content to be parsed as part of the filter logic. Simple replacement with `.[$field]` also fails for nested paths (e.g., `commit.sha`).
-**Prevention:** Always use `jq`'s `--arg` or `--argjson` flags to pass values into the `jq` environment. For dynamic field access that may include nested paths, use `getpath($field | split("."))` to safely traverse the object.
+**Prevention:** Always use `jq`'s `--arg" or "--argjson" flags to pass values into the `jq` environment. For dynamic field access that may include nested paths, use `getpath($field | split("."))` to safely traverse the object.
 
 ## 2026-03-05 - [Medium] Argument Injection in Git Command Invocations
 **Vulnerability:** Git commands like `git clone`, `git worktree add`, and `git push` were invoked with user-provided or variable-based arguments (e.g., branch names or repository URLs) without the `--` separator. This allowed an attacker to inject command-line flags (e.g., using a branch name like `-h`).
@@ -100,6 +100,11 @@
 **Learning:** Error suppression with `trap` is dangerous in security-critical scripts as it masks failures in validation or authentication. Automated tests must be strictly isolated from the host's environment (e.g. `HOME`, `GIT_CONFIG_NOSYSTEM`) to ensure they truly verify the script's logic.
 **Prevention:** Avoid `trap '' ERR`. Capture script output to variables before processing with `grep` to avoid `SIGPIPE`. Use temporary `HOME` directories and `GIT_CONFIG_NOSYSTEM=1` for all tests involving Git authentication or configuration.
 
+## 2029-05-19 - [Medium] Temporary Log File Persistence
+**Vulnerability:** Auto-generated temporary debug files were not registered for cleanup, potentially leaving sensitive debug information on the filesystem after script execution.
+**Learning:** While the scripts used `mktemp` for secure creation, they failed to ensure these files were removed upon completion unless manually deleted by the user.
+**Prevention:** Use a global `CLEANUP_FILES` array and a `trap ... EXIT` routine to ensure all auto-generated temporary files are automatically removed. Always register `mktemp` outputs in this array if they are not intended to persist.
+
 ## 2025-07-15 - [High] Insecure Credential Parsing and Header Injection
 **Vulnerability:** `get_credentials` used `awk -F=` to parse `git credential fill` output, which truncated tokens containing equals signs. It also lacked CRLF sanitization for `GH_USER` and `GH_TOKEN` environment variables.
 **Learning:** Using a single character delimiter like `=` for parsing key-value pairs is fragile if the value itself can contain that delimiter. GitHub tokens frequently contain `=` characters. Lack of sanitization of user-provided environment variables in scripts that interact with web APIs can lead to header injection vulnerabilities.
@@ -109,3 +114,18 @@
 **Vulnerability:** GitHub API components (owner, repo, branch) were interpolated directly into URL strings without encoding. While primary validation regexes restricted most characters, branch names (validated only by `git check-ref-format`) could contain characters like `/` or `#` that would break URL structure or lead to path manipulation.
 **Learning:** Even with input validation, parameters destined for URL paths must be explicitly encoded to ensure they are treated as literal data by the receiving API and to prevent misinterpretation of URL metacharacters.
 **Prevention:** Implement a reusable `urlencode` helper using `jq -rR '@uri'` (available in the project's environment) and apply it to all user-controlled or external data interpolated into URL strings.
+
+## 2026-04-22 - [Medium] Consistent Hyphen Blocking and Robust Option Parsing
+**Vulnerability:** User-provided target directory names and repository specifications were validated for path traversal but not for leading hyphens. This allowed for potential argument injection if these strings were passed to Git or other shell commands without the `--` separator.
+**Learning:** Hardening against argument injection requires two layers: (1) strict input validation to block metacharacters and leading hyphens, and (2) consistent use of the `--` option terminator in all command invocations. Encountering "Warning" instead of "Error" for unknown options in parsers can also mask injection attempts.
+**Prevention:** Always include `-*` in path and identifier validation `case` statements. Upgrade unknown option warnings to errors to "fail securely". Consistently apply `--` before any variable-based positional argument in Git, curl, awk, and other standard utilities.
+
+## 2026-04-23 - [Medium] Credential Exposure in Process Lists via Command-Line Headers
+**Vulnerability:** Passing authentication tokens (e.g., GitHub tokens) directly as command-line arguments to `curl` using the `-H` flag (e.g., `curl -H "Authorization: token $TOKEN"`) exposes the token in the system's process list (viewable via `ps`).
+**Learning:** While environment variables are generally safer than command-line arguments, many commands (including `curl`) allow passing sensitive data via files. This is the most secure method for local processes as it avoids exposure in the process table.
+**Prevention:** Use `curl`'s `@filename" syntax for headers (`-H @headerfile`) when passing sensitive data like tokens. Create the header file as a temporary file with restricted permissions (`600`) and ensure it is cleaned up on script exit.
+
+## 2026-03-06 - [High] Credential Leakage via Insecure Repository Specification Parsing
+**Vulnerability:** Scripts used simple `@` character splitting (e.g., `${repo_spec%@*}`) to separate repository URLs from branch names. When a URL contained embedded credentials (e.g., `https://token@github.com/owner/repo`), the parsing logic incorrectly identified the token as the repository URL and the remainder as the branch.
+**Learning:** This caused sensitive tokens to be leaked in directory names, log files, and the `entire-project.code-workspace` file. It also led to functional failures as the "branch name" became a partial URL.
+**Prevention:** Use robust parsing that accounts for the protocol authority section. Credentials should be stripped from the URL before extracting the branch name, or the splitting logic should specifically look for the last `@` only if it is not part of the URL's authority (e.g., by ensuring no `/` follows it).

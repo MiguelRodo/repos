@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test-local-remotes-simple.sh — Simple test for local git remote support
-# Tests that setup-repos.sh can work with local git remotes for offline testing
+# Tests that create-repos.sh and clone-repos.sh work with local git remotes
 
 set -e
 
@@ -52,7 +52,7 @@ trap 'rm -rf "$TEST_ROOT"' EXIT
 
 print_header "Simple Local Git Remote Test"
 print_info "Test root: $TEST_ROOT"
-print_info "Purpose: Verify setup-repos.sh works with local git remotes for offline testing"
+print_info "Purpose: Verify create-repos.sh and clone-repos.sh work with local git remotes"
 
 # ============================================
 # Test 1: create-repos.sh skips local remotes
@@ -141,7 +141,7 @@ git config user.name "Test User"
 echo "# Test" > README.md
 git add README.md
 git commit -q -m "Initial"
-git push -q origin $(git symbolic-ref --short HEAD)
+git push -q origin "$(git symbolic-ref --short HEAD)"
 cd "$TEST_ROOT"
 rm -rf "$TEMP_CLONE"
 
@@ -211,6 +211,6 @@ else
   echo -e "${GREEN}All tests passed!${NC}"
   echo ""
   echo "✓ Local git remotes work for offline testing"
-  echo "✓ setup-repos.sh skips GitHub API for local remotes"
+  echo "✓ clone-repos.sh skips GitHub API for local remotes"
   echo "✓ clone-repos.sh handles file:// URLs and absolute paths"
 fi

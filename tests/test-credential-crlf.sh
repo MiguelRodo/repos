@@ -35,10 +35,6 @@ print_info() {
   echo "ℹ️  $1"
 }
 
-# Get script directory
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-
 print_header "Credential Parsing CRLF Test Suite"
 
 # ============================================

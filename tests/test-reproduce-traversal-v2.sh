@@ -12,7 +12,6 @@ PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 mkdir -p "$TEST_DIR/bin"
 cp "$PROJECT_ROOT/scripts/run-pipeline.sh" "$TEST_DIR/bin/"
 mkdir -p "$TEST_DIR/scripts"
-cp "$PROJECT_ROOT/scripts/setup-repos.sh" "$TEST_DIR/scripts/"
 mkdir -p "$TEST_DIR/scripts/helper"
 cp "$PROJECT_ROOT/scripts/helper/install-r-deps.sh" "$TEST_DIR/scripts/helper/"
 

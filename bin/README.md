@@ -6,10 +6,10 @@ This directory contains the PowerShell wrapper script for Windows users.
 
 The `repos.ps1` script is a PowerShell wrapper that:
 
-1. Locates the `scripts/setup-repos.sh` script relative to its location
+1. Locates the appropriate subcommand script relative to its location
 2. Finds Git Bash (`bash.exe`) on the system
 3. Converts Windows paths to Unix-style paths
-4. Executes `setup-repos.sh` with all provided arguments
+4. Executes the subcommand script with all provided arguments
 
 ## Usage
 

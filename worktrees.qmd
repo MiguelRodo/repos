@@ -1,0 +1,143 @@
+---
+title: "Worktree & Branch Management"
+toc: true
+---
+
+`repos` provides three convenience commands for managing Git worktrees and
+keeping multi-branch projects in sync.
+
+## `repos add_branch`
+
+Create a new worktree (or branch) off the current repository and wire it into
+the project scaffolding in one step:
+
+```bash
+repos add_branch <branch-name> [target-directory]
+```
+
+The command:
+
+1. Creates a new worktree at `../<repo>-<branch>` (or `../<target-directory>`)
+2. Pushes the branch to `origin` with tracking set up
+3. Cleans the worktree (keeps only `.devcontainer/devcontainer.json` and `.gitignore`)
+4. Promotes `.devcontainer/prebuild/devcontainer.json` → `.devcontainer/devcontainer.json`
+5. Strips the Codespaces `repositories` config from `devcontainer.json`
+6. Appends an `@<branch>` line to `repos.list`
+7. Refreshes the VS Code workspace file
+
+The resulting worktree can be opened independently in VS Code or Codespaces.
+
+### Options
+
+| Flag | Description |
+|---|---|
+| `<branch-name>` | Name of the new branch to create (**required**) |
+| `[target-directory]` | Custom directory name (default: `<repo>-<branch>`) |
+| `-b`, `--branch` | Create as a plain branch instead of a worktree (not recommended) |
+
+### Examples
+
+```bash
+# Create a worktree at ../MyProject-data-tidy
+repos add_branch data-tidy
+
+# Create a worktree at a custom location
+repos add_branch analysis my-analysis
+
+# Create as a branch rather than a worktree
+repos add_branch paper --branch
+```
+
+### Notes
+
+- Worktrees share `.git` with the base repository — saves disk space and
+  simplifies fetching.
+- A branch can only be checked out in one worktree at a time.
+- To remove a worktree: `git worktree remove <path>`
+
+---
+
+## `repos update_branches`
+
+Propagate the latest devcontainer prebuild configuration from the base
+repository to every worktree:
+
+```bash
+repos update_branches
+```
+
+The command:
+
+1. Reads `.devcontainer/prebuild/devcontainer.json` from the base repository
+2. Strips the Codespaces `repositories` section
+3. Writes the result to `.devcontainer/devcontainer.json` in each worktree
+4. Commits and pushes the changes in each worktree
+
+### Options
+
+| Flag | Description |
+|---|---|
+| `-n`, `--dry-run` | Show what would be done without making changes |
+
+### Examples
+
+```bash
+# Update all worktrees
+repos update_branches
+
+# Preview changes without applying them
+repos update_branches --dry-run
+```
+
+### Prerequisites
+
+- `.devcontainer/prebuild/devcontainer.json` must exist in the base repository.
+- `jq` or `python3` must be available for JSON manipulation.
+
+---
+
+## `repos update_scripts`
+
+Pull the latest helper scripts from the upstream
+[CompTemplate](https://github.com/MiguelRodo/CompTemplate) repository:
+
+```bash
+repos update_scripts
+```
+
+The command:
+
+1. Clones / pulls the latest `MiguelRodo/CompTemplate` repository
+2. Copies all scripts from its `scripts/` directory (including `helper/`)
+3. Preserves executable permissions
+4. Creates a git commit with the updates
+
+### Options
+
+| Flag | Description |
+|---|---|
+| `-b <name>`, `--branch <name>` | Use a specific upstream branch (default: `main`) |
+| `-n`, `--dry-run` | Show what would be updated without making changes |
+| `-f`, `--force` | Overwrite local changes without prompting |
+
+### Environment variables
+
+| Variable | Description |
+|---|---|
+| `UPSTREAM_BRANCH` | Override the default upstream branch |
+
+### Examples
+
+```bash
+# Update from the default (main) branch
+repos update_scripts
+
+# Update from a specific branch
+repos update_scripts --branch dev
+
+# Preview what would change
+repos update_scripts --dry-run
+
+# Force-overwrite local modifications
+repos update_scripts --force
+```

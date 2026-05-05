@@ -22,7 +22,7 @@ trap 'rm -rf "$TEST_DIR"' EXIT
 # 1. Setup dummy remote repo
 mkdir -p "$TEST_DIR/remote/repo"
 cd "$TEST_DIR/remote/repo"
-git init
+git -c init.defaultBranch=main init -q
 git config user.email "test@example.com"
 git config user.name "Test User"
 git commit --allow-empty -m "Initial commit"
@@ -31,7 +31,7 @@ git commit --allow-empty -m "Initial commit"
 mkdir -p "$TEST_DIR/work"
 cd "$TEST_DIR/work"
 # The script expects to be run inside a git repo to derive fallback
-git init base-repo
+git -c init.defaultBranch=main init -q base-repo
 cd base-repo
 git config user.email "test@example.com"
 git config user.name "Test User"

@@ -184,7 +184,7 @@ trap 'rm -rf "$MOCK_UPSTREAM_DIR"' EXIT INT TERM
   git config user.email "test@example.com"
   git config user.name "Test User"
   mkdir -p scripts/helper
-  for s in run-pipeline.sh setup-repos.sh update-scripts.sh; do
+  for s in run-pipeline.sh update-scripts.sh; do
     printf '#!/bin/bash\n# %s\n' "$s" > "scripts/$s"
   done
   for s in clone-repos.sh vscode-workspace-add.sh codespaces-auth-add.sh; do
@@ -207,7 +207,7 @@ DRY_RUN_OUTPUT=$(UPSTREAM_REPO="file://$MOCK_UPSTREAM_DIR" UPSTREAM_BRANCH="main
 
 # Check for main scripts
 # Only check for core scripts guaranteed to be in the upstream CompTemplate
-MAIN_SCRIPTS=("run-pipeline.sh" "setup-repos.sh" "update-scripts.sh")
+MAIN_SCRIPTS=("run-pipeline.sh" "update-scripts.sh")
 MAIN_SCRIPTS_FOUND=true
 
 for script in "${MAIN_SCRIPTS[@]}"; do

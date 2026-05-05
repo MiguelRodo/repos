@@ -60,7 +60,7 @@ fi
 
 # Test 3: Verify the function is called after AUTH_HDR is set
 print_test "validate_token is called after AUTH_HDR is set"
-if grep -A5 'AUTH_HDR="Authorization: token' "$CREATE_SCRIPT" | grep -q 'validate_token'; then
+if grep -A5 'AUTH_HDR="@$AUTH_HDR_FILE"' "$CREATE_SCRIPT" | grep -q 'validate_token'; then
   print_pass "validate_token is called after setting AUTH_HDR"
 else
   print_fail "validate_token is not called after setting AUTH_HDR"
@@ -97,7 +97,6 @@ print_info "Testing with invalid token: $GH_TOKEN"
 # Run the script and capture output
 set +e
 output=$("$CREATE_SCRIPT" -f repos.list 2>&1)
-exit_code=$?
 set -e
 
 print_info "Script output:"

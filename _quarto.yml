@@ -2,8 +2,31 @@ project:
   type: website
 
 website:
-  title: "Repository Website"
+  title: "repos"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - href: install.qmd
+        text: Installation
+      - href: repos-list.qmd
+        text: repos.list
+      - href: clone.qmd
+        text: repos clone
+      - href: vscode.qmd
+        text: VS Code
+      - href: pipelines.qmd
+        text: Pipelines
+      - href: worktrees.qmd
+        text: Worktrees
+      - text: "Language Packages"
+        menu:
+          - href: python-package.qmd
+            text: Python Package
+          - href: r-package.qmd
+            text: R Package
 
 format:
   html:
     theme: cosmo
+    toc: true

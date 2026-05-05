@@ -21,6 +21,12 @@
 
 set -euo pipefail
 
+# Global array for temporary files to clean up on exit
+declare -a CLEANUP_FILES=()
+# Use Bash 3.2-safe array expansion to avoid "unbound variable" error with set -u
+# shellcheck disable=SC2154  # f is the for-loop variable inside the trap string
+trap 'for f in ${CLEANUP_FILES[@]+"${CLEANUP_FILES[@]}"}; do rm -f -- "$f"; done' EXIT
+
 # — Debug support —
 DEBUG=false
 DEBUG_FILE=""
@@ -96,82 +102,85 @@ EOF
 update_with_jq() {
   local workspace_file="$1"
   local paths_list="$2"
-  local folders_json
-  local tmp
+  local folders_json_file=""
+  local paths_list_file=""
 
-  # build an array of {path: "..."} objects
-  folders_json=$(printf '%s\n' "$paths_list" \
-    | jq -R . \
-    | jq -s '[ .[] | { path: . } ]'
-  )
+  folders_json_file="$(mktemp "$(get_temp_dir)/repos-folders-XXXXXX")"
+  CLEANUP_FILES+=("$folders_json_file")
+  paths_list_file="$(mktemp "$(get_temp_dir)/repos-paths-list-XXXXXX")"
+  CLEANUP_FILES+=("$paths_list_file")
+
+  printf '%s\n' "$paths_list" > "$paths_list_file"
+
+  # build an array of {path: "..."} objects and save to file
+  jq -R . -- "$paths_list_file" \
+    | jq -s '[ .[] | { path: . } ]' > "$folders_json_file"
 
   if [ ! -f "$workspace_file" ]; then
     # create a brand-new workspace file
-    jq -n --argjson folders "$folders_json" \
-      '{ folders: $folders }' \
-      > "$workspace_file"
+    jq -n --slurpfile folders "$folders_json_file" \
+      '{ folders: $folders[0] }'
   else
     # merge into existing file: set .folders = $folders
-    tmp="$(mktemp "$(get_temp_dir)/repos-workspace-XXXXXX")"
-    jq --argjson folders "$folders_json" \
-       '.folders = $folders' \
-       -- "$workspace_file" > "$tmp" \
-      && mv -- "$tmp" "$workspace_file"
+    jq --slurpfile folders "$folders_json_file" \
+       '.folders = $folders[0]' \
+       -- "$workspace_file"
   fi
-
-  printf "Updated '%s' with jq.\n" "$workspace_file"
+  rm -f -- "$folders_json_file" "$paths_list_file"
 }
 
 # --- Update workspace with Python ---
-PYTHON_UPDATE_SCRIPT=$(cat <<'PYCODE'
-import sys, json, os
-ws = sys.argv[1]
-paths = [line for line in os.environ['PATHS_LIST'].splitlines() if line.strip()]
-try:
-    with open(ws) as f:
-        data = json.load(f)
-except Exception:
-    data = {}
-data['folders'] = [{'path': p} for p in paths]
-with open(ws, 'w') as f:
-    json.dump(data, f, indent=2)
-    f.write('\n')
-PYCODE
-)
-
+# Usage: update_with_python <workspace_file> <paths_list> <python_cmd>
 update_with_python() {
   local workspace_file="$1"
   local paths_list="$2"
-  # Use - and passing filename as argument, without redundant -- which can break indexing
-  PATHS_LIST="$paths_list" python - "$workspace_file" <<<"$PYTHON_UPDATE_SCRIPT"
-  printf "Updated '%s' with Python.\n" "$workspace_file"
-}
+  local py_cmd="${3:-python}"
+  local paths_file=""
 
-update_with_python3() {
-  local workspace_file="$1"
-  local paths_list="$2"
-  PATHS_LIST="$paths_list" python3 - "$workspace_file" <<<"$PYTHON_UPDATE_SCRIPT"
-  printf "Updated '%s' with Python3.\n" "$workspace_file"
-}
+  paths_file="$(mktemp "$(get_temp_dir)/repos-paths-XXXXXX")"
+  CLEANUP_FILES+=("$paths_file")
+  printf '%s\n' "$paths_list" > "$paths_file"
 
-update_with_py() {
-  local workspace_file="$1"
-  local paths_list="$2"
-  PATHS_LIST="$paths_list" py - "$workspace_file" <<<"$PYTHON_UPDATE_SCRIPT"
-  printf "Updated '%s' with py launcher.\n" "$workspace_file"
+  # Run Python: parse existing workspace, update folders, emit JSON to stdout
+  # Passing "-" tells Python to read the script from stdin; subsequent arguments
+  # are passed to the script as sys.argv[1..].
+  "$py_cmd" - "$workspace_file" "$paths_file" <<'PYCODE'
+import sys, json, os
+ws = sys.argv[1]
+paths_file = sys.argv[2]
+with open(paths_file, 'r') as f:
+    paths = [line.strip() for line in f if line.strip()]
+data = {}
+if os.path.exists(ws):
+    try:
+        with open(ws, 'r') as f:
+            data = json.load(f)
+    except Exception:
+        pass
+data['folders'] = [{'path': p} for p in paths]
+print(json.dumps(data, indent=2))
+PYCODE
+  rm -f -- "$paths_file"
 }
-
 
 # --- Update workspace with Rscript (jsonlite) ---
 update_with_rscript() {
   local workspace_file="$1"
   local paths_list="$2"
-  PATHS_LIST="$paths_list" Rscript --vanilla - "$workspace_file" <<'RSCRIPT'
+  local paths_file=""
+
+  paths_file="$(mktemp "$(get_temp_dir)/repos-paths-XXXXXX")"
+  CLEANUP_FILES+=("$paths_file")
+  printf '%s\n' "$paths_list" > "$paths_file"
+
+  # Pass filenames to Rscript; emit JSON to stdout
+  Rscript --vanilla - "$workspace_file" "$paths_file" <<'RSCRIPT'
 args <- commandArgs(trailingOnly=TRUE)
 ws <- args[1]
+paths_file <- args[2]
 
 # Read and clean paths list
-paths <- strsplit(Sys.getenv("PATHS_LIST"), "\n", fixed=TRUE)[[1]]
+paths <- readLines(paths_file, warn = FALSE)
 paths <- paths[nzchar(paths)]
 folders <- lapply(paths, function(p) list(path = p))
 
@@ -202,15 +211,10 @@ if (file.exists(ws)) {
 # Overwrite / set the folders element
 data$folders <- folders
 
-# Write out prettified JSON
-jsonlite::write_json(
-  data,
-  path        = ws,
-  pretty      = TRUE,
-  auto_unbox  = TRUE
-)
+# Write out prettified JSON to stdout
+cat(jsonlite::toJSON(data, pretty = TRUE, auto_unbox = TRUE), "\n")
 RSCRIPT
-  printf "Updated '%s' with Rscript.\n" "$workspace_file"
+  rm -f -- "$paths_file"
 }
 
 
@@ -229,6 +233,40 @@ get_workspace_file() {
     # If neither exists, will create lower-case one by default
     printf '%s\n' "$workspace_file"
   fi
+}
+
+split_repo_spec() {
+  # Robustly split repo_spec into URL/repo and branch
+  # Considers credentials in URLs (e.g., https://token@github.com/owner/repo@branch)
+  local spec="$1"
+  local repo_url=""
+  local branch=""
+
+  if [[ "$spec" == *"@"* ]]; then
+    # If there's at least one @
+    # If it starts with http or https, we need to be careful
+    if [[ "$spec" == http://* ]] || [[ "$spec" == https://* ]]; then
+      # Strip credentials first to find the real branch separator
+      local no_creds
+      no_creds=$(printf '%s\n' "$spec" | sed 's|^\(https\?://\)[^/]*@|\1|')
+      if [[ "$no_creds" == *"@"* ]]; then
+        branch="${no_creds##*@}"
+        repo_url="${spec%@"$branch"}"
+      else
+        repo_url="$spec"
+        branch=""
+      fi
+    else
+      # Not a standard HTTP(S) URL, use last @ as separator
+      # (Works for owner/repo@branch and scp-style git@host:repo@branch)
+      branch="${spec##*@}"
+      repo_url="${spec%@"$branch"}"
+    fi
+  else
+    repo_url="$spec"
+    branch=""
+  fi
+  printf '%s\x1f%s\n' "$repo_url" "$branch"
 }
 
 spec_to_repo_name() {
@@ -256,13 +294,13 @@ sanitize_branch_name() {
   printf '%s\n' "${branch//\//-}"
 }
 
-# Validate target_dir to prevent path traversal
+# Validate target_dir to prevent path traversal and argument injection
 validate_target_dir() {
   local dir="$1"
   if [ -n "$dir" ]; then
     case "$dir" in
-      /*|*..*)
-        printf "Error: target directory cannot be absolute or contain '..': %s\n" "$dir" >&2
+      /*|*..*|-*)
+        printf "Error: target directory cannot be absolute, contain '..', or start with a hyphen: %s\n" "$dir" >&2
         return 1
         ;;
     esac
@@ -279,13 +317,13 @@ build_paths_list() {
   
   local paths_list="."
   local line trimmed first target_dir branch repo_spec repo_no_ref ref
-  local fallback_repo_name repo_name is_worktree no_worktree repo_path relative_repo_path
+  local fallback_repo_name repo_name is_worktree repo_path relative_repo_path
   
   # --- Planning phase: count references per repo ---
   declare -a plan_repo_names=()
   declare -a plan_ref_counts=()
   
-  local plan_repo_idx plan_repo_name plan_fallback_name no_worktree use_worktree target_dir repo_path
+  local plan_repo_idx plan_repo_name plan_fallback_name use_worktree target_dir repo_path
   
   # Initialize fallback to current repo
   plan_fallback_name="$(basename -- "$current_dir")"
@@ -300,7 +338,7 @@ build_paths_list() {
     trimmed="${trimmed%"${trimmed##*[![:space:]]}"}"; trimmed=${trimmed%$'\r'}
     [ -z "$trimmed" ] && continue
     
-    # Skip global flag lines (they're handled by setup-repos.sh)
+    # Skip global flag lines (not relevant to workspace generation)
     case "$trimmed" in
       --codespaces|--codespaces[[:space:]]*|\
       --public|--public[[:space:]]*|\
@@ -323,6 +361,10 @@ build_paths_list() {
         while [ "$#" -gt 0 ]; do
           case "$1" in
             -w|--worktree) use_worktree=1 ;;
+            -a|--all-branches|--public|--private|--codespaces) ;; # ignore
+            -*)
+              printf "Error: unknown option '%s' on line: %s\n" "$1" "$trimmed" >&2
+              set +f; return 1 ;;
             *)
               if [ -z "$target_dir" ]; then
                 target_dir="$1"
@@ -363,7 +405,10 @@ build_paths_list() {
         target_dir=""
         while [ "$#" -gt 0 ]; do
           case "$1" in
-            -*) ;; # ignore options
+            -a|--all-branches|--public|--private|--codespaces) ;; # ignore
+            -*)
+              printf "Error: unknown option '%s' on line: %s\n" "$1" "$trimmed" >&2
+              set +f; return 1 ;;
             *)
               if [ -z "$target_dir" ]; then
                 target_dir="$1"
@@ -375,15 +420,13 @@ build_paths_list() {
 
         validate_target_dir "$target_dir" || { set +f; return 1; }
 
-        case "$repo_spec" in
-          *@*) repo_no_ref="${repo_spec%@*}" ;;
-          *)   repo_no_ref="$repo_spec" ;;
-        esac
+        local branch_planned_ignored
+        IFS=$'\x1f' read -r repo_no_ref branch_planned_ignored <<< "$(split_repo_spec "$repo_spec")"
 
-        # Validate repo_no_ref to prevent path traversal
+        # Validate repo_no_ref to prevent path traversal and argument injection
         case "$repo_no_ref" in
-          *..*)
-            printf "Error: repository spec cannot contain '..': %s\n" "$repo_no_ref" >&2
+          -*|*..*)
+            printf "Error: repository spec cannot start with a hyphen or contain '..': %s\n" "$repo_no_ref" >&2
             set +f; return 1
             ;;
         esac
@@ -432,7 +475,7 @@ build_paths_list() {
     
     [[ "$debug" == true ]] && printf "[DEBUG] Processing line: %s\n" "$trimmed" >&2
 
-    # Skip global flag lines (they're handled by setup-repos.sh)
+    # Skip global flag lines (not relevant to workspace generation)
     case "$trimmed" in
       --codespaces|--codespaces[[:space:]]*|\
       --public|--public[[:space:]]*|\
@@ -464,9 +507,10 @@ build_paths_list() {
         while [ "$#" -gt 0 ]; do
           case "$1" in
             -w|--worktree) use_worktree=1 ;;
-            -a|--all-branches) ;; # ignore for path calculation
+            -a|--all-branches|--public|--private|--codespaces) ;; # ignore for path calculation
             -*)
-              ;; # ignore unknown options
+              printf "Error: unknown option '%s' on line: %s\n" "$1" "$trimmed" >&2
+              set +f; return 1 ;;
             *)
               if [ -z "$target_dir" ]; then
                 target_dir="$1"
@@ -506,10 +550,11 @@ build_paths_list() {
         repo_spec="$first"
         while [ "$#" -gt 0 ]; do
           case "$1" in
-            -a|--all-branches) ;; # ignore for path calculation
+            -a|--all-branches|--public|--private|--codespaces) ;; # ignore for path calculation
             -w|--worktree) ;; # ignore on clone lines
             -*)
-              ;; # ignore unknown options
+              printf "Error: unknown option '%s' on line: %s\n" "$1" "$trimmed" >&2
+              set +f; return 1 ;;
             *)
               if [ -z "$target_dir" ]; then
                 target_dir="$1"
@@ -522,28 +567,17 @@ build_paths_list() {
         validate_target_dir "$target_dir" || { set +f; return 1; }
 
         # Split repo_spec into repo and optional branch
-        case "$repo_spec" in
-          *@*) repo_no_ref="${repo_spec%@*}"; ref="${repo_spec##*@}" ;;
-          *)   repo_no_ref="$repo_spec"; ref="" ;;
-        esac
+        IFS=$'\x1f' read -r repo_no_ref ref <<< "$(split_repo_spec "$repo_spec")"
 
         if [ -n "$ref" ] && ( [[ "$ref" == -* ]] || ! git check-ref-format --allow-onelevel "$ref" ); then
           printf "Error: '%s' is not a valid Git branch name.\n" "$ref" >&2
           set +f; return 1
         fi
 
-        # Validate repo_no_ref to prevent path traversal
+        # Validate repo_no_ref to prevent path traversal and argument injection
         case "$repo_no_ref" in
-          *..*)
-            printf "Error: repository specification cannot contain '..': %s\n" "$repo_no_ref" >&2
-            set +f; return 1
-            ;;
-        esac
-        
-        # Validate repo_no_ref to prevent path traversal
-        case "$repo_no_ref" in
-          *..*)
-            printf "Error: repository spec cannot contain '..': %s\n" "$repo_no_ref" >&2
+          -*|*..*)
+            printf "Error: repository spec cannot start with a hyphen or contain '..': %s\n" "$repo_no_ref" >&2
             set +f; return 1
             ;;
         esac
@@ -606,21 +640,35 @@ update_workspace_file() {
   [ -n "$workspace_file" ] || { printf "update_workspace_file: missing workspace_file\n" >&2; exit 1; }
   [ -n "$paths_list" ]   || { printf "update_workspace_file: missing paths_list\n"   >&2; exit 1; }
 
+  local tool=""
+  for candidate in jq python python3 py Rscript; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      tool="$candidate"; break
+    fi
+  done
+  [ -n "$tool" ] || { printf "Error: No JSON tool found.\n" >&2; exit 1; }
 
-  if command -v jq >/dev/null 2>&1; then
-    update_with_jq "$workspace_file" "$paths_list"
-  elif command -v python >/dev/null 2>&1; then
-    update_with_python "$workspace_file" "$paths_list"
-  elif command -v python3 >/dev/null 2>&1; then
-    update_with_python3 "$workspace_file" "$paths_list"
-  elif command -v py >/dev/null 2>&1; then
-    update_with_py "$workspace_file" "$paths_list"
-  elif command -v Rscript >/dev/null 2>&1; then
-    update_with_rscript "$workspace_file" "$paths_list"
+  # Safely write via a temporary file, then move into place
+  local tmp=""
+  tmp="$(mktemp "$(get_temp_dir)/repos-workspace-update-XXXXXX")"
+  CLEANUP_FILES+=("$tmp")
+
+  local rc=0
+  case "$tool" in
+    jq)                update_with_jq "$workspace_file" "$paths_list" > "$tmp" || rc=$? ;;
+    python|python3|py) update_with_python "$workspace_file" "$paths_list" "$tool" > "$tmp" || rc=$? ;;
+    Rscript)           update_with_rscript "$workspace_file" "$paths_list" > "$tmp" || rc=$? ;;
+  esac
+
+  if [ "$rc" -eq 0 ] && [ -s "$tmp" ]; then
+    mv -- "$tmp" "$workspace_file"
+    printf "Updated '%s' with %s.\n" "$workspace_file" "$tool"
   else
-    printf "Error: none of jq, python, python3, py, or Rscript found. Cannot update workspace.\n" >&2
-    exit 1
+    printf "Error: Failed to update '%s' with %s (exit code %d).\n" "$workspace_file" "$tool" "$rc" >&2
+    rm -f -- "$tmp"
+    return 1
   fi
+  rm -f -- "$tmp"
 }
 
 main() {
@@ -656,6 +704,7 @@ main() {
           # Auto-generate debug file securely
           TEMP_DIR=$(get_temp_dir)
           DEBUG_FILE=$(mktemp "${TEMP_DIR}/repos-workspace-debug-XXXXXX")
+          CLEANUP_FILES+=("$DEBUG_FILE")
         fi
         ;;
       -h|--help)

@@ -26,11 +26,20 @@ DEBUG=false
 DEBUG_FILE=""
 DEBUG_FD=3  # Use FD 3 for debug output (compatible with Bash 3.2+)
 
+# Global array for temporary files to clean up on exit
+declare -a CLEANUP_FILES=()
+# Use Bash 3.2-safe array expansion to avoid "unbound variable" error with set -u
+# shellcheck disable=SC2154  # f is the for-loop variable inside the trap string
+trap 'for f in ${CLEANUP_FILES[@]+"${CLEANUP_FILES[@]}"}; do rm -f -- "$f"; done' EXIT
+
 debug() {
   if $DEBUG; then
     printf "[DEBUG create-repos.sh] %s\n" "$*" >&$DEBUG_FD
   fi
 }
+
+# Global variable for the Authorization header file
+AUTH_HDR_FILE=""
 
 # Get platform-independent temp directory
 get_temp_dir() {
@@ -52,6 +61,40 @@ get_temp_dir() {
 # URL encode a string using jq
 urlencode() {
   printf '%s' "$1" | jq -rR '@uri'
+}
+
+split_repo_spec() {
+  # Robustly split repo_spec into URL/repo and branch
+  # Considers credentials in URLs (e.g., https://token@github.com/owner/repo@branch)
+  local spec="$1"
+  local repo_url=""
+  local branch=""
+
+  if [[ "$spec" == *"@"* ]]; then
+    # If there's at least one @
+    # If it starts with http or https, we need to be careful
+    if [[ "$spec" == http://* ]] || [[ "$spec" == https://* ]]; then
+      # Strip credentials first to find the real branch separator
+      local no_creds
+      no_creds=$(printf '%s\n' "$spec" | sed 's|^\(https\?://\)[^/]*@|\1|')
+      if [[ "$no_creds" == *"@"* ]]; then
+        branch="${no_creds##*@}"
+        repo_url="${spec%@"$branch"}"
+      else
+        repo_url="$spec"
+        branch=""
+      fi
+    else
+      # Not a standard HTTP(S) URL, use last @ as separator
+      # (Works for owner/repo@branch and scp-style git@host:repo@branch)
+      branch="${spec##*@}"
+      repo_url="${spec%@"$branch"}"
+    fi
+  else
+    repo_url="$spec"
+    branch=""
+  fi
+  printf '%s\x1f%s\n' "$repo_url" "$branch"
 }
 
 # ── CONFIG & USAGE ─────────────────────────────────────────────────────────────
@@ -84,10 +127,11 @@ EOF
 }
 
 PRIVATE_FLAG=true
+CLI_PUBLIC_FLAG_SET=false
 while [ $# -gt 0 ]; do
   case $1 in
     -f)           shift; REPOS_FILE="$1"; shift ;;
-    -p|--public)  PRIVATE_FLAG=false; shift ;;
+    -p|--public)  PRIVATE_FLAG=false; CLI_PUBLIC_FLAG_SET=true; shift ;;
     --debug)      DEBUG=true; shift ;;
     --debug-file)
       DEBUG=true
@@ -100,6 +144,7 @@ while [ $# -gt 0 ]; do
         # Auto-generate debug file securely
         TEMP_DIR=$(get_temp_dir)
         DEBUG_FILE=$(mktemp "${TEMP_DIR}/repos-create-debug-XXXXXX")
+        CLEANUP_FILES+=("$DEBUG_FILE")
       fi
       ;;
     -h|--help)    usage 0 ;;
@@ -118,9 +163,35 @@ fi
 
 debug "=== create-repos.sh Debug Session Started ==="
 debug "Repos file: $REPOS_FILE"
-debug "Private flag: $PRIVATE_FLAG"
+debug "Private flag (from CLI): $PRIVATE_FLAG"
 
 [ -f "$REPOS_FILE" ] || { printf "Error: '%s' not found.\n" "$REPOS_FILE" >&2; exit 1; }
+
+# Parse global --public / --private flags from repos.list.
+# CLI flag (-p / --public) takes precedence; repos.list is only consulted when
+# the user has not already provided a visibility flag on the command line.
+# This mirrors the behaviour that setup-repos.sh used to provide.
+if [ "$CLI_PUBLIC_FLAG_SET" = "false" ]; then
+  while IFS= read -r _line || [ -n "$_line" ]; do
+    _trimmed="${_line#"${_line%%[![:space:]]*}"}"
+    case "$_trimmed" in \#*|"") continue ;; esac
+    case "$_trimmed" in *" # "*) _trimmed="${_trimmed%% # *}" ;; *" #"*) _trimmed="${_trimmed%% #*}" ;; esac
+    _trimmed="${_trimmed%"${_trimmed##*[![:space:]]}"}"; _trimmed="${_trimmed%$'\r'}"
+    [ -z "$_trimmed" ] && continue
+    case "$_trimmed" in
+      --public|--public[[:space:]]*)
+        PRIVATE_FLAG=false
+        debug "Enabled --public from repos.list"
+        ;;
+      --private|--private[[:space:]]*)
+        PRIVATE_FLAG=true
+        debug "Enabled --private from repos.list"
+        ;;
+    esac
+  done < "$REPOS_FILE"
+fi
+
+debug "Private flag (effective): $PRIVATE_FLAG"
 
 # ── CREDENTIALS WITH FALLBACK (will be retrieved only if needed) ────────────────
 # Returns 0 if credentials are available, 1 if not
@@ -163,12 +234,19 @@ get_credentials() {
     debug "Environment GH_TOKEN: ${GH_TOKEN:+<present>}"
   fi
 
-  debug "Credentials successfully obtained"
+  # Create a temporary file for the Authorization header to avoid exposing the token in process lists
+  if [ -z "$AUTH_HDR_FILE" ]; then
+    AUTH_HDR_FILE="$(mktemp "$(get_temp_dir)/repos-auth-hdr-XXXXXX")"
+    CLEANUP_FILES+=("$AUTH_HDR_FILE")
+    printf "Authorization: token %s\n" "$GH_TOKEN" > "$AUTH_HDR_FILE"
+    chmod 600 "$AUTH_HDR_FILE"
+  fi
+
+  debug "Credentials successfully obtained and header file created"
   return 0
 }
 
 API_URL="https://api.github.com"
-if $PRIVATE_FLAG; then JSON_PRIVATE=true; else JSON_PRIVATE=false; fi
 
 # ── Token validation ───────────────────────────────────────────────────────────
 # Validates that the provided token is valid by making a test API call
@@ -177,38 +255,49 @@ validate_token() {
   local auth_header="$1"
   debug "Validating GitHub token..."
   
+  local response_file
+  response_file="$(mktemp "$(get_temp_dir)/repos-token-val-XXXXXX")"
+  CLEANUP_FILES+=("$response_file")
+
   # Make a simple API call to check token validity
-  local response
-  response=$(curl -s -H "$auth_header" "$API_URL/user")
+  if ! curl -s -H "$auth_header" -o "$response_file" -- "$API_URL/user"; then
+    debug "Token validation: curl failed"
+    rm -f -- "$response_file"
+    return 0
+  fi
   
   # Check if response is empty
-  if [ -z "$response" ]; then
+  if [ ! -s "$response_file" ]; then
     debug "Token validation: Empty response from API"
     # If we can't validate, we should still try to proceed
     # This could be a network issue rather than an invalid token
+    rm -f -- "$response_file"
     return 0
   fi
   
   # Check for errors using jq
   local message
-  message=$(printf '%s\n' "$response" | jq -r '.message // empty')
+  message=$(jq -r '.message // empty' -- "$response_file")
 
   if [ "$message" = "Bad credentials" ]; then
     debug "Token validation failed: Bad credentials"
     printf "Error: Invalid GitHub token. Please check your credentials.\n" >&2
     printf "The provided token does not have valid GitHub API access.\n" >&2
+    rm -f -- "$response_file"
     return 1
   fi
   
   if [ "$message" = "Requires authentication" ]; then
     debug "Token validation failed: Requires authentication"
     printf "Error: GitHub authentication required. Please check your credentials.\n" >&2
+    rm -f -- "$response_file"
     return 1
   fi
   
   # If we can extract a login field, the token is valid
-  if printf '%s\n' "$response" | jq -e '.login' >/dev/null 2>&1; then
+  if jq -e '.login' -- "$response_file" >/dev/null 2>&1; then
     debug "Token validation successful"
+    rm -f -- "$response_file"
     return 0
   fi
   
@@ -216,11 +305,13 @@ validate_token() {
   if [ -n "$message" ]; then
     debug "Token validation failed: $message"
     printf "Error: GitHub API error: %s\n" "$message" >&2
+    rm -f -- "$response_file"
     return 1
   fi
   
   # If we get here, assume valid (we got a response without error)
   debug "Token appears valid (no error detected)"
+  rm -f -- "$response_file"
   return 0
 }
 
@@ -228,7 +319,7 @@ validate_token() {
 api_get_field() {
   local url="$1"; local field="$2"
   # Use getpath with split to support nested fields (e.g. "commit.sha") securely
-  curl -s -H "$AUTH_HDR" "$url" | jq -r --arg field "$field" 'getpath($field | split("."))'
+  curl -s -H "$AUTH_HDR" -- "$url" | jq -r --arg field "$field" 'getpath($field | split("."))'
 }
 
 create_branch() {
@@ -243,18 +334,16 @@ create_branch() {
 
   local defsha
   defsha=$(
-    curl -s -H "$AUTH_HDR" \
+    curl -s -H "$AUTH_HDR" -- \
       "$API_URL/repos/$e_owner/$e_repo/git/ref/heads/$e_defbr" \
     | jq -r '.object.sha // .sha'
   )
 
-  local payload
-  payload=$(jq -n --arg ref "refs/heads/$newbr" --arg sha "$defsha" '{ref: $ref, sha: $sha}')
-
-  curl -s -o /dev/null -w "%{http_code}" -X POST \
-    -H "$AUTH_HDR" -H "Content-Type: application/json" \
-    -d "$payload" \
-    "$API_URL/repos/$e_owner/$e_repo/git/refs"
+  jq -n --arg ref "refs/heads/$newbr" --arg sha "$defsha" '{ref: $ref, sha: $sha}' \
+    | curl -s -o /dev/null -w "%{http_code}" -X POST \
+      -H "$AUTH_HDR" -H "Content-Type: application/json" \
+      -d @- -- \
+      "$API_URL/repos/$e_owner/$e_repo/git/refs"
 }
 
 # ── Get current repo info (for initial fallback) ───────────────────────────────
@@ -262,7 +351,7 @@ get_current_repo_info() {
   if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     # Get origin URL
     local origin_url
-    origin_url=$(git config --get remote.origin.url 2>/dev/null || echo "")
+    origin_url=$(git config --get -- remote.origin.url 2>/dev/null || echo "")
     
     if [ -z "$origin_url" ]; then
       return 1
@@ -342,7 +431,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   trimmed_line="${line#"${line%%[![:space:]]*}"}"
   trimmed_line="${trimmed_line%"${trimmed_line##*[![:space:]]}"}"; trimmed_line=${trimmed_line%$'\r'}
   
-  # Skip lines that are just global flags
+  # Skip lines that are just global flags (already applied before this loop)
   case "$trimmed_line" in
     --codespaces|--codespaces[[:space:]]*|\
     --public|--public[[:space:]]*|\
@@ -398,7 +487,7 @@ while IFS= read -r line || [ -n "$line" ]; do
         printf "Skipping branch check for @%s (no credentials)\n" "$branch"
         continue
       fi
-      AUTH_HDR="Authorization: token $GH_TOKEN"
+      AUTH_HDR="@$AUTH_HDR_FILE"
       
       # Validate token
       if ! validate_token "$AUTH_HDR"; then
@@ -411,7 +500,7 @@ while IFS= read -r line || [ -n "$line" ]; do
       debug "Line $line_num: Checking if branch $branch exists on $fallback_owner/$fallback_repo"
       ref_status=$(
         curl -s -o /dev/null -w "%{http_code}" \
-          -H "$AUTH_HDR" \
+          -H "$AUTH_HDR" -- \
           "$API_URL/repos/$(urlencode "$fallback_owner")/$(urlencode "$fallback_repo")/git/refs/heads/$(urlencode "$branch")"
       )
       debug "Line $line_num: Branch check returned HTTP $ref_status"
@@ -460,7 +549,10 @@ while IFS= read -r line || [ -n "$line" ]; do
       ;;
   esac
   
-  repo_path=${repo_spec%@*}
+  repo_path=""
+  ref_planned=""
+  IFS=$'\x1f' read -r repo_path ref_planned <<< "$(split_repo_spec "$repo_spec")"
+
   # Validate repo_path format (must be owner/repo)
   if [[ ! "$repo_path" =~ ^[^/]+/[^/]+$ ]]; then
     printf "Error: repository spec must be in 'owner/repo' format: %s\n" "$repo_spec" >&2
@@ -470,7 +562,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   # Validate repo_path to prevent path traversal
   case "$repo_path" in
     *..*)
-      printf "Error: repository spec cannot contain '..': %s\n" "$repo_spec" >&2
+      printf "Error: repository spec contains '..': %s\n" "$repo_spec" >&2
       exit 1
       ;;
   esac
@@ -491,7 +583,7 @@ while IFS= read -r line || [ -n "$line" ]; do
     printf "Error: invalid repository name: %s\n" "$repo" >&2
     exit 1
   fi
-  case "$repo_spec" in *@*) branch=${repo_spec##*@} ;; *) branch="" ;; esac
+  branch="$ref_planned"
   
   if [ -n "$branch" ] && ( [[ "$branch" == -* ]] || ! git check-ref-format --allow-onelevel "$branch" ); then
     printf "Error: '%s' is not a valid Git branch name.\n" "$branch" >&2
@@ -513,7 +605,7 @@ while IFS= read -r line || [ -n "$line" ]; do
     debug "Line $line_num: Updated fallback to: $fallback_owner/$fallback_repo"
     continue
   fi
-  AUTH_HDR="Authorization: token $GH_TOKEN"
+  AUTH_HDR="@$AUTH_HDR_FILE"
 
   # Validate token before making API calls
   if ! validate_token "$AUTH_HDR"; then
@@ -528,8 +620,7 @@ while IFS= read -r line || [ -n "$line" ]; do
 
   # 1) Determine owner type (User vs Organization)
   debug "Line $line_num: Checking owner type for $owner"
-  owner_info=$(curl -s -H "$AUTH_HDR" "$API_URL/users/$(urlencode "$owner")")
-  owner_type=$(printf '%s\n' "$owner_info" | jq -r '.type // empty')
+  owner_type=$(curl -s -H "$AUTH_HDR" -- "$API_URL/users/$(urlencode "$owner")" | jq -r '.type // empty')
   
   debug "Line $line_num: Owner type: $owner_type"
 
@@ -549,7 +640,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   # 2) Check repo existence
   status=$(
     curl -s -o /dev/null -w "%{http_code}" \
-      -H "$AUTH_HDR" \
+      -H "$AUTH_HDR" -- \
       "$API_URL/repos/$(urlencode "$owner")/$(urlencode "$repo")"
   )
   if [ "$status" -eq 200 ]; then
@@ -574,21 +665,27 @@ while IFS= read -r line || [ -n "$line" ]; do
       debug "Line $line_num: Using global private flag: $this_repo_private"
     fi
     
-    # Build JSON payload safely using jq
-    if [ -n "$branch" ]; then
-      payload=$(jq -n --arg name "$repo" --argjson private "$this_repo_private" '{name: $name, private: $private, auto_init: true}')
-    else
-      payload=$(jq -n --arg name "$repo" --argjson private "$this_repo_private" '{name: $name, private: $private}')
-    fi
-
     printf "Creating repo %s/%s ... " "$owner" "$repo"
-    http_code=$(
-      curl -s -o /dev/null -w "%{http_code}" \
-        -H "$AUTH_HDR" \
-        -H "Content-Type: application/json" \
-        -d "$payload" \
-        "$create_url"
-    )
+    http_code=""
+    if [ -n "$branch" ]; then
+      http_code=$(
+        jq -n --arg name "$repo" --argjson private "$this_repo_private" '{name: $name, private: $private, auto_init: true}' \
+          | curl -s -o /dev/null -w "%{http_code}" \
+            -H "$AUTH_HDR" \
+            -H "Content-Type: application/json" \
+            -d @- -- \
+            "$create_url"
+      )
+    else
+      http_code=$(
+        jq -n --arg name "$repo" --argjson private "$this_repo_private" '{name: $name, private: $private}' \
+          | curl -s -o /dev/null -w "%{http_code}" \
+            -H "$AUTH_HDR" \
+            -H "Content-Type: application/json" \
+            -d @- -- \
+            "$create_url"
+      )
+    fi
     if [ "$http_code" -eq 201 ]; then
       printf "done.\n"
     else
@@ -604,7 +701,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   if [ -n "$branch" ]; then
     ref_status=$(
       curl -s -o /dev/null -w "%{http_code}" \
-        -H "$AUTH_HDR" \
+        -H "$AUTH_HDR" -- \
         "$API_URL/repos/$(urlencode "$owner")/$(urlencode "$repo")/git/refs/heads/$(urlencode "$branch")"
     )
     if [ "$ref_status" -eq 200 ]; then

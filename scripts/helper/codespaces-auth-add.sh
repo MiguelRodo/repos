@@ -21,8 +21,8 @@ validate_devcontainer_path() {
   local path="$1"
   if [ -n "$path" ]; then
     case "$path" in
-      /*|*..*)
-        printf "Error: devcontainer path cannot be absolute or contain '..': %s\n" "$path" >&2
+      /*|*..*|-*)
+        printf "Error: devcontainer path cannot be absolute, contain '..', or start with a hyphen: %s\n" "$path" >&2
         return 1
         ;;
     esac
@@ -47,13 +47,17 @@ get_temp_dir() {
   fi
 }
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# Global array for temporary files to clean up on exit
+declare -a CLEANUP_FILES=()
+# Use Bash 3.2-safe array expansion to avoid "unbound variable" error with set -u
+# shellcheck disable=SC2154  # f is the for-loop variable inside the trap string
+trap 'for f in ${CLEANUP_FILES[@]+"${CLEANUP_FILES[@]}"}; do rm -f -- "$f"; done' EXIT
+
 DEVCONTAINER_PATHS=()  # Array of devcontainer.json paths to update
-if [ ! -f "$PROJECT_ROOT/repos.list" ] && [ -f "$PROJECT_ROOT/repos-to-clone.list" ]; then
-  REPOS_FILE="$PROJECT_ROOT/repos-to-clone.list"
+if [ ! -f "repos.list" ] && [ -f "repos-to-clone.list" ]; then
+  REPOS_FILE="repos-to-clone.list"
 else
-  REPOS_FILE="$PROJECT_ROOT/repos.list"
+  REPOS_FILE="repos.list"
 fi
 REPOS_OVERRIDE=""
 PERMISSIONS="default"    # default | all | contents
@@ -198,7 +202,6 @@ normalise_remote_to_https() {
 
 # ——— Get current repo's remote as https URL —————————————————————————
 get_current_repo_remote_https() {
-  cd "$PROJECT_ROOT" || return 1
   git rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
     printf "Error: not inside a Git working tree; cannot derive fallback repo.\n" >&2
     return 1
@@ -240,6 +243,40 @@ get_current_repo_remote_https() {
 }
 
 # ——— Extract owner/repo from https URL —————————————————————————————
+split_repo_spec() {
+  # Robustly split repo_spec into URL/repo and branch
+  # Considers credentials in URLs (e.g., https://token@github.com/owner/repo@branch)
+  local spec="$1"
+  local repo_url=""
+  local branch=""
+
+  if [[ "$spec" == *"@"* ]]; then
+    # If there's at least one @
+    # If it starts with http or https, we need to be careful
+    if [[ "$spec" == http://* ]] || [[ "$spec" == https://* ]]; then
+      # Strip credentials first to find the real branch separator
+      local no_creds
+      no_creds=$(printf '%s\n' "$spec" | sed 's|^\(https\?://\)[^/]*@|\1|')
+      if [[ "$no_creds" == *"@"* ]]; then
+        branch="${no_creds##*@}"
+        repo_url="${spec%@"$branch"}"
+      else
+        repo_url="$spec"
+        branch=""
+      fi
+    else
+      # Not a standard HTTP(S) URL, use last @ as separator
+      # (Works for owner/repo@branch and scp-style git@host:repo@branch)
+      branch="${spec##*@}"
+      repo_url="${spec%@"$branch"}"
+    fi
+  else
+    repo_url="$spec"
+    branch=""
+  fi
+  printf '%s\x1f%s\n' "$repo_url" "$branch"
+}
+
 extract_owner_repo_from_https() {
   local url="$1"
   url="${url%/}"
@@ -283,8 +320,8 @@ normalise(){
       ;;
     *)
       # Regular repo spec
-      raw="$first"
-      raw="${raw%%@*}"            # strip @branch
+      local branch_ignored
+      IFS=$'\x1f' read -r raw branch_ignored <<< "$(split_repo_spec "$first")"
       raw="${raw%/}"              # strip trailing slash
       raw="${raw%.git}"           # strip .git
       case "$raw" in
@@ -381,17 +418,18 @@ build_raw_list(){
         *)
           # Regular repo line - extract and update fallback
           # Check for branch in repo spec
-          local branch_part=""
-          case "$first" in *@*) branch_part="${first##*@}" ;; esac
+          local repo_url_no_branch_for_validation branch_part
+          IFS=$'\x1f' read -r repo_url_no_branch_for_validation branch_part <<< "$(split_repo_spec "$first")"
+
           if [ -n "$branch_part" ] && ( [[ "$branch_part" == -* ]] || ! git check-ref-format --allow-onelevel "$branch_part" ); then
             printf "Error: '%s' is not a valid Git branch name.\n" "$branch_part" >&2
             exit 1
           fi
 
-          # Validate repo_spec to prevent path traversal
-          case "${first%@*}" in
-            *..*)
-              printf "Error: repository spec cannot contain '..': %s\n" "$first" >&2
+          # Validate repo_spec to prevent path traversal and argument injection
+          case "$repo_url_no_branch_for_validation" in
+            -*|*..*)
+              printf "Error: repository spec cannot start with a hyphen or contain '..': %s\n" "$first" >&2
               exit 1
               ;;
           esac
@@ -399,7 +437,7 @@ build_raw_list(){
           if normalized=$(normalise "$trimmed" ""); then
             RAW_LIST+="$normalized"$'\n'
             # Update fallback: extract repo spec (first token), remove @branch part
-            repo_no_branch="${first%%@*}"
+            repo_no_branch="${repo_url_no_branch_for_validation}"
             repo_no_branch="${repo_no_branch%.git}"
             # Convert to https format
             case "$repo_no_branch" in
@@ -435,61 +473,61 @@ filter_valid_list(){
   [ -n "$VALID_LIST" ] || { printf "Error: No valid repos found.\n" >&2; exit 1; }
 }
 
-# ——— Build a newline-delimited JSON array for jq ———————————————
-build_jq_array(){
-  printf '%s\n' "$VALID_LIST" \
-    | jq -R 'select(length>0)' \
-    | jq -s .
-}
+# ——— Generate the repos JSON object and save to a file —————————————
+build_repos_json_file(){
+  local output_file="$1"
+  local valid_list_file
+  valid_list_file="$(mktemp "$(get_temp_dir)/repos-valid-list-XXXXXX")"
+  CLEANUP_FILES+=("$valid_list_file")
+  printf '%s\n' "$VALID_LIST" > "$valid_list_file"
 
-# ——— Generate the per-repo permissions object via jq —————————————
-build_jq_obj(){
-  local arr_json="$1"
-  jq -n --argjson arr "$arr_json" --arg perms "$PERMISSIONS" '
-    reduce $arr[] as $repo ({}; 
-      . + {
-        ($repo): (
-          if $perms == "all" then
-            { permissions:"write-all" }
-          elif $perms == "contents" then
-            { permissions:{ contents:"write" } }
-          else
-            {
-              permissions: {
-                actions:  "write",
-                contents: "write",
-                packages: "read",
-                workflows:"write"
-              }
-            }
-          end
+  jq -R 'select(length>0)' -- "$valid_list_file" \
+    | jq -s . \
+    | jq --arg perms "$PERMISSIONS" '
+        reduce .[] as $repo ({};
+          . + {
+            ($repo): (
+              if $perms == "all" then
+                { permissions:"write-all" }
+              elif $perms == "contents" then
+                { permissions:{ contents:"write" } }
+              else
+                {
+                  permissions: {
+                    actions:  "write",
+                    contents: "write",
+                    packages: "read",
+                    workflows:"write"
+                  }
+                }
+              end
+            )
+          }
         )
-      }
-    )
-  '
+      ' > "$output_file"
+  rm -f -- "$valid_list_file"
 }
 
 # ——— Merge into devcontainer.json (jq variant) —————————————————————
 update_with_jq(){
   local file="$1"
-  local arr_json repos_obj tmp
+  local repos_file=""
 
-  arr_json=$(build_jq_array)
-  repos_obj=$(build_jq_obj "$arr_json")
+  repos_file="$(mktemp "$(get_temp_dir)/repos-json-XXXXXX")"
+  CLEANUP_FILES+=("$repos_file")
+  build_repos_json_file "$repos_file"
 
   if [ ! -f "$file" ]; then
-    jq -n --argjson repos "$repos_obj" '
-      { customizations:{ codespaces:{ repositories:$repos } } }
-    ' >"$file"
+    jq -n --slurpfile repos "$repos_file" '
+      { customizations:{ codespaces:{ repositories:$repos[0] } } }
+    '
   else
-    tmp="$(mktemp "$(get_temp_dir)/repos-auth-XXXXXX")"
-    jq --argjson repos "$repos_obj" '
+    jq --slurpfile repos "$repos_file" '
       .customizations.codespaces.repositories
-        |= ( (. // {}) + $repos )
-    ' -- "$file" >"$tmp" && mv -- "$tmp" "$file"
+        |= ( (. // {}) + $repos[0] )
+    ' -- "$file"
   fi
-
-  printf "Updated '%s' with jq.\n" "$file"
+  rm -f -- "$repos_file"
 }
 
 # ——— Python (or python3 / py) fallback, JSONC-aware + trailing-comma strip —————
@@ -497,35 +535,48 @@ update_with_jq(){
 update_with_python(){
   local file="$1"
   local py_cmd="${2:-python}"
-  local arr_json repos_obj
+  local repos_file=""
 
-  # 1) Build the JSON array & object as jq would
-  arr_json=$(build_jq_array)
-  repos_obj=$(build_jq_obj "$arr_json")
+  repos_file="$(mktemp "$(get_temp_dir)/repos-json-XXXXXX")"
+  CLEANUP_FILES+=("$repos_file")
+  build_repos_json_file "$repos_file"
 
-  # 2) Export it so the Python process can see it
-  export REPOS_JSON="$repos_obj"
-
-  # 3) Run Python: strip comments & trailing commas, parse, merge, emit JSON
+  # Run Python: strip comments & trailing commas, parse, merge, emit JSON
   # Using -- after the interpreter or - ensures that $file is not interpreted as a flag
-  "$py_cmd" - "$file" <<'PYCODE'
+  "$py_cmd" - "$file" "$repos_file" <<'PYCODE'
 import sys, json, re, os
 
-fname = sys.argv[1]
-text = open(fname, 'r').read()
+def strip_jsonc(text):
+    # Pass 1: Strip comments (multi-line and single-line)
+    # We must preserve strings to avoid stripping // inside URLs
+    comment_pattern = re.compile(
+        r'(?P<string>"([^"\\\n]|\\.)*")|(?P<comment_ml>/\*.*?\*/)|(?P<comment_sl>//[^\n]*)',
+        re.DOTALL | re.MULTILINE
+    )
+    text = comment_pattern.sub(lambda m: m.group('string') if m.group('string') else "", text)
 
-# Remove // line comments (but not inside URLs)
-text = re.sub(r'(?<!:)\/\/.*$', '', text, flags=re.MULTILINE)
-# Remove /* ... */ block comments
-text = re.sub(r'/\*.*?\*/', '', text, flags=re.DOTALL)
-# Remove trailing commas before } or ]
-text = re.sub(r',\s*([}\]])', r'\1', text)
+    # Pass 2: Strip trailing commas
+    # Now that comments are gone, trailing commas are reliably followed by } or ]
+    comma_pattern = re.compile(
+        r'(?P<string>"([^"\\\n]|\\.)*")|(?P<comma>,\s*(?=[}\]]))',
+        re.DOTALL | re.MULTILINE
+    )
+    return comma_pattern.sub(lambda m: m.group('string') if m.group('string') else "", text)
+
+fname = sys.argv[1]
+repos_fname = sys.argv[2]
+with open(fname, 'r') as f:
+    text = f.read()
+
+# Strip comments and trailing commas properly (handling strings)
+text = strip_jsonc(text)
 
 # Now parse clean JSON
 data = json.loads(text)
 
-# Load the new repos block from the env var
-new = json.loads(os.environ['REPOS_JSON'])
+# Load the new repos block from the temporary file
+with open(repos_fname, 'r') as f:
+    new = json.load(f)
 
 # Merge into data
 cs = data.setdefault('customizations', {})
@@ -536,6 +587,7 @@ repos.update(new)
 # Output the merged JSON
 print(json.dumps(data, indent=2))
 PYCODE
+  rm -f -- "$repos_file"
 }
 
 # In your update_devfile(), make sure you capture that stdout into the file:
@@ -548,23 +600,23 @@ PYCODE
 # ——— Rscript fallback (env-var merge, no duplicates) —————————————————————
 update_with_rscript(){
   local file="$1"
-  local arr_json repos_obj
+  local repos_file=""
 
-  # Build the same JSON array & object as jq
-  arr_json=$(build_jq_array)
-  repos_obj=$(build_jq_obj "$arr_json")
+  repos_file="$(mktemp "$(get_temp_dir)/repos-json-XXXXXX")"
+  CLEANUP_FILES+=("$repos_file")
+  build_repos_json_file "$repos_file"
 
-  # Pass the JSON via env var to Rscript
-  REPOS_OBJ="$repos_obj" Rscript --vanilla - "$file" <<'RSCRIPT'
+  # Pass the JSON file to Rscript
+  Rscript --vanilla - "$file" "$repos_file" <<'RSCRIPT'
 library(jsonlite)
 
 # Read args
 args <- commandArgs(trailingOnly=TRUE)
 file <- args[1]
+repos_file <- args[2]
 
-# Parse the new repos block from the environment
-repos_json <- Sys.getenv("REPOS_OBJ")
-new <- fromJSON(repos_json)
+# Parse the new repos block from the file
+new <- fromJSON(repos_file)
 
 # Load or initialise existing JSON
 if (file.exists(file)) {
@@ -586,10 +638,9 @@ cp$repositories     <- repos
 cs$codespaces       <- cp
 data$customizations <- cs
 
-write_json(data, file, pretty = TRUE, auto_unbox = TRUE)
+cat(toJSON(data, pretty = TRUE, auto_unbox = TRUE), "\n")
 RSCRIPT
-
-  printf "Updated '%s' with Rscript.\n" "$file"
+  rm -f -- "$repos_file"
 }
 
 # ——— Dispatch to the first available tool ——————————————————————
@@ -612,31 +663,35 @@ update_devfile(){
   fi
 
   # 2) Invoke the updater
-  case "$tool" in
-    jq)
-      update_with_jq "$devfile"
-      ;;
-    python|python3|py)
-      if [ "$DRY_RUN" -eq 1 ]; then
-        # In dry-run, just print what Python would output
-        update_with_python "$devfile" "$tool"
-      else
-        # Safely write via a temporary file, then move into place
-        tmp="$(mktemp "$(get_temp_dir)/repos-auth-XXXXXX")"
-        update_with_python "$devfile" "$tool" > "$tmp"
-        mv -- "$tmp" "$devfile"
-        printf "Updated '%s' with %s.\n" "$devfile" "$tool"
-      fi
-      ;;
-    Rscript)
-      update_with_rscript "$devfile"
-      ;;
-  esac
-
-  # 3) In dry-run mode, show the result
   if [ "$DRY_RUN" -eq 1 ]; then
     printf "=== DRY-RUN OUTPUT for %s ===\n" "$devfile"
-    cat -- "$devfile"
+    case "$tool" in
+      jq)                update_with_jq "$devfile" ;;
+      python|python3|py) update_with_python "$devfile" "$tool" ;;
+      Rscript)           update_with_rscript "$devfile" ;;
+    esac
+  else
+    # Safely write via a temporary file, then move into place
+    local tmp=""
+    tmp="$(mktemp "$(get_temp_dir)/repos-auth-XXXXXX")"
+    CLEANUP_FILES+=("$tmp")
+
+    local rc=0
+    case "$tool" in
+      jq)                update_with_jq "$devfile" > "$tmp" || rc=$? ;;
+      python|python3|py) update_with_python "$devfile" "$tool" > "$tmp" || rc=$? ;;
+      Rscript)           update_with_rscript "$devfile" > "$tmp" || rc=$? ;;
+    esac
+
+    if [ "$rc" -eq 0 ] && [ -s "$tmp" ]; then
+      mv -- "$tmp" "$devfile"
+      printf "Updated '%s' with %s.\n" "$devfile" "$tool"
+    else
+      printf "Error: Failed to update '%s' with %s (exit code %d).\n" "$devfile" "$tool" "$rc" >&2
+      rm -f -- "$tmp"
+      return 1
+    fi
+    rm -f -- "$tmp"
   fi
 }
 

@@ -71,8 +71,11 @@ usage() {
 Usage: repos <command> [options]
 
 Commands:
-  setup    Clone and configure repositories from a repos.list file
-  run      Execute a script inside each cloned repository
+  clone       Clone repositories listed in repos.list into the parent directory
+  workspace   Generate (or update) the VS Code multi-root workspace file
+  codespace   Configure GitHub Codespaces authentication
+  codespaces  Alias for codespace
+  run         Execute a script inside each cloned repository
 
 Run 'repos <command> --help' for more information on a command.
 EOF
@@ -85,8 +88,12 @@ fi
 case "$1" in
   -h|--help)
     usage; exit 0 ;;
-  setup)
-    shift; exec "$SCRIPT_DIR/setup-repos.sh" "$@" ;;
+  clone)
+    shift; exec "$SCRIPT_DIR/helper/clone-repos.sh" "$@" ;;
+  workspace)
+    shift; exec "$SCRIPT_DIR/helper/vscode-workspace-add.sh" "$@" ;;
+  codespace|codespaces)
+    shift; exec "$SCRIPT_DIR/helper/codespaces-auth-add.sh" "$@" ;;
   run)
     shift; exec "$SCRIPT_DIR/run-pipeline.sh" "$@" ;;
   *)

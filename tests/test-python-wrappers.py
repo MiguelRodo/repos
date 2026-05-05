@@ -46,77 +46,89 @@ def test(description, func):
         print(f"FAILED\n  Unexpected error: {e}")
         fail_count += 1
 
-# Test repos.setup with idiomatic syntax
-def test_setup_no_args():
-    repos.setup()
-    assert test_args["script"] == "setup-repos.sh"
+# Test repos.workspace with idiomatic syntax
+def test_workspace_no_args():
+    repos.workspace()
+    assert test_args["script"] == "helper/vscode-workspace-add.sh"
     assert test_args["args"] == []
 
-def test_setup_public():
-    repos.setup(public=True)
-    assert test_args["script"] == "setup-repos.sh"
-    assert "--public" in test_args["args"]
-
-def test_setup_file():
-    repos.setup(file="custom.list")
-    assert test_args["script"] == "setup-repos.sh"
+def test_workspace_file():
+    repos.workspace(file="custom.list")
+    assert test_args["script"] == "helper/vscode-workspace-add.sh"
     assert "-f" in test_args["args"]
     assert "custom.list" in test_args["args"]
 
-def test_setup_multiple_options():
-    repos.setup(public=True, codespaces=True)
-    assert test_args["script"] == "setup-repos.sh"
-    assert "--public" in test_args["args"]
-    assert "--codespaces" in test_args["args"]
+def test_workspace_debug():
+    repos.workspace(debug=True)
+    assert test_args["script"] == "helper/vscode-workspace-add.sh"
+    assert "--debug" in test_args["args"]
 
-def test_setup_devcontainer_list():
-    repos.setup(devcontainer=["path1", "path2"])
-    assert test_args["script"] == "setup-repos.sh"
+def test_workspace_debug_file_bool():
+    repos.workspace(debug_file=True)
+    assert test_args["script"] == "helper/vscode-workspace-add.sh"
+    assert "--debug-file" in test_args["args"]
+
+def test_workspace_debug_file_path():
+    repos.workspace(debug_file="debug.log")
+    assert test_args["script"] == "helper/vscode-workspace-add.sh"
+    assert "--debug-file" in test_args["args"]
+    assert "debug.log" in test_args["args"]
+
+# Test repos.codespace with idiomatic syntax
+def test_codespace_no_args():
+    repos.codespace()
+    assert test_args["script"] == "helper/codespaces-auth-add.sh"
+    assert test_args["args"] == []
+
+def test_codespace_file():
+    repos.codespace(file="custom.list")
+    assert test_args["script"] == "helper/codespaces-auth-add.sh"
+    assert "-f" in test_args["args"]
+    assert "custom.list" in test_args["args"]
+
+def test_codespace_devcontainer_list():
+    repos.codespace(devcontainer=["path1", "path2"])
+    assert test_args["script"] == "helper/codespaces-auth-add.sh"
     dc_indices = [i for i, x in enumerate(test_args["args"]) if x == "-d"]
     assert len(dc_indices) == 2
     assert test_args["args"][dc_indices[0] + 1] == "path1"
     assert test_args["args"][dc_indices[1] + 1] == "path2"
 
-def test_setup_devcontainer_single():
-    repos.setup(devcontainer="path1")
-    assert test_args["script"] == "setup-repos.sh"
+def test_codespace_devcontainer_single():
+    repos.codespace(devcontainer="path1")
+    assert test_args["script"] == "helper/codespaces-auth-add.sh"
     assert "-d" in test_args["args"]
     assert "path1" in test_args["args"]
 
-def test_setup_debug():
-    repos.setup(debug=True)
-    assert test_args["script"] == "setup-repos.sh"
-    assert "--debug" in test_args["args"]
-
-def test_setup_debug_file_bool():
-    repos.setup(debug_file=True)
-    assert test_args["script"] == "setup-repos.sh"
-    assert "--debug-file" in test_args["args"]
-
-def test_setup_debug_file_path():
-    repos.setup(debug_file="debug.log")
-    assert test_args["script"] == "setup-repos.sh"
-    assert "--debug-file" in test_args["args"]
-    assert "debug.log" in test_args["args"]
-
-def test_setup_permissions():
-    repos.setup(permissions="all")
-    assert test_args["script"] == "setup-repos.sh"
+def test_codespace_permissions():
+    repos.codespace(permissions="all")
+    assert test_args["script"] == "helper/codespaces-auth-add.sh"
     assert "--permissions" in test_args["args"]
     assert "all" in test_args["args"]
 
-def test_setup_tool():
-    repos.setup(tool="jq")
-    assert test_args["script"] == "setup-repos.sh"
+def test_codespace_tool():
+    repos.codespace(tool="jq")
+    assert test_args["script"] == "helper/codespaces-auth-add.sh"
     assert "-t" in test_args["args"]
     assert "jq" in test_args["args"]
 
-# Test backward compatibility
-def test_setup_backward_compat():
-    repos.setup_raw("--public", "--codespaces")
-    assert test_args["script"] == "setup-repos.sh"
-    assert "--public" in test_args["args"]
-    assert "--codespaces" in test_args["args"]
+def test_codespace_debug():
+    repos.codespace(debug=True)
+    assert test_args["script"] == "helper/codespaces-auth-add.sh"
+    assert "--debug" in test_args["args"]
+
+# Test raw helpers
+def test_workspace_raw():
+    repos.workspace_raw("-f", "custom.list")
+    assert test_args["script"] == "helper/vscode-workspace-add.sh"
+    assert "-f" in test_args["args"]
+    assert "custom.list" in test_args["args"]
+
+def test_codespace_raw():
+    repos.codespace_raw("-d", ".devcontainer/devcontainer.json")
+    assert test_args["script"] == "helper/codespaces-auth-add.sh"
+    assert "-d" in test_args["args"]
+    assert ".devcontainer/devcontainer.json" in test_args["args"]
 
 # Test repos.run with idiomatic syntax
 def test_run_no_args():
@@ -183,18 +195,20 @@ def test_run_backward_compat():
 if __name__ == "__main__":
     print("Testing Python wrapper functions\n")
     
-    test("repos.setup() with no args", test_setup_no_args)
-    test("repos.setup(public=True)", test_setup_public)
-    test("repos.setup(file='custom.list')", test_setup_file)
-    test("repos.setup(public=True, codespaces=True)", test_setup_multiple_options)
-    test("repos.setup(devcontainer=['path1', 'path2'])", test_setup_devcontainer_list)
-    test("repos.setup(devcontainer='path1')", test_setup_devcontainer_single)
-    test("repos.setup(debug=True)", test_setup_debug)
-    test("repos.setup(debug_file=True)", test_setup_debug_file_bool)
-    test("repos.setup(debug_file='debug.log')", test_setup_debug_file_path)
-    test("repos.setup(permissions='all')", test_setup_permissions)
-    test("repos.setup(tool='jq')", test_setup_tool)
-    test("repos.setup_raw('--public', '--codespaces') backward compatibility", test_setup_backward_compat)
+    test("repos.workspace() with no args", test_workspace_no_args)
+    test("repos.workspace(file='custom.list')", test_workspace_file)
+    test("repos.workspace(debug=True)", test_workspace_debug)
+    test("repos.workspace(debug_file=True)", test_workspace_debug_file_bool)
+    test("repos.workspace(debug_file='debug.log')", test_workspace_debug_file_path)
+    test("repos.codespace() with no args", test_codespace_no_args)
+    test("repos.codespace(file='custom.list')", test_codespace_file)
+    test("repos.codespace(devcontainer=['path1', 'path2'])", test_codespace_devcontainer_list)
+    test("repos.codespace(devcontainer='path1')", test_codespace_devcontainer_single)
+    test("repos.codespace(permissions='all')", test_codespace_permissions)
+    test("repos.codespace(tool='jq')", test_codespace_tool)
+    test("repos.codespace(debug=True)", test_codespace_debug)
+    test("repos.workspace_raw('-f', 'custom.list')", test_workspace_raw)
+    test("repos.codespace_raw('-d', '.devcontainer/devcontainer.json')", test_codespace_raw)
     
     test("repos.run() with no args", test_run_no_args)
     test("repos.run(script='build.sh')", test_run_script)

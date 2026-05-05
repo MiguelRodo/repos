@@ -20,7 +20,7 @@ export GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh -oBatchMode=yes}"
 git() { command git "$@" </dev/null; }
 
 # --- Paths ---
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname -- "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # --- Usage ---
@@ -138,13 +138,13 @@ sanitize_branch_name() {
 
 # --- Determine destination ---
 REPO_NAME="$(basename -- "$PROJECT_ROOT")"
-PARENT_DIR="$(dirname "$PROJECT_ROOT")"
+PARENT_DIR="$(dirname -- "$PROJECT_ROOT")"
 
 if [ -n "$TARGET_DIR" ]; then
-  # Validate TARGET_DIR to prevent path traversal
+  # Validate TARGET_DIR to prevent path traversal and argument injection
   case "$TARGET_DIR" in
-    /*|*..*)
-      printf "Error: target directory cannot be absolute or contain '..': %s\n" "$TARGET_DIR" >&2
+    /*|*..*|-*)
+      printf "Error: target directory cannot be absolute, contain '..', or start with a hyphen: %s\n" "$TARGET_DIR" >&2
       exit 1
       ;;
   esac

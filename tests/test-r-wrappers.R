@@ -35,53 +35,60 @@ test <- function(description, expr) {
   }
 }
 
-# Test repos_setup with idiomatic syntax
-test("repos_setup() with no args", {
-  repos_setup()
-  stopifnot(test_args$script == "setup-repos.sh")
+# Test repos_workspace with idiomatic syntax
+test("repos_workspace() with no args", {
+  repos_workspace()
+  stopifnot(test_args$script == "helper/vscode-workspace-add.sh")
   stopifnot(length(test_args$args) == 0)
 })
 
-test("repos_setup(public = TRUE)", {
-  repos_setup(public = TRUE)
-  stopifnot(test_args$script == "setup-repos.sh")
-  stopifnot("--public" %in% test_args$args)
-})
-
-test("repos_setup(file = 'custom.list')", {
-  repos_setup(file = "custom.list")
-  stopifnot(test_args$script == "setup-repos.sh")
+test("repos_workspace(file = 'custom.list')", {
+  repos_workspace(file = "custom.list")
+  stopifnot(test_args$script == "helper/vscode-workspace-add.sh")
   stopifnot(any(test_args$args == "-f"))
   stopifnot(any(test_args$args == "custom.list"))
 })
 
-test("repos_setup(public = TRUE, codespaces = TRUE)", {
-  repos_setup(public = TRUE, codespaces = TRUE)
-  stopifnot(test_args$script == "setup-repos.sh")
-  stopifnot("--public" %in% test_args$args)
-  stopifnot("--codespaces" %in% test_args$args)
+test("repos_workspace(debug = TRUE)", {
+  repos_workspace(debug = TRUE)
+  stopifnot(test_args$script == "helper/vscode-workspace-add.sh")
+  stopifnot("--debug" %in% test_args$args)
 })
 
-test("repos_setup(devcontainer = c('path1', 'path2'))", {
-  repos_setup(devcontainer = c("path1", "path2"))
-  stopifnot(test_args$script == "setup-repos.sh")
+# Test repos_codespace with idiomatic syntax
+test("repos_codespace() with no args", {
+  repos_codespace()
+  stopifnot(test_args$script == "helper/codespaces-auth-add.sh")
+  stopifnot(length(test_args$args) == 0)
+})
+
+test("repos_codespace(file = 'custom.list')", {
+  repos_codespace(file = "custom.list")
+  stopifnot(test_args$script == "helper/codespaces-auth-add.sh")
+  stopifnot(any(test_args$args == "-f"))
+  stopifnot(any(test_args$args == "custom.list"))
+})
+
+test("repos_codespace(devcontainer = c('path1', 'path2'))", {
+  repos_codespace(devcontainer = c("path1", "path2"))
+  stopifnot(test_args$script == "helper/codespaces-auth-add.sh")
   dc_indices <- which(test_args$args == "-d")
   stopifnot(length(dc_indices) == 2)
   stopifnot(test_args$args[dc_indices[1] + 1] == "path1")
   stopifnot(test_args$args[dc_indices[2] + 1] == "path2")
 })
 
-test("repos_setup(debug = TRUE)", {
-  repos_setup(debug = TRUE)
-  stopifnot(test_args$script == "setup-repos.sh")
-  stopifnot("--debug" %in% test_args$args)
+test("repos_codespace(permissions = 'all')", {
+  repos_codespace(permissions = "all")
+  stopifnot(test_args$script == "helper/codespaces-auth-add.sh")
+  stopifnot("--permissions" %in% test_args$args)
+  stopifnot("all" %in% test_args$args)
 })
 
-# Test backward compatibility
-test("repos_setup('--public') backward compatibility", {
-  repos_setup("--public")
-  stopifnot(test_args$script == "setup-repos.sh")
-  stopifnot("--public" %in% test_args$args)
+test("repos_codespace(debug = TRUE)", {
+  repos_codespace(debug = TRUE)
+  stopifnot(test_args$script == "helper/codespaces-auth-add.sh")
+  stopifnot("--debug" %in% test_args$args)
 })
 
 # Test repos_run with idiomatic syntax
