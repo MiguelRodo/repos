@@ -193,46 +193,19 @@ printf "Cleaning worktree to minimal infrastructure...\n"
 
 cd -- "$DEST"
 
-# Keep only .git, .gitignore, and .devcontainer
-KEEP_FILES=(
-  ".git"
-  ".gitignore"
-)
-KEEP_DIRS=(
-  ".devcontainer"
-)
-
-# Remove all files except those we want to keep
-for item in *; do
+# Remove all files except .git, .gitignore, and .devcontainer
+# We use * and .[!.]* to cover both normal and hidden files/dirs
+for item in * .[!.]*; do
   [ ! -e "$item" ] && continue
-  should_keep=false
   
-  for keep in "${KEEP_FILES[@]}"; do
-    if [ "$item" = "$keep" ]; then
-      should_keep=true
-      break
-    fi
-  done
-  
-  for keep in "${KEEP_DIRS[@]}"; do
-    if [ "$item" = "$keep" ]; then
-      should_keep=true
-      break
-    fi
-  done
-  
-  if [ "$should_keep" = false ]; then
-    printf '  Removing: %s\n' "$item"
-    rm -rf -- "$item"
-  fi
-done
-
-# Remove hidden files/dirs except .git, .gitignore, .devcontainer
-for item in .[!.]*; do
-  [ ! -e "$item" ] && continue
   case "$item" in
-    .git|.gitignore|.devcontainer) continue ;;
-    *) printf '  Removing: %s\n' "$item"; rm -rf -- "$item" ;;
+    .git|.gitignore|.devcontainer)
+      continue
+      ;;
+    *)
+      printf '  Removing: %s\n' "$item"
+      rm -rf -- "$item"
+      ;;
   esac
 done
 
