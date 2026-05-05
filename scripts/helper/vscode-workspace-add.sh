@@ -103,7 +103,6 @@ update_with_jq() {
   local workspace_file="$1"
   local paths_list="$2"
   local folders_json_file=""
-  local tmp_file=""
   local paths_list_file=""
 
   folders_json_file="$(mktemp "$(get_temp_dir)/repos-folders-XXXXXX")"
@@ -120,87 +119,61 @@ update_with_jq() {
   if [ ! -f "$workspace_file" ]; then
     # create a brand-new workspace file
     jq -n --slurpfile folders "$folders_json_file" \
-      '{ folders: $folders[0] }' \
-      > "$workspace_file"
+      '{ folders: $folders[0] }'
   else
     # merge into existing file: set .folders = $folders
-    tmp_file="$(mktemp "$(get_temp_dir)/repos-workspace-XXXXXX")"
-    CLEANUP_FILES+=("$tmp_file")
     jq --slurpfile folders "$folders_json_file" \
        '.folders = $folders[0]' \
-       -- "$workspace_file" > "$tmp_file" \
-      && mv -- "$tmp_file" "$workspace_file"
+       -- "$workspace_file"
   fi
-  rm -f -- "$folders_json_file" "$tmp_file"
-
-  printf "Updated '%s' with jq.\n" "$workspace_file"
+  rm -f -- "$folders_json_file" "$paths_list_file"
 }
 
 # --- Update workspace with Python ---
-PYTHON_UPDATE_SCRIPT=$(cat <<'PYCODE'
+# Usage: update_with_python <workspace_file> <paths_list> <python_cmd>
+update_with_python() {
+  local workspace_file="$1"
+  local paths_list="$2"
+  local py_cmd="${3:-python}"
+  local paths_file=""
+
+  paths_file="$(mktemp "$(get_temp_dir)/repos-paths-XXXXXX")"
+  CLEANUP_FILES+=("$paths_file")
+  printf '%s\n' "$paths_list" > "$paths_file"
+
+  # Run Python: parse existing workspace, update folders, emit JSON to stdout
+  # Passing "-" tells Python to read the script from stdin; subsequent arguments
+  # are passed to the script as sys.argv[1..].
+  "$py_cmd" - "$workspace_file" "$paths_file" <<'PYCODE'
 import sys, json, os
 ws = sys.argv[1]
 paths_file = sys.argv[2]
 with open(paths_file, 'r') as f:
     paths = [line.strip() for line in f if line.strip()]
-try:
-    with open(ws) as f:
-        data = json.load(f)
-except Exception:
-    data = {}
+data = {}
+if os.path.exists(ws):
+    try:
+        with open(ws, 'r') as f:
+            data = json.load(f)
+    except Exception:
+        pass
 data['folders'] = [{'path': p} for p in paths]
-with open(ws, 'w') as f:
-    json.dump(data, f, indent=2)
-    f.write('\n')
+print(json.dumps(data, indent=2))
 PYCODE
-)
-
-update_with_python() {
-  local workspace_file="$1"
-  local paths_list="$2"
-  local paths_file=""
-  paths_file="$(mktemp "$(get_temp_dir)/repos-paths-XXXXXX")"
-  CLEANUP_FILES+=("$paths_file")
-  printf '%s\n' "$paths_list" > "$paths_file"
-  # Use - and passing filename as argument, without redundant -- which can break indexing
-  python - "$workspace_file" "$paths_file" <<<"$PYTHON_UPDATE_SCRIPT"
   rm -f -- "$paths_file"
-  printf "Updated '%s' with Python.\n" "$workspace_file"
 }
-
-update_with_python3() {
-  local workspace_file="$1"
-  local paths_list="$2"
-  local paths_file=""
-  paths_file="$(mktemp "$(get_temp_dir)/repos-paths-XXXXXX")"
-  CLEANUP_FILES+=("$paths_file")
-  printf '%s\n' "$paths_list" > "$paths_file"
-  python3 - "$workspace_file" "$paths_file" <<<"$PYTHON_UPDATE_SCRIPT"
-  rm -f -- "$paths_file"
-  printf "Updated '%s' with Python3.\n" "$workspace_file"
-}
-
-update_with_py() {
-  local workspace_file="$1"
-  local paths_list="$2"
-  local paths_file=""
-  paths_file="$(mktemp "$(get_temp_dir)/repos-paths-XXXXXX")"
-  CLEANUP_FILES+=("$paths_file")
-  printf '%s\n' "$paths_list" > "$paths_file"
-  py - "$workspace_file" "$paths_file" <<<"$PYTHON_UPDATE_SCRIPT"
-  rm -f -- "$paths_file"
-  printf "Updated '%s' with py launcher.\n" "$workspace_file"
-}
-
 
 # --- Update workspace with Rscript (jsonlite) ---
 update_with_rscript() {
   local workspace_file="$1"
   local paths_list="$2"
   local paths_file=""
+
   paths_file="$(mktemp "$(get_temp_dir)/repos-paths-XXXXXX")"
   CLEANUP_FILES+=("$paths_file")
   printf '%s\n' "$paths_list" > "$paths_file"
+
+  # Pass filenames to Rscript; emit JSON to stdout
   Rscript --vanilla - "$workspace_file" "$paths_file" <<'RSCRIPT'
 args <- commandArgs(trailingOnly=TRUE)
 ws <- args[1]
@@ -238,17 +211,10 @@ if (file.exists(ws)) {
 # Overwrite / set the folders element
 data$folders <- folders
 
-# Write out prettified JSON
-jsonlite::write_json(
-  data,
-  path        = ws,
-  pretty      = TRUE,
-  auto_unbox  = TRUE
-)
+# Write out prettified JSON to stdout
+cat(jsonlite::toJSON(data, pretty = TRUE, auto_unbox = TRUE), "\n")
 RSCRIPT
   rm -f -- "$paths_file"
-
-  printf "Updated '%s' with Rscript.\n" "$workspace_file"
 }
 
 
@@ -645,21 +611,35 @@ update_workspace_file() {
   [ -n "$workspace_file" ] || { printf "update_workspace_file: missing workspace_file\n" >&2; exit 1; }
   [ -n "$paths_list" ]   || { printf "update_workspace_file: missing paths_list\n"   >&2; exit 1; }
 
+  local tool=""
+  for candidate in jq python python3 py Rscript; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      tool="$candidate"; break
+    fi
+  done
+  [ -n "$tool" ] || { printf "Error: No JSON tool found.\n" >&2; exit 1; }
 
-  if command -v jq >/dev/null 2>&1; then
-    update_with_jq "$workspace_file" "$paths_list"
-  elif command -v python >/dev/null 2>&1; then
-    update_with_python "$workspace_file" "$paths_list"
-  elif command -v python3 >/dev/null 2>&1; then
-    update_with_python3 "$workspace_file" "$paths_list"
-  elif command -v py >/dev/null 2>&1; then
-    update_with_py "$workspace_file" "$paths_list"
-  elif command -v Rscript >/dev/null 2>&1; then
-    update_with_rscript "$workspace_file" "$paths_list"
+  # Safely write via a temporary file, then move into place
+  local tmp=""
+  tmp="$(mktemp "$(get_temp_dir)/repos-workspace-update-XXXXXX")"
+  CLEANUP_FILES+=("$tmp")
+
+  local rc=0
+  case "$tool" in
+    jq)                update_with_jq "$workspace_file" "$paths_list" > "$tmp" || rc=$? ;;
+    python|python3|py) update_with_python "$workspace_file" "$paths_list" "$tool" > "$tmp" || rc=$? ;;
+    Rscript)           update_with_rscript "$workspace_file" "$paths_list" > "$tmp" || rc=$? ;;
+  esac
+
+  if [ "$rc" -eq 0 ] && [ -s "$tmp" ]; then
+    mv -- "$tmp" "$workspace_file"
+    printf "Updated '%s' with %s.\n" "$workspace_file" "$tool"
   else
-    printf "Error: none of jq, python, python3, py, or Rscript found. Cannot update workspace.\n" >&2
-    exit 1
+    printf "Error: Failed to update '%s' with %s (exit code %d).\n" "$workspace_file" "$tool" "$rc" >&2
+    rm -f -- "$tmp"
+    return 1
   fi
+  rm -f -- "$tmp"
 }
 
 main() {
