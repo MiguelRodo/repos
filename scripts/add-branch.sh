@@ -23,6 +23,30 @@ git() { command git "$@" </dev/null; }
 SCRIPT_DIR="$(cd "$(dirname -- "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# --- Helpers ---
+# Get platform-independent temp directory
+get_temp_dir() {
+  # Try various temp directory variables in order of preference
+  if [ -n "${TMPDIR:-}" ] && [ -d "${TMPDIR}" ]; then
+    printf '%s\n' "${TMPDIR%/}"  # Remove trailing slash if present
+  elif [ -n "${TEMP:-}" ] && [ -d "${TEMP}" ]; then
+    printf '%s\n' "${TEMP%/}"
+  elif [ -n "${TMP:-}" ] && [ -d "${TMP}" ]; then
+    printf '%s\n' "${TMP%/}"
+  elif [ -d "/tmp" ]; then
+    printf '%s\n' "/tmp"
+  else
+    # Fallback to current directory
+    printf '%s\n' "."
+  fi
+}
+
+# Global array for temporary files to clean up on exit
+declare -a CLEANUP_FILES=()
+# Use Bash 3.2-safe array expansion to avoid "unbound variable" error with set -u
+# shellcheck disable=SC2154  # f is the for-loop variable inside the trap string
+trap 'for f in ${CLEANUP_FILES[@]+"${CLEANUP_FILES[@]}"}; do rm -f -- "$f"; done' EXIT
+
 # --- Usage ---
 usage() {
   cat <<EOF
@@ -221,15 +245,14 @@ if [ -f ".devcontainer/prebuild/devcontainer.json" ]; then
   # Remove the repositories section if it exists (using multiple approaches for portability)
   if command -v jq >/dev/null 2>&1; then
     # Use jq if available (reads directly from file)
-    tmp_dest=$(mktemp "$DEST_FILE.XXXXXX")
-    trap 'rm -f -- "$tmp_dest" 2>/dev/null || true' EXIT
+    tmp_dest=$(mktemp "$(get_temp_dir)/add-branch-XXXXXX")
+    CLEANUP_FILES+=("$tmp_dest")
     jq 'del(.customizations.codespaces.repositories)' -- "$PREBUILD_FILE" > "$tmp_dest" && mv -- "$tmp_dest" "$DEST_FILE"
-    trap - EXIT
   elif command -v python3 >/dev/null 2>&1; then
     # Use Python if available (reads directly from file via env var)
     export PREBUILD_FILE DEST_FILE
-    tmp_dest=$(mktemp "$DEST_FILE.XXXXXX")
-    trap 'rm -f -- "$tmp_dest" 2>/dev/null || true' EXIT
+    tmp_dest=$(mktemp "$(get_temp_dir)/add-branch-XXXXXX")
+    CLEANUP_FILES+=("$tmp_dest")
     export tmp_dest
     python3 -c "
 import json, sys, os
@@ -242,7 +265,6 @@ with open(os.environ['tmp_dest'], 'w') as f:
     json.dump(data, f, indent=2)
     f.write('\n')
 " && mv -- "$tmp_dest" "$DEST_FILE"
-    trap - EXIT
   else
     # Fallback: just copy it (will have repositories section but still works)
     printf "  Warning: jq and python3 not found; copying devcontainer as-is\n"
