@@ -243,6 +243,40 @@ get_current_repo_remote_https() {
 }
 
 # ——— Extract owner/repo from https URL —————————————————————————————
+split_repo_spec() {
+  # Robustly split repo_spec into URL/repo and branch
+  # Considers credentials in URLs (e.g., https://token@github.com/owner/repo@branch)
+  local spec="$1"
+  local repo_url=""
+  local branch=""
+
+  if [[ "$spec" == *"@"* ]]; then
+    # If there's at least one @
+    # If it starts with http or https, we need to be careful
+    if [[ "$spec" == http://* ]] || [[ "$spec" == https://* ]]; then
+      # Strip credentials first to find the real branch separator
+      local no_creds
+      no_creds=$(printf '%s\n' "$spec" | sed 's|^\(https\?://\)[^/]*@|\1|')
+      if [[ "$no_creds" == *"@"* ]]; then
+        branch="${no_creds##*@}"
+        repo_url="${spec%@"$branch"}"
+      else
+        repo_url="$spec"
+        branch=""
+      fi
+    else
+      # Not a standard HTTP(S) URL, use last @ as separator
+      # (Works for owner/repo@branch and scp-style git@host:repo@branch)
+      branch="${spec##*@}"
+      repo_url="${spec%@"$branch"}"
+    fi
+  else
+    repo_url="$spec"
+    branch=""
+  fi
+  printf '%s\x1f%s\n' "$repo_url" "$branch"
+}
+
 extract_owner_repo_from_https() {
   local url="$1"
   url="${url%/}"
@@ -286,8 +320,8 @@ normalise(){
       ;;
     *)
       # Regular repo spec
-      raw="$first"
-      raw="${raw%%@*}"            # strip @branch
+      local branch_ignored
+      IFS=$'\x1f' read -r raw branch_ignored <<< "$(split_repo_spec "$first")"
       raw="${raw%/}"              # strip trailing slash
       raw="${raw%.git}"           # strip .git
       case "$raw" in
@@ -384,15 +418,16 @@ build_raw_list(){
         *)
           # Regular repo line - extract and update fallback
           # Check for branch in repo spec
-          local branch_part=""
-          case "$first" in *@*) branch_part="${first##*@}" ;; esac
+          local repo_url_no_branch_for_validation branch_part
+          IFS=$'\x1f' read -r repo_url_no_branch_for_validation branch_part <<< "$(split_repo_spec "$first")"
+
           if [ -n "$branch_part" ] && ( [[ "$branch_part" == -* ]] || ! git check-ref-format --allow-onelevel "$branch_part" ); then
             printf "Error: '%s' is not a valid Git branch name.\n" "$branch_part" >&2
             exit 1
           fi
 
           # Validate repo_spec to prevent path traversal and argument injection
-          case "${first%@*}" in
+          case "$repo_url_no_branch_for_validation" in
             -*|*..*)
               printf "Error: repository spec cannot start with a hyphen or contain '..': %s\n" "$first" >&2
               exit 1
@@ -402,7 +437,7 @@ build_raw_list(){
           if normalized=$(normalise "$trimmed" ""); then
             RAW_LIST+="$normalized"$'\n'
             # Update fallback: extract repo spec (first token), remove @branch part
-            repo_no_branch="${first%%@*}"
+            repo_no_branch="${repo_url_no_branch_for_validation}"
             repo_no_branch="${repo_no_branch%.git}"
             # Convert to https format
             case "$repo_no_branch" in

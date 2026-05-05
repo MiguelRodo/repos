@@ -389,25 +389,60 @@ spec_to_https() {
   # owner/repo → https://github.com/owner/repo ; https stays https
   # file://... → /... (normalized to absolute path)
   # /absolute/path → stays /absolute/path
-  local spec="$1"
+  local spec="$1" url=""
   case "$spec" in
     file://*)
       # Convert file:///path to /path for consistency
-      spec="${spec#file://}"
-      printf '%s\n' "${spec%.git}"
+      url="${spec#file://}"
+      url="${url%.git}"
       ;;
-    https://*) printf '%s\n' "${spec%.git}" ;;
-    /*|[a-zA-Z]:/*) printf '%s\n' "${spec%.git}" ;;
+    https://*) url="${spec%.git}" ;;
+    /*|[a-zA-Z]:/*) url="${spec%.git}" ;;
     */*)
       # Only convert to GitHub URL if it looks like owner/repo (not a path)
       if [[ "$spec" =~ ^[^/]+/[^/]+(@.*)?$ ]]; then
-        printf 'https://github.com/%s\n' "${spec%.git}"
+        url="https://github.com/${spec%.git}"
       else
-        printf '%s\n' "${spec%.git}"
+        url="${spec%.git}"
       fi
       ;;
-    *)         printf '%s\n' "$spec" ;;
+    *) url="$spec" ;;
   esac
+  normalise_remote_to_https "$url"
+}
+
+split_repo_spec() {
+  # Robustly split repo_spec into URL/repo and branch
+  # Considers credentials in URLs (e.g., https://token@github.com/owner/repo@branch)
+  local spec="$1"
+  local repo_url=""
+  local branch=""
+
+  if [[ "$spec" == *"@"* ]]; then
+    # If there's at least one @
+    # If it starts with http or https, we need to be careful
+    if [[ "$spec" == http://* ]] || [[ "$spec" == https://* ]]; then
+      # Strip credentials first to find the real branch separator
+      local no_creds
+      no_creds=$(printf '%s\n' "$spec" | sed 's|^\(https\?://\)[^/]*@|\1|')
+      if [[ "$no_creds" == *"@"* ]]; then
+        branch="${no_creds##*@}"
+        repo_url="${spec%@"$branch"}"
+      else
+        repo_url="$spec"
+        branch=""
+      fi
+    else
+      # Not a standard HTTP(S) URL, use last @ as separator
+      # (Works for owner/repo@branch and scp-style git@host:repo@branch)
+      branch="${spec##*@}"
+      repo_url="${spec%@"$branch"}"
+    fi
+  else
+    repo_url="$spec"
+    branch=""
+  fi
+  printf '%s\x1f%s\n' "$repo_url" "$branch"
 }
 
 repo_basename_from_https() {
@@ -457,7 +492,8 @@ has_non_local_remotes() {
     case "$first" in @*) continue ;; esac
     
     # Extract repo spec (remove @branch if present)
-    local repo_spec="${first%@*}"
+    local repo_spec branch_planned
+    IFS=$'\x1f' read -r repo_spec branch_planned <<< "$(split_repo_spec "$first")"
     
     # Check if it's a local remote (handling Windows paths, relative paths, and file://)
     case "$repo_spec" in
@@ -619,8 +655,10 @@ parse_effective_line() {
       ;;
     *)
       local repo_spec="$first"
+      local repo_url_for_validation branch_for_validation
+      IFS=$'\x1f' read -r repo_url_for_validation branch_for_validation <<< "$(split_repo_spec "$repo_spec")"
       # Validate repo_spec to prevent path traversal and argument injection
-      case "${repo_spec%@*}" in
+      case "$repo_url_for_validation" in
         -*|*..*)
           printf "Error: repository spec cannot start with a hyphen or contain '..': %s\n" "$repo_spec" >&2
           set +f; return 1
@@ -664,10 +702,7 @@ clone_one_repo() {
   [[ "$debug" == true ]] && printf "clone_one_repo: processing repo_spec='%s' target_dir='%s'\n" "$repo_spec" "$target_dir" >&2
 
   local repo_url_no_ref ref
-  case "$repo_spec" in
-    *@*) repo_url_no_ref="${repo_spec%@*}"; ref="${repo_spec##*@}" ;;
-    *)   repo_url_no_ref="$repo_spec"; ref="" ;;
-  esac
+  IFS=$'\x1f' read -r repo_url_no_ref ref <<< "$(split_repo_spec "$repo_spec")"
 
   if [ -n "$ref" ] && ( [[ "$ref" == -* ]] || ! git check-ref-format --allow-onelevel "$ref" ); then
     printf "Error: '%s' is not a valid Git branch name.\n" "$ref" >&2
@@ -1104,17 +1139,17 @@ plan_forward() {
       *)
         # clone line: owner/repo[@ref] or https url
         remote_spec="$tok1"
+        local repo_url_no_ref_planned ref_planned
+        IFS=$'\x1f' read -r repo_url_no_ref_planned ref_planned <<< "$(split_repo_spec "$remote_spec")"
         # Validate remote_spec to prevent path traversal and argument injection
-        case "$remote_spec" in
+        case "$repo_url_no_ref_planned" in
           -*|*..*)
             printf "Error: repository specification cannot start with a hyphen or contain '..': %s\n" "$remote_spec" >&2
             continue
             ;;
         esac
-        case "$remote_spec" in
-          *@*) repo="${remote_spec%@*}"; ref="${remote_spec##*@}" ;;
-          *)   repo="$remote_spec"; ref="" ;;
-        esac
+        repo="$repo_url_no_ref_planned"
+        ref="$ref_planned"
         remote_https="$(spec_to_https "$repo")"
 
         # detect optional explicit target dir (second token that isn't an option)
@@ -1225,7 +1260,7 @@ main() {
 
       if [ "$rc" -eq 0 ] && [ -n "$repo_spec" ]; then
         if [ "$is_worktree" -eq 1 ]; then
-          local branch=""; case "$repo_spec" in *@*) branch="${repo_spec##*@}" ;; esac
+          local branch="" branch_url_ignored; IFS=$'\x1f' read -r branch_url_ignored branch <<< "$(split_repo_spec "$repo_spec")"
           local base_abs
           if [ "$fallback_repo_https" = "$current_repo_https" ]; then
             base_abs="$start_dir"
@@ -1248,10 +1283,8 @@ main() {
           remember_remote "$fallback_repo_https" "$fallback_repo_local"
         else
           local repo_no_ref ref is_branch_clone this_remote_https
-          case "$repo_spec" in
-            *@*) repo_no_ref="${repo_spec%@*}"; ref="${repo_spec##*@}"; is_branch_clone=1 ;;
-            *)   repo_no_ref="$repo_spec";      ref="";                 is_branch_clone=0 ;;
-          esac
+          IFS=$'\x1f' read -r repo_no_ref ref <<< "$(split_repo_spec "$repo_spec")"
+          if [ -n "$ref" ]; then is_branch_clone=1; else is_branch_clone=0; fi
           this_remote_https="$(spec_to_https "$repo_no_ref")"
           local seen_before; [ "$(remote_index "$this_remote_https")" -ge 0 ] && seen_before=1 || seen_before=0
 

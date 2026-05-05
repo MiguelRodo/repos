@@ -63,6 +63,40 @@ urlencode() {
   printf '%s' "$1" | jq -rR '@uri'
 }
 
+split_repo_spec() {
+  # Robustly split repo_spec into URL/repo and branch
+  # Considers credentials in URLs (e.g., https://token@github.com/owner/repo@branch)
+  local spec="$1"
+  local repo_url=""
+  local branch=""
+
+  if [[ "$spec" == *"@"* ]]; then
+    # If there's at least one @
+    # If it starts with http or https, we need to be careful
+    if [[ "$spec" == http://* ]] || [[ "$spec" == https://* ]]; then
+      # Strip credentials first to find the real branch separator
+      local no_creds
+      no_creds=$(printf '%s\n' "$spec" | sed 's|^\(https\?://\)[^/]*@|\1|')
+      if [[ "$no_creds" == *"@"* ]]; then
+        branch="${no_creds##*@}"
+        repo_url="${spec%@"$branch"}"
+      else
+        repo_url="$spec"
+        branch=""
+      fi
+    else
+      # Not a standard HTTP(S) URL, use last @ as separator
+      # (Works for owner/repo@branch and scp-style git@host:repo@branch)
+      branch="${spec##*@}"
+      repo_url="${spec%@"$branch"}"
+    fi
+  else
+    repo_url="$spec"
+    branch=""
+  fi
+  printf '%s\x1f%s\n' "$repo_url" "$branch"
+}
+
 # ── CONFIG & USAGE ─────────────────────────────────────────────────────────────
 if [ ! -f "repos.list" ] && [ -f "repos-to-clone.list" ]; then
   REPOS_FILE="repos-to-clone.list"
@@ -515,7 +549,10 @@ while IFS= read -r line || [ -n "$line" ]; do
       ;;
   esac
   
-  repo_path=${repo_spec%@*}
+  repo_path=""
+  ref_planned=""
+  IFS=$'\x1f' read -r repo_path ref_planned <<< "$(split_repo_spec "$repo_spec")"
+
   # Validate repo_path format (must be owner/repo)
   if [[ ! "$repo_path" =~ ^[^/]+/[^/]+$ ]]; then
     printf "Error: repository spec must be in 'owner/repo' format: %s\n" "$repo_spec" >&2
@@ -524,7 +561,7 @@ while IFS= read -r line || [ -n "$line" ]; do
 
   # Validate repo_path to prevent path traversal
   case "$repo_path" in
-    *..*) 
+    *..*)
       printf "Error: repository spec contains '..': %s\n" "$repo_spec" >&2
       exit 1
       ;;
@@ -546,7 +583,7 @@ while IFS= read -r line || [ -n "$line" ]; do
     printf "Error: invalid repository name: %s\n" "$repo" >&2
     exit 1
   fi
-  case "$repo_spec" in *@*) branch=${repo_spec##*@} ;; *) branch="" ;; esac
+  branch="$ref_planned"
   
   if [ -n "$branch" ] && ( [[ "$branch" == -* ]] || ! git check-ref-format --allow-onelevel "$branch" ); then
     printf "Error: '%s' is not a valid Git branch name.\n" "$branch" >&2

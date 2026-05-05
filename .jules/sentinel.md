@@ -124,3 +124,8 @@
 **Vulnerability:** Passing authentication tokens (e.g., GitHub tokens) directly as command-line arguments to `curl` using the `-H` flag (e.g., `curl -H "Authorization: token $TOKEN"`) exposes the token in the system's process list (viewable via `ps`).
 **Learning:** While environment variables are generally safer than command-line arguments, many commands (including `curl`) allow passing sensitive data via files. This is the most secure method for local processes as it avoids exposure in the process table.
 **Prevention:** Use `curl`'s `@filename" syntax for headers (`-H @headerfile`) when passing sensitive data like tokens. Create the header file as a temporary file with restricted permissions (`600`) and ensure it is cleaned up on script exit.
+
+## 2026-03-06 - [High] Credential Leakage via Insecure Repository Specification Parsing
+**Vulnerability:** Scripts used simple `@` character splitting (e.g., `${repo_spec%@*}`) to separate repository URLs from branch names. When a URL contained embedded credentials (e.g., `https://token@github.com/owner/repo`), the parsing logic incorrectly identified the token as the repository URL and the remainder as the branch.
+**Learning:** This caused sensitive tokens to be leaked in directory names, log files, and the `entire-project.code-workspace` file. It also led to functional failures as the "branch name" became a partial URL.
+**Prevention:** Use robust parsing that accounts for the protocol authority section. Credentials should be stripped from the URL before extracting the branch name, or the splitting logic should specifically look for the last `@` only if it is not part of the URL's authority (e.g., by ensuring no `/` follows it).

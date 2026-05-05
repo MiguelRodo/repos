@@ -235,6 +235,40 @@ get_workspace_file() {
   fi
 }
 
+split_repo_spec() {
+  # Robustly split repo_spec into URL/repo and branch
+  # Considers credentials in URLs (e.g., https://token@github.com/owner/repo@branch)
+  local spec="$1"
+  local repo_url=""
+  local branch=""
+
+  if [[ "$spec" == *"@"* ]]; then
+    # If there's at least one @
+    # If it starts with http or https, we need to be careful
+    if [[ "$spec" == http://* ]] || [[ "$spec" == https://* ]]; then
+      # Strip credentials first to find the real branch separator
+      local no_creds
+      no_creds=$(printf '%s\n' "$spec" | sed 's|^\(https\?://\)[^/]*@|\1|')
+      if [[ "$no_creds" == *"@"* ]]; then
+        branch="${no_creds##*@}"
+        repo_url="${spec%@"$branch"}"
+      else
+        repo_url="$spec"
+        branch=""
+      fi
+    else
+      # Not a standard HTTP(S) URL, use last @ as separator
+      # (Works for owner/repo@branch and scp-style git@host:repo@branch)
+      branch="${spec##*@}"
+      repo_url="${spec%@"$branch"}"
+    fi
+  else
+    repo_url="$spec"
+    branch=""
+  fi
+  printf '%s\x1f%s\n' "$repo_url" "$branch"
+}
+
 spec_to_repo_name() {
   # Extract repo name from owner/repo or https URL
   local spec="$1"
@@ -386,10 +420,8 @@ build_paths_list() {
 
         validate_target_dir "$target_dir" || { set +f; return 1; }
 
-        case "$repo_spec" in
-          *@*) repo_no_ref="${repo_spec%@*}" ;;
-          *)   repo_no_ref="$repo_spec" ;;
-        esac
+        local branch_planned_ignored
+        IFS=$'\x1f' read -r repo_no_ref branch_planned_ignored <<< "$(split_repo_spec "$repo_spec")"
 
         # Validate repo_no_ref to prevent path traversal and argument injection
         case "$repo_no_ref" in
@@ -535,10 +567,7 @@ build_paths_list() {
         validate_target_dir "$target_dir" || { set +f; return 1; }
 
         # Split repo_spec into repo and optional branch
-        case "$repo_spec" in
-          *@*) repo_no_ref="${repo_spec%@*}"; ref="${repo_spec##*@}" ;;
-          *)   repo_no_ref="$repo_spec"; ref="" ;;
-        esac
+        IFS=$'\x1f' read -r repo_no_ref ref <<< "$(split_repo_spec "$repo_spec")"
 
         if [ -n "$ref" ] && ( [[ "$ref" == -* ]] || ! git check-ref-format --allow-onelevel "$ref" ); then
           printf "Error: '%s' is not a valid Git branch name.\n" "$ref" >&2
