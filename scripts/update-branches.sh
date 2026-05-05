@@ -18,6 +18,30 @@ git() { command git "$@" </dev/null; }
 SCRIPT_DIR="$(cd "$(dirname -- "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# --- Helpers ---
+# Get platform-independent temp directory
+get_temp_dir() {
+  # Try various temp directory variables in order of preference
+  if [ -n "${TMPDIR:-}" ] && [ -d "${TMPDIR}" ]; then
+    printf '%s\n' "${TMPDIR%/}"  # Remove trailing slash if present
+  elif [ -n "${TEMP:-}" ] && [ -d "${TEMP}" ]; then
+    printf '%s\n' "${TEMP%/}"
+  elif [ -n "${TMP:-}" ] && [ -d "${TMP}" ]; then
+    printf '%s\n' "${TMP%/}"
+  elif [ -d "/tmp" ]; then
+    printf '%s\n' "/tmp"
+  else
+    # Fallback to current directory
+    printf '%s\n' "."
+  fi
+}
+
+# Global array for temporary files to clean up on exit
+declare -a CLEANUP_FILES=()
+# Use Bash 3.2-safe array expansion to avoid "unbound variable" error with set -u
+# shellcheck disable=SC2154  # f is the for-loop variable inside the trap string
+trap 'for f in ${CLEANUP_FILES[@]+"${CLEANUP_FILES[@]}"}; do rm -f -- "$f"; done' EXIT
+
 # --- Usage ---
 usage() {
   cat <<EOF
@@ -131,8 +155,8 @@ while IFS= read -r line; do
   fi
   
   # Read and process the prebuild file securely
-  TMP_DEST=$(mktemp "$DEST_FILE.XXXXXX")
-  trap 'rm -f -- "$TMP_DEST" 2>/dev/null || true' EXIT
+  TMP_DEST=$(mktemp "$(get_temp_dir)/update-branches-XXXXXX")
+  CLEANUP_FILES+=("$TMP_DEST")
   if [ "$JSON_TOOL" = "jq" ]; then
     jq 'del(.customizations.codespaces.repositories)' -- "$PREBUILD_FILE" > "$TMP_DEST"
   else
@@ -152,7 +176,6 @@ with open(os.environ['TMP_DEST'], 'w') as f:
   
   # Move the temp file to destination
   mv -- "$TMP_DEST" "$DEST_FILE"
-  trap - EXIT
   
   printf "    ✓ Updated devcontainer.json\n"
   

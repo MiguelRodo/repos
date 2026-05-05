@@ -400,3 +400,4 @@ install_cli(run=True)
 
 See [`install_cli()`](#install_cli) above for details, or visit
 the [Installation guide](install.html) for all options.
+

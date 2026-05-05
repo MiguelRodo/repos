@@ -46,7 +46,7 @@ script (or any script you specify), `repos run` executes it in each one.
 
 Use `repos` directly from R or Python — all the same commands, no terminal required.
 
-→ [Python package](python-package.html)
+→ [Python package](python-package.html)  
 → [R package](r-package.html)
 
 ## Installation

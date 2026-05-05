@@ -402,3 +402,4 @@ repos_install_cli(run = TRUE)
 
 See [`repos_install_cli()`](#repos_install_cli) above for details, or visit
 the [Installation guide](install.html) for all options.
+

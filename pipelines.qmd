@@ -69,5 +69,5 @@ Rscript analysis.R
 
 For the R or Python API, see the language-specific wrapper pages:
 
-→ [R package](r-package.html)
+→ [R package](r-package.html)  
 → [Python package](python-package.html)
