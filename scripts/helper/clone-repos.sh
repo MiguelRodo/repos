@@ -261,8 +261,7 @@ Please set up one of the following:
    gh auth login
    
 3. SSH Agent (for SSH URLs):
-   eval "$(ssh-agent -s)"
-   ssh-add ~/.ssh/id_rsa
+   ssh-agent sh -c 'ssh-add ~/.ssh/id_rsa; exec "${SHELL:-bash}"'
 
 For more details, see: README.md
 EOF
