@@ -519,8 +519,8 @@ has_non_local_remotes() {
     case "$first" in @*) continue ;; esac
     
     # Extract repo spec (remove @branch if present)
-    local repo_spec branch_planned
-    IFS=$'\x1f' read -r repo_spec branch_planned <<< "$(split_repo_spec "$first")"
+    local repo_spec _branch_planned
+    IFS=$'\x1f' read -r repo_spec _branch_planned <<< "$(split_repo_spec "$first")"
     
     # Check if it's a local remote (handling Windows paths, relative paths, and file://)
     case "$repo_spec" in
@@ -682,8 +682,8 @@ parse_effective_line() {
       ;;
     *)
       local repo_spec="$first"
-      local repo_url_for_validation branch_for_validation
-      IFS=$'\x1f' read -r repo_url_for_validation branch_for_validation <<< "$(split_repo_spec "$repo_spec")"
+      local repo_url_for_validation _branch_for_validation
+      IFS=$'\x1f' read -r repo_url_for_validation _branch_for_validation <<< "$(split_repo_spec "$repo_spec")"
       # Validate repo_spec to prevent path traversal and argument injection
       case "$repo_url_for_validation" in
         -*|*..*)
@@ -1288,7 +1288,7 @@ main() {
 
       if [ "$rc" -eq 0 ] && [ -n "$repo_spec" ]; then
         if [ "$is_worktree" -eq 1 ]; then
-          local branch="" branch_url_ignored; IFS=$'\x1f' read -r branch_url_ignored branch <<< "$(split_repo_spec "$repo_spec")"
+          local branch="" _branch_url_ignored; IFS=$'\x1f' read -r _branch_url_ignored branch <<< "$(split_repo_spec "$repo_spec")"
           local base_abs
           if [ "$fallback_repo_https" = "$current_repo_https" ]; then
             base_abs="$start_dir"

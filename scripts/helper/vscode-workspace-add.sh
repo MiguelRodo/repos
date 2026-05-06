@@ -427,8 +427,8 @@ build_paths_list() {
 
         validate_target_dir "$target_dir" || { set +f; return 1; }
 
-        local branch_planned_ignored
-        IFS=$'\x1f' read -r repo_no_ref branch_planned_ignored <<< "$(split_repo_spec "$repo_spec")"
+        local _branch_planned_ignored
+        IFS=$'\x1f' read -r repo_no_ref _branch_planned_ignored <<< "$(split_repo_spec "$repo_spec")"
 
         # Validate repo_no_ref to prevent path traversal and argument injection
         case "$repo_no_ref" in

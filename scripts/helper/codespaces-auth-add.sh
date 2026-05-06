@@ -357,8 +357,8 @@ normalise(){
       ;;
     *)
       # Regular repo spec
-      local branch_ignored
-      IFS=$'\x1f' read -r raw branch_ignored <<< "$(split_repo_spec "$first")"
+      local _branch_ignored
+      IFS=$'\x1f' read -r raw _branch_ignored <<< "$(split_repo_spec "$first")"
       raw="${raw%/}"              # strip trailing slash
       raw="${raw%.git}"           # strip .git
       case "$raw" in
