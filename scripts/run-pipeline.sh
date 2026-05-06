@@ -11,6 +11,11 @@
 
 set -Eeuo pipefail
 
+# Strip credentials from any http(s) URLs
+sanitize_url() {
+  printf '%s\n' "$1" | sed 's|\(https\?://\)[^/@]*@|\1|g'
+}
+
 # --- Paths ---
 SCRIPT_DIR="$(cd "$(dirname -- "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -254,7 +259,7 @@ run_in_repo() {
   if [ -d "$full_path" ]; then
     local target="$full_path/$script_name"
     if [ -f "$target" ]; then
-      printf "⏵ %s: %s found\n" "$repo_name" "$script_name"
+      printf "⏵ %s: %s found\n" "$(sanitize_url "$repo_name")" "$script_name"
       if $DRY_RUN; then
         printf "  DRY-RUN: would chmod -- +x and execute %s\n" "$target"
         record_success "$repo_name" "$script_name"
@@ -348,7 +353,7 @@ main() {
       }
 
       validate_dir_name "$dir_name" || {
-        record_fail "$dir_name" "$script_name" "1"
+        record_fail "$(sanitize_url "$dir_name")" "$script_name" "1"
         if [ "$STOP_ON_ERROR" = true ]; then print_summary; exit 1; fi
         continue
       }
