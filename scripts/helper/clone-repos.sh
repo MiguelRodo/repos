@@ -30,21 +30,6 @@ set -Eeuo pipefail
 export GIT_TERMINAL_PROMPT=0
 export GIT_ASKPASS=/bin/false
 : "${GIT_SSH_COMMAND:=ssh -oBatchMode=yes}"
-trace() { printf '▶ %s\n' "$*" >&2; }
-
-git() { command git "$@" </dev/null; }
-
-# — Debug support —
-DEBUG_GLOBAL=false
-DEBUG_FILE_GLOBAL=""
-DEBUG_FD_GLOBAL=3  # Use FD 3 for debug output (compatible with Bash 3.2+)
-
-debug() {
-  if $DEBUG_GLOBAL; then
-    printf "[DEBUG clone-repos.sh] %s\n" "$*" >&$DEBUG_FD_GLOBAL
-  fi
-}
-
 # Get platform-independent temp directory
 get_temp_dir() {
   # Try various temp directory variables in order of preference
@@ -59,6 +44,48 @@ get_temp_dir() {
   else
     # Fallback to current directory
     printf '%s\n' "."
+  fi
+}
+
+# Strip credentials from any http(s) URLs
+sanitize_url() {
+  printf '%s\n' "$1" | sed 's|\(https\?://\)[^/@]*@|\1|g'
+}
+
+trace() {
+  local msg="$*"
+  # Strip credentials from any http(s) URLs in the message
+  msg="$(sanitize_url "$msg")"
+  printf '▶ %s\n' "$msg" >&2
+}
+
+git() {
+  # Wrap git to capture and sanitize stderr to prevent credential leakage
+  # from git's own error messages (e.g. "fatal: could not read Password for 'https://token@github.com'")
+  local tmp_stderr
+  tmp_stderr="$(mktemp "$(get_temp_dir)/git-stderr-XXXXXX")"
+  CLEANUP_FILES+=("$tmp_stderr")
+
+  local rc=0
+  command git "$@" </dev/null 2>"$tmp_stderr" || rc=$?
+
+  if [ -s "$tmp_stderr" ]; then
+    sanitize_url "$(cat -- "$tmp_stderr")" >&2
+  fi
+  rm -f -- "$tmp_stderr"
+  return "$rc"
+}
+
+# — Debug support —
+DEBUG_GLOBAL=false
+DEBUG_FILE_GLOBAL=""
+DEBUG_FD_GLOBAL=3  # Use FD 3 for debug output (compatible with Bash 3.2+)
+
+debug() {
+  if $DEBUG_GLOBAL; then
+    local msg="$*"
+    msg="$(sanitize_url "$msg")"
+    printf "[DEBUG clone-repos.sh] %s\n" "$msg" >&$DEBUG_FD_GLOBAL
   fi
 }
 
@@ -492,8 +519,8 @@ has_non_local_remotes() {
     case "$first" in @*) continue ;; esac
     
     # Extract repo spec (remove @branch if present)
-    local repo_spec branch_planned
-    IFS=$'\x1f' read -r repo_spec branch_planned <<< "$(split_repo_spec "$first")"
+    local repo_spec _branch_planned
+    IFS=$'\x1f' read -r repo_spec _branch_planned <<< "$(split_repo_spec "$first")"
     
     # Check if it's a local remote (handling Windows paths, relative paths, and file://)
     case "$repo_spec" in
@@ -655,8 +682,8 @@ parse_effective_line() {
       ;;
     *)
       local repo_spec="$first"
-      local repo_url_for_validation branch_for_validation
-      IFS=$'\x1f' read -r repo_url_for_validation branch_for_validation <<< "$(split_repo_spec "$repo_spec")"
+      local repo_url_for_validation _branch_for_validation
+      IFS=$'\x1f' read -r repo_url_for_validation _branch_for_validation <<< "$(split_repo_spec "$repo_spec")"
       # Validate repo_spec to prevent path traversal and argument injection
       case "$repo_url_for_validation" in
         -*|*..*)
@@ -785,6 +812,7 @@ clone_one_repo() {
       CNT_SKIPPED=$((CNT_SKIPPED + 1))
       return 2   # benign skip
     else
+    # $existing_https and $remote_https are already normalized (credentials stripped)
       printf "Skip: %s is a Git repo for '%s' (wanted '%s'); leaving as-is.\n" "$dest" "$existing_https" "$remote_https"
       [[ "$debug" == true ]] && printf "clone_one_repo: remote mismatch, skipping\n" >&2
       CNT_SKIPPED=$((CNT_SKIPPED + 1))
@@ -820,7 +848,7 @@ clone_one_repo() {
       local clone_opts=()
       if [ "${all_branches:-0}" -eq 0 ]; then clone_opts=(--single-branch); fi
       clone_opts+=("--branch" "$ref")
-      printf "Cloning %s → %s (branch %s)\n" "$repo_url" "$dest" "$ref"
+      printf "Cloning %s → %s (branch %s)\n" "$remote_https" "$dest" "$ref"
       if ! git clone ${clone_opts[@]+"${clone_opts[@]}"} -- "$repo_url" "$dest" </dev/null; then
         [[ "$debug" == true ]] && printf "clone_one_repo: clone failed\n" >&2
         return 1
@@ -834,8 +862,8 @@ clone_one_repo() {
       [[ "$debug" == true ]] && printf "clone_one_repo: remote branch not found, will create it\n" >&2
       local clone_opts=()
       if [ "${all_branches:-0}" -eq 0 ]; then clone_opts=(--single-branch); fi
-      printf "Remote branch '%s' not found on %s; creating it.\n" "$ref" "$repo_url"
-      printf "Cloning default branch of %s → %s\n" "$repo_url" "$dest"
+      printf "Remote branch '%s' not found on %s; creating it.\n" "$ref" "$remote_https"
+      printf "Cloning default branch of %s → %s\n" "$remote_https" "$dest"
       if ! git clone ${clone_opts[@]+"${clone_opts[@]}"} -- "$repo_url" "$dest" </dev/null; then
         [[ "$debug" == true ]] && printf "clone_one_repo: clone failed\n" >&2
         return 1
@@ -854,7 +882,7 @@ clone_one_repo() {
     [[ "$debug" == true ]] && printf "clone_one_repo: performing full clone (no specific branch)\n" >&2
     local clone_opts=()
     if [ "${all_branches:-0}" -eq 0 ]; then clone_opts=(--single-branch); fi
-    printf "Cloning %s → %s\n" "$repo_url" "$dest"
+    printf "Cloning %s → %s\n" "$remote_https" "$dest"
     if ! git clone ${clone_opts[@]+"${clone_opts[@]}"} -- "$repo_url" "$dest" </dev/null; then
       [[ "$debug" == true ]] && printf "clone_one_repo: clone failed\n" >&2
       return 1
@@ -1144,7 +1172,7 @@ plan_forward() {
         # Validate remote_spec to prevent path traversal and argument injection
         case "$repo_url_no_ref_planned" in
           -*|*..*)
-            printf "Error: repository specification cannot start with a hyphen or contain '..': %s\n" "$remote_spec" >&2
+            printf "Error: repository specification cannot start with a hyphen or contain '..': %s\n" "$(sanitize_url "$remote_spec")" >&2
             continue
             ;;
         esac
@@ -1260,7 +1288,7 @@ main() {
 
       if [ "$rc" -eq 0 ] && [ -n "$repo_spec" ]; then
         if [ "$is_worktree" -eq 1 ]; then
-          local branch="" branch_url_ignored; IFS=$'\x1f' read -r branch_url_ignored branch <<< "$(split_repo_spec "$repo_spec")"
+          local branch="" _branch_url_ignored; IFS=$'\x1f' read -r _branch_url_ignored branch <<< "$(split_repo_spec "$repo_spec")"
           local base_abs
           if [ "$fallback_repo_https" = "$current_repo_https" ]; then
             base_abs="$start_dir"
@@ -1346,8 +1374,8 @@ main() {
     [[ "$DEBUG" = "true" ]] && printf "Providing feedback\n" >&2
     case "$line_rc" in
       0) : ;;
-      2) printf '↷ skipped: %s\n' "$CURRENT_LINE" >&2 ;;
-      *) printf '✖ line failed (rc=%s): %s\n' "$line_rc" "$CURRENT_LINE" >&2; CNT_ERRORS=$((CNT_ERRORS + 1)) ;;
+      2) printf '↷ skipped: %s\n' "$(sanitize_url "$CURRENT_LINE")" >&2 ;;
+      *) printf '✖ line failed (rc=%s): %s\n' "$line_rc" "$(sanitize_url "$CURRENT_LINE")" >&2; CNT_ERRORS=$((CNT_ERRORS + 1)) ;;
     esac
     [[ "$DEBUG" == true ]] && printf "Moving to next line.\n" >&2
   done <"$REPOS_FILE"

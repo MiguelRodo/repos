@@ -13,7 +13,44 @@ export GIT_TERMINAL_PROMPT=0
 export GIT_ASKPASS=/bin/false
 export GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh -oBatchMode=yes}"
 
-git() { command git "$@" </dev/null; }
+# Get platform-independent temp directory
+get_temp_dir() {
+  # Try various temp directory variables in order of preference
+  if [ -n "${TMPDIR:-}" ] && [ -d "${TMPDIR}" ]; then
+    printf '%s\n' "${TMPDIR%/}"  # Remove trailing slash if present
+  elif [ -n "${TEMP:-}" ] && [ -d "${TEMP}" ]; then
+    printf '%s\n' "${TEMP%/}"
+  elif [ -n "${TMP:-}" ] && [ -d "${TMP}" ]; then
+    printf '%s\n' "${TMP%/}"
+  elif [ -d "/tmp" ]; then
+    printf '%s\n' "/tmp"
+  else
+    # Fallback to current directory
+    printf '%s\n' "."
+  fi
+}
+
+# Strip credentials from any http(s) URLs
+sanitize_url() {
+  printf '%s\n' "$1" | sed 's|\(https\?://\)[^/@]*@|\1|g'
+}
+
+git() {
+  # Wrap git to capture and sanitize stderr to prevent credential leakage
+  # from git's own error messages (e.g. "fatal: could not read Password for 'https://token@github.com'")
+  local tmp_stderr
+  tmp_stderr="$(mktemp "$(get_temp_dir)/git-stderr-XXXXXX")"
+  CLEANUP_FILES+=("$tmp_stderr")
+
+  local rc=0
+  command git "$@" </dev/null 2>"$tmp_stderr" || rc=$?
+
+  if [ -s "$tmp_stderr" ]; then
+    sanitize_url "$(cat -- "$tmp_stderr")" >&2
+  fi
+  rm -f -- "$tmp_stderr"
+  return "$rc"
+}
 
 # ——— Defaults ———————————————————————————————————————————————
 # Validate devcontainer path to prevent path traversal
@@ -320,8 +357,8 @@ normalise(){
       ;;
     *)
       # Regular repo spec
-      local branch_ignored
-      IFS=$'\x1f' read -r raw branch_ignored <<< "$(split_repo_spec "$first")"
+      local _branch_ignored
+      IFS=$'\x1f' read -r raw _branch_ignored <<< "$(split_repo_spec "$first")"
       raw="${raw%/}"              # strip trailing slash
       raw="${raw%.git}"           # strip .git
       case "$raw" in
@@ -429,7 +466,7 @@ build_raw_list(){
           # Validate repo_spec to prevent path traversal and argument injection
           case "$repo_url_no_branch_for_validation" in
             -*|*..*)
-              printf "Error: repository spec cannot start with a hyphen or contain '..': %s\n" "$first" >&2
+              printf "Error: repository spec cannot start with a hyphen or contain '..': %s\n" "$(sanitize_url "$first")" >&2
               exit 1
               ;;
           esac
@@ -466,7 +503,7 @@ filter_valid_list(){
     if vr=$(validate "$repo"); then
       VALID_LIST+="$vr"$'\n'
     else
-      printf "Skipping invalid or disallowed: %s\n" "$repo" >&2
+      printf "Skipping invalid or disallowed: %s\n" "$(sanitize_url "$repo")" >&2
     fi
   done <<<"$RAW_LIST"
 

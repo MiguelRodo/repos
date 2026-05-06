@@ -21,6 +21,11 @@
 
 set -euo pipefail
 
+# Strip credentials from any http(s) URLs
+sanitize_url() {
+  printf '%s\n' "$1" | sed 's|\(https\?://\)[^/@]*@|\1|g'
+}
+
 # Global array for temporary files to clean up on exit
 declare -a CLEANUP_FILES=()
 # Use Bash 3.2-safe array expansion to avoid "unbound variable" error with set -u
@@ -34,7 +39,9 @@ DEBUG_FD=3  # Use FD 3 for debug output (compatible with Bash 3.2+)
 
 debug() {
   if $DEBUG; then
-    printf "[DEBUG vscode-workspace-add.sh] %s\n" "$*" >&$DEBUG_FD
+    local msg="$*"
+    msg="$(sanitize_url "$msg")"
+    printf "[DEBUG vscode-workspace-add.sh] %s\n" "$msg" >&$DEBUG_FD
   fi
 }
 
@@ -420,13 +427,13 @@ build_paths_list() {
 
         validate_target_dir "$target_dir" || { set +f; return 1; }
 
-        local branch_planned_ignored
-        IFS=$'\x1f' read -r repo_no_ref branch_planned_ignored <<< "$(split_repo_spec "$repo_spec")"
+        local _branch_planned_ignored
+        IFS=$'\x1f' read -r repo_no_ref _branch_planned_ignored <<< "$(split_repo_spec "$repo_spec")"
 
         # Validate repo_no_ref to prevent path traversal and argument injection
         case "$repo_no_ref" in
           -*|*..*)
-            printf "Error: repository spec cannot start with a hyphen or contain '..': %s\n" "$repo_no_ref" >&2
+            printf "Error: repository spec cannot start with a hyphen or contain '..': %s\n" "$(sanitize_url "$repo_no_ref")" >&2
             set +f; return 1
             ;;
         esac
@@ -577,7 +584,7 @@ build_paths_list() {
         # Validate repo_no_ref to prevent path traversal and argument injection
         case "$repo_no_ref" in
           -*|*..*)
-            printf "Error: repository spec cannot start with a hyphen or contain '..': %s\n" "$repo_no_ref" >&2
+            printf "Error: repository spec cannot start with a hyphen or contain '..': %s\n" "$(sanitize_url "$repo_no_ref")" >&2
             set +f; return 1
             ;;
         esac

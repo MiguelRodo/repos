@@ -11,7 +11,44 @@ export GIT_TERMINAL_PROMPT=0
 export GIT_ASKPASS=/bin/false
 export GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh -oBatchMode=yes}"
 
-git() { command git "$@" </dev/null; }
+# Get platform-independent temp directory
+get_temp_dir() {
+  # Try various temp directory variables in order of preference
+  if [ -n "${TMPDIR:-}" ] && [ -d "${TMPDIR}" ]; then
+    printf '%s\n' "${TMPDIR%/}"  # Remove trailing slash if present
+  elif [ -n "${TEMP:-}" ] && [ -d "${TEMP}" ]; then
+    printf '%s\n' "${TEMP%/}"
+  elif [ -n "${TMP:-}" ] && [ -d "${TMP}" ]; then
+    printf '%s\n' "${TMP%/}"
+  elif [ -d "/tmp" ]; then
+    printf '%s\n' "/tmp"
+  else
+    # Fallback to current directory
+    printf '%s\n' "."
+  fi
+}
+
+# Strip credentials from any http(s) URLs
+sanitize_url() {
+  printf '%s\n' "$1" | sed 's|\(https\?://\)[^/@]*@|\1|g'
+}
+
+git() {
+  # Wrap git to capture and sanitize stderr to prevent credential leakage
+  # from git's own error messages (e.g. "fatal: could not read Password for 'https://token@github.com'")
+  local tmp_stderr
+  tmp_stderr="$(mktemp "$(get_temp_dir)/git-stderr-XXXXXX")"
+  CLEANUP_FILES+=("$tmp_stderr")
+
+  local rc=0
+  command git "$@" </dev/null 2>"$tmp_stderr" || rc=$?
+
+  if [ -s "$tmp_stderr" ]; then
+    sanitize_url "$(cat -- "$tmp_stderr")" >&2
+  fi
+  rm -f -- "$tmp_stderr"
+  return "$rc"
+}
 
 # — Prerequisites —
 for cmd in curl git jq mktemp; do
@@ -34,7 +71,9 @@ trap 'for f in ${CLEANUP_FILES[@]+"${CLEANUP_FILES[@]}"}; do rm -f -- "$f"; done
 
 debug() {
   if $DEBUG; then
-    printf "[DEBUG create-repos.sh] %s\n" "$*" >&$DEBUG_FD
+    local msg="$*"
+    msg="$(sanitize_url "$msg")"
+    printf "[DEBUG create-repos.sh] %s\n" "$msg" >&$DEBUG_FD
   fi
 }
 
@@ -529,8 +568,8 @@ while IFS= read -r line || [ -n "$line" ]; do
   # Skip local remotes (file:// URLs and absolute paths, including Windows)
   case "$repo_spec" in
     file://*|[a-zA-Z]:/*|[a-zA-Z]:\\*|/*|\\*)
-      debug "Line $line_num: Skipping local remote: $repo_spec"
-      printf "Skipping local remote: %s\n" "$repo_spec"
+      debug "Line $line_num: Skipping local remote: $(sanitize_url "$repo_spec")"
+      printf "Skipping local remote: %s\n" "$(sanitize_url "$repo_spec")"
       continue
       ;;
   esac
@@ -539,12 +578,12 @@ while IFS= read -r line || [ -n "$line" ]; do
   case "$repo_spec" in
     https://github.com/*|git@github.com:*|ssh://git@github.com/*)
       # This is a GitHub URL, process it
-      debug "Line $line_num: Detected GitHub URL: $repo_spec"
+      debug "Line $line_num: Detected GitHub URL: $(sanitize_url "$repo_spec")"
       ;;
     https://*|git@*|ssh://*)
       # This is a non-GitHub remote URL
-      debug "Line $line_num: Skipping non-GitHub remote: $repo_spec"
-      printf "Skipping non-GitHub remote: %s\n" "$repo_spec"
+      debug "Line $line_num: Skipping non-GitHub remote: $(sanitize_url "$repo_spec")"
+      printf "Skipping non-GitHub remote: %s\n" "$(sanitize_url "$repo_spec")"
       continue
       ;;
   esac
@@ -597,8 +636,8 @@ while IFS= read -r line || [ -n "$line" ]; do
 
   # Get credentials only when we need them (for GitHub repos)
   if ! get_credentials; then
-    debug "Line $line_num: No credentials, skipping repo $repo_spec"
-    printf "Skipping repository creation/verification for %s (no credentials)\n" "$repo_spec"
+    debug "Line $line_num: No credentials, skipping repo $(sanitize_url "$repo_spec")"
+    printf "Skipping repository creation/verification for %s (no credentials)\n" "$(sanitize_url "$repo_spec")"
     # Still update fallback repo for subsequent @branch lines
     fallback_owner="$owner"
     fallback_repo="$repo"
@@ -609,8 +648,8 @@ while IFS= read -r line || [ -n "$line" ]; do
 
   # Validate token before making API calls
   if ! validate_token "$AUTH_HDR"; then
-    debug "Line $line_num: Token validation failed, skipping repo $repo_spec"
-    printf "Skipping repository creation/verification for %s (invalid credentials)\n" "$repo_spec" >&2
+    debug "Line $line_num: Token validation failed, skipping repo $(sanitize_url "$repo_spec")"
+    printf "Skipping repository creation/verification for %s (invalid credentials)\n" "$(sanitize_url "$repo_spec")" >&2
     # Still update fallback repo for subsequent @branch lines
     fallback_owner="$owner"
     fallback_repo="$repo"
