@@ -1,6 +1,6 @@
 # Version of the repos CLI bundled inside this package.
 # Updated automatically by the version-and-release workflow.
-.bundled_cli_version <- "1.3.6"
+.bundled_cli_version <- "1.3.7"
 
 #' Return the version of the repos CLI bundled in this package
 #'
