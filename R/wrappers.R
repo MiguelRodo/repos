@@ -303,6 +303,15 @@ repos_clone <- function(file = NULL, worktree = FALSE, debug = FALSE,
                         debug_file = NULL, fetch_mode = NULL, ...) {
   args <- character()
 
+  # Backward compatibility for positional calls introduced while fetch_mode
+  # was temporarily the 3rd argument:
+  # repos_clone(file, worktree, "single")
+  if (is.null(fetch_mode) && is.character(debug) && length(debug) == 1 &&
+      debug %in% c("deferred", "single", "all")) {
+    fetch_mode <- debug
+    debug <- FALSE
+  }
+
   if (!is.null(file)) {
     args <- c(args, "-f", file)
   }
