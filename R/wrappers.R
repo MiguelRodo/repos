@@ -312,16 +312,18 @@ repos_clone <- function(file = NULL, worktree = FALSE, fetch_mode = NULL,
   }
 
   if (!is.null(fetch_mode)) {
-    flag <- switch(fetch_mode,
+    valid_fetch_modes <- c(
       "deferred" = "--fetch-all-deferred",
       "single"   = "--fetch-single",
-      "all"      = "--fetch-all",
+      "all"      = "--fetch-all"
+    )
+    if (!fetch_mode %in% names(valid_fetch_modes)) {
       stop(sprintf(
         "'fetch_mode' must be \"deferred\", \"single\", or \"all\"; got: %s",
         dQuote(fetch_mode)
       ))
-    )
-    args <- c(args, flag)
+    }
+    args <- c(args, valid_fetch_modes[[fetch_mode]])
   }
 
   if (isTRUE(debug)) {

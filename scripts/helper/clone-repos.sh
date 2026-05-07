@@ -731,7 +731,9 @@ parse_effective_line() {
         esac
         shift
       done
-      # When global fetch mode is "all", treat as all_branches=1
+      # Propagate all_branches=1 when fetch_mode is "all" (covers the case where
+      # GLOBAL_FETCH_MODE="all" was set via a CLI flag and no per-line --fetch-all
+      # was specified, so the while-loop above never ran the all_branches=1 arm).
       if [ "$fetch_mode" = "all" ]; then all_branches=1; fi
       # Validate target_dir to prevent path traversal and argument injection
       if [ -n "$target_dir" ]; then
