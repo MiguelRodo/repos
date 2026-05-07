@@ -892,6 +892,9 @@ clone_one_repo() {
     remember_remote "$remote_https" "$dest"
     [[ "$debug" == true ]] && printf "clone_one_repo: full clone successful\n" >&2
   fi
+  if [ "${all_branches:-0}" -eq 0 ]; then
+    ensure_wildcard_fetch_refspec "$dest"
+  fi
   return 0
 }
 
