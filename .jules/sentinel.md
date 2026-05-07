@@ -31,6 +31,11 @@
 **Learning:** Interpolating shell variables into `jq` filters is insecure as it allows the variable content to be parsed as part of the filter logic. Simple replacement with `.[$field]` also fails for nested paths (e.g., `commit.sha`).
 **Prevention:** Always use `jq`'s `--arg" or "--argjson" flags to pass values into the `jq` environment. For dynamic field access that may include nested paths, use `getpath($field | split("."))` to safely traverse the object.
 
+## 2024-05-07 - [High] Symlink Dereference in Upstream Script Updates
+**Vulnerability:** `scripts/update-scripts.sh` followed symbolic links when listing and copying files from an upstream repository.
+**Learning:** A malicious upstream repository could contain a symbolic link pointing to sensitive system files (e.g., `/etc/hostname`). The update script would dereference these links and copy the content of the linked files into the local repository, potentially leading to sensitive data leakage.
+**Prevention:** Explicitly check for and skip symbolic links in recursive file processing loops using `[ -L "$item" ] && continue`.
+
 ## 2026-03-05 - [Medium] Argument Injection in Git Command Invocations
 **Vulnerability:** Git commands like `git clone`, `git worktree add`, and `git push` were invoked with user-provided or variable-based arguments (e.g., branch names or repository URLs) without the `--` separator. This allowed an attacker to inject command-line flags (e.g., using a branch name like `-h`).
 **Learning:** Positional arguments that start with a hyphen can be interpreted as options by many Unix commands, including Git. Relying on variable expansion without termination of option parsing is a common source of argument injection.

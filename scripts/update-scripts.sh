@@ -144,6 +144,8 @@ list_scripts() {
   
   for item in "$src_dir"/*; do
     [ ! -e "$item" ] && continue
+    # Skip symbolic links to prevent directory traversal and file leakage
+    [ -L "$item" ] && continue
     
     local item_name
     item_name="$(basename -- "$item")"
@@ -208,6 +210,8 @@ copy_scripts() {
   
   for item in "$src_dir"/*; do
     [ ! -e "$item" ] && continue
+    # Skip symbolic links to prevent directory traversal and file leakage
+    [ -L "$item" ] && continue
     
     local item_name
     item_name="$(basename -- "$item")"
