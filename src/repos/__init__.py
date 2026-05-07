@@ -504,8 +504,7 @@ def clone(
 
     * ``"deferred"`` *(default)* — fast ``--single-branch`` clone, but the
       wildcard fetch refspec is immediately restored so that normal
-      multi-branch Git commands (``git fetch``, ``git checkout <branch>``)
-      work after the initial setup.
+      multi-branch Git commands work after a subsequent ``git fetch``.
     * ``"single"`` — keep the restricted single-branch refspec for maximum
       isolation; best for CI/CD, monorepos, or metered connections.
     * ``"all"`` — full clone without ``--single-branch``; all remote branches

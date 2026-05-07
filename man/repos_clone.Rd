@@ -7,9 +7,9 @@
 repos_clone(
   file = NULL,
   worktree = FALSE,
-  fetch_mode = NULL,
   debug = FALSE,
   debug_file = NULL,
+  fetch_mode = NULL,
   ...
 )
 }
@@ -21,23 +21,23 @@ back to \code{repos-to-clone.list} if absent).}
 that every \code{@branch} line creates a Git worktree instead of a fresh
 clone.}
 
-\item{fetch_mode}{Character. Controls fetch refspec behaviour after cloning.
-One of:
-\itemize{
-  \item \code{"deferred"} (default) — fast \code{--single-branch} clone,
-    then the wildcard fetch refspec is immediately restored so that normal
-    multi-branch Git commands work after the initial setup.
-  \item \code{"single"} — keep the restricted single-branch refspec for
-    maximum isolation; best for CI/CD, monorepos, or metered connections.
-  \item \code{"all"} — full clone without \code{--single-branch}; all
-    remote branches are downloaded upfront.
-}}
-
 \item{debug}{Logical. If \code{TRUE}, enable debug tracing to stderr.}
 
 \item{debug_file}{Character string or logical. Enable debug tracing to a
 file.  If \code{TRUE}, an auto-generated filename is used; if a non-empty
 string, that path is used as the log file.}
+
+\item{fetch_mode}{Character. Controls fetch refspec behaviour after cloning.
+One of:
+\itemize{
+  \item \code{"deferred"} (default) — fast \code{--single-branch} clone,
+    then the wildcard fetch refspec is immediately restored so normal
+    multi-branch commands work after a subsequent \code{git fetch}.
+  \item \code{"single"} — keep the restricted single-branch refspec for
+    maximum isolation; best for CI/CD, monorepos, or metered connections.
+  \item \code{"all"} — full clone without \code{--single-branch}; all
+    remote branches are downloaded upfront.
+}}
 
 \item{...}{Additional arguments passed directly to the
 \code{clone-repos.sh} script as-is.}

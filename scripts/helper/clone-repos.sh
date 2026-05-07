@@ -192,8 +192,9 @@ plan_ref_count() { # remote https -> reference count (default 0)
   [ "$idx" -ge 0 ] && printf '%s\n' "${PLAN_REF_COUNT[$idx]}" || printf '0\n'
 }
 
-ensure_base_exists() { # remote https, base_abs_path, debug
+ensure_base_exists() { # remote https, base_abs_path, debug, fetch_mode
   local remote="$1" base="$2" debug="$3"
+  local fetch_mode="${4:-${GLOBAL_FETCH_MODE:-deferred}}"
 
   [[ "$debug" == true ]] && printf "ensure_base_exists: checking base '%s' for remote '%s'\n" "$base" "$remote" >&2
 
@@ -214,12 +215,23 @@ ensure_base_exists() { # remote https, base_abs_path, debug
   [[ "$debug" == true ]] && printf "ensure_base_exists: creating base directory and cloning\n" >&2
   mkdir -p -- "$base"
   printf "Priming base clone for %s → %s\n" "$remote" "$base"
-  if ! git clone -- "$remote" "$base" </dev/null; then
+  local clone_opts=()
+  if [ "$fetch_mode" != "all" ]; then
+    clone_opts=(--single-branch)
+  fi
+  if ! git clone ${clone_opts[@]+"${clone_opts[@]}"} -- "$remote" "$base" </dev/null; then
     printf "Error: failed to clone '%s' into '%s'.\n" "$remote" "$base" >&2
     [[ "$debug" == true ]] && printf "ensure_base_exists: clone failed, returning error code 3\n" >&2
     return 3
   fi
-  CNT_CLONED_FULL=$((CNT_CLONED_FULL + 1))
+  if [ "$fetch_mode" = "all" ]; then
+    CNT_CLONED_FULL=$((CNT_CLONED_FULL + 1))
+  else
+    CNT_CLONED_BRANCH=$((CNT_CLONED_BRANCH + 1))
+    if [ "$fetch_mode" = "deferred" ]; then
+      ensure_wildcard_fetch_refspec "$base"
+    fi
+  fi
   [[ "$debug" == true ]] && printf "ensure_base_exists: base clone successful\n" >&2
 
   return 0
@@ -375,7 +387,7 @@ Examples
 Fetch modes (per-line flags or global CLI flags)
   --fetch-all-deferred     (Default) Fast clone (--single-branch) then restore the
                            wildcard fetch refspec so normal multi-branch Git usage
-                           works after the initial setup. Subsequent "git fetch"
+                           works after a subsequent "git fetch". That fetch
                            will download the rest of the history transparently.
   --fetch-single           Keep the single-branch refspec restriction. Best for CI,
                            monorepos, or heavily metered connections.
@@ -1359,7 +1371,7 @@ main() {
               # Not cloned yet, use planned base name
               local base_name; base_name="$(plan_base_name "$fallback_repo_https")"
               base_abs="$parent_dir/$base_name"
-              ensure_base_exists "$fallback_repo_https" "$base_abs" "$DEBUG" || rc=$?
+              ensure_base_exists "$fallback_repo_https" "$base_abs" "$DEBUG" "$fetch_mode" || rc=$?
             fi
           fi
           [ $rc -eq 0 ] && create_worktree_for_branch "$base_abs" "$branch" "$target_dir" "$parent_dir" "$DEBUG" "$fetch_mode" || rc=$?
@@ -1401,7 +1413,7 @@ main() {
             if [ "$seen_before" -eq 0 ] && [ "$(plan_has_full "$this_remote_https")" -eq 1 ]; then
               local base_name; base_name="$(plan_base_name "$this_remote_https")"
               local base_abs="$parent_dir/$base_name"
-              ensure_base_exists "$this_remote_https" "$base_abs" "$DEBUG" || rc=$?
+              ensure_base_exists "$this_remote_https" "$base_abs" "$DEBUG" "$fetch_mode" || rc=$?
               fallback_repo_local="$base_abs"
               remember_remote "$this_remote_https" "$fallback_repo_local"
             elif [ "$seen_before" -eq 0 ]; then

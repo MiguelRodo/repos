@@ -251,8 +251,8 @@ repos <- function(command, ...) {
 #'   One of:
 #'   \itemize{
 #'     \item \code{"deferred"} (default) — fast \code{--single-branch} clone,
-#'       then the wildcard fetch refspec is immediately restored so that normal
-#'       multi-branch Git commands work after the initial setup.
+#'       then the wildcard fetch refspec is immediately restored so normal
+#'       multi-branch commands work after a subsequent \code{git fetch}.
 #'     \item \code{"single"} — keep the restricted single-branch refspec for
 #'       maximum isolation; best for CI/CD, monorepos, or metered connections.
 #'     \item \code{"all"} — full clone without \code{--single-branch}; all
@@ -299,8 +299,8 @@ repos <- function(command, ...) {
 #' }
 #'
 #' @export
-repos_clone <- function(file = NULL, worktree = FALSE, fetch_mode = NULL,
-                        debug = FALSE, debug_file = NULL, ...) {
+repos_clone <- function(file = NULL, worktree = FALSE, debug = FALSE,
+                        debug_file = NULL, fetch_mode = NULL, ...) {
   args <- character()
 
   if (!is.null(file)) {

@@ -190,7 +190,20 @@ cat > repos.list << 'EOF'
 @data-branch data-single --worktree
 EOF
 
-"$REPO_ROOT/scripts/helper/clone-repos.sh" -f repos.list >/dev/null 2>&1 || true
+set +e
+SINGLE_OUTPUT=$("$REPO_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
+SINGLE_RC=$?
+set -e
+
+if [[ $SINGLE_RC -ne 0 ]]; then
+  echo "$SINGLE_OUTPUT"
+  fail "clone-repos.sh failed for --fetch-single worktree test (exit $SINGLE_RC)"
+fi
+
+if [[ ! -d ../data-single ]]; then
+  echo "$SINGLE_OUTPUT"
+  fail "Expected worktree directory ../data-single was not created"
+fi
 
 if git config --get-all remote.origin.fetch | grep -qF "$WILDCARD_REFSPEC"; then
   fail "--fetch-single worktree should NOT add wildcard fetch refspec, but it did"
