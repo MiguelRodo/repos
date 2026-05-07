@@ -28,6 +28,10 @@ repos clone
 This clones all listed repositories into the parent directory of your current
 location.
 
+By default, `repos clone` uses `--fetch-all-deferred`: a fast single-branch
+clone plus immediate wildcard fetch-refspec restoration. You can also use
+`--fetch-single` (strict isolation) or `--fetch-all` (full clone upfront).
+
 ## What else can you do?
 
 **Customise `repos.list`** — clone specific branches (`owner/repo@branch`), use
@@ -52,4 +56,3 @@ Use `repos` directly from R or Python — all the same commands, no terminal req
 ## Installation
 
 → [Installation guide](install.html)
-
