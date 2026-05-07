@@ -486,6 +486,7 @@ def clone(
     file: Optional[str] = None,
     debug: bool = False,
     debug_file: Optional[Union[bool, str]] = None,
+    fetch_mode: Optional[str] = None,
     **kwargs
 ):
     """
@@ -498,12 +499,26 @@ def clone(
 
     Global flags in repos.list (``--worktree``) are automatically applied.
 
+    **Fetch modes** control how the local ``.git/config`` fetch refspec is set
+    after cloning:
+
+    * ``"deferred"`` *(default)* — fast ``--single-branch`` clone, but the
+      wildcard fetch refspec is immediately restored so that normal
+      multi-branch Git commands (``git fetch``, ``git checkout <branch>``)
+      work after the initial setup.
+    * ``"single"`` — keep the restricted single-branch refspec for maximum
+      isolation; best for CI/CD, monorepos, or metered connections.
+    * ``"all"`` — full clone without ``--single-branch``; all remote branches
+      are downloaded upfront.
+
     Args:
         file: Path to repos list file (default: repos.list, or
             repos-to-clone.list if repos.list is absent)
         debug: If True, enable debug tracing to stderr
         debug_file: Enable debug tracing to file (auto-generated if True,
             or specify an explicit path)
+        fetch_mode: One of ``"deferred"`` (default), ``"single"``, or
+            ``"all"``.  Overrides the global fetch mode for all repos.
         **kwargs: Additional keyword arguments (captured but ignored, for extensibility)
 
     Returns:
@@ -513,6 +528,8 @@ def clone(
         >>> clone()
         >>> clone(file="my-repos.list")
         >>> clone(debug=True)
+        >>> clone(fetch_mode="single")   # CI/CD — strict single-branch isolation
+        >>> clone(fetch_mode="all")      # download all branches upfront
     """
     script_args = []
 
@@ -527,6 +544,19 @@ def clone(
             script_args.append("--debug-file")
         else:
             script_args.extend(["--debug-file", debug_file])
+
+    if fetch_mode is not None:
+        _fetch_flag_map = {
+            "deferred": "--fetch-all-deferred",
+            "single":   "--fetch-single",
+            "all":      "--fetch-all",
+        }
+        flag = _fetch_flag_map.get(fetch_mode)
+        if flag is None:
+            raise ValueError(
+                f"fetch_mode must be 'deferred', 'single', or 'all'; got: {fetch_mode!r}"
+            )
+        script_args.append(flag)
 
     return run_script("helper/clone-repos.sh", script_args)
 

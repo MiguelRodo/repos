@@ -119,6 +119,12 @@ declare -a PLAN_REF_COUNT=()    # count of references to this remote (for branch
 # Last clone destination (used to set fallback base)
 CLONE_DEST=""
 
+# Fetch mode: "deferred" (default) | "single" | "all"
+# "deferred" = --single-branch clone then add wildcard refspec
+# "single"   = --single-branch clone only (no wildcard refspec)
+# "all"      = full clone (no --single-branch)
+GLOBAL_FETCH_MODE="deferred"
+
 remote_index() { # echo index or -1
   local needle="$1" i
   for i in "${!SEEN_REMOTES[@]}"; do
@@ -365,6 +371,18 @@ Examples
 
   # Clone only a specific branch (no worktree)
   SATVILab/UtilsCytoRSV@release utils-rsv-release
+
+Fetch modes (per-line flags or global CLI flags)
+  --fetch-all-deferred     (Default) Fast clone (--single-branch) then restore the
+                           wildcard fetch refspec so normal multi-branch Git usage
+                           works after the initial setup. Subsequent "git fetch"
+                           will download the rest of the history transparently.
+  --fetch-single           Keep the single-branch refspec restriction. Best for CI,
+                           monorepos, or heavily metered connections.
+  --fetch-all              Full clone — no --single-branch flag; all remote branches
+                           are fetched upfront. Alias for -a/--all-branches.
+
+  Per-line flags override the global CLI flag for that specific entry.
 
 Options
   -f, --file <repo-list>   Use an alternate repo list file (default: repos.list,
@@ -630,14 +648,15 @@ find_worktree_for_branch() {
 }
 
 # --- Parsing -----------------------------------------------------------------
-# Returns: repo_spec \x1f target_dir \x1f all_branches \x1f is_worktree \x1f is_at_branch
+# Returns: repo_spec \x1f target_dir \x1f all_branches \x1f is_worktree \x1f is_at_branch \x1f fetch_mode
 parse_effective_line() {
   set -f
   local line="$1" fallback_repo_https="$2"
   local first target_dir="" all_branches=0 is_worktree=0 use_worktree=0 is_at_branch=0
+  local fetch_mode="${GLOBAL_FETCH_MODE:-deferred}"
 
   set -- $line
-  [ "$#" -eq 0 ] && { printf '%s\x1f%s\x1f%s\x1f%s\x1f%s\n' "" "" "0" "0" "0"; set +f; return 0; }
+  [ "$#" -eq 0 ] && { printf '%s\x1f%s\x1f%s\x1f%s\x1f%s\x1f%s\n' "" "" "0" "0" "0" "$fetch_mode"; set +f; return 0; }
 
   first="$1"; shift
   case "$first" in
@@ -651,6 +670,9 @@ parse_effective_line() {
         case "$1" in
           -w|--worktree) use_worktree=1 ;;
           -a|--all-branches) all_branches=1 ;;  # harmless for worktrees
+          --fetch-all-deferred) fetch_mode="deferred" ;;
+          --fetch-single)       fetch_mode="single" ;;
+          --fetch-all)          fetch_mode="all" ;;
           --public|--private|--codespaces) ;;   # ignore valid create-repos flags
           -*)
             printf "Error: unknown option '%s' on line: %s\n" "$1" "$line" >&2
@@ -678,7 +700,7 @@ parse_effective_line() {
             ;;
         esac
       fi
-      printf '%s@%s\x1f%s\x1f%s\x1f%s\x1f%s\n' "$fallback_repo_https" "$branch" "$target_dir" "$all_branches" "$is_worktree" "$is_at_branch"
+      printf '%s@%s\x1f%s\x1f%s\x1f%s\x1f%s\x1f%s\n' "$fallback_repo_https" "$branch" "$target_dir" "$all_branches" "$is_worktree" "$is_at_branch" "$fetch_mode"
       ;;
     *)
       local repo_spec="$first"
@@ -694,6 +716,9 @@ parse_effective_line() {
       while [ "$#" -gt 0 ]; do
         case "$1" in
           -a|--all-branches) all_branches=1 ;;
+          --fetch-all-deferred) fetch_mode="deferred" ;;
+          --fetch-single)       fetch_mode="single" ;;
+          --fetch-all)          fetch_mode="all"; all_branches=1 ;;
           -w|--worktree)  printf "Warning: '--worktree' ignored on clone line: %s\n" "$line" >&2 ;;
           --public|--private|--codespaces) ;;   # ignore valid create-repos flags
           -*)
@@ -706,6 +731,8 @@ parse_effective_line() {
         esac
         shift
       done
+      # When global fetch mode is "all", treat as all_branches=1
+      if [ "$fetch_mode" = "all" ]; then all_branches=1; fi
       # Validate target_dir to prevent path traversal and argument injection
       if [ -n "$target_dir" ]; then
         case "$target_dir" in
@@ -716,7 +743,7 @@ parse_effective_line() {
         esac
       fi
       is_worktree=0
-      printf '%s\x1f%s\x1f%s\x1f%s\x1f%s\n' "$repo_spec" "$target_dir" "$all_branches" "$is_worktree" "$is_at_branch"
+      printf '%s\x1f%s\x1f%s\x1f%s\x1f%s\x1f%s\n' "$repo_spec" "$target_dir" "$all_branches" "$is_worktree" "$is_at_branch" "$fetch_mode"
       ;;
   esac
   set +f
@@ -725,6 +752,7 @@ parse_effective_line() {
 # --- Clone flow --------------------------------------------------------------
 clone_one_repo() {
   local repo_spec="$1" target_dir="$2" base_dir="$3" all_branches="$4" debug="$5"
+  local fetch_mode="${6:-${GLOBAL_FETCH_MODE:-deferred}}"
 
   [[ "$debug" == true ]] && printf "clone_one_repo: processing repo_spec='%s' target_dir='%s'\n" "$repo_spec" "$target_dir" >&2
 
@@ -892,7 +920,12 @@ clone_one_repo() {
     remember_remote "$remote_https" "$dest"
     [[ "$debug" == true ]] && printf "clone_one_repo: full clone successful\n" >&2
   fi
-  if [ "${all_branches:-0}" -eq 0 ]; then
+  # Restore wildcard fetch refspec for single-branch clones in deferred mode,
+  # so that normal multi-branch Git usage (git fetch, git checkout <branch>)
+  # works after the initial fast clone.  Skip this for --fetch-single (user
+  # explicitly wants maximum isolation) and for full clones (already have all
+  # branches).
+  if [ "${all_branches:-0}" -eq 0 ] && [ "$fetch_mode" = "deferred" ]; then
     ensure_wildcard_fetch_refspec "$dest"
   fi
   return 0
@@ -900,8 +933,9 @@ clone_one_repo() {
 
 # --- Worktree flow -----------------------------------------------------------
 create_worktree_for_branch() {
-  # Args: base_path branch target_dir parent_dir debug
+  # Args: base_path branch target_dir parent_dir debug [fetch_mode]
   local base="$1" branch="$2" target_dir="$3" parent_dir="$4" debug="$5"
+  local fetch_mode="${6:-${GLOBAL_FETCH_MODE:-deferred}}"
   
   [[ "$debug" == true ]] && printf "create_worktree_for_branch: base='%s' branch='%s' target_dir='%s'\n" "$base" "$branch" "$target_dir" >&2
   
@@ -970,7 +1004,7 @@ create_worktree_for_branch() {
     CNT_WORKTREE_ADDED=$((CNT_WORKTREE_ADDED + 1))
     [[ "$debug" == true ]] && printf "create_worktree_for_branch: worktree added, setting upstream if needed\n" >&2
     if git -C "$base" rev-parse --verify --quiet "refs/remotes/origin/$branch" >/dev/null; then
-      ensure_wildcard_fetch_refspec "$base"
+      if [ "$fetch_mode" = "deferred" ]; then ensure_wildcard_fetch_refspec "$base"; fi
       git -C "$dest" branch --set-upstream-to "origin/$branch" -- || true
     else
       git -C "$dest" push -u origin -- HEAD:"$branch" || true
@@ -984,7 +1018,7 @@ create_worktree_for_branch() {
     if git -C "$base" rev-parse --verify --quiet "refs/remotes/origin/$branch" >/dev/null; then
       git -C "$base" worktree add -b "$branch" -- "$dest" "origin/$branch" </dev/null
       CNT_WORKTREE_ADDED=$((CNT_WORKTREE_ADDED + 1))
-      ensure_wildcard_fetch_refspec "$base"
+      if [ "$fetch_mode" = "deferred" ]; then ensure_wildcard_fetch_refspec "$base"; fi
       git -C "$dest" branch --set-upstream-to "origin/$branch" -- || true
       [[ "$debug" == true ]] && printf "create_worktree_for_branch: worktree added from origin/%s\n" "$branch" >&2
     else
@@ -1038,6 +1072,9 @@ parse_args() {
       -f|--file) shift; [ "$#" -gt 0 ] && REPOS_FILE="$1" || { usage; exit 1; }; shift ;;
       -d|--debug) DEBUG=true; shift ;;
       --worktree) GLOBAL_WORKTREE=true; shift ;;
+      --fetch-all-deferred) GLOBAL_FETCH_MODE="deferred"; shift ;;
+      --fetch-single)        GLOBAL_FETCH_MODE="single";   shift ;;
+      --fetch-all)           GLOBAL_FETCH_MODE="all";      shift ;;
       --debug-file)
         DEBUG=true
         shift
@@ -1098,6 +1135,12 @@ parse_args() {
             debug "Enabled --worktree from repos.list"
           fi
           ;;
+        --fetch-all-deferred|--fetch-all-deferred[[:space:]]*)
+          GLOBAL_FETCH_MODE="deferred"; debug "Set GLOBAL_FETCH_MODE=deferred from repos.list" ;;
+        --fetch-single|--fetch-single[[:space:]]*)
+          GLOBAL_FETCH_MODE="single";   debug "Set GLOBAL_FETCH_MODE=single from repos.list" ;;
+        --fetch-all|--fetch-all[[:space:]]*)
+          GLOBAL_FETCH_MODE="all";      debug "Set GLOBAL_FETCH_MODE=all from repos.list" ;;
       esac
     done < "$REPOS_FILE"
   fi
@@ -1132,7 +1175,10 @@ plan_forward() {
       --codespaces|--codespaces[[:space:]]*|\
       --public|--public[[:space:]]*|\
       --private|--private[[:space:]]*|\
-      --worktree|--worktree[[:space:]]*)
+      --worktree|--worktree[[:space:]]*|\
+      --fetch-all-deferred|--fetch-all-deferred[[:space:]]*|\
+      --fetch-single|--fetch-single[[:space:]]*|\
+      --fetch-all|--fetch-all[[:space:]]*)
         [[ "$debug" == true ]] && printf "Planning: skipping global flag line: %s\n" "$trimmed" >&2
         continue
         ;;
@@ -1265,7 +1311,10 @@ main() {
       --codespaces|--codespaces[[:space:]]*|\
       --public|--public[[:space:]]*|\
       --private|--private[[:space:]]*|\
-      --worktree|--worktree[[:space:]]*)
+      --worktree|--worktree[[:space:]]*|\
+      --fetch-all-deferred|--fetch-all-deferred[[:space:]]*|\
+      --fetch-single|--fetch-single[[:space:]]*|\
+      --fetch-all|--fetch-all[[:space:]]*)
         [[ "$DEBUG" == true ]] && printf "Skipping global flag line: %s\n" "$trimmed" >&2
         continue
         ;;
@@ -1281,9 +1330,11 @@ main() {
       [[ "$DEBUG" == true ]] && printf "Parsing line: %s\n" "$trimmed" >&2
       local rc=0
       # Parse with current fallback
-      local parsed repo_spec="" target_dir="" all_branches=0 is_worktree=0 is_at_branch=0
+      local parsed repo_spec="" target_dir="" all_branches=0 is_worktree=0 is_at_branch=0 fetch_mode=""
       if parsed="$(parse_effective_line "$trimmed" "$fallback_repo_https")"; then
-        IFS=$'\x1f' read -r repo_spec target_dir all_branches is_worktree is_at_branch <<<"$parsed"
+        IFS=$'\x1f' read -r repo_spec target_dir all_branches is_worktree is_at_branch fetch_mode <<<"$parsed"
+        # Default fetch_mode if not set (older callers)
+        fetch_mode="${fetch_mode:-${GLOBAL_FETCH_MODE:-deferred}}"
         [ -z "$repo_spec" ] && { rc=0; ( exit "$rc" ); }
       else
         rc=1
@@ -1309,7 +1360,7 @@ main() {
               ensure_base_exists "$fallback_repo_https" "$base_abs" "$DEBUG" || rc=$?
             fi
           fi
-          [ $rc -eq 0 ] && create_worktree_for_branch "$base_abs" "$branch" "$target_dir" "$parent_dir" "$DEBUG" || rc=$?
+          [ $rc -eq 0 ] && create_worktree_for_branch "$base_abs" "$branch" "$target_dir" "$parent_dir" "$DEBUG" "$fetch_mode" || rc=$?
           fallback_repo_local="$base_abs"
           remember_remote "$fallback_repo_https" "$fallback_repo_local"
         else
@@ -1336,7 +1387,7 @@ main() {
             [[ "$DEBUG" == true ]] && printf "@branch clone: using target_dir='%s'\n" "$target_dir" >&2
           fi
 
-          clone_one_repo "$repo_spec" "$target_dir" "$parent_dir" "$all_branches" "$DEBUG" || rc=$?
+          clone_one_repo "$repo_spec" "$target_dir" "$parent_dir" "$all_branches" "$DEBUG" "$fetch_mode" || rc=$?
           [ "$rc" -ne 0 ] && [ "$rc" -ne 2 ] && { ( exit "$rc" ); } # early exit if real error
 
           fallback_repo_https="$this_remote_https"

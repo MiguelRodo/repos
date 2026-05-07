@@ -18,11 +18,34 @@ repos clone
 | Flag | Description |
 |---|---|
 | `-f <file>` | Use a different list file (default: `repos.list`) |
+| `--fetch-all-deferred` | *(Default)* Fast `--single-branch` clone; wildcard refspec restored immediately |
+| `--fetch-single` | Keep restricted single-branch refspec (CI/CD or metered connections) |
+| `--fetch-all` | Full clone — all remote branches downloaded upfront |
 
 ```bash
 # Use a custom list file
 repos clone -f my-repos.list
+
+# CI/CD pipeline — strict single-branch isolation
+repos clone --fetch-single
+
+# Download everything upfront
+repos clone --fetch-all
 ```
+
+## Default Fetch Behaviour
+
+By default (`--fetch-all-deferred`), `repos clone` performs a fast
+`--single-branch` clone and then immediately restores the standard wildcard
+fetch refspec (`+refs/heads/*:refs/remotes/origin/*`).  This means:
+
+* Initial clone is as fast as a `--single-branch` clone.
+* After the clone, running `git fetch` inside any cloned repo transparently
+  downloads the rest of the history, and `git checkout <other-branch>` works
+  without any manual config changes.
+
+Use `--fetch-single` to opt out — for example in CI/CD pipelines where you
+only ever need one branch and want to minimise network traffic.
 
 ## Repository Layout
 

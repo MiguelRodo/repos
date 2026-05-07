@@ -247,6 +247,17 @@ repos <- function(command, ...) {
 #' @param worktree Logical. If \code{TRUE}, pass \code{--worktree} globally so
 #'   that every \code{@branch} line creates a Git worktree instead of a fresh
 #'   clone.
+#' @param fetch_mode Character. Controls fetch refspec behaviour after cloning.
+#'   One of:
+#'   \itemize{
+#'     \item \code{"deferred"} (default) — fast \code{--single-branch} clone,
+#'       then the wildcard fetch refspec is immediately restored so that normal
+#'       multi-branch Git commands work after the initial setup.
+#'     \item \code{"single"} — keep the restricted single-branch refspec for
+#'       maximum isolation; best for CI/CD, monorepos, or metered connections.
+#'     \item \code{"all"} — full clone without \code{--single-branch}; all
+#'       remote branches are downloaded upfront.
+#'   }
 #' @param debug Logical. If \code{TRUE}, enable debug tracing to stderr.
 #' @param debug_file Character string or logical. Enable debug tracing to a
 #'   file.  If \code{TRUE}, an auto-generated filename is used; if a non-empty
@@ -279,11 +290,17 @@ repos <- function(command, ...) {
 #'
 #' # Use worktrees globally for all @branch lines
 #' repos_clone(worktree = TRUE)
+#'
+#' # CI/CD: strict single-branch isolation
+#' repos_clone(fetch_mode = "single")
+#'
+#' # Download all branches upfront
+#' repos_clone(fetch_mode = "all")
 #' }
 #'
 #' @export
-repos_clone <- function(file = NULL, worktree = FALSE, debug = FALSE,
-                        debug_file = NULL, ...) {
+repos_clone <- function(file = NULL, worktree = FALSE, fetch_mode = NULL,
+                        debug = FALSE, debug_file = NULL, ...) {
   args <- character()
 
   if (!is.null(file)) {
@@ -292,6 +309,19 @@ repos_clone <- function(file = NULL, worktree = FALSE, debug = FALSE,
 
   if (isTRUE(worktree)) {
     args <- c(args, "--worktree")
+  }
+
+  if (!is.null(fetch_mode)) {
+    flag <- switch(fetch_mode,
+      "deferred" = "--fetch-all-deferred",
+      "single"   = "--fetch-single",
+      "all"      = "--fetch-all",
+      stop(sprintf(
+        "'fetch_mode' must be \"deferred\", \"single\", or \"all\"; got: %s",
+        dQuote(fetch_mode)
+      ))
+    )
+    args <- c(args, flag)
   }
 
   if (isTRUE(debug)) {
