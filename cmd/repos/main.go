@@ -192,9 +192,9 @@ func (s *state) dbg(format string, args ...any) {
 }
 
 func checkPrerequisites() error {
-	for _, cmd := range []string{"git", "mktemp"} {
-		if _, err := exec.LookPath(cmd); err != nil {
-			return fmt.Errorf("error: '%s' is required but not found in PATH", cmd)
+	for _, tool := range []string{"git", "mktemp"} {
+		if _, err := exec.LookPath(tool); err != nil {
+			return fmt.Errorf("error: '%s' is required but not found in PATH", tool)
 		}
 	}
 	return nil
@@ -206,22 +206,11 @@ func runGit(dir string, args ...string) (string, error) {
 		cmd.Dir = dir
 	}
 	out, err := cmd.CombinedOutput()
+	trimmed := strings.TrimSpace(string(out))
 	if err != nil {
-		return strings.TrimSpace(string(out)), fmt.Errorf("git %s failed: %s", strings.Join(args, " "), sanitizeURL(strings.TrimSpace(string(out))))
+		return trimmed, fmt.Errorf("git %s failed: %s", strings.Join(args, " "), sanitizeURL(trimmed))
 	}
-	return strings.TrimSpace(string(out)), nil
-}
-
-func runCmd(dir string, name string, args ...string) (string, error) {
-	cmd := exec.Command(name, args...)
-	if dir != "" {
-		cmd.Dir = dir
-	}
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return strings.TrimSpace(string(out)), fmt.Errorf("%s %s failed: %s", name, strings.Join(args, " "), sanitizeURL(strings.TrimSpace(string(out))))
-	}
-	return strings.TrimSpace(string(out)), nil
+	return trimmed, nil
 }
 
 func sanitizeURL(in string) string {
@@ -360,9 +349,7 @@ func trimLine(line string) string {
 	if t == "" || strings.HasPrefix(t, "#") {
 		return ""
 	}
-	if i := strings.Index(t, " # "); i >= 0 {
-		t = strings.TrimSpace(t[:i])
-	} else if i := strings.Index(t, " #"); i >= 0 {
+	if i := strings.Index(t, " #"); i >= 0 {
 		t = strings.TrimSpace(t[:i])
 	}
 	return strings.TrimSpace(t)
@@ -651,7 +638,9 @@ func (s *state) ensureWildcardFetchRefspec(base string) {
 			}
 		}
 	}
-	_, _ = runGit(base, "config", "--add", "--", "remote.origin.fetch", wild)
+	if _, err := runGit(base, "config", "--add", "--", "remote.origin.fetch", wild); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: could not add wildcard fetch refspec in %s: %v\n", base, err)
+	}
 }
 
 func (s *state) ensureBaseExists(remote, base, fetchMode string) (int, error) {
@@ -828,6 +817,7 @@ func (s *state) createWorktreeForBranch(base, branch, targetDir, fetchMode strin
 	if base == "" {
 		return 1, errors.New("error: no fallback base path available for worktree")
 	}
+	// Best-effort cleanup of stale worktree references.
 	_, _ = runGit(base, "worktree", "prune")
 	if existing := findWorktreeForBranch(base, branch); existing != "" {
 		fmt.Printf("Skip: branch '%s' already checked out at %s\n", branch, existing)
@@ -872,9 +862,13 @@ func (s *state) createWorktreeForBranch(base, branch, targetDir, fetchMode strin
 			if fetchMode == "deferred" {
 				s.ensureWildcardFetchRefspec(base)
 			}
-			_, _ = runGit(dest, "branch", "--set-upstream-to", "origin/"+branch, "--")
+			if _, err := runGit(dest, "branch", "--set-upstream-to", "origin/"+branch, "--"); err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: failed to set upstream for %s: %v\n", branch, err)
+			}
 		} else {
-			_, _ = runGit(dest, "push", "-u", "origin", "--", "HEAD:"+branch)
+			if _, err := runGit(dest, "push", "-u", "origin", "--", "HEAD:"+branch); err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: failed to push branch %s: %v\n", branch, err)
+			}
 		}
 		return 0, nil
 	}
@@ -882,6 +876,7 @@ func (s *state) createWorktreeForBranch(base, branch, targetDir, fetchMode strin
 	if _, err := runGit(base, "ls-remote", "--exit-code", "--heads", "origin", branch); err == nil {
 		fmt.Printf("Branch exists: %s (on remote)\n", branch)
 		fmt.Printf("Adding worktree %s (tracking origin/%s)\n", dest, branch)
+		// Best-effort fetch of remote-tracking branch in single-branch clones.
 		_, _ = runGit(base, "fetch", "origin", "refs/heads/"+branch+":refs/remotes/origin/"+branch)
 		if remoteBranchExists(base, branch) {
 			if _, err := runGit(base, "worktree", "add", "-b", branch, "--", dest, "origin/"+branch); err != nil {
@@ -891,7 +886,9 @@ func (s *state) createWorktreeForBranch(base, branch, targetDir, fetchMode strin
 			if fetchMode == "deferred" {
 				s.ensureWildcardFetchRefspec(base)
 			}
-			_, _ = runGit(dest, "branch", "--set-upstream-to", "origin/"+branch, "--")
+			if _, err := runGit(dest, "branch", "--set-upstream-to", "origin/"+branch, "--"); err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: failed to set upstream for %s: %v\n", branch, err)
+			}
 			return 0, nil
 		}
 		defb := defaultRemoteBranch(base)
@@ -904,7 +901,9 @@ func (s *state) createWorktreeForBranch(base, branch, targetDir, fetchMode strin
 			return 1, err
 		}
 		s.counts.worktrees++
-		_, _ = runGit(dest, "push", "-u", "origin", "--", "HEAD:"+branch)
+		if _, err := runGit(dest, "push", "-u", "origin", "--", "HEAD:"+branch); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to push branch %s: %v\n", branch, err)
+		}
 		return 0, nil
 	}
 
@@ -918,7 +917,9 @@ func (s *state) createWorktreeForBranch(base, branch, targetDir, fetchMode strin
 	if _, err := runGit(base, "worktree", "add", "-b", branch, "--", dest, baseRef); err != nil {
 		return 1, err
 	}
-	_, _ = runGit(dest, "push", "-u", "origin", "--", "HEAD:"+branch)
+	if _, err := runGit(dest, "push", "-u", "origin", "--", "HEAD:"+branch); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to push branch %s: %v\n", branch, err)
+	}
 	s.counts.worktrees++
 	return 0, nil
 }
