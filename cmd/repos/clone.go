@@ -33,6 +33,7 @@ func runClone(args []string) error {
 	fetchDeferred := fs.Bool("fetch-all-deferred", false, "deferred fetch mode")
 	fetchSingle := fs.Bool("fetch-single", false, "single fetch mode")
 	fetchAll := fs.Bool("fetch-all", false, "all fetch mode")
+	force := fs.Bool("force", false, "ignore per-line flag overrides")
 	help := fs.Bool("help", false, "show help")
 	fs.BoolVar(help, "h", false, "show help")
 
@@ -56,14 +57,19 @@ func runClone(args []string) error {
 	}
 
 	st := &state{
-		startDir:        cwd,
-		parentDir:       filepath.Dir(cwd),
-		reposFile:       *reposFile,
-		debug:           *debug,
-		globalWorktree:  *globalWorktree,
-		globalFetchMode: globalFetchMode,
-		seenRemoteLocal: map[string]string{},
-		plan:            map[string]planInfo{},
+		startDir:              cwd,
+		parentDir:             filepath.Dir(cwd),
+		reposFile:             *reposFile,
+		debug:                 *debug,
+		globalWorktree:        *globalWorktree,
+		globalWorktreeForced:  false,
+		globalFetchMode:       globalFetchMode,
+		globalFetchModeForced: false,
+		cliWorktreeSet:        *globalWorktree,
+		cliFetchModeSet:       *fetchDeferred || *fetchSingle || *fetchAll,
+		cliForce:              *force,
+		seenRemoteLocal:       map[string]string{},
+		plan:                  map[string]planInfo{},
 	}
 
 	if _, err := os.Stat(st.reposFile); err != nil {
