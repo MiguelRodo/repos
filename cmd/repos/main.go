@@ -3,14 +3,13 @@ package main
 import (
 	"bufio"
 	"errors"
-	"flag"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
+
+	"github.com/MiguelRodo/repos/internal/gitcmd"
 )
 
 type counters struct {
@@ -53,7 +52,6 @@ type instruction struct {
 	fetchMode   string
 }
 
-var sanitizeURLRegex = regexp.MustCompile(`https?://[^/@\s]+@`)
 var ownerRepoRegex = regexp.MustCompile(`^[^/]+/[^/]+$`)
 
 func main() {
@@ -98,141 +96,10 @@ Fetch modes:
 `)
 }
 
-func runClone(args []string) error {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-
-	defaultFile := "repos.list"
-	if _, err := os.Stat(defaultFile); err != nil {
-		if _, err2 := os.Stat("repos-to-clone.list"); err2 == nil {
-			defaultFile = "repos-to-clone.list"
-		}
-	}
-
-	fs := flag.NewFlagSet("clone", flag.ContinueOnError)
-	fs.SetOutput(os.Stderr)
-	reposFile := fs.String("file", defaultFile, "repos list file")
-	fs.StringVar(reposFile, "f", defaultFile, "repos list file")
-	debug := fs.Bool("debug", false, "enable debug")
-	fs.BoolVar(debug, "d", false, "enable debug")
-	globalWorktree := fs.Bool("worktree", false, "create @branch as worktrees by default")
-	fetchDeferred := fs.Bool("fetch-all-deferred", false, "deferred fetch mode")
-	fetchSingle := fs.Bool("fetch-single", false, "single fetch mode")
-	fetchAll := fs.Bool("fetch-all", false, "all fetch mode")
-	help := fs.Bool("help", false, "show help")
-	fs.BoolVar(help, "h", false, "show help")
-
-	if err := fs.Parse(args); err != nil {
-		return err
-	}
-	if *help {
-		cloneUsage()
-		return nil
-	}
-
-	globalFetchMode := "deferred"
-	if *fetchSingle {
-		globalFetchMode = "single"
-	}
-	if *fetchAll {
-		globalFetchMode = "all"
-	}
-	if *fetchDeferred {
-		globalFetchMode = "deferred"
-	}
-
-	st := &state{
-		startDir:        cwd,
-		parentDir:       filepath.Dir(cwd),
-		reposFile:       *reposFile,
-		debug:           *debug,
-		globalWorktree:  *globalWorktree,
-		globalFetchMode: globalFetchMode,
-		seenRemoteLocal: map[string]string{},
-		plan:            map[string]planInfo{},
-	}
-
-	if _, err := os.Stat(st.reposFile); err != nil {
-		return fmt.Errorf("file '%s' not found", st.reposFile)
-	}
-
-	if err := st.applyGlobalFlagsFromFile(); err != nil {
-		return err
-	}
-	if err := checkPrerequisites(); err != nil {
-		return err
-	}
-	if err := st.initFallback(); err != nil {
-		return err
-	}
-	if err := st.planForward(); err != nil {
-		return err
-	}
-	if err := st.processFile(); err != nil {
-		return err
-	}
-
-	fmt.Println()
-	fmt.Println("Summary:")
-	fmt.Printf("  Instructions processed: %d\n", st.counts.total)
-	fmt.Printf("  Skipped (already present): %d\n", st.counts.skipped)
-	fmt.Printf("  Cloned (full): %d\n", st.counts.clonedFull)
-	fmt.Printf("  Cloned (single-branch): %d\n", st.counts.clonedBranch)
-	fmt.Printf("  Worktrees added: %d\n", st.counts.worktrees)
-	fmt.Printf("  Errors: %d\n", st.counts.errors)
-
-	if st.counts.errors > 0 {
-		return errors.New("clone finished with errors")
-	}
-	return nil
-}
-
 func (s *state) dbg(format string, args ...any) {
 	if s.debug {
 		fmt.Fprintf(os.Stderr, "[DEBUG clone-go] "+format+"\n", args...)
 	}
-}
-
-func checkPrerequisites() error {
-	for _, tool := range []string{"git"} {
-		if _, err := exec.LookPath(tool); err != nil {
-			return fmt.Errorf("error: '%s' is required but not found in PATH", tool)
-		}
-	}
-	return nil
-}
-
-func runGit(dir string, args ...string) (string, error) {
-	cmd := exec.Command("git", args...)
-	if dir != "" {
-		cmd.Dir = dir
-	}
-	cmd.Stdin = nil
-	cmd.Env = nonInteractiveGitEnv()
-	out, err := cmd.CombinedOutput()
-	trimmed := strings.TrimSpace(string(out))
-	if err != nil {
-		return trimmed, fmt.Errorf("git %s failed: %s", sanitizeURL(strings.Join(args, " ")), sanitizeURL(trimmed))
-	}
-	return trimmed, nil
-}
-
-func nonInteractiveGitEnv() []string {
-	env := os.Environ()
-	env = append(env, "GIT_TERMINAL_PROMPT=0")
-	if runtime.GOOS != "windows" {
-		env = append(env, "GIT_ASKPASS=/bin/false")
-		if _, ok := os.LookupEnv("GIT_SSH_COMMAND"); !ok {
-			env = append(env, "GIT_SSH_COMMAND=ssh -oBatchMode=yes")
-		}
-	}
-	return env
-}
-
-func sanitizeURL(in string) string {
-	return sanitizeURLRegex.ReplaceAllString(in, "https://")
 }
 
 func (s *state) initFallback() error {
@@ -248,23 +115,23 @@ func (s *state) initFallback() error {
 }
 
 func getCurrentRepoRemoteHTTPS(dir string) (string, error) {
-	if _, err := runGit(dir, "rev-parse", "--is-inside-work-tree"); err != nil {
+	if _, err := gitcmd.RunGit(dir, "rev-parse", "--is-inside-work-tree"); err != nil {
 		return "", errors.New("error: not inside a Git working tree; cannot derive fallback repo")
 	}
 	var remoteURL string
-	if out, err := runGit(dir, "remote", "get-url", "--push", "--", "origin"); err == nil {
+	if out, err := gitcmd.RunGit(dir, "remote", "get-url", "--push", "--", "origin"); err == nil {
 		remoteURL = out
-	} else if out, err := runGit(dir, "remote", "get-url", "--", "origin"); err == nil {
+	} else if out, err := gitcmd.RunGit(dir, "remote", "get-url", "--", "origin"); err == nil {
 		remoteURL = out
 	} else {
-		remotes, err := runGit(dir, "remote")
+		remotes, err := gitcmd.RunGit(dir, "remote")
 		if err != nil || strings.TrimSpace(remotes) == "" {
 			return "", errors.New("error: no Git remotes found in the current repository")
 		}
 		first := strings.Fields(remotes)[0]
-		if out, err := runGit(dir, "remote", "get-url", "--push", "--", first); err == nil {
+		if out, err := gitcmd.RunGit(dir, "remote", "get-url", "--push", "--", first); err == nil {
 			remoteURL = out
-		} else if out, err := runGit(dir, "remote", "get-url", "--", first); err == nil {
+		} else if out, err := gitcmd.RunGit(dir, "remote", "get-url", "--", first); err == nil {
 			remoteURL = out
 		}
 	}
@@ -272,7 +139,7 @@ func getCurrentRepoRemoteHTTPS(dir string) (string, error) {
 		return "", errors.New("error: no Git remotes found in the current repository")
 	}
 	if strings.Contains(remoteURL, "..") {
-		return "", fmt.Errorf("error: current repository remote contains path traversal: %s", sanitizeURL(remoteURL))
+		return "", fmt.Errorf("error: current repository remote contains path traversal: %s", gitcmd.SanitizeURL(remoteURL))
 	}
 	n := normaliseRemoteToHTTPS(remoteURL)
 	if strings.Contains(n, "..") {
@@ -414,7 +281,7 @@ func validateBranch(branch string) error {
 	if branch == "" || strings.HasPrefix(branch, "-") {
 		return fmt.Errorf("error: '%s' is not a valid Git branch name", branch)
 	}
-	_, err := runGit("", "check-ref-format", "--allow-onelevel", branch)
+	_, err := gitcmd.RunGit("", "check-ref-format", "--allow-onelevel", branch)
 	if err != nil {
 		return fmt.Errorf("error: '%s' is not a valid Git branch name", branch)
 	}
@@ -652,13 +519,13 @@ func isGitRepo(path string) bool {
 	if !dirExists(path) {
 		return false
 	}
-	_, err := runGit(path, "rev-parse", "--is-inside-work-tree")
+	_, err := gitcmd.RunGit(path, "rev-parse", "--is-inside-work-tree")
 	return err == nil
 }
 
 func (s *state) ensureWildcardFetchRefspec(base string) {
 	wild := "+refs/heads/*:refs/remotes/origin/*"
-	out, err := runGit(base, "config", "--get-all", "--", "remote.origin.fetch")
+	out, err := gitcmd.RunGit(base, "config", "--get-all", "--", "remote.origin.fetch")
 	if err == nil {
 		for _, l := range strings.Split(out, "\n") {
 			if strings.TrimSpace(l) == wild {
@@ -666,13 +533,13 @@ func (s *state) ensureWildcardFetchRefspec(base string) {
 			}
 		}
 	}
-	if _, err := runGit(base, "config", "--add", "--", "remote.origin.fetch", wild); err != nil {
+	if _, err := gitcmd.RunGit(base, "config", "--add", "--", "remote.origin.fetch", wild); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: could not add wildcard fetch refspec in %s: %v\n", base, err)
 	}
 }
 
 func (s *state) ensureBaseExists(remote, base, fetchMode string) (int, error) {
-	if _, err := runGit(base, "rev-parse", "--is-inside-work-tree"); err == nil {
+	if _, err := gitcmd.RunGit(base, "rev-parse", "--is-inside-work-tree"); err == nil {
 		return 0, nil
 	}
 	if dirExists(base) && isNonEmptyDir(base) {
@@ -687,7 +554,7 @@ func (s *state) ensureBaseExists(remote, base, fetchMode string) (int, error) {
 		cloneArgs = append(cloneArgs, "--single-branch")
 	}
 	cloneArgs = append(cloneArgs, "--", remote, base)
-	if _, err := runGit("", cloneArgs...); err != nil {
+	if _, err := gitcmd.RunGit("", cloneArgs...); err != nil {
 		return 1, fmt.Errorf("error: failed to clone '%s' into '%s': %w", remote, base, err)
 	}
 	if fetchMode == "all" {
@@ -700,54 +567,6 @@ func (s *state) ensureBaseExists(remote, base, fetchMode string) (int, error) {
 	}
 	s.seenRemoteLocal[remote] = base
 	return 0, nil
-}
-
-func localBranchExists(base, branch string) bool {
-	_, err := runGit(base, "rev-parse", "--verify", "--quiet", "refs/heads/"+branch)
-	return err == nil
-}
-
-func remoteBranchExists(base, branch string) bool {
-	_, err := runGit(base, "rev-parse", "--verify", "--quiet", "refs/remotes/origin/"+branch)
-	return err == nil
-}
-
-func defaultRemoteBranch(base string) string {
-	if out, err := runGit(base, "symbolic-ref", "-q", "--short", "refs/remotes/origin/HEAD"); err == nil {
-		return strings.TrimPrefix(strings.TrimSpace(out), "origin/")
-	}
-	if remoteBranchExists(base, "master") {
-		return "master"
-	}
-	return "main"
-}
-
-func findWorktreeForBranch(base, branch string) string {
-	out, err := runGit(base, "worktree", "list", "--porcelain")
-	if err != nil {
-		return ""
-	}
-	want := "refs/heads/" + branch
-	var wt string
-	for _, line := range strings.Split(out, "\n") {
-		if strings.HasPrefix(line, "worktree ") {
-			wt = strings.TrimPrefix(line, "worktree ")
-		}
-		if strings.HasPrefix(line, "branch ") && strings.TrimPrefix(line, "branch ") == want {
-			return wt
-		}
-	}
-	return ""
-}
-
-func safeGetOriginURL(dir string) string {
-	if out, err := runGit(dir, "remote", "get-url", "origin"); err == nil {
-		return out
-	}
-	if out, err := runGit(dir, "config", "--get", "remote.origin.url"); err == nil {
-		return out
-	}
-	return ""
 }
 
 func (s *state) cloneOneRepo(ins instruction) (int, error) {
@@ -778,7 +597,7 @@ func (s *state) cloneOneRepo(ins instruction) (int, error) {
 	}
 
 	if isGitRepo(dest) {
-		existingHTTPS := normaliseRemoteToHTTPS(safeGetOriginURL(dest))
+		existingHTTPS := normaliseRemoteToHTTPS(gitcmd.SafeGetOriginURL(dest))
 		if existingHTTPS != "" && existingHTTPS == remoteHTTPS {
 			fmt.Printf("Already exists: %s (matches %s)\n", dest, remoteHTTPS)
 			s.cloneDest = dest
@@ -803,23 +622,23 @@ func (s *state) cloneOneRepo(ins instruction) (int, error) {
 	}
 
 	if ref != "" {
-		if _, err := runGit("", "ls-remote", "--exit-code", "--heads", "--", repoURL, ref); err == nil {
+		if _, err := gitcmd.RunGit("", "ls-remote", "--exit-code", "--heads", "--", repoURL, ref); err == nil {
 			cloneArgs2 := append(append([]string{}, cloneArgs...), "--branch", ref, "--", repoURL, dest)
 			fmt.Printf("Cloning %s → %s (branch %s)\n", remoteHTTPS, dest, ref)
-			if _, err := runGit("", cloneArgs2...); err != nil {
+			if _, err := gitcmd.RunGit("", cloneArgs2...); err != nil {
 				return 1, err
 			}
 		} else {
 			fmt.Printf("Remote branch '%s' not found on %s; creating it.\n", ref, remoteHTTPS)
 			fmt.Printf("Cloning default branch of %s → %s\n", remoteHTTPS, dest)
 			cloneArgs2 := append(cloneArgs, "--", repoURL, dest)
-			if _, err := runGit("", cloneArgs2...); err != nil {
+			if _, err := gitcmd.RunGit("", cloneArgs2...); err != nil {
 				return 1, err
 			}
-			if _, err := runGit(dest, "switch", "-c", ref, "--"); err != nil {
+			if _, err := gitcmd.RunGit(dest, "switch", "-c", ref, "--"); err != nil {
 				return 1, err
 			}
-			if _, err := runGit(dest, "push", "-u", "origin", "--", "HEAD:"+ref); err != nil {
+			if _, err := gitcmd.RunGit(dest, "push", "-u", "origin", "--", "HEAD:"+ref); err != nil {
 				return 1, err
 			}
 		}
@@ -827,7 +646,7 @@ func (s *state) cloneOneRepo(ins instruction) (int, error) {
 	} else {
 		cloneArgs = append(cloneArgs, "--", repoURL, dest)
 		fmt.Printf("Cloning %s → %s\n", remoteHTTPS, dest)
-		if _, err := runGit("", cloneArgs...); err != nil {
+		if _, err := gitcmd.RunGit("", cloneArgs...); err != nil {
 			return 1, err
 		}
 		if ins.allBranches {
@@ -853,10 +672,10 @@ func (s *state) createWorktreeForBranch(base, branch, targetDir, fetchMode strin
 		return 1, errors.New("error: no fallback base path available for worktree")
 	}
 	// Best-effort cleanup of stale worktree references.
-	if _, err := runGit(base, "worktree", "prune"); err != nil {
+	if _, err := gitcmd.RunGit(base, "worktree", "prune"); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: ignoring worktree prune failure for %s: %v\n", base, err)
 	}
-	if existing := findWorktreeForBranch(base, branch); existing != "" {
+	if existing := gitcmd.FindWorktreeForBranch(base, branch); existing != "" {
 		fmt.Printf("Skip: branch '%s' already checked out at %s\n", branch, existing)
 		s.counts.skipped++
 		return 2, nil
@@ -869,7 +688,7 @@ func (s *state) createWorktreeForBranch(base, branch, targetDir, fetchMode strin
 		dest = filepath.Join(s.parentDir, repoBase+"-"+sanitizeBranchName(branch))
 	}
 	if isGitRepo(dest) {
-		curb, err := runGit(dest, "rev-parse", "--abbrev-ref", "HEAD")
+		curb, err := gitcmd.RunGit(dest, "rev-parse", "--abbrev-ref", "HEAD")
 		if err == nil && strings.TrimSpace(curb) == branch {
 			fmt.Printf("Already exists: %s (branch %s)\n", dest, branch)
 		} else if err == nil {
@@ -885,78 +704,78 @@ func (s *state) createWorktreeForBranch(base, branch, targetDir, fetchMode strin
 		s.counts.skipped++
 		return 2, nil
 	}
-	if _, err := runGit(base, "fetch", "--prune", "origin"); err != nil {
+	if _, err := gitcmd.RunGit(base, "fetch", "--prune", "origin"); err != nil {
 		return 1, err
 	}
 
-	if localBranchExists(base, branch) {
+	if gitcmd.LocalBranchExists(base, branch) {
 		fmt.Printf("Adding worktree %s (existing local branch '%s')\n", dest, branch)
-		if _, err := runGit(base, "worktree", "add", "--", dest, branch); err != nil {
+		if _, err := gitcmd.RunGit(base, "worktree", "add", "--", dest, branch); err != nil {
 			return 1, err
 		}
 		s.counts.worktrees++
-		if remoteBranchExists(base, branch) {
+		if gitcmd.RemoteBranchExists(base, branch) {
 			if fetchMode == "deferred" {
 				s.ensureWildcardFetchRefspec(base)
 			}
-			if _, err := runGit(dest, "branch", "--set-upstream-to", "origin/"+branch, "--"); err != nil {
+			if _, err := gitcmd.RunGit(dest, "branch", "--set-upstream-to", "origin/"+branch, "--"); err != nil {
 				fmt.Fprintf(os.Stderr, "Warning: failed to set upstream for %s: %v\n", branch, err)
 			}
 		} else {
-			if _, err := runGit(dest, "push", "-u", "origin", "--", "HEAD:"+branch); err != nil {
+			if _, err := gitcmd.RunGit(dest, "push", "-u", "origin", "--", "HEAD:"+branch); err != nil {
 				fmt.Fprintf(os.Stderr, "Warning: failed to push branch %s: %v\n", branch, err)
 			}
 		}
 		return 0, nil
 	}
 
-	if _, err := runGit(base, "ls-remote", "--exit-code", "--heads", "origin", branch); err == nil {
+	if _, err := gitcmd.RunGit(base, "ls-remote", "--exit-code", "--heads", "origin", branch); err == nil {
 		fmt.Printf("Branch exists: %s (on remote)\n", branch)
 		fmt.Printf("Adding worktree %s (tracking origin/%s)\n", dest, branch)
 		// Best-effort fetch of remote-tracking branch in single-branch clones.
-		if _, err := runGit(base, "fetch", "origin", "refs/heads/"+branch+":refs/remotes/origin/"+branch); err != nil {
+		if _, err := gitcmd.RunGit(base, "fetch", "origin", "refs/heads/"+branch+":refs/remotes/origin/"+branch); err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: ignoring remote-tracking fetch failure for %s in %s: %v\n", branch, base, err)
 		}
-		if remoteBranchExists(base, branch) {
-			if _, err := runGit(base, "worktree", "add", "-b", branch, "--", dest, "origin/"+branch); err != nil {
+		if gitcmd.RemoteBranchExists(base, branch) {
+			if _, err := gitcmd.RunGit(base, "worktree", "add", "-b", branch, "--", dest, "origin/"+branch); err != nil {
 				return 1, err
 			}
 			s.counts.worktrees++
 			if fetchMode == "deferred" {
 				s.ensureWildcardFetchRefspec(base)
 			}
-			if _, err := runGit(dest, "branch", "--set-upstream-to", "origin/"+branch, "--"); err != nil {
+			if _, err := gitcmd.RunGit(dest, "branch", "--set-upstream-to", "origin/"+branch, "--"); err != nil {
 				fmt.Fprintf(os.Stderr, "Warning: failed to set upstream for %s: %v\n", branch, err)
 			}
 			return 0, nil
 		}
-		defb := defaultRemoteBranch(base)
+		defb := gitcmd.DefaultRemoteBranch(base)
 		baseRef := "origin/" + defb
-		if !remoteBranchExists(base, defb) {
+		if !gitcmd.RemoteBranchExists(base, defb) {
 			baseRef = "HEAD"
 		}
 		fmt.Printf("Could not resolve origin/%s locally; creating from %s instead\n", branch, baseRef)
-		if _, err := runGit(base, "worktree", "add", "-b", branch, "--", dest, baseRef); err != nil {
+		if _, err := gitcmd.RunGit(base, "worktree", "add", "-b", branch, "--", dest, baseRef); err != nil {
 			return 1, err
 		}
 		s.counts.worktrees++
-		if _, err := runGit(dest, "push", "-u", "origin", "--", "HEAD:"+branch); err != nil {
+		if _, err := gitcmd.RunGit(dest, "push", "-u", "origin", "--", "HEAD:"+branch); err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: failed to push branch %s: %v\n", branch, err)
 		}
 		return 0, nil
 	}
 
 	fmt.Printf("Branch not found: %s (on remote, creating new)\n", branch)
-	defb := defaultRemoteBranch(base)
+	defb := gitcmd.DefaultRemoteBranch(base)
 	baseRef := "origin/" + defb
-	if !remoteBranchExists(base, defb) {
+	if !gitcmd.RemoteBranchExists(base, defb) {
 		baseRef = "HEAD"
 	}
 	fmt.Printf("Adding worktree %s (new branch '%s' from %s)\n", dest, branch, baseRef)
-	if _, err := runGit(base, "worktree", "add", "-b", branch, "--", dest, baseRef); err != nil {
+	if _, err := gitcmd.RunGit(base, "worktree", "add", "-b", branch, "--", dest, baseRef); err != nil {
 		return 1, err
 	}
-	if _, err := runGit(dest, "push", "-u", "origin", "--", "HEAD:"+branch); err != nil {
+	if _, err := gitcmd.RunGit(dest, "push", "-u", "origin", "--", "HEAD:"+branch); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: failed to push branch %s: %v\n", branch, err)
 	}
 	s.counts.worktrees++
@@ -975,7 +794,7 @@ func (s *state) processFile() error {
 		if trimmed == "" || isGlobalFlagLine(trimmed) {
 			continue
 		}
-		fmt.Fprintf(os.Stderr, "Processing: %s\n", sanitizeURL(trimmed))
+		fmt.Fprintf(os.Stderr, "Processing: %s\n", gitcmd.SanitizeURL(trimmed))
 		ins, err := s.parseEffectiveLine(trimmed, s.fallbackRepoHTTPS)
 		lineRC := 0
 		if err != nil {
@@ -1065,13 +884,13 @@ func (s *state) processFile() error {
 		switch lineRC {
 		case 0:
 		case 2:
-			fmt.Fprintf(os.Stderr, "SKIP: %s\n", sanitizeURL(trimmed))
+			fmt.Fprintf(os.Stderr, "SKIP: %s\n", gitcmd.SanitizeURL(trimmed))
 		default:
 			s.counts.errors++
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "ERROR: line failed: %s\n", sanitizeURL(err.Error()))
+				fmt.Fprintf(os.Stderr, "ERROR: line failed: %s\n", gitcmd.SanitizeURL(err.Error()))
 			} else {
-				fmt.Fprintf(os.Stderr, "ERROR: line failed (rc=%d): %s\n", lineRC, sanitizeURL(trimmed))
+				fmt.Fprintf(os.Stderr, "ERROR: line failed (rc=%d): %s\n", lineRC, gitcmd.SanitizeURL(trimmed))
 			}
 		}
 	}
