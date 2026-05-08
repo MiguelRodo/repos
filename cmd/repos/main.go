@@ -366,10 +366,7 @@ func (s *state) parseEffectiveLine(trimmed string, fallbackHTTPS string) (instru
 		if err := validateBranch(branch); err != nil {
 			return ins, err
 		}
-		useWorktree := false
-		if s.globalWorktree {
-			useWorktree = true
-		}
+		useWorktree := s.globalWorktree
 		for _, tok := range rest {
 			switch tok {
 			case "-w", "--worktree":
