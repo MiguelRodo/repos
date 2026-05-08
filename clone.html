@@ -187,6 +187,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#basic-usage" id="toc-basic-usage" class="nav-link active" data-scroll-target="#basic-usage">Basic Usage</a></li>
   <li><a href="#options" id="toc-options" class="nav-link" data-scroll-target="#options">Options</a></li>
+  <li><a href="#default-fetch-behaviour" id="toc-default-fetch-behaviour" class="nav-link" data-scroll-target="#default-fetch-behaviour">Default Fetch Behaviour</a></li>
   <li><a href="#repository-layout" id="toc-repository-layout" class="nav-link" data-scroll-target="#repository-layout">Repository Layout</a></li>
   <li><a href="#whats-in-repos.list" id="toc-whats-in-repos.list" class="nav-link" data-scroll-target="#whats-in-repos.list">What’s in repos.list?</a></li>
   <li><a href="#github-authentication" id="toc-github-authentication" class="nav-link" data-scroll-target="#github-authentication">GitHub Authentication</a></li>
@@ -224,6 +225,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="options" class="level2">
 <h2 class="anchored" data-anchor-id="options">Options</h2>
 <table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
 <thead>
 <tr class="header">
 <th>Flag</th>
@@ -235,10 +240,37 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td><code>-f &lt;file&gt;</code></td>
 <td>Use a different list file (default: <code>repos.list</code>)</td>
 </tr>
+<tr class="even">
+<td><code>--fetch-all-deferred</code></td>
+<td><em>(Default)</em> Fast <code>--single-branch</code> clone; wildcard refspec restored immediately</td>
+</tr>
+<tr class="odd">
+<td><code>--fetch-single</code></td>
+<td>Keep restricted single-branch refspec (CI/CD or metered connections)</td>
+</tr>
+<tr class="even">
+<td><code>--fetch-all</code></td>
+<td>Full clone — all remote branches downloaded upfront</td>
+</tr>
 </tbody>
 </table>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Use a custom list file</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> clone <span class="at">-f</span> my-repos.list</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> clone <span class="at">-f</span> my-repos.list</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># CI/CD pipeline — strict single-branch isolation</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> clone <span class="at">--fetch-single</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Download everything upfront</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> clone <span class="at">--fetch-all</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="default-fetch-behaviour" class="level2">
+<h2 class="anchored" data-anchor-id="default-fetch-behaviour">Default Fetch Behaviour</h2>
+<p>By default (<code>--fetch-all-deferred</code>), <code>repos clone</code> performs a fast <code>--single-branch</code> clone and then immediately restores the standard wildcard fetch refspec (<code>+refs/heads/*:refs/remotes/origin/*</code>). This means:</p>
+<ul>
+<li>Initial clone is as fast as a <code>--single-branch</code> clone.</li>
+<li>After the clone, running <code>git fetch</code> inside any cloned repo transparently downloads the rest of the history, and <code>git checkout &lt;other-branch&gt;</code> works without any manual config changes.</li>
+</ul>
+<p>Use <code>--fetch-single</code> to opt out — for example in CI/CD pipelines where you only ever need one branch and want to minimise network traffic.</p>
 </section>
 <section id="repository-layout" class="level2">
 <h2 class="anchored" data-anchor-id="repository-layout">Repository Layout</h2>

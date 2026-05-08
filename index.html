@@ -225,6 +225,7 @@ myorg/documentation</code></pre>
 <p>Then run:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> clone</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>This clones all listed repositories into the parent directory of your current location.</p>
+<p>By default, <code>repos clone</code> uses <code>--fetch-all-deferred</code>: a fast single-branch clone plus immediate wildcard fetch-refspec restoration. You can also use <code>--fetch-single</code> (strict isolation) or <code>--fetch-all</code> (full clone upfront).</p>
 </section>
 <section id="what-else-can-you-do" class="level2">
 <h2 class="anchored" data-anchor-id="what-else-can-you-do">What else can you do?</h2>

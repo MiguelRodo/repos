@@ -67,7 +67,14 @@
     "href": "clone.html#options",
     "title": "repos clone",
     "section": "Options",
-    "text": "Options\n\n\n\nFlag\nDescription\n\n\n\n\n-f &lt;file&gt;\nUse a different list file (default: repos.list)\n\n\n\n# Use a custom list file\nrepos clone -f my-repos.list"
+    "text": "Options\n\n\n\n\n\n\n\nFlag\nDescription\n\n\n\n\n-f &lt;file&gt;\nUse a different list file (default: repos.list)\n\n\n--fetch-all-deferred\n(Default) Fast --single-branch clone; wildcard refspec restored immediately\n\n\n--fetch-single\nKeep restricted single-branch refspec (CI/CD or metered connections)\n\n\n--fetch-all\nFull clone — all remote branches downloaded upfront\n\n\n\n# Use a custom list file\nrepos clone -f my-repos.list\n\n# CI/CD pipeline — strict single-branch isolation\nrepos clone --fetch-single\n\n# Download everything upfront\nrepos clone --fetch-all"
+  },
+  {
+    "objectID": "clone.html#default-fetch-behaviour",
+    "href": "clone.html#default-fetch-behaviour",
+    "title": "repos clone",
+    "section": "Default Fetch Behaviour",
+    "text": "Default Fetch Behaviour\nBy default (--fetch-all-deferred), repos clone performs a fast --single-branch clone and then immediately restores the standard wildcard fetch refspec (+refs/heads/*:refs/remotes/origin/*). This means:\n\nInitial clone is as fast as a --single-branch clone.\nAfter the clone, running git fetch inside any cloned repo transparently downloads the rest of the history, and git checkout &lt;other-branch&gt; works without any manual config changes.\n\nUse --fetch-single to opt out — for example in CI/CD pipelines where you only ever need one branch and want to minimise network traffic."
   },
   {
     "objectID": "clone.html#repository-layout",
@@ -144,7 +151,7 @@
     "href": "python-package.html#end-to-end-workflow",
     "title": "Python Package",
     "section": "End-to-End Workflow",
-    "text": "End-to-End Workflow\n\nStep 1 — Create a repos.list file\nPlace a repos.list file in your project directory listing the repositories you want to manage (one per line):\nmyorg/data-curation\nmyorg/analysis\nmyorg/documentation\nSee the repos.list reference for the full syntax — branch pinning, worktrees, visibility flags, and more.\n\n\nStep 2 — Clone repositories\nfrom repos import run_script\n\nrun_script(\"helper/clone-repos.sh\")\nThis reads repos.list and clones everything to the parent directory of your current location.\n\n\nStep 3 — Open in your IDE (optional)\nGenerate a VS Code multi-root workspace file:\nfrom repos import workspace\n\nworkspace()\n\n\nStep 4 — Run a pipeline\nOnce the repositories are cloned, run a script inside each one:\nfrom repos import run\n\nrun()          # executes run.sh in every repo\nSee run() below for all options."
+    "text": "End-to-End Workflow\n\nStep 1 — Create a repos.list file\nPlace a repos.list file in your project directory listing the repositories you want to manage (one per line):\nmyorg/data-curation\nmyorg/analysis\nmyorg/documentation\nSee the repos.list reference for the full syntax — branch pinning, worktrees, visibility flags, and more.\n\n\nStep 2 — Clone repositories\nfrom repos import clone\n\nclone()\nThis reads repos.list and clones everything to the parent directory of your current location.\nclone() supports explicit fetch modes:\nfrom repos import clone\n\nclone(fetch_mode=\"deferred\")  # default: fast clone, then restore wildcard refspec\nclone(fetch_mode=\"single\")    # strict single-branch isolation\nclone(fetch_mode=\"all\")       # full clone (all branches upfront)\n\n\nStep 3 — Open in your IDE (optional)\nGenerate a VS Code multi-root workspace file:\nfrom repos import workspace\n\nworkspace()\n\n\nStep 4 — Run a pipeline\nOnce the repositories are cloned, run a script inside each one:\nfrom repos import run\n\nrun()          # executes run.sh in every repo\nSee run() below for all options."
   },
   {
     "objectID": "python-package.html#api-reference",
@@ -277,7 +284,7 @@
     "href": "repos-list.html#global-flags",
     "title": "repos.list Reference",
     "section": "Global Flags",
-    "text": "Global Flags\nPlace a flag on its own line (with nothing else except optional comments) to apply it to every subsequent repository:\n\n\n\n\n\n\n\nFlag\nEffect\n\n\n\n\n--public\nCreate all repositories as public by default\n\n\n--private\nCreate all repositories as private by default (the default)\n\n\n--codespaces\nConfigure Codespaces authentication for all repositories\n\n\n--worktree\nUse worktrees instead of separate clones for all @branch lines\n\n\n\nPer-line --public/--private flags always override the global default."
+    "text": "Global Flags\nPlace a flag on its own line (with nothing else except optional comments) to apply it to every subsequent repository:\n\n\n\n\n\n\n\nFlag\nEffect\n\n\n\n\n--public\nCreate all repositories as public by default\n\n\n--private\nCreate all repositories as private by default (the default)\n\n\n--codespaces\nConfigure Codespaces authentication for all repositories\n\n\n--worktree\nUse worktrees instead of separate clones for all @branch lines\n\n\n--fetch-all-deferred\n(Default) Fast single-branch clone; wildcard refspec restored immediately\n\n\n--fetch-single\nKeep restricted single-branch refspec (CI/CD or metered connections)\n\n\n--fetch-all\nFull clone — all remote branches downloaded upfront\n\n\n\nPer-line --public/--private flags always override the global default.\n--fetch-single, --fetch-all-deferred, and --fetch-all may also be specified per-line to override the global fetch mode for a specific repository or @branch line."
   },
   {
     "objectID": "repos-list.html#example",
@@ -305,7 +312,7 @@
     "href": "r-package.html#end-to-end-workflow",
     "title": "R Package",
     "section": "End-to-End Workflow",
-    "text": "End-to-End Workflow\n\nStep 1 — Create a repos.list file\nPlace a repos.list file in your project directory listing the repositories you want to manage (one per line):\nmyorg/data-curation\nmyorg/analysis\nmyorg/documentation\nSee the repos.list reference for the full syntax — branch pinning, worktrees, visibility flags, and more.\n\n\nStep 2 — Clone repositories\nlibrary(repos)\n\nrepos(\"clone\")\nThis reads repos.list and clones everything to the parent directory of your current location.\n\n\nStep 3 — Open in your IDE (optional)\nGenerate a VS Code multi-root workspace file:\nrepos_workspace()\nSee repos_workspace() below for all options.\n\n\nStep 4 — Run a pipeline\nOnce the repositories are cloned, run a script inside each one:\nrepos_run()          # executes run.sh in every repo\nSee repos_run() below for all options."
+    "text": "End-to-End Workflow\n\nStep 1 — Create a repos.list file\nPlace a repos.list file in your project directory listing the repositories you want to manage (one per line):\nmyorg/data-curation\nmyorg/analysis\nmyorg/documentation\nSee the repos.list reference for the full syntax — branch pinning, worktrees, visibility flags, and more.\n\n\nStep 2 — Clone repositories\nlibrary(repos)\n\nrepos_clone()\nThis reads repos.list and clones everything to the parent directory of your current location.\nrepos_clone() supports explicit fetch modes:\nrepos_clone(fetch_mode = \"deferred\")  # default: fast clone, then restore wildcard refspec\nrepos_clone(fetch_mode = \"single\")    # strict single-branch isolation\nrepos_clone(fetch_mode = \"all\")       # full clone (all branches upfront)\n\n\nStep 3 — Open in your IDE (optional)\nGenerate a VS Code multi-root workspace file:\nrepos_workspace()\nSee repos_workspace() below for all options.\n\n\nStep 4 — Run a pipeline\nOnce the repositories are cloned, run a script inside each one:\nrepos_run()          # executes run.sh in every repo\nSee repos_run() below for all options."
   },
   {
     "objectID": "r-package.html#api-reference",
@@ -340,7 +347,7 @@
     "href": "index.html#quick-start",
     "title": "repos",
     "section": "Quick Start",
-    "text": "Quick Start\nCreate a repos.list file in your project directory listing the repositories you want:\nmyorg/data-curation\nmyorg/analysis\nmyorg/documentation\nThen run:\nrepos clone\nThis clones all listed repositories into the parent directory of your current location."
+    "text": "Quick Start\nCreate a repos.list file in your project directory listing the repositories you want:\nmyorg/data-curation\nmyorg/analysis\nmyorg/documentation\nThen run:\nrepos clone\nThis clones all listed repositories into the parent directory of your current location.\nBy default, repos clone uses --fetch-all-deferred: a fast single-branch clone plus immediate wildcard fetch-refspec restoration. You can also use --fetch-single (strict isolation) or --fetch-all (full clone upfront)."
   },
   {
     "objectID": "index.html#what-else-can-you-do",

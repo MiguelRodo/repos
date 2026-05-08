@@ -249,9 +249,22 @@ owner/other-repo --private</code></pre>
 <td><code>--worktree</code></td>
 <td>Use worktrees instead of separate clones for all <code>@branch</code> lines</td>
 </tr>
+<tr class="odd">
+<td><code>--fetch-all-deferred</code></td>
+<td><em>(Default)</em> Fast single-branch clone; wildcard refspec restored immediately</td>
+</tr>
+<tr class="even">
+<td><code>--fetch-single</code></td>
+<td>Keep restricted single-branch refspec (CI/CD or metered connections)</td>
+</tr>
+<tr class="odd">
+<td><code>--fetch-all</code></td>
+<td>Full clone — all remote branches downloaded upfront</td>
+</tr>
 </tbody>
 </table>
 <p>Per-line <code>--public</code>/<code>--private</code> flags always override the global default.</p>
+<p><code>--fetch-single</code>, <code>--fetch-all-deferred</code>, and <code>--fetch-all</code> may also be specified per-line to override the global fetch mode for a specific repository or <code>@branch</code> line.</p>
 </section>
 <section id="example" class="level2">
 <h2 class="anchored" data-anchor-id="example">Example</h2>
