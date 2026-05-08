@@ -35,7 +35,11 @@ echo "Worktree Tracking Setup Test"
 echo "============================================"
 
 # Create a temporary test directory
+# Use pwd -P to resolve symlinks so the path matches what git records in worktree
+# metadata (git resolves symlinks when recording worktree paths, so on macOS the
+# /var/folders/... symlink would otherwise mismatch /private/var/folders/...).
 TEST_DIR="$(mktemp -d)"
+TEST_DIR="$(cd "$TEST_DIR" && pwd -P)"
 info "Test directory: $TEST_DIR"
 
 cleanup() {
@@ -474,6 +478,13 @@ if [[ ! -d ../data-force ]]; then
 fi
 
 if git worktree list --porcelain | grep -qF "worktree $TEST_DIR/data-force"; then
+  test_passed
+  pass "CLI --worktree --force created a worktree for the @branch line"
+elif [[ -f "$TEST_DIR/data-force/.git" ]] && grep -q "^gitdir:" "$TEST_DIR/data-force/.git" 2>/dev/null; then
+  # Platform-independent fallback: git worktrees have a .git FILE (not directory)
+  # containing a "gitdir:" pointer back to the main repo. This handles cases where
+  # git records the physical path but $TEST_DIR still contains a symlink path
+  # (macOS /var/folders → /private/var/folders) or a different path format (Windows).
   test_passed
   pass "CLI --worktree --force created a worktree for the @branch line"
 else
