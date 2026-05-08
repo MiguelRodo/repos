@@ -407,6 +407,42 @@ else
 fi
 
 echo ""
+echo "TEST: Global --force blocks conflicting per-line -a alias"
+run_test
+
+cd "$TEST_DIR"
+mkdir global-force-alias-ws
+cd global-force-alias-ws
+git init >/dev/null 2>&1
+git remote add origin "$TEST_DIR/remote.git"
+echo "global force alias workspace" > README.md
+git add README.md
+git commit -m "global force alias init" >/dev/null 2>&1
+
+cat > repos.list <<EOF
+--fetch-single --force
+$TEST_DIR/remote.git@slides-branch global-forced-alias -a
+EOF
+
+set +e
+GLOBAL_FORCE_ALIAS_OUTPUT=$("$REPO_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
+GLOBAL_FORCE_ALIAS_RC=$?
+set -e
+
+if [[ $GLOBAL_FORCE_ALIAS_RC -ne 0 ]]; then
+  echo "$GLOBAL_FORCE_ALIAS_OUTPUT"
+  fail "clone-repos.sh failed for global --force alias test (exit $GLOBAL_FORCE_ALIAS_RC)"
+fi
+
+FETCH_REFSPEC_ALIAS=$(git -C ../global-forced-alias config --get remote.origin.fetch)
+if [[ "$FETCH_REFSPEC_ALIAS" == "+refs/heads/slides-branch:refs/remotes/origin/slides-branch" ]]; then
+  test_passed
+  pass "Global --fetch-single --force ignores per-line -a alias"
+else
+  fail "Expected forced single-branch refspec, got: $FETCH_REFSPEC_ALIAS"
+fi
+
+echo ""
 echo "TEST: CLI --worktree --force ignores per-line fetch overrides"
 run_test
 

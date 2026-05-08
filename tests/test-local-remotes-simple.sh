@@ -124,7 +124,32 @@ else
 fi
 
 # ============================================
-# Test 4: clone-repos.sh handles file:// URLs
+# Test 4: create-repos.sh ignores standalone --force global lines
+# ============================================
+print_test "create-repos.sh ignores standalone global --force lines"
+
+cd "$TEST_ROOT"
+cat > repos.list <<EOF
+--force
+file:///tmp/force-local.git
+EOF
+
+OUTPUT=$("$PROJECT_ROOT/scripts/helper/create-repos.sh" -f repos.list 2>&1)
+if echo "$OUTPUT" | grep -q "Skipping local remote: file:///tmp/force-local.git"; then
+  print_pass "Standalone --force line is ignored by create-repos.sh"
+else
+  print_fail "create-repos.sh did not ignore standalone --force line correctly"
+  print_info "Output: $OUTPUT"
+fi
+
+if echo "$OUTPUT" | grep -q "Warning: GitHub credentials not available\|Error: GitHub"; then
+  print_fail "create-repos.sh treated standalone --force as a repository spec"
+else
+  print_pass "Standalone --force line does not trigger repository processing"
+fi
+
+# ============================================
+# Test 5: clone-repos.sh handles file:// URLs
 # ============================================
 print_test "clone-repos.sh recognizes file:// URLs as valid remotes"
 

@@ -824,7 +824,7 @@ parse_effective_line() {
             fi
             ;;
           -a|--all-branches)
-            if [ "$ignore_line_flags" != "true" ]; then
+            if [ "$ignore_line_flags" != "true" ] && [ "$fetch_mode_locked" != "true" ]; then
               all_branches=1
             fi
             ;;  # harmless for worktrees
@@ -882,7 +882,7 @@ parse_effective_line() {
       while [ "$#" -gt 0 ]; do
         case "$1" in
           -a|--all-branches)
-            if [ "$ignore_line_flags" != "true" ]; then
+            if [ "$ignore_line_flags" != "true" ] && [ "$fetch_mode_locked" != "true" ]; then
               all_branches=1
             fi
             ;;
