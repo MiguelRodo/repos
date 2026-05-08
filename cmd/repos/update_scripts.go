@@ -51,7 +51,10 @@ func runUpdateScripts(args []string) error {
 	}
 
 	if _, err := os.Stat(*reposFile); err != nil {
-		return fmt.Errorf("file '%s' not found", *reposFile)
+		if errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("file '%s' not found", *reposFile)
+		}
+		return fmt.Errorf("stat repos file %s: %w", *reposFile, err)
 	}
 
 	targetRepos, err := collectManagedRepoPaths(cwd, *reposFile)
@@ -85,6 +88,7 @@ func runUpdateScripts(args []string) error {
 
 		repoChanged := false
 		repoHadError := false
+		var changedPaths []string
 		for _, relPath := range sharedSyncPaths {
 			src := filepath.Join(cwd, relPath)
 			dst := filepath.Join(repoDir, relPath)
@@ -105,6 +109,7 @@ func runUpdateScripts(args []string) error {
 				}
 				if wouldChange {
 					repoChanged = true
+					changedPaths = append(changedPaths, relPath)
 				}
 				continue
 			}
@@ -116,6 +121,7 @@ func runUpdateScripts(args []string) error {
 			}
 			if changed {
 				repoChanged = true
+				changedPaths = append(changedPaths, relPath)
 			}
 		}
 
@@ -125,7 +131,7 @@ func runUpdateScripts(args []string) error {
 		}
 
 		if repoChanged && *stage && !*dryRun {
-			for _, relPath := range sharedSyncPaths {
+			for _, relPath := range changedPaths {
 				if _, err := gitcmd.RunGit(repoDir, "add", "--", relPath); err != nil {
 					fmt.Printf("✗ %s: git add failed for %s: %v\n", repoDir, relPath, err)
 					repoHadError = true
@@ -307,6 +313,9 @@ func hasMirrorChanges(src, dst string) (bool, error) {
 	}
 
 	if srcInfo.IsDir() != dstInfo.IsDir() {
+		return true, nil
+	}
+	if srcInfo.IsDir() && srcInfo.Mode().Perm() != dstInfo.Mode().Perm() {
 		return true, nil
 	}
 	if srcInfo.Mode()&os.ModeSymlink != dstInfo.Mode()&os.ModeSymlink {

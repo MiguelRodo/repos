@@ -5,7 +5,7 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-TEST_DIR=$(mktemp -d)
+TEST_DIR=$(mktemp -d "${TMPDIR:-/tmp}/repos-go-update-scripts.XXXXXX")
 TMP_BIN="$TEST_DIR/repos-go-update-scripts-bin"
 cleanup() {
   rm -f "$TMP_BIN"
@@ -78,8 +78,7 @@ LIST
 
 cd "$BASE_REPO"
 
-OUTPUT=$("$REPOS_BIN" update-scripts --help 2>&1) || true
-if echo "$OUTPUT" | grep -q "Usage:"; then
+if OUTPUT=$("$REPOS_BIN" update-scripts --help 2>&1) && echo "$OUTPUT" | grep -q "Usage:"; then
   print_pass "Help output is shown"
 else
   print_fail "Help output missing"
