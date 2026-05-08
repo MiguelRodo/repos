@@ -193,6 +193,8 @@ func processCreateLine(line string, privateDefault bool) error {
 func extractOwnerRepo(repoSpec string) (string, error) {
 	sanitizedSpec := gitcmd.SanitizeURL(repoSpec)
 	repoNoRef, _ := splitRepoSpec(repoSpec)
+	// Normalize from the raw spec so credentialed/SSH GitHub URLs are parsed
+	// correctly; use sanitizedSpec only for user-facing errors.
 	normalizedSpec := normaliseRemoteToHTTPS(repoNoRef)
 	switch {
 	case strings.HasPrefix(normalizedSpec, "https://github.com/"):
