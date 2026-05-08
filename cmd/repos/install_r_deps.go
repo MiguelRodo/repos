@@ -322,7 +322,7 @@ func streamPrefixedOutput(name string, src io.Reader, dst io.Writer, wg *sync.Wa
 	for {
 		line, err := reader.ReadString('\n')
 		if len(line) > 0 {
-			line = strings.TrimSuffix(strings.TrimSuffix(line, "\n"), "\r")
+			line = strings.TrimRight(line, "\r\n")
 			fmt.Fprintf(dst, "[%s] %s\n", name, line)
 		}
 		if err == io.EOF {

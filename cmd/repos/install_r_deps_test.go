@@ -2,12 +2,15 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
 )
+
+const testLongLineSize = 2 * 1024 * 1024
 
 func TestDetectRProjectPrefersRenvLock(t *testing.T) {
 	t.Parallel()
@@ -87,7 +90,7 @@ func TestCollectManagedRepoPathsBasicAndFallbackBranch(t *testing.T) {
 func TestStreamPrefixedOutputHandlesVeryLongLines(t *testing.T) {
 	t.Parallel()
 
-	longLine := strings.Repeat("x", 2*1024*1024) // 2 MiB, larger than old scanner max
+	longLine := strings.Repeat("x", testLongLineSize) // larger than old scanner max
 	in := bytes.NewBufferString(longLine + "\n")
 	var out bytes.Buffer
 
@@ -111,5 +114,49 @@ func TestStreamPrefixedOutputHandlesVeryLongLines(t *testing.T) {
 	}
 	if !strings.Contains(got, longLine) {
 		t.Fatalf("long line content was not fully streamed")
+	}
+}
+
+type failingReader struct {
+	data []byte
+	read bool
+	err  error
+}
+
+func (r *failingReader) Read(p []byte) (int, error) {
+	if r.read {
+		return 0, r.err
+	}
+	r.read = true
+	n := copy(p, r.data)
+	return n, r.err
+}
+
+func TestStreamPrefixedOutputReportsReaderError(t *testing.T) {
+	t.Parallel()
+
+	readErr := errors.New("forced read error")
+	in := &failingReader{
+		data: []byte("partial line"),
+		err:  readErr,
+	}
+	var out bytes.Buffer
+
+	var wg sync.WaitGroup
+	errCh := make(chan error, 1)
+	wg.Add(1)
+	go streamPrefixedOutput("repo-b", in, &out, &wg, errCh)
+	wg.Wait()
+	close(errCh)
+
+	var gotErr error
+	for err := range errCh {
+		gotErr = err
+	}
+	if gotErr == nil {
+		t.Fatalf("expected stream error")
+	}
+	if !errors.Is(gotErr, readErr) {
+		t.Fatalf("expected %v, got %v", readErr, gotErr)
 	}
 }
