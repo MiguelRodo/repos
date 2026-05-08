@@ -48,8 +48,8 @@ func mirrorDir(srcDir, dstDir string, srcPerm os.FileMode, opts MirrorOptions) (
 		if err := os.MkdirAll(dstDir, srcPerm); err != nil {
 			return false, fmt.Errorf("create directory %s: %w", dstDir, err)
 		}
-		if err := os.Chmod(dstDir, srcPerm); err != nil {
-			return false, fmt.Errorf("set permissions on %s: %w", dstDir, err)
+		if err := ensurePerms(dstDir, srcPerm); err != nil {
+			return false, err
 		}
 		changed = true
 	} else {
@@ -60,8 +60,8 @@ func mirrorDir(srcDir, dstDir string, srcPerm os.FileMode, opts MirrorOptions) (
 			if err := os.MkdirAll(dstDir, srcPerm); err != nil {
 				return false, fmt.Errorf("create directory %s: %w", dstDir, err)
 			}
-			if err := os.Chmod(dstDir, srcPerm); err != nil {
-				return false, fmt.Errorf("set permissions on %s: %w", dstDir, err)
+			if err := ensurePerms(dstDir, srcPerm); err != nil {
+				return false, err
 			}
 			changed = true
 		} else if dstInfo.Mode().Perm() != srcPerm {
@@ -109,6 +109,13 @@ func mirrorDir(srcDir, dstDir string, srcPerm os.FileMode, opts MirrorOptions) (
 	}
 
 	return changed, nil
+}
+
+func ensurePerms(path string, mode os.FileMode) error {
+	if err := os.Chmod(path, mode); err != nil {
+		return fmt.Errorf("set permissions on %s: %w", path, err)
+	}
+	return nil
 }
 
 func mirrorFile(src, dst string, srcPerm os.FileMode) (bool, error) {
