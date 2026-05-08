@@ -124,6 +124,12 @@ CLONE_DEST=""
 # "single"   = --single-branch clone only (no wildcard refspec)
 # "all"      = full clone (no --single-branch)
 GLOBAL_FETCH_MODE="deferred"
+GLOBAL_WORKTREE=false
+GLOBAL_WORKTREE_FORCED=false
+GLOBAL_FETCH_MODE_FORCED=false
+CLI_WORKTREE_SET=false
+CLI_FETCH_MODE_SET=false
+CLI_FORCE=false
 
 remote_index() { # echo index or -1
   local needle="$1" i
@@ -320,7 +326,9 @@ EOF
 # --- Usage -------------------------------------------------------------------
 usage() {
   cat <<'EOF'
-Usage: clone-repos.sh [--file <repo-list>] [--debug] [--help]
+Usage: clone-repos.sh [--file <repo-list>] [--debug] [--worktree]
+                      [--fetch-all-deferred|--fetch-single|--fetch-all]
+                      [--force] [--help]
 
 Each non-empty, non-comment line in <repo-list> is one instruction. There are three kinds:
 
@@ -394,15 +402,113 @@ Fetch modes (per-line flags or global CLI flags)
   --fetch-all              Full clone — no --single-branch flag; all remote branches
                            are fetched upfront. Alias for -a/--all-branches.
 
-  Per-line flags override the global CLI flag for that specific entry.
+  Per-line flags override global defaults by default.
+  If a global repos.list flag is written as "<flag> --force", it overrides
+  conflicting per-line flags for that setting.
+  If the CLI includes --force, per-line flag overrides are ignored.
 
 Options
   -f, --file <repo-list>   Use an alternate repo list file (default: repos.list,
                            or repos-to-clone.list if repos.list is absent).
   -d, --debug              Enable debug tracing to stderr.
+  --worktree               Make every @branch line use a worktree by default.
+  --fetch-all-deferred     Global default fetch mode (fast clone, then restore
+                           wildcard refspec).
+  --fetch-single           Global default fetch mode (keep single-branch refspec).
+  --fetch-all              Global default fetch mode (full clone of all branches).
+  --force                  Ignore per-line flag overrides and enforce CLI flags.
   --debug-file [file]      Enable debug tracing to file (auto-generated if not specified).
   -h, --help               Show this help and exit.
 EOF
+}
+
+is_global_flag_token() {
+  case "$1" in
+    --codespaces|--public|--private|--worktree|--fetch-all-deferred|--fetch-single|--fetch-all|--force)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+line_is_global_flags_only() {
+  set -f
+  set -- $1
+  [ "$#" -eq 0 ] && { set +f; return 1; }
+  local tok
+  for tok in "$@"; do
+    is_global_flag_token "$tok" || { set +f; return 1; }
+  done
+  set +f
+  return 0
+}
+
+apply_global_flag_line() {
+  local line="$1"
+  local line_force=false
+  local forced_suffix=""
+  local tok
+
+  set -f
+  set -- $line
+  set +f
+  [ "$#" -eq 0 ] && return 0
+
+  for tok in "$@"; do
+    [ "$tok" = "--force" ] && line_force=true
+  done
+  [ "$line_force" = "true" ] && forced_suffix=" (forced)"
+
+  for tok in "$@"; do
+    case "$tok" in
+      --worktree)
+        if [ "$CLI_WORKTREE_SET" != "true" ]; then
+          GLOBAL_WORKTREE=true
+          if [ "$line_force" = "true" ]; then
+            GLOBAL_WORKTREE_FORCED=true
+          fi
+          debug "Enabled --worktree from repos.list${forced_suffix}"
+        fi
+        ;;
+      --fetch-all-deferred)
+        if [ "$CLI_FETCH_MODE_SET" != "true" ]; then
+          GLOBAL_FETCH_MODE="deferred"
+          if [ "$line_force" = "true" ]; then
+            GLOBAL_FETCH_MODE_FORCED=true
+          else
+            GLOBAL_FETCH_MODE_FORCED=false
+          fi
+          debug "Set GLOBAL_FETCH_MODE=deferred from repos.list${forced_suffix}"
+        fi
+        ;;
+      --fetch-single)
+        if [ "$CLI_FETCH_MODE_SET" != "true" ]; then
+          GLOBAL_FETCH_MODE="single"
+          if [ "$line_force" = "true" ]; then
+            GLOBAL_FETCH_MODE_FORCED=true
+          else
+            GLOBAL_FETCH_MODE_FORCED=false
+          fi
+          debug "Set GLOBAL_FETCH_MODE=single from repos.list${forced_suffix}"
+        fi
+        ;;
+      --fetch-all)
+        if [ "$CLI_FETCH_MODE_SET" != "true" ]; then
+          GLOBAL_FETCH_MODE="all"
+          if [ "$line_force" = "true" ]; then
+            GLOBAL_FETCH_MODE_FORCED=true
+          else
+            GLOBAL_FETCH_MODE_FORCED=false
+          fi
+          debug "Set GLOBAL_FETCH_MODE=all from repos.list${forced_suffix}"
+        fi
+        ;;
+      --codespaces|--public|--private|--force)
+        ;;
+    esac
+  done
 }
 
 # --- Normalisation helpers ---------------------------------------------------
@@ -537,6 +643,9 @@ has_non_local_remotes() {
     line="${line%"${line##*[![:space:]]}"}"
     line=${line%$'\r'}
     [ -z "$line" ] && continue
+    if line_is_global_flags_only "$line"; then
+      continue
+    fi
     
     # Extract first token
     set -f
@@ -689,6 +798,9 @@ parse_effective_line() {
   local line="$1" fallback_repo_https="$2"
   local first target_dir="" all_branches=0 is_worktree=0 use_worktree=0 is_at_branch=0
   local fetch_mode="${GLOBAL_FETCH_MODE:-deferred}"
+  local ignore_line_flags="${CLI_FORCE:-false}"
+  local worktree_locked="${GLOBAL_WORKTREE_FORCED:-false}"
+  local fetch_mode_locked="${GLOBAL_FETCH_MODE_FORCED:-false}"
 
   set -- $line
   [ "$#" -eq 0 ] && { printf '%s\x1f%s\x1f%s\x1f%s\x1f%s\x1f%s\n' "" "" "0" "0" "0" "$fetch_mode"; set +f; return 0; }
@@ -701,14 +813,37 @@ parse_effective_line() {
         printf "Error: '%s' is not a valid Git branch name.\n" "$branch" >&2
         set +f; return 1
       fi
+      if [ "${GLOBAL_WORKTREE:-false}" = "true" ]; then
+        use_worktree=1
+      fi
       while [ "$#" -gt 0 ]; do
         case "$1" in
-          -w|--worktree) use_worktree=1 ;;
-          -a|--all-branches) all_branches=1 ;;  # harmless for worktrees
-          --fetch-all-deferred) fetch_mode="deferred" ;;
-          --fetch-single)       fetch_mode="single" ;;
-          --fetch-all)          fetch_mode="all" ;;
-          --public|--private|--codespaces) ;;   # ignore valid create-repos flags
+          -w|--worktree)
+            if [ "$ignore_line_flags" != "true" ] && [ "$worktree_locked" != "true" ]; then
+              use_worktree=1
+            fi
+            ;;
+          -a|--all-branches)
+            if [ "$ignore_line_flags" != "true" ] && [ "$fetch_mode_locked" != "true" ]; then
+              all_branches=1
+            fi
+            ;;  # harmless for worktrees
+          --fetch-all-deferred)
+            if [ "$ignore_line_flags" != "true" ] && [ "$fetch_mode_locked" != "true" ]; then
+              fetch_mode="deferred"
+            fi
+            ;;
+          --fetch-single)
+            if [ "$ignore_line_flags" != "true" ] && [ "$fetch_mode_locked" != "true" ]; then
+              fetch_mode="single"
+            fi
+            ;;
+          --fetch-all)
+            if [ "$ignore_line_flags" != "true" ] && [ "$fetch_mode_locked" != "true" ]; then
+              fetch_mode="all"
+            fi
+            ;;
+          --public|--private|--codespaces|--force) ;;   # ignore metadata/preference flags
           -*)
             printf "Error: unknown option '%s' on line: %s\n" "$1" "$line" >&2
             set +f; return 1 ;;
@@ -720,10 +855,6 @@ parse_effective_line() {
         shift
       done
       [ -z "$fallback_repo_https" ] && { printf "Error: no fallback repo available for '%s'.\n" "$line" >&2; set +f; return 1; }
-      # Apply global worktree flag if set and no explicit flag on the line
-      if [ "$use_worktree" -eq 0 ] && [ "${GLOBAL_WORKTREE:-false}" = "true" ]; then
-        use_worktree=1
-      fi
       is_worktree=$use_worktree
       is_at_branch=1
       # Validate target_dir to prevent path traversal and argument injection
@@ -750,12 +881,28 @@ parse_effective_line() {
       esac
       while [ "$#" -gt 0 ]; do
         case "$1" in
-          -a|--all-branches) all_branches=1 ;;
-          --fetch-all-deferred) fetch_mode="deferred" ;;
-          --fetch-single)       fetch_mode="single" ;;
-          --fetch-all)          fetch_mode="all"; all_branches=1 ;;
+          -a|--all-branches)
+            if [ "$ignore_line_flags" != "true" ] && [ "$fetch_mode_locked" != "true" ]; then
+              all_branches=1
+            fi
+            ;;
+          --fetch-all-deferred)
+            if [ "$ignore_line_flags" != "true" ] && [ "$fetch_mode_locked" != "true" ]; then
+              fetch_mode="deferred"
+            fi
+            ;;
+          --fetch-single)
+            if [ "$ignore_line_flags" != "true" ] && [ "$fetch_mode_locked" != "true" ]; then
+              fetch_mode="single"
+            fi
+            ;;
+          --fetch-all)
+            if [ "$ignore_line_flags" != "true" ] && [ "$fetch_mode_locked" != "true" ]; then
+              fetch_mode="all"; all_branches=1
+            fi
+            ;;
           -w|--worktree)  printf "Warning: '--worktree' ignored on clone line: %s\n" "$line" >&2 ;;
-          --public|--private|--codespaces) ;;   # ignore valid create-repos flags
+          --public|--private|--codespaces|--force) ;;   # ignore metadata/preference flags
           -*)
             printf "Error: unknown option '%s' on line: %s\n" "$1" "$line" >&2
             set +f; return 1 ;;
@@ -1111,15 +1258,22 @@ parse_args() {
   DEBUG=false
   DEBUG_FILE_ARG=""
   GLOBAL_WORKTREE=false
+  GLOBAL_WORKTREE_FORCED=false
+  GLOBAL_FETCH_MODE="deferred"
+  GLOBAL_FETCH_MODE_FORCED=false
+  CLI_WORKTREE_SET=false
+  CLI_FETCH_MODE_SET=false
+  CLI_FORCE=false
 
   while [ "$#" -gt 0 ]; do
     case "$1" in
       -f|--file) shift; [ "$#" -gt 0 ] && REPOS_FILE="$1" || { usage; exit 1; }; shift ;;
       -d|--debug) DEBUG=true; shift ;;
-      --worktree) GLOBAL_WORKTREE=true; shift ;;
-      --fetch-all-deferred) GLOBAL_FETCH_MODE="deferred"; shift ;;
-      --fetch-single)        GLOBAL_FETCH_MODE="single";   shift ;;
-      --fetch-all)           GLOBAL_FETCH_MODE="all";      shift ;;
+      --worktree) GLOBAL_WORKTREE=true; CLI_WORKTREE_SET=true; shift ;;
+      --fetch-all-deferred) GLOBAL_FETCH_MODE="deferred"; CLI_FETCH_MODE_SET=true; shift ;;
+      --fetch-single)        GLOBAL_FETCH_MODE="single";   CLI_FETCH_MODE_SET=true; shift ;;
+      --fetch-all)           GLOBAL_FETCH_MODE="all";      CLI_FETCH_MODE_SET=true; shift ;;
+      --force) CLI_FORCE=true; shift ;;
       --debug-file)
         DEBUG=true
         shift
@@ -1163,8 +1317,8 @@ parse_args() {
   debug "Argument parsing complete."
 
   # Parse global flags from the repos list file (CLI flags take precedence)
-  # This reads --worktree from repos.list so users don't need to pass it on the
-  # command line; the flag was previously parsed by setup-repos.sh.
+  # This reads global flags from repos.list so users don't need to pass them on
+  # the command line; CLI flags still take precedence over repos.list globals.
   if [ -f "$REPOS_FILE" ]; then
     local _line _trimmed
     while IFS= read -r _line || [ -n "$_line" ]; do
@@ -1173,20 +1327,9 @@ parse_args() {
       case "$_trimmed" in *" # "*) _trimmed="${_trimmed%% # *}" ;; *" #"*) _trimmed="${_trimmed%% #*}" ;; esac
       _trimmed="${_trimmed%"${_trimmed##*[![:space:]]}"}"; _trimmed="${_trimmed%$'\r'}"
       [ -z "$_trimmed" ] && continue
-      case "$_trimmed" in
-        --worktree|--worktree[[:space:]]*)
-          if [ "$GLOBAL_WORKTREE" = "false" ]; then
-            GLOBAL_WORKTREE=true
-            debug "Enabled --worktree from repos.list"
-          fi
-          ;;
-        --fetch-all-deferred|--fetch-all-deferred[[:space:]]*)
-          GLOBAL_FETCH_MODE="deferred"; debug "Set GLOBAL_FETCH_MODE=deferred from repos.list" ;;
-        --fetch-single|--fetch-single[[:space:]]*)
-          GLOBAL_FETCH_MODE="single";   debug "Set GLOBAL_FETCH_MODE=single from repos.list" ;;
-        --fetch-all|--fetch-all[[:space:]]*)
-          GLOBAL_FETCH_MODE="all";      debug "Set GLOBAL_FETCH_MODE=all from repos.list" ;;
-      esac
+      if line_is_global_flags_only "$_trimmed"; then
+        apply_global_flag_line "$_trimmed"
+      fi
     done < "$REPOS_FILE"
   fi
 
@@ -1216,18 +1359,10 @@ plan_forward() {
     [ -z "$trimmed" ] && continue
     
     # Skip global flag lines (already applied during argument parsing above)
-    case "$trimmed" in
-      --codespaces|--codespaces[[:space:]]*|\
-      --public|--public[[:space:]]*|\
-      --private|--private[[:space:]]*|\
-      --worktree|--worktree[[:space:]]*|\
-      --fetch-all-deferred|--fetch-all-deferred[[:space:]]*|\
-      --fetch-single|--fetch-single[[:space:]]*|\
-      --fetch-all|--fetch-all[[:space:]]*)
+    if line_is_global_flags_only "$trimmed"; then
         [[ "$debug" == true ]] && printf "Planning: skipping global flag line: %s\n" "$trimmed" >&2
         continue
-        ;;
-    esac
+    fi
 
     set -f
     set -- $trimmed
@@ -1236,23 +1371,14 @@ plan_forward() {
 
     case "$tok1" in
       @*)
-        # @branch line: count as reference to fallback repo only if using --worktree
-        # Check if --worktree flag is present
-        use_worktree=0
-        while [ "$#" -gt 0 ]; do
-          case "$1" in
-            -w|--worktree) use_worktree=1 ;;
-          esac
-          shift
-        done
-
-        # Apply global worktree flag if set and no explicit flag on the line
-        if [ "$use_worktree" -eq 0 ] && [ "${GLOBAL_WORKTREE:-false}" = "true" ]; then
-          use_worktree=1
+        local parsed_for_plan="" _repo_spec _target_dir _all_branches _is_worktree _is_at_branch _fetch_mode
+        if ! parsed_for_plan="$(parse_effective_line "$trimmed" "$fallback_https")"; then
+          return 1
         fi
+        IFS=$'\x1f' read -r _repo_spec _target_dir _all_branches _is_worktree _is_at_branch _fetch_mode <<<"$parsed_for_plan"
 
         # If it's a worktree (with --worktree), count it as a reference to fallback
-        if [ "$use_worktree" -eq 1 ]; then
+        if [ "$_is_worktree" -eq 1 ]; then
           [[ "$debug" == true ]] && printf "Planning: worktree on fallback %s\n" "$fallback_https" >&2
           plan_remember_remote "$fallback_https" 0 ""
         fi
@@ -1352,18 +1478,10 @@ main() {
     fi
     
     # Skip global flag lines (already applied during argument parsing above)
-    case "$trimmed" in
-      --codespaces|--codespaces[[:space:]]*|\
-      --public|--public[[:space:]]*|\
-      --private|--private[[:space:]]*|\
-      --worktree|--worktree[[:space:]]*|\
-      --fetch-all-deferred|--fetch-all-deferred[[:space:]]*|\
-      --fetch-single|--fetch-single[[:space:]]*|\
-      --fetch-all|--fetch-all[[:space:]]*)
+    if line_is_global_flags_only "$trimmed"; then
         [[ "$DEBUG" == true ]] && printf "Skipping global flag line: %s\n" "$trimmed" >&2
         continue
-        ;;
-    esac
+    fi
 
     CURRENT_LINE="$trimmed"
     [[ "$DEBUG" == true ]] && printf "Current line to process: %s\n" "$CURRENT_LINE" >&2

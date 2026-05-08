@@ -329,6 +329,165 @@ else
 fi
 
 echo ""
+echo "TEST: CLI flags override repos.list globals, but per-line flags take precedence"
+run_test
+
+cd "$TEST_DIR"
+mkdir precedence-ws
+cd precedence-ws
+git init >/dev/null 2>&1
+git remote add origin "$TEST_DIR/remote.git"
+echo "precedence workspace" > README.md
+git add README.md
+git commit -m "precedence init" >/dev/null 2>&1
+
+cat > repos.list <<EOF
+--fetch-all
+$TEST_DIR/remote.git cli-single
+$TEST_DIR/remote.git per-line-all --fetch-all
+EOF
+
+set +e
+PRECEDENCE_OUTPUT=$("$REPO_ROOT/scripts/helper/clone-repos.sh" --fetch-single -f repos.list 2>&1)
+PRECEDENCE_RC=$?
+set -e
+
+if [[ $PRECEDENCE_RC -ne 0 ]]; then
+  echo "$PRECEDENCE_OUTPUT"
+  fail "clone-repos.sh failed for CLI/global/per-line precedence test (exit $PRECEDENCE_RC)"
+fi
+
+if git -C ../cli-single config --get-all remote.origin.fetch | grep -qF "$WILDCARD_REFSPEC"; then
+  fail "CLI --fetch-single should override repos.list global --fetch-all for entries without per-line overrides"
+else
+  test_passed
+  pass "CLI --fetch-single overrides repos.list global --fetch-all"
+fi
+
+if git -C ../per-line-all config --get-all remote.origin.fetch | grep -qF "$WILDCARD_REFSPEC"; then
+  test_passed
+  pass "Per-line --fetch-all overrides CLI --fetch-single"
+else
+  fail "Per-line --fetch-all should override CLI --fetch-single"
+fi
+
+echo ""
+echo "TEST: Global --force blocks conflicting per-line fetch flags"
+run_test
+
+cd "$TEST_DIR"
+mkdir global-force-ws
+cd global-force-ws
+git init >/dev/null 2>&1
+git remote add origin "$TEST_DIR/remote.git"
+echo "global force workspace" > README.md
+git add README.md
+git commit -m "global force init" >/dev/null 2>&1
+
+cat > repos.list <<EOF
+--fetch-single --force
+$TEST_DIR/remote.git global-forced --fetch-all
+EOF
+
+set +e
+GLOBAL_FORCE_OUTPUT=$("$REPO_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
+GLOBAL_FORCE_RC=$?
+set -e
+
+if [[ $GLOBAL_FORCE_RC -ne 0 ]]; then
+  echo "$GLOBAL_FORCE_OUTPUT"
+  fail "clone-repos.sh failed for global --force test (exit $GLOBAL_FORCE_RC)"
+fi
+
+if git -C ../global-forced config --get-all remote.origin.fetch | grep -qF "$WILDCARD_REFSPEC"; then
+  fail "Global --fetch-single --force should ignore conflicting per-line --fetch-all"
+else
+  test_passed
+  pass "Global --fetch-single --force overrides conflicting per-line --fetch-all"
+fi
+
+echo ""
+echo "TEST: Global --force blocks conflicting per-line -a alias"
+run_test
+
+cd "$TEST_DIR"
+mkdir global-force-alias-ws
+cd global-force-alias-ws
+git init >/dev/null 2>&1
+git remote add origin "$TEST_DIR/remote.git"
+echo "global force alias workspace" > README.md
+git add README.md
+git commit -m "global force alias init" >/dev/null 2>&1
+
+cat > repos.list <<EOF
+--fetch-single --force
+$TEST_DIR/remote.git@slides-branch global-forced-alias -a
+EOF
+
+set +e
+GLOBAL_FORCE_ALIAS_OUTPUT=$("$REPO_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
+GLOBAL_FORCE_ALIAS_RC=$?
+set -e
+
+if [[ $GLOBAL_FORCE_ALIAS_RC -ne 0 ]]; then
+  echo "$GLOBAL_FORCE_ALIAS_OUTPUT"
+  fail "clone-repos.sh failed for global --force alias test (exit $GLOBAL_FORCE_ALIAS_RC)"
+fi
+
+if [[ ! -d "$TEST_DIR/global-forced-alias/.git" ]]; then
+  fail "Expected forced-alias clone directory was not created"
+fi
+
+FETCH_REFSPEC_ALIAS=$(git -C "$TEST_DIR/global-forced-alias" config --get remote.origin.fetch)
+if [[ "$FETCH_REFSPEC_ALIAS" == "+refs/heads/slides-branch:refs/remotes/origin/slides-branch" ]]; then
+  test_passed
+  pass "Global --fetch-single --force ignores per-line -a alias"
+else
+  fail "Expected forced single-branch refspec, got: $FETCH_REFSPEC_ALIAS"
+fi
+
+echo ""
+echo "TEST: CLI --worktree --force ignores per-line fetch overrides"
+run_test
+
+cd "$TEST_DIR"
+git clone --single-branch --branch slides-branch remote.git slides-force >/dev/null 2>&1
+cd slides-force
+
+cat > repos.list <<'EOF'
+@data-branch data-force --fetch-single
+EOF
+
+set +e
+CLI_FORCE_OUTPUT=$("$REPO_ROOT/scripts/helper/clone-repos.sh" --worktree --force -f repos.list 2>&1)
+CLI_FORCE_RC=$?
+set -e
+
+if [[ $CLI_FORCE_RC -ne 0 ]]; then
+  echo "$CLI_FORCE_OUTPUT"
+  fail "clone-repos.sh failed for CLI --force test (exit $CLI_FORCE_RC)"
+fi
+
+if [[ ! -d ../data-force ]]; then
+  echo "$CLI_FORCE_OUTPUT"
+  fail "CLI --worktree --force did not create the expected worktree directory"
+fi
+
+if git worktree list --porcelain | grep -qF "worktree $TEST_DIR/data-force"; then
+  test_passed
+  pass "CLI --worktree --force created a worktree for the @branch line"
+else
+  fail "Expected $TEST_DIR/data-force to be registered as a worktree"
+fi
+
+if git config --get-all remote.origin.fetch | grep -qF "$WILDCARD_REFSPEC"; then
+  test_passed
+  pass "CLI --force ignored per-line --fetch-single and kept the default deferred fetch mode"
+else
+  fail "CLI --force should ignore per-line --fetch-single when forcing worktrees"
+fi
+
+echo ""
 echo "============================================"
 echo "Test Summary"
 echo "============================================"
