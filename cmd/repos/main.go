@@ -77,6 +77,11 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
+	case "update-branches":
+		if err := runUpdateBranches(os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	case "-h", "--help", "help":
 		usage()
 	default:
@@ -90,8 +95,9 @@ func usage() {
 	fmt.Print(`Usage: repos <command> [options]
 
 Commands:
-  clone       Clone repositories listed in repos.list into the parent directory
-  workspace   Manage VS Code .code-workspace files
+  clone             Clone repositories listed in repos.list into the parent directory
+  workspace         Manage VS Code .code-workspace files
+  update-branches   Fetch and fast-forward all git repos in the parent directory
 
 Run 'repos <command> --help' for more information.
 `)
