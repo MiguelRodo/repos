@@ -13,6 +13,11 @@ import (
 	"github.com/MiguelRodo/repos/internal/gitcmd"
 )
 
+const (
+	addBranchFileMode os.FileMode = 0644
+	addBranchDirMode  os.FileMode = 0755
+)
+
 // runAddBranch implements `repos add-branch <branch-name> [target-dir] [--branch]`.
 // Flags may appear before or after positional arguments, matching the behaviour
 // of the original add-branch.sh script.
@@ -236,7 +241,7 @@ func setupDevcontainer(dest string) error {
 			out, marshalErr := json.MarshalIndent(cfg, "", "  ")
 			if marshalErr == nil {
 				out = append(out, '\n')
-				if writeErr := os.WriteFile(targetFile, out, 0644); writeErr != nil {
+				if writeErr := os.WriteFile(targetFile, out, addBranchFileMode); writeErr != nil {
 					return writeErr
 				}
 			} else {
@@ -278,7 +283,7 @@ func copyFile(src, dst string) error {
 	}
 	defer in.Close()
 
-	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(dst), addBranchDirMode); err != nil {
 		return err
 	}
 	out, err := os.Create(dst)
@@ -303,7 +308,7 @@ func addBranchToReposList(path, branch, targetDir string) error {
 		return nil
 	}
 
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, addBranchFileMode)
 	if err != nil {
 		return err
 	}

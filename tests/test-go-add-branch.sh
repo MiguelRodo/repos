@@ -12,7 +12,7 @@ if command -v repos >/dev/null 2>&1; then
 elif [ -f "$PROJECT_ROOT/repos-bin" ]; then
   REPOS_BIN="$PROJECT_ROOT/repos-bin"
 else
-  TMP_BIN=$(mktemp /tmp/repos-test-bin-XXXXXX)
+  TMP_BIN=$(mktemp)
   if go build -o "$TMP_BIN" "$PROJECT_ROOT/cmd/repos" 2>/dev/null; then
     REPOS_BIN="$TMP_BIN"
     trap 'rm -f "$TMP_BIN"' EXIT
