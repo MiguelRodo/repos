@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 )
 
+const compareBufferSize = 32 * 1024
+
 // MirrorOptions controls mirror behaviour.
 type MirrorOptions struct {
 	DeleteExtraneous bool
@@ -223,8 +225,8 @@ func regularFilesEqual(src, dst string) (bool, error) {
 	}
 	defer dstFile.Close()
 
-	srcBuf := make([]byte, 32*1024)
-	dstBuf := make([]byte, 32*1024)
+	srcBuf := make([]byte, compareBufferSize)
+	dstBuf := make([]byte, compareBufferSize)
 	for {
 		srcN, srcErr := srcFile.Read(srcBuf)
 		dstN, dstErr := dstFile.Read(dstBuf)

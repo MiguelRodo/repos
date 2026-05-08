@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"flag"
 	"fmt"
@@ -247,11 +248,10 @@ func collectManagedRepoPaths(cwd, reposFile string) ([]string, error) {
 
 func plannedDestination(st *state, ins instruction, fallbackLocal string) (string, string, error) {
 	repoURLNoRef, ref := splitRepoSpec(ins.repoSpec)
-	repoURL, repoDir, err := parseRepoURL(repoURLNoRef)
+	_, repoDir, err := parseRepoURL(repoURLNoRef)
 	if err != nil {
 		return "", "", err
 	}
-	_ = repoURL
 	remoteHTTPS := specToHTTPS(repoURLNoRef)
 
 	if ins.isAtBranch && ins.isWorktree {
@@ -310,7 +310,7 @@ func hasMirrorChanges(src, dst string) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		if string(srcData) != string(dstData) {
+		if !bytes.Equal(srcData, dstData) {
 			return true, nil
 		}
 		return false, nil
