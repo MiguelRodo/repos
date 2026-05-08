@@ -11,9 +11,49 @@
 
 set -Eeuo pipefail
 
+# Get platform-independent temp directory
+get_temp_dir() {
+  # Try various temp directory variables in order of preference
+  if [ -n "${TMPDIR:-}" ] && [ -d "${TMPDIR}" ]; then
+    printf '%s\n' "${TMPDIR%/}"  # Remove trailing slash if present
+  elif [ -n "${TEMP:-}" ] && [ -d "${TEMP}" ]; then
+    printf '%s\n' "${TEMP%/}"
+  elif [ -n "${TMP:-}" ] && [ -d "${TMP}" ]; then
+    printf '%s\n' "${TMP%/}"
+  elif [ -d "/tmp" ]; then
+    printf '%s\n' "/tmp"
+  else
+    # Fallback to current directory
+    printf '%s\n' "."
+  fi
+}
+
 # Strip credentials from any http(s) URLs
 sanitize_url() {
   printf '%s\n' "$1" | sed 's|\(https\?://\)[^/@]*@|\1|g'
+}
+
+# Global array for temporary files to clean up on exit
+declare -a CLEANUP_FILES=()
+# Use Bash 3.2-safe array expansion to avoid "unbound variable" error with set -u
+# shellcheck disable=SC2154  # f is the for-loop variable inside the trap string
+trap 'for f in ${CLEANUP_FILES[@]+"${CLEANUP_FILES[@]}"}; do rm -f -- "$f"; done' EXIT
+
+git() {
+  # Wrap git to capture and sanitize stderr to prevent credential leakage
+  # from git's own error messages (e.g. "fatal: could not read Password for 'https://token@github.com'")
+  local tmp_stderr
+  tmp_stderr="$(mktemp "$(get_temp_dir)/git-stderr-XXXXXX")"
+  CLEANUP_FILES+=("$tmp_stderr")
+
+  local rc=0
+  command git "$@" </dev/null 2>"$tmp_stderr" || rc=$?
+
+  if [ -s "$tmp_stderr" ]; then
+    sanitize_url "$(cat -- "$tmp_stderr")" >&2
+  fi
+  rm -f -- "$tmp_stderr"
+  return "$rc"
 }
 
 # --- Paths ---

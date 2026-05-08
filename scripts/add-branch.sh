@@ -17,7 +17,27 @@ export GIT_TERMINAL_PROMPT=0
 export GIT_ASKPASS=/bin/false
 export GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh -oBatchMode=yes}"
 
-git() { command git "$@" </dev/null; }
+# Strip credentials from any http(s) URLs
+sanitize_url() {
+  printf '%s\n' "$1" | sed 's|\(https\?://\)[^/@]*@|\1|g'
+}
+
+git() {
+  # Wrap git to capture and sanitize stderr to prevent credential leakage
+  # from git's own error messages (e.g. "fatal: could not read Password for 'https://token@github.com'")
+  local tmp_stderr
+  tmp_stderr="$(mktemp "$(get_temp_dir)/git-stderr-XXXXXX")"
+  CLEANUP_FILES+=("$tmp_stderr")
+
+  local rc=0
+  command git "$@" </dev/null 2>"$tmp_stderr" || rc=$?
+
+  if [ -s "$tmp_stderr" ]; then
+    sanitize_url "$(cat -- "$tmp_stderr")" >&2
+  fi
+  rm -f -- "$tmp_stderr"
+  return "$rc"
+}
 
 # --- Paths ---
 SCRIPT_DIR="$(cd "$(dirname -- "$0")" && pwd)"
