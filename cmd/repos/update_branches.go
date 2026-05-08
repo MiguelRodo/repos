@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -95,17 +96,30 @@ func updateRepo(dir string) updateResult {
 		logf("[%s] ✓ Already up to date", name)
 	} else {
 		res.status = "updated"
-		logf("[%s] ✓ Updated: %s", name, mergeOut)
+		// mergeOut may contain multiple lines (e.g. "Updating abc..def\nFast-forward\n …").
+		// Prefix every non-empty line with the repo name for readable output.
+		for _, line := range strings.Split(mergeOut, "\n") {
+			if strings.TrimSpace(line) != "" {
+				logf("[%s] ✓ %s", name, line)
+			}
+		}
 	}
 	return res
 }
 
 // runUpdateBranches implements `repos update-branches`.
 func runUpdateBranches(args []string) error {
+	defaultJobs := runtime.NumCPU()
+	if defaultJobs < 1 {
+		defaultJobs = 1
+	}
+
 	fs := flag.NewFlagSet("update-branches", flag.ContinueOnError)
 	fs.SetOutput(os.Stderr)
 	dirFlag := fs.String("dir", "", "base directory to scan for repos (default: parent of current directory)")
 	fs.StringVar(dirFlag, "d", "", "base directory to scan for repos")
+	jobsFlag := fs.Int("jobs", defaultJobs, "maximum number of concurrent git operations")
+	fs.IntVar(jobsFlag, "j", defaultJobs, "maximum number of concurrent git operations")
 	help := fs.Bool("help", false, "show help")
 	fs.BoolVar(help, "h", false, "show help")
 
@@ -115,6 +129,11 @@ func runUpdateBranches(args []string) error {
 	if *help {
 		updateBranchesUsage()
 		return nil
+	}
+
+	maxJobs := *jobsFlag
+	if maxJobs < 1 {
+		maxJobs = 1
 	}
 
 	baseDir := *dirFlag
@@ -138,6 +157,9 @@ func runUpdateBranches(args []string) error {
 	repoWord := pluralRepo(len(repos))
 	fmt.Printf("Found %d git %s in %s\n", len(repos), repoWord, baseDir)
 
+	// Semaphore channel limits concurrent git network operations to maxJobs.
+	sem := make(chan struct{}, maxJobs)
+
 	// Each goroutine writes to its own index — no mutex needed for the slice.
 	results := make([]updateResult, len(repos))
 	var wg sync.WaitGroup
@@ -145,6 +167,8 @@ func runUpdateBranches(args []string) error {
 		wg.Add(1)
 		go func(idx int, d string) {
 			defer wg.Done()
+			sem <- struct{}{}        // acquire slot
+			defer func() { <-sem }() // release slot
 			results[idx] = updateRepo(d)
 		}(i, dir)
 	}
@@ -197,7 +221,7 @@ func pluralRepo(n int) string {
 }
 
 func updateBranchesUsage() {
-	fmt.Print(`Usage: repos update-branches [--dir <directory>]
+	fmt.Print(`Usage: repos update-branches [--dir <directory>] [--jobs <n>]
 
 For each git repository found in the base directory, this command:
   1. Checks the working tree is clean (skips if dirty)
@@ -209,8 +233,9 @@ Repository discovery scans immediate subdirectories of the base directory
 for a .git entry (both regular git clones and git worktrees are detected).
 
 Options:
-  -d, --dir <dir>   Directory to scan for git repos
-                    (default: parent of current working directory)
-  -h, --help        Show this help message.
+  -d, --dir <dir>    Directory to scan for git repos
+                     (default: parent of current working directory)
+  -j, --jobs <n>     Maximum concurrent git operations (default: number of CPUs)
+  -h, --help         Show this help message.
 `)
 }
