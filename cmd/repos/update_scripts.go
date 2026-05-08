@@ -66,7 +66,10 @@ func runUpdateScripts(args []string) error {
 
 	var updated, unchanged, skipped, failed int
 	for _, repoDir := range targetRepos {
-		rel, _ := filepath.Rel(cwd, repoDir)
+		rel, err := filepath.Rel(cwd, repoDir)
+		if err != nil {
+			return fmt.Errorf("resolve relative path for %s: %w", repoDir, err)
+		}
 		if rel == "." {
 			fmt.Printf("⏭  skip base repository: %s\n", repoDir)
 			skipped++
@@ -197,16 +200,17 @@ func collectManagedRepoPaths(cwd, reposFile string) ([]string, error) {
 	seenPaths := map[string]struct{}{}
 	var repos []string
 
-	addPath := func(p string) {
+	addPath := func(p string) error {
 		abs, err := filepath.Abs(p)
 		if err != nil {
-			return
+			return fmt.Errorf("resolve absolute path for %s: %w", p, err)
 		}
 		if _, exists := seenPaths[abs]; exists {
-			return
+			return nil
 		}
 		seenPaths[abs] = struct{}{}
 		repos = append(repos, abs)
+		return nil
 	}
 
 	scanner := bufio.NewScanner(f)
@@ -227,7 +231,9 @@ func collectManagedRepoPaths(cwd, reposFile string) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		addPath(dest)
+		if err := addPath(dest); err != nil {
+			return nil, err
+		}
 
 		if !ins.isAtBranch {
 			fallbackHTTPS = remoteHTTPS

@@ -5,8 +5,8 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-TMP_BIN=$(mktemp)
 TEST_DIR=$(mktemp -d)
+TMP_BIN="$TEST_DIR/repos-go-update-scripts-bin"
 cleanup() {
   rm -f "$TMP_BIN"
   rm -rf "$TEST_DIR"
