@@ -72,6 +72,11 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
+	case "workspace":
+		if err := runWorkspace(os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	case "-h", "--help", "help":
 		usage()
 	default:
@@ -86,8 +91,9 @@ func usage() {
 
 Commands:
   clone       Clone repositories listed in repos.list into the parent directory
+  workspace   Manage VS Code .code-workspace files
 
-Run 'repos clone --help' for more information.
+Run 'repos <command> --help' for more information.
 `)
 }
 
