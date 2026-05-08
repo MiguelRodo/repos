@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -51,16 +52,11 @@ func runCodespacesAuth(args []string) error {
 		return err
 	}
 
-	cwd, err := os.Getwd()
+	absReposFile, err := filepath.Abs(*reposFile)
 	if err != nil {
-		return fmt.Errorf("getting working directory: %w", err)
+		return fmt.Errorf("resolving repos file path: %w", err)
 	}
-	fallbackRemote, err := getCurrentRepoRemoteHTTPS(cwd)
-	if err != nil {
-		return err
-	}
-
-	repos, err := parseManagedReposFromFile(*reposFile, fallbackRemote)
+	repos, err := parseManagedReposFromFile(absReposFile)
 	if err != nil {
 		return err
 	}
@@ -124,21 +120,20 @@ func promptTokenSecurely() (string, error) {
 	return token, nil
 }
 
-func parseManagedReposFromFile(path string, fallbackRemote string) ([]string, error) {
+func parseManagedReposFromFile(path string) ([]string, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("opening repos file %q: %w", path, err)
 	}
 	defer f.Close()
-	return parseManagedRepos(f, fallbackRemote)
+	listDir := filepath.Dir(path)
+	return parseManagedRepos(f, func() (string, error) {
+		return getCurrentRepoRemoteHTTPS(listDir)
+	})
 }
 
-func parseManagedRepos(r io.Reader, fallbackRemote string) ([]string, error) {
-	fallbackRepo, err := ownerRepoFromRemote(fallbackRemote)
-	if err != nil {
-		return nil, fmt.Errorf("invalid fallback repository remote %q: %w", fallbackRemote, err)
-	}
-
+func parseManagedRepos(r io.Reader, resolveFallbackRemote func() (string, error)) ([]string, error) {
+	var fallbackRepo string
 	seen := map[string]struct{}{}
 	sc := bufio.NewScanner(r)
 	lineNum := 0
@@ -155,6 +150,16 @@ func parseManagedRepos(r io.Reader, fallbackRemote string) ([]string, error) {
 		}
 		first := tokens[0]
 		if strings.HasPrefix(first, "@") {
+			if fallbackRepo == "" {
+				fallbackRemote, err := resolveFallbackRemote()
+				if err != nil {
+					return nil, fmt.Errorf("line %d: cannot resolve fallback repository for %q: %w", lineNum, first, err)
+				}
+				fallbackRepo, err = ownerRepoFromRemote(fallbackRemote)
+				if err != nil {
+					return nil, fmt.Errorf("line %d: invalid fallback repository remote %q: %w", lineNum, fallbackRemote, err)
+				}
+			}
 			seen[fallbackRepo] = struct{}{}
 			continue
 		}

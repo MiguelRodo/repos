@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"strings"
 	"testing"
 )
@@ -15,7 +16,9 @@ acme/next@feature/x ./next-dir
 @hotfix
 `
 
-	repos, err := parseManagedRepos(strings.NewReader(input), "https://github.com/example/current")
+	repos, err := parseManagedRepos(strings.NewReader(input), func() (string, error) {
+		return "https://github.com/example/current", nil
+	})
 	if err != nil {
 		t.Fatalf("parseManagedRepos returned error: %v", err)
 	}
@@ -36,7 +39,9 @@ func TestParseManagedRepos_UsesInitialFallbackForAtBranch(t *testing.T) {
 @feature/test
 `
 
-	repos, err := parseManagedRepos(strings.NewReader(input), "https://github.com/acme/root")
+	repos, err := parseManagedRepos(strings.NewReader(input), func() (string, error) {
+		return "https://github.com/acme/root", nil
+	})
 	if err != nil {
 		t.Fatalf("parseManagedRepos returned error: %v", err)
 	}
@@ -52,7 +57,9 @@ func TestParseManagedRepos_SkipsUnsupportedRepoSpecs(t *testing.T) {
 @branch
 `
 
-	repos, err := parseManagedRepos(strings.NewReader(input), "https://github.com/acme/root")
+	repos, err := parseManagedRepos(strings.NewReader(input), func() (string, error) {
+		return "https://github.com/acme/root", nil
+	})
 	if err != nil {
 		t.Fatalf("parseManagedRepos returned error: %v", err)
 	}
@@ -67,8 +74,35 @@ func TestParseManagedRepos_ErrorsForInvalidSpec(t *testing.T) {
 -bad/repo
 `
 
-	_, err := parseManagedRepos(strings.NewReader(input), "https://github.com/acme/root")
+	_, err := parseManagedRepos(strings.NewReader(input), func() (string, error) {
+		return "https://github.com/acme/root", nil
+	})
 	if err == nil {
 		t.Fatal("expected error for invalid repository spec, got nil")
+	}
+}
+
+func TestParseManagedRepos_DoesNotRequireFallbackWithoutAtBranch(t *testing.T) {
+	input := `
+acme/base
+acme/next
+`
+	_, err := parseManagedRepos(strings.NewReader(input), func() (string, error) {
+		return "", errors.New("should not be called")
+	})
+	if err != nil {
+		t.Fatalf("unexpected error without @branch lines: %v", err)
+	}
+}
+
+func TestParseManagedRepos_ErrorsWhenAtBranchNeedsFallback(t *testing.T) {
+	input := `
+@feature/test
+`
+	_, err := parseManagedRepos(strings.NewReader(input), func() (string, error) {
+		return "", errors.New("not in a git working tree")
+	})
+	if err == nil {
+		t.Fatal("expected fallback resolution error, got nil")
 	}
 }
