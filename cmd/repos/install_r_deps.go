@@ -269,8 +269,10 @@ func runRInstall(repo managedRepo, mode string) error {
 	switch mode {
 	case "renv.lock":
 		expr = renvInstallExpr
-	default:
+	case "DESCRIPTION":
 		expr = remotesInstallExpr
+	default:
+		return fmt.Errorf("unsupported R dependency mode %q for %s", mode, repo.path)
 	}
 
 	cmd := exec.Command("Rscript", "--vanilla", "-e", expr)
@@ -307,11 +309,7 @@ func streamPrefixedOutput(name string, src io.Reader, dst *os.File, wg *sync.Wai
 	// to avoid truncating prefixed, real-time output.
 	sc.Buffer(make([]byte, 0, streamScannerInitialBuffer), streamScannerMaxBuffer)
 	for sc.Scan() {
-		line := sc.Text()
-		if line == "" {
-			continue
-		}
-		fmt.Fprintf(dst, "[%s] %s\n", name, line)
+		fmt.Fprintf(dst, "[%s] %s\n", name, sc.Text())
 	}
 }
 
