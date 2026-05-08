@@ -8,7 +8,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
+
+	"github.com/MiguelRodo/repos/internal/sysutil"
 )
 
 type managedRepo struct {
@@ -28,8 +31,6 @@ renv::restore(prompt = FALSE)`
   install.packages("remotes", repos = "https://cloud.r-project.org")
 }
 remotes::install_deps(dependencies = TRUE)`
-	streamScannerInitialBuffer = 64 * 1024
-	streamScannerMaxBuffer     = 1024 * 1024
 )
 
 func runInstallRDeps(args []string) error {
@@ -77,6 +78,9 @@ func runInstallRDeps(args []string) error {
 		return fmt.Errorf("file '%s' not found", st.reposFile)
 	}
 	if err := st.applyGlobalFlagsFromFile(); err != nil {
+		return err
+	}
+	if err := sysutil.CheckPrerequisites(); err != nil {
 		return err
 	}
 	if err := st.initFallback(); err != nil {
@@ -312,17 +316,22 @@ func runRInstall(repo managedRepo, mode string) error {
 	return nil
 }
 
-func streamPrefixedOutput(name string, src io.Reader, dst *os.File, wg *sync.WaitGroup, errCh chan<- error) {
+func streamPrefixedOutput(name string, src io.Reader, dst io.Writer, wg *sync.WaitGroup, errCh chan<- error) {
 	defer wg.Done()
-	sc := bufio.NewScanner(src)
-	// R compilation output can exceed bufio.Scanner's 64 KiB default token limit.
-	// Keep a 64 KiB initial buffer and raise max token size to 1 MiB.
-	sc.Buffer(make([]byte, 0, streamScannerInitialBuffer), streamScannerMaxBuffer)
-	for sc.Scan() {
-		fmt.Fprintf(dst, "[%s] %s\n", name, sc.Text())
-	}
-	if err := sc.Err(); err != nil {
-		errCh <- err
+	reader := bufio.NewReader(src)
+	for {
+		line, err := reader.ReadString('\n')
+		if len(line) > 0 {
+			line = strings.TrimSuffix(strings.TrimSuffix(line, "\n"), "\r")
+			fmt.Fprintf(dst, "[%s] %s\n", name, line)
+		}
+		if err == io.EOF {
+			return
+		}
+		if err != nil {
+			errCh <- err
+			return
+		}
 	}
 }
 
@@ -337,7 +346,7 @@ For each managed local repository:
   3. Streams output with repository-prefixed log lines
 
 Options:
-  -f, --file <file>   Path to repos list file (default: repos.list)
+  -f, --file <file>   Path to repos list file (default: repos.list; falls back to repos-to-clone.list)
   -h, --help          Show this help message.
 `)
 }

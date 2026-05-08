@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 	"testing"
 )
 
@@ -78,5 +81,35 @@ func TestCollectManagedRepoPathsBasicAndFallbackBranch(t *testing.T) {
 		if repos[i].path != want[i] {
 			t.Fatalf("repo %d path mismatch: got %q want %q", i, repos[i].path, want[i])
 		}
+	}
+}
+
+func TestStreamPrefixedOutputHandlesVeryLongLines(t *testing.T) {
+	t.Parallel()
+
+	longLine := strings.Repeat("x", 2*1024*1024) // 2 MiB, larger than old scanner max
+	in := bytes.NewBufferString(longLine + "\n")
+	var out bytes.Buffer
+
+	var wg sync.WaitGroup
+	errCh := make(chan error, 1)
+	wg.Add(1)
+	go streamPrefixedOutput("repo-a", in, &out, &wg, errCh)
+	wg.Wait()
+	close(errCh)
+
+	for err := range errCh {
+		if err != nil {
+			t.Fatalf("unexpected stream error: %v", err)
+		}
+	}
+
+	got := out.String()
+	wantPrefix := "[repo-a] "
+	if !strings.HasPrefix(got, wantPrefix) {
+		t.Fatalf("missing prefix %q in output", wantPrefix)
+	}
+	if !strings.Contains(got, longLine) {
+		t.Fatalf("long line content was not fully streamed")
 	}
 }
