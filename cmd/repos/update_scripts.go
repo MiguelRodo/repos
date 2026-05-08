@@ -2,11 +2,9 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"slices"
@@ -303,7 +301,7 @@ func hasMirrorChanges(src, dst string) (bool, error) {
 		if srcInfo.Size() != dstInfo.Size() || srcInfo.Mode().Perm() != dstInfo.Mode().Perm() {
 			return true, nil
 		}
-		equal, err := regularFilesEqual(src, dst)
+		equal, err := sysutil.RegularFilesEqual(src, dst)
 		if err != nil {
 			return false, err
 		}
@@ -349,40 +347,6 @@ func hasMirrorChanges(src, dst string) (bool, error) {
 		}
 	}
 	return false, nil
-}
-
-func regularFilesEqual(src, dst string) (bool, error) {
-	srcFile, err := os.Open(src)
-	if err != nil {
-		return false, err
-	}
-	defer srcFile.Close()
-
-	dstFile, err := os.Open(dst)
-	if err != nil {
-		return false, err
-	}
-	defer dstFile.Close()
-
-	srcBuf := make([]byte, 32*1024)
-	dstBuf := make([]byte, 32*1024)
-	for {
-		srcN, srcErr := srcFile.Read(srcBuf)
-		dstN, dstErr := dstFile.Read(dstBuf)
-
-		if srcN != dstN || !bytes.Equal(srcBuf[:srcN], dstBuf[:dstN]) {
-			return false, nil
-		}
-		if srcErr == io.EOF && dstErr == io.EOF {
-			return true, nil
-		}
-		if srcErr != nil && srcErr != io.EOF {
-			return false, srcErr
-		}
-		if dstErr != nil && dstErr != io.EOF {
-			return false, dstErr
-		}
-	}
 }
 
 func updateScriptsUsage() {

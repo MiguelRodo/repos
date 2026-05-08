@@ -104,7 +104,7 @@ func mirrorDir(srcDir, dstDir string, srcPerm os.FileMode, opts MirrorOptions) (
 }
 
 func mirrorFile(src, dst string, srcPerm os.FileMode) (bool, error) {
-	same, err := regularFilesEqual(src, dst)
+	same, err := RegularFilesEqual(src, dst)
 	if err != nil {
 		return false, err
 	}
@@ -195,7 +195,7 @@ func mirrorSymlink(src, dst string) (bool, error) {
 	return true, nil
 }
 
-func regularFilesEqual(src, dst string) (bool, error) {
+func RegularFilesEqual(src, dst string) (equal bool, err error) {
 	srcInfo, err := os.Stat(src)
 	if err != nil {
 		return false, fmt.Errorf("stat source file %s: %w", src, err)
@@ -218,12 +218,20 @@ func regularFilesEqual(src, dst string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("open source file %s: %w", src, err)
 	}
-	defer srcFile.Close()
+	defer func() {
+		if closeErr := srcFile.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("close source file %s: %w", src, closeErr)
+		}
+	}()
 	dstFile, err := os.Open(dst)
 	if err != nil {
 		return false, fmt.Errorf("open destination file %s: %w", dst, err)
 	}
-	defer dstFile.Close()
+	defer func() {
+		if closeErr := dstFile.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("close destination file %s: %w", dst, closeErr)
+		}
+	}()
 
 	srcBuf := make([]byte, compareBufferSize)
 	dstBuf := make([]byte, compareBufferSize)
