@@ -105,18 +105,26 @@ func captureStdout(t *testing.T, fn func()) string {
 		t.Fatalf("creating pipe: %v", err)
 	}
 	os.Stdout = w
+	t.Cleanup(func() {
+		os.Stdout = oldStdout
+	})
 
 	done := make(chan string, 1)
+	copyErr := make(chan error, 1)
 	go func() {
 		var b strings.Builder
-		_, _ = io.Copy(&b, r)
+		_, err := io.Copy(&b, r)
+		copyErr <- err
 		done <- b.String()
 	}()
 
 	fn()
 	_ = w.Close()
-	os.Stdout = oldStdout
-	return <-done
+	out := <-done
+	if err := <-copyErr; err != nil {
+		t.Fatalf("copy stdout: %v", err)
+	}
+	return out
 }
 
 func mustMkdirAll(t *testing.T, dirs ...string) {

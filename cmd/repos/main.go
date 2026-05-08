@@ -105,10 +105,10 @@ func usage() {
 	fmt.Print(`Usage: repos <command> [options]
 
 Commands:
-	clone             Clone repositories listed in repos.list into the parent directory
-	workspace         Manage VS Code .code-workspace files
-	update-branches   Fetch and fast-forward all git repos in the parent directory
-	add-branch        Create a new worktree/branch off the current repository
+  clone             Clone repositories listed in repos.list into the parent directory
+  workspace         Manage VS Code .code-workspace files
+  update-branches   Fetch and fast-forward all git repos in the parent directory
+  add-branch        Create a new worktree/branch off the current repository
   run               Execute a command inside each repository from repos.list
 
 Run 'repos <command> --help' for more information.

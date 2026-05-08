@@ -24,6 +24,11 @@ type runResult struct {
 	err      error
 }
 
+const (
+	initialScannerBufferSize = 64 * 1024
+	maxScannerBufferSize     = 1024 * 1024
+)
+
 func runRun(args []string) error {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -269,8 +274,8 @@ func runCommandInTarget(target runTarget, command []string, outMu *sync.Mutex) r
 	reader := func(r io.Reader) {
 		defer wg.Done()
 		scanner := bufio.NewScanner(r)
-		buffer := make([]byte, 0, 64*1024)
-		scanner.Buffer(buffer, 1024*1024)
+		buffer := make([]byte, initialScannerBufferSize)
+		scanner.Buffer(buffer, maxScannerBufferSize)
 		for scanner.Scan() {
 			printPrefixedLine(target.name, scanner.Text(), outMu)
 		}
@@ -283,8 +288,8 @@ func runCommandInTarget(target runTarget, command []string, outMu *sync.Mutex) r
 	go reader(stdout)
 	go reader(stderr)
 
-	waitErr := cmd.Wait()
 	wg.Wait()
+	waitErr := cmd.Wait()
 	close(readErrs)
 
 	for scanErr := range readErrs {
@@ -300,7 +305,8 @@ func runCommandInTarget(target runTarget, command []string, outMu *sync.Mutex) r
 	}
 
 	if waitErr != nil {
-		if exitErr, ok := waitErr.(*exec.ExitError); ok {
+		var exitErr *exec.ExitError
+		if errors.As(waitErr, &exitErr) {
 			res.exitCode = exitErr.ExitCode()
 		} else if res.exitCode == 0 {
 			res.exitCode = 1
@@ -327,14 +333,16 @@ func isBenignPipeReadError(err error) bool {
 func printPrefixedLine(repoName, line string, outMu *sync.Mutex) {
 	line = strings.TrimRight(line, "\r")
 	outMu.Lock()
+	defer outMu.Unlock()
 	fmt.Fprintf(os.Stdout, "[%s] %s\n", repoName, line)
-	outMu.Unlock()
 }
 
 func runUsage() {
 	fmt.Print(`Usage: repos run [--file <repo-list>] [--concurrent] <command> [args...]
 
 Execute a command in each local repository path derived from repos.list.
+Execution continues across repositories even if some commands fail.
+The command exits non-zero if any repository command fails.
 
 Options:
   -f, --file <file>   Repo list file (default: repos.list or repos-to-clone.list)
