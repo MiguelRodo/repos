@@ -174,11 +174,9 @@ func runAddBranch(args []string) error {
 	// Add the new worktree path to the VS Code workspace file.
 	fmt.Println("Updating VS Code workspace...")
 	wsPath := findWorkspaceFile(projectRoot)
-	wsRelPath, err := filepath.Rel(projectRoot, dest)
-	if err != nil {
-		// Fallback: manually construct relative path (dest is always under parentDir)
-		wsRelPath = filepath.Join("..", filepath.Base(dest))
-	}
+	// filepath.Rel on two absolute paths from the same root always succeeds on
+	// any supported OS, so the error value is intentionally ignored.
+	wsRelPath, _ := filepath.Rel(projectRoot, dest)
 	if err := addPathToWorkspace(wsPath, wsRelPath); err != nil {
 		fmt.Printf("  Warning: workspace update failed: %v\n", err)
 	} else {
