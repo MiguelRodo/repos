@@ -80,8 +80,15 @@ it to every subsequent repository:
 | `--private` | Create all repositories as private by default (the default) |
 | `--codespaces` | Configure Codespaces authentication for all repositories |
 | `--worktree` | Use worktrees instead of separate clones for all `@branch` lines |
+| `--fetch-all-deferred` | *(Default)* Fast single-branch clone; wildcard refspec restored immediately |
+| `--fetch-single` | Keep restricted single-branch refspec (CI/CD or metered connections) |
+| `--fetch-all` | Full clone — all remote branches downloaded upfront |
 
 Per-line `--public`/`--private` flags always override the global default.
+
+`--fetch-single`, `--fetch-all-deferred`, and `--fetch-all` may also be
+specified per-line to override the global fetch mode for a specific
+repository or `@branch` line.
 
 ## Example
 

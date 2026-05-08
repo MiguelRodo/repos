@@ -30,6 +30,14 @@ repos clone
 
 This clones all listed repositories into the parent directory of your current location.
 
+### Fetch modes
+
+`repos clone` supports explicit fetch behaviour:
+
+- `--fetch-all-deferred` *(default)*: fast `--single-branch` clone, then restore wildcard fetch refspec
+- `--fetch-single`: keep strict single-branch refspec isolation
+- `--fetch-all`: full clone with all branches fetched upfront
+
 ## What else can you do?
 
 **Customise `repos.list`** — clone specific branches (`owner/repo@branch`), use

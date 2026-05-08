@@ -161,22 +161,57 @@ else
 fi
 
 echo ""
-echo "TEST: Verify wildcard fetch refspec was added"
+echo "TEST: Verify wildcard fetch refspec was added (default deferred mode)"
 run_test
 
 cd ../slides  # Back to slides directory
 
-# Check if wildcard refspec exists
+# In default --fetch-all-deferred mode the wildcard refspec MUST be present
 WILDCARD_REFSPEC="+refs/heads/*:refs/remotes/origin/*"
 if git config --get-all remote.origin.fetch | grep -qF "$WILDCARD_REFSPEC"; then
   test_passed
   pass "Wildcard fetch refspec added: $WILDCARD_REFSPEC"
 else
-  # This might be expected in some scenarios
-  info "Wildcard fetch refspec not found (may be OK depending on git version)"
-  test_passed
-  pass "Test continues without wildcard refspec"
+  fail "Wildcard fetch refspec missing in default (deferred) mode"
 fi
+
+echo ""
+echo "TEST: --fetch-single worktree must NOT add wildcard refspec"
+run_test
+
+cd "$TEST_DIR"
+
+# Re-create a fresh single-branch clone and use --fetch-single for the worktree
+git clone --single-branch --branch slides-branch remote.git slides-single >/dev/null 2>&1
+cd slides-single
+
+cat > repos.list << 'EOF'
+--fetch-single
+@data-branch data-single --worktree
+EOF
+
+set +e
+SINGLE_OUTPUT=$("$REPO_ROOT/scripts/helper/clone-repos.sh" -f repos.list 2>&1)
+SINGLE_RC=$?
+set -e
+
+if [[ $SINGLE_RC -ne 0 ]]; then
+  echo "$SINGLE_OUTPUT"
+  fail "clone-repos.sh failed for --fetch-single worktree test (exit $SINGLE_RC)"
+fi
+
+if [[ ! -d ../data-single ]]; then
+  echo "$SINGLE_OUTPUT"
+  fail "Expected worktree directory ../data-single was not created"
+fi
+
+if git config --get-all remote.origin.fetch | grep -qF "$WILDCARD_REFSPEC"; then
+  fail "--fetch-single worktree should NOT add wildcard fetch refspec, but it did"
+else
+  test_passed
+  pass "--fetch-single correctly preserves single-branch refspec after worktree creation"
+fi
+cd "$TEST_DIR/slides"  # Restore for subsequent tests
 
 echo ""
 echo "TEST: Worktree can perform git operations"

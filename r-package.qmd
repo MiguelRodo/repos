@@ -40,11 +40,19 @@ pinning, worktrees, visibility flags, and more.
 ```r
 library(repos)
 
-repos("clone")
+repos_clone()
 ```
 
 This reads `repos.list` and clones everything to the **parent directory** of
 your current location.
+
+`repos_clone()` supports explicit fetch modes:
+
+```r
+repos_clone(fetch_mode = "deferred")  # default: fast clone, then restore wildcard refspec
+repos_clone(fetch_mode = "single")    # strict single-branch isolation
+repos_clone(fetch_mode = "all")       # full clone (all branches upfront)
+```
 
 ### Step 3 — Open in your IDE (optional)
 
@@ -402,4 +410,3 @@ repos_install_cli(run = TRUE)
 
 See [`repos_install_cli()`](#repos_install_cli) above for details, or visit
 the [Installation guide](install.html) for all options.
-

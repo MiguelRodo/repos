@@ -9,6 +9,7 @@ repos_clone(
   worktree = FALSE,
   debug = FALSE,
   debug_file = NULL,
+  fetch_mode = NULL,
   ...
 )
 }
@@ -25,6 +26,18 @@ clone.}
 \item{debug_file}{Character string or logical. Enable debug tracing to a
 file.  If \code{TRUE}, an auto-generated filename is used; if a non-empty
 string, that path is used as the log file.}
+
+\item{fetch_mode}{Character. Controls fetch refspec behaviour after cloning.
+One of:
+\itemize{
+  \item \code{"deferred"} (default) — fast \code{--single-branch} clone,
+    then the wildcard fetch refspec is immediately restored so normal
+    multi-branch commands work after a subsequent \code{git fetch}.
+  \item \code{"single"} — keep the restricted single-branch refspec for
+    maximum isolation; best for CI/CD, monorepos, or metered connections.
+  \item \code{"all"} — full clone without \code{--single-branch}; all
+    remote branches are downloaded upfront.
+}}
 
 \item{...}{Additional arguments passed directly to the
 \code{clone-repos.sh} script as-is.}
@@ -59,6 +72,12 @@ repos_clone(file = "my-repos.list")
 
 # Use worktrees globally for all @branch lines
 repos_clone(worktree = TRUE)
+
+# CI/CD: strict single-branch isolation
+repos_clone(fetch_mode = "single")
+
+# Download all branches upfront
+repos_clone(fetch_mode = "all")
 }
 
 }

@@ -46,13 +46,23 @@ pinning, worktrees, visibility flags, and more.
 ### Step 2 — Clone repositories
 
 ```python
-from repos import run_script
+from repos import clone
 
-run_script("helper/clone-repos.sh")
+clone()
 ```
 
 This reads `repos.list` and clones everything to the **parent directory** of
 your current location.
+
+`clone()` supports explicit fetch modes:
+
+```python
+from repos import clone
+
+clone(fetch_mode="deferred")  # default: fast clone, then restore wildcard refspec
+clone(fetch_mode="single")    # strict single-branch isolation
+clone(fetch_mode="all")       # full clone (all branches upfront)
+```
 
 ### Step 3 — Open in your IDE (optional)
 
@@ -400,4 +410,3 @@ install_cli(run=True)
 
 See [`install_cli()`](#install_cli) above for details, or visit
 the [Installation guide](install.html) for all options.
-

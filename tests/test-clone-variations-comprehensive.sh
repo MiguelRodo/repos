@@ -205,6 +205,11 @@ if [ -d "$TEST_ROOT/repo1" ]; then
   else
     print_fail "Clone has no remote branches"
   fi
+  if git config --get-all remote.origin.fetch | grep -qF "+refs/heads/*:refs/remotes/origin/*"; then
+    print_pass "Default single-branch clone restored wildcard fetch refspec"
+  else
+    print_fail "Default single-branch clone missing wildcard fetch refspec"
+  fi
 else
   print_fail "Failed to clone repo1"
 fi
@@ -306,6 +311,11 @@ if [ -d "$TEST_ROOT/repo2" ]; then
     print_pass "Checked out correct branch: hotfix/urgent"
   else
     print_fail "Wrong branch: $BRANCH (expected: hotfix/urgent)"
+  fi
+  if git config --get-all remote.origin.fetch | grep -qF "+refs/heads/*:refs/remotes/origin/*"; then
+    print_pass "Single-branch clone restored wildcard fetch refspec"
+  else
+    print_fail "Single-branch clone missing wildcard fetch refspec"
   fi
 else
   # If it's not repo2, check if it's repo2-hotfix-urgent
