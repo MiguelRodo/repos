@@ -131,11 +131,11 @@ print_test "create-repos.sh ignores standalone global --force lines"
 cd "$TEST_ROOT"
 cat > repos.list <<EOF
 --force
-file:///tmp/force-local.git
+file://$TEST_ROOT/force-local.git
 EOF
 
 OUTPUT=$("$PROJECT_ROOT/scripts/helper/create-repos.sh" -f repos.list 2>&1)
-if echo "$OUTPUT" | grep -q "Skipping local remote: file:///tmp/force-local.git"; then
+if echo "$OUTPUT" | grep -q "Skipping local remote: file://$TEST_ROOT/force-local.git"; then
   print_pass "Standalone --force line is ignored by create-repos.sh"
 else
   print_fail "create-repos.sh did not ignore standalone --force line correctly"
