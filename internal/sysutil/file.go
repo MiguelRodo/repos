@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 )
 
+// fileCompareBufferSize keeps reads reasonably large while avoiding oversized
+// allocations during repeated file comparisons.
 const fileCompareBufferSize = 32 * 1024
 
 // MirrorOptions controls mirror behaviour.
@@ -123,7 +125,12 @@ func mirrorFile(src, dst string, srcPerm os.FileMode) (bool, error) {
 		return false, nil
 	}
 
-	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+	srcParentInfo, statErr := os.Stat(filepath.Dir(src))
+	parentMode := os.FileMode(0o755)
+	if statErr == nil {
+		parentMode = srcParentInfo.Mode().Perm()
+	}
+	if err := os.MkdirAll(filepath.Dir(dst), parentMode); err != nil {
 		return false, fmt.Errorf("create parent directory for %s: %w", dst, err)
 	}
 
@@ -186,7 +193,12 @@ func mirrorSymlink(src, dst string) (bool, error) {
 		return false, fmt.Errorf("stat destination symlink %s: %w", dst, err)
 	}
 
-	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+	srcParentInfo, statErr := os.Stat(filepath.Dir(src))
+	parentMode := os.FileMode(0o755)
+	if statErr == nil {
+		parentMode = srcParentInfo.Mode().Perm()
+	}
+	if err := os.MkdirAll(filepath.Dir(dst), parentMode); err != nil {
 		return false, fmt.Errorf("create parent directory for symlink %s: %w", dst, err)
 	}
 	if err := os.Symlink(target, dst); err != nil {

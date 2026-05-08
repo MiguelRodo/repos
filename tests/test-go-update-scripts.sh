@@ -39,7 +39,7 @@ setup_repo() {
 BASE_REPO="$TEST_DIR/base"
 mkdir -p "$BASE_REPO/scripts" "$BASE_REPO/.github/workflows"
 setup_repo "$BASE_REPO"
-git -C "$BASE_REPO" remote add origin "https://github.com/example/base.git"
+git -C "$BASE_REPO" remote add origin "https://example.test/example/base.git"
 
 cat > "$BASE_REPO/scripts/tool.sh" <<'SCRIPT'
 #!/usr/bin/env bash

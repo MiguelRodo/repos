@@ -13,6 +13,8 @@ import (
 	"github.com/MiguelRodo/repos/internal/sysutil"
 )
 
+// sharedSyncPaths are the shared infrastructure paths mirrored from the base
+// repository into each managed repository.
 var sharedSyncPaths = []string{
 	filepath.Join(".github", "workflows"),
 	"scripts",
@@ -71,12 +73,12 @@ func runUpdateScripts(args []string) error {
 			return fmt.Errorf("resolve relative path for %s: %w", repoDir, err)
 		}
 		if rel == "." {
-			fmt.Printf("⏭  skip base repository: %s\n", repoDir)
+			fmt.Printf("SKIP base repository: %s\n", repoDir)
 			skipped++
 			continue
 		}
 		if _, err := os.Stat(filepath.Join(repoDir, ".git")); err != nil {
-			fmt.Printf("⏭  skip (not a git repo): %s\n", repoDir)
+			fmt.Printf("SKIP (not a git repo): %s\n", repoDir)
 			skipped++
 			continue
 		}
