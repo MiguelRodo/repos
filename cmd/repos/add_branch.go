@@ -174,8 +174,11 @@ func runAddBranch(args []string) error {
 	// Add the new worktree path to the VS Code workspace file.
 	fmt.Println("Updating VS Code workspace...")
 	wsPath := findWorkspaceFile(projectRoot)
-	destBase := filepath.Base(dest)
-	wsRelPath := filepath.Join("..", destBase)
+	wsRelPath, err := filepath.Rel(projectRoot, dest)
+	if err != nil {
+		// Fallback: manually construct relative path (dest is always under parentDir)
+		wsRelPath = filepath.Join("..", filepath.Base(dest))
+	}
 	if err := addPathToWorkspace(wsPath, wsRelPath); err != nil {
 		fmt.Printf("  Warning: workspace update failed: %v\n", err)
 	} else {
@@ -189,7 +192,7 @@ func runAddBranch(args []string) error {
 	fmt.Println()
 	fmt.Println("Next steps:")
 	fmt.Printf("  - Open in VS Code: code %q\n", dest)
-	fmt.Printf("  - Or open workspace: code %q\n", filepath.Join(projectRoot, "entire-project.code-workspace"))
+	fmt.Printf("  - Or open workspace: code %q\n", wsPath)
 	fmt.Printf("  - To remove: git worktree remove %q\n", dest)
 	return nil
 }
@@ -384,7 +387,7 @@ Options:
 What this command does:
   1. Creates a new worktree at ../<repo>-<branch> (or ../target-directory)
   2. Pushes the branch to origin with tracking (for new branches)
-  3. Cleans the worktree (keeps only .devcontainer/devcontainer.json and .gitignore)
+  3. Cleans the worktree (keeps only .git, .gitignore, and .devcontainer)
   4. Moves .devcontainer/prebuild/devcontainer.json → .devcontainer/devcontainer.json
   5. Strips codespaces repositories config from devcontainer.json
   6. Commits and pushes the minimal infrastructure

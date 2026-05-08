@@ -5,21 +5,16 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Build the Go binary if not already present or if sources are newer.
+# Always build the binary from the current source so the test exercises the
+# code under test rather than any installed system version.
 REPOS_BIN=""
-if command -v repos >/dev/null 2>&1; then
-  REPOS_BIN="repos"
-elif [ -f "$PROJECT_ROOT/repos-bin" ]; then
-  REPOS_BIN="$PROJECT_ROOT/repos-bin"
+TMP_BIN=$(mktemp)
+trap 'rm -f "$TMP_BIN"' EXIT
+if go build -o "$TMP_BIN" "$PROJECT_ROOT/cmd/repos" 2>/dev/null; then
+  REPOS_BIN="$TMP_BIN"
 else
-  TMP_BIN=$(mktemp)
-  if go build -o "$TMP_BIN" "$PROJECT_ROOT/cmd/repos" 2>/dev/null; then
-    REPOS_BIN="$TMP_BIN"
-    trap 'rm -f "$TMP_BIN"' EXIT
-  else
-    echo "SKIP: could not build repos binary (go not available or build failed)"
-    exit 0
-  fi
+  echo "SKIP: could not build repos binary (go not available or build failed)"
+  exit 0
 fi
 
 # Colors for output
@@ -35,7 +30,7 @@ make_repo() {
   local base="$1"
   mkdir -p "$base"
   git init --bare "$base/origin.git" -q
-  git clone "$base/origin.git" "$base/repo" -q 2>/dev/null || true
+  git clone "$base/origin.git" "$base/repo" -q
   cd "$base/repo"
   git config user.email "test@example.com"
   git config user.name "Test"
