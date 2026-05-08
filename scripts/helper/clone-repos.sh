@@ -636,6 +636,29 @@ ensure_wildcard_fetch_refspec() {
   git -C "$base" config --add -- remote.origin.fetch "$wildcard_refspec" 2>/dev/null || true
 }
 
+# Ensure a specific branch fetch refspec exists for origin remote.
+# Used in --fetch-single mode when a worktree is created for a branch,
+# so that 'git fetch' in the worktree will track that specific branch.
+# No-op when the wildcard refspec is already present.
+ensure_branch_fetch_refspec() {
+  local base="$1" branch="$2"
+  local branch_refspec="+refs/heads/$branch:refs/remotes/origin/$branch"
+  local wildcard_refspec="+refs/heads/*:refs/remotes/origin/*"
+
+  # If wildcard already covers all branches, nothing to do
+  if git -C "$base" config --get-all -- remote.origin.fetch | grep -qF -e "$wildcard_refspec"; then
+    return 0
+  fi
+
+  # If the specific branch refspec is already present, skip
+  if git -C "$base" config --get-all -- remote.origin.fetch | grep -qF -e "$branch_refspec"; then
+    return 0
+  fi
+
+  # Add the branch-specific refspec so future 'git fetch' tracks this branch
+  git -C "$base" config --add -- remote.origin.fetch "$branch_refspec" 2>/dev/null || true
+}
+
 find_worktree_for_branch() {
   local base="$1" branch="$2"
   local current_worktree=""
@@ -1019,6 +1042,7 @@ create_worktree_for_branch() {
     [[ "$debug" == true ]] && printf "create_worktree_for_branch: worktree added, setting upstream if needed\n" >&2
     if git -C "$base" rev-parse --verify --quiet "refs/remotes/origin/$branch" >/dev/null; then
       if [ "$fetch_mode" = "deferred" ]; then ensure_wildcard_fetch_refspec "$base"; fi
+      if [ "$fetch_mode" = "single" ]; then ensure_branch_fetch_refspec "$base" "$branch"; fi
       git -C "$dest" branch --set-upstream-to "origin/$branch" -- || true
     else
       git -C "$dest" push -u origin -- HEAD:"$branch" || true
@@ -1030,9 +1054,12 @@ create_worktree_for_branch() {
     # Ensure the remote-tracking ref exists even in single-branch clones
     git -C "$base" fetch origin "refs/heads/$branch:refs/remotes/origin/$branch" || true
     if git -C "$base" rev-parse --verify --quiet "refs/remotes/origin/$branch" >/dev/null; then
+      # Persist refspec before adding worktree so git can resolve tracking automatically.
+      # For deferred mode use the wildcard; for single mode add only this branch's refspec.
+      if [ "$fetch_mode" = "deferred" ]; then ensure_wildcard_fetch_refspec "$base"; fi
+      if [ "$fetch_mode" = "single" ]; then ensure_branch_fetch_refspec "$base" "$branch"; fi
       git -C "$base" worktree add -b "$branch" -- "$dest" "origin/$branch" </dev/null
       CNT_WORKTREE_ADDED=$((CNT_WORKTREE_ADDED + 1))
-      if [ "$fetch_mode" = "deferred" ]; then ensure_wildcard_fetch_refspec "$base"; fi
       git -C "$dest" branch --set-upstream-to "origin/$branch" -- || true
       [[ "$debug" == true ]] && printf "create_worktree_for_branch: worktree added from origin/%s\n" "$branch" >&2
     else
