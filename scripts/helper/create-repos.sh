@@ -449,7 +449,7 @@ while IFS= read -r line || [ -n "$line" ]; do
   debug "Line $line_num: Processing: $line"
 
   # Parse line to extract repo_spec and any flags
-  # Check if line is just a global flag (--codespaces, --public, --private, --worktree)
+  # Check if line is just a global flag (--codespaces, --public, --private, --worktree, --force)
   trimmed_line="${line#"${line%%[![:space:]]*}"}"
   trimmed_line="${trimmed_line%"${trimmed_line##*[![:space:]]}"}"; trimmed_line=${trimmed_line%$'\r'}
   
@@ -458,7 +458,8 @@ while IFS= read -r line || [ -n "$line" ]; do
     --codespaces|--codespaces[[:space:]]*|\
     --public|--public[[:space:]]*|\
     --private|--private[[:space:]]*|\
-    --worktree|--worktree[[:space:]]*)
+    --worktree|--worktree[[:space:]]*|\
+    --force|--force[[:space:]]*)
       debug "Line $line_num: Skipping global flag line: $trimmed_line"
       continue
       ;;
