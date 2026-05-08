@@ -246,9 +246,6 @@ func getCurrentRepoRemoteHTTPS(dir string) (string, error) {
 		return "", errors.New("error: not inside a Git working tree; cannot derive fallback repo")
 	}
 	var remoteURL string
-	if _, err := runGit(dir, "remote", "|", "cat"); err == nil {
-		_ = err
-	}
 	if out, err := runGit(dir, "remote", "get-url", "--push", "--", "origin"); err == nil {
 		remoteURL = out
 	} else if out, err := runGit(dir, "remote", "get-url", "--", "origin"); err == nil {
@@ -938,7 +935,7 @@ func (s *state) processFile() error {
 		if trimmed == "" || isGlobalFlagLine(trimmed) {
 			continue
 		}
-		fmt.Fprintf(os.Stderr, "▶ %s\n", sanitizeURL(trimmed))
+		fmt.Fprintf(os.Stderr, "Processing: %s\n", sanitizeURL(trimmed))
 		ins, err := s.parseEffectiveLine(trimmed, s.fallbackRepoHTTPS)
 		lineRC := 0
 		if err != nil {
@@ -1028,13 +1025,13 @@ func (s *state) processFile() error {
 		switch lineRC {
 		case 0:
 		case 2:
-			fmt.Fprintf(os.Stderr, "↷ skipped: %s\n", sanitizeURL(trimmed))
+			fmt.Fprintf(os.Stderr, "SKIP: %s\n", sanitizeURL(trimmed))
 		default:
 			s.counts.errors++
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "✖ line failed: %s\n", sanitizeURL(err.Error()))
+				fmt.Fprintf(os.Stderr, "ERROR: line failed: %s\n", sanitizeURL(err.Error()))
 			} else {
-				fmt.Fprintf(os.Stderr, "✖ line failed (rc=%d): %s\n", lineRC, sanitizeURL(trimmed))
+				fmt.Fprintf(os.Stderr, "ERROR: line failed (rc=%d): %s\n", lineRC, sanitizeURL(trimmed))
 			}
 		}
 	}
