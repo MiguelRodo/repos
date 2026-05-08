@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 )
 
@@ -220,9 +221,12 @@ func runGit(dir string, args ...string) (string, error) {
 
 func nonInteractiveGitEnv() []string {
 	env := os.Environ()
-	env = append(env, "GIT_TERMINAL_PROMPT=0", "GIT_ASKPASS=/bin/false")
-	if _, ok := os.LookupEnv("GIT_SSH_COMMAND"); !ok {
-		env = append(env, "GIT_SSH_COMMAND=ssh -oBatchMode=yes")
+	env = append(env, "GIT_TERMINAL_PROMPT=0")
+	if runtime.GOOS != "windows" {
+		env = append(env, "GIT_ASKPASS=/bin/false")
+		if _, ok := os.LookupEnv("GIT_SSH_COMMAND"); !ok {
+			env = append(env, "GIT_SSH_COMMAND=ssh -oBatchMode=yes")
+		}
 	}
 	return env
 }
