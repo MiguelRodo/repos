@@ -24,16 +24,6 @@ Append `@branch` to clone only that branch:
 owner/repo@develop
 ```
 
-## Custom Target Directory
-
-Add a name after the repository to clone into a different directory:
-
-```
-owner/repo my-data
-```
-
-## Worktrees
-
 Use `@branch` without a repository name to clone only that branch from the most
 recently listed repository (or the current repository if none has been listed
 yet):
@@ -44,8 +34,20 @@ owner/repo
 @bugfix-123
 ```
 
-This produces a full clone of `owner/repo` plus two single-branch clones — no
-extra network clones of the full repository required.
+If `owner/repo` is listed first, `@feature-x` and `@bugfix-123` use that
+repository as the remote.  If the file begins with bare `@branch` lines and no
+repository has been listed yet, the current local repository's own remote is
+used as the fallback.
+
+## Custom Target Directory
+
+Add a name after the repository to clone into a different directory:
+
+```
+owner/repo my-data
+```
+
+## Worktrees
 
 Add `--worktree` to an `@branch` line to create a
 [Git worktree](https://git-scm.com/docs/git-worktree) instead of a separate
@@ -57,8 +59,11 @@ owner/repo
 @bugfix-123 --worktree
 ```
 
-This produces a full clone of `owner/repo` plus two worktrees — no extra network
-clones required.
+This produces a full clone of `owner/repo` plus two worktrees.
+
+If the file begins with a bare `@branch --worktree` line and no repository has
+been listed yet, the current local repository's remote is used as the fallback
+source, and the worktree is placed alongside the current repository.
 
 ## Visibility
 
@@ -72,7 +77,9 @@ owner/other-repo --private
 ## Global Flags
 
 Place a flag on its own line (with nothing else except optional comments) to apply
-it to every subsequent repository:
+it to every repository in the file.  The entire file is scanned for global flags
+before any cloning begins, so placement does not matter — a global flag at the
+bottom of the file applies to repositories listed above it.
 
 | Flag | Effect |
 |---|---|
