@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/MiguelRodo/repos/internal/gitcmd"
+	"golang.org/x/term"
 )
 
 func runCodespacesAuth(args []string) error {
@@ -64,7 +65,11 @@ func runCodespacesAuth(args []string) error {
 		return err
 	}
 
-	fmt.Printf("Setting GH_TOKEN secret for %d repositories...\n", len(repos))
+	repoWord := "repositories"
+	if len(repos) == 1 {
+		repoWord = "repository"
+	}
+	fmt.Printf("Setting GH_TOKEN secret for %d %s...\n", len(repos), repoWord)
 	for _, repo := range repos {
 		fmt.Printf("  - %s\n", repo)
 		if err := setRepoCodespacesSecret(repo, token); err != nil {
@@ -102,33 +107,17 @@ func resolveCodespacesToken() (string, error) {
 }
 
 func promptTokenSecurely() (string, error) {
-	stdinInfo, err := os.Stdin.Stat()
-	if err != nil {
-		return "", fmt.Errorf("checking stdin: %w", err)
-	}
-	if stdinInfo.Mode()&os.ModeCharDevice == 0 {
+	if !term.IsTerminal(int(os.Stdin.Fd())) {
 		return "", errors.New("no GH_TOKEN or CODESPACES_TOKEN set and stdin is not interactive")
 	}
 
 	fmt.Fprint(os.Stderr, "Enter token to store as GH_TOKEN secret: ")
-	disable := exec.Command("stty", "-echo")
-	disable.Stdin = os.Stdin
-	if err := disable.Run(); err != nil {
-		fmt.Fprintln(os.Stderr)
-		return "", fmt.Errorf("unable to prompt securely (failed to disable terminal echo): %w", err)
-	}
-	defer func() {
-		enable := exec.Command("stty", "echo")
-		enable.Stdin = os.Stdin
-		_ = enable.Run()
-		fmt.Fprintln(os.Stderr)
-	}()
-
-	line, err := bufio.NewReader(os.Stdin).ReadString('\n')
-	if err != nil && !errors.Is(err, io.EOF) {
+	line, err := term.ReadPassword(int(os.Stdin.Fd()))
+	fmt.Fprintln(os.Stderr)
+	if err != nil {
 		return "", fmt.Errorf("reading token: %w", err)
 	}
-	token := strings.TrimSpace(line)
+	token := strings.TrimSpace(string(line))
 	if token == "" {
 		return "", errors.New("token cannot be empty")
 	}
@@ -171,6 +160,8 @@ func parseManagedRepos(r io.Reader, fallbackRemote string) ([]string, error) {
 		}
 
 		repoNoRef, _ := splitRepoSpec(first)
+		// Reject option-like and traversal-like repository specs early so user
+		// input cannot be treated as CLI flags or unsafe filesystem paths.
 		if strings.HasPrefix(repoNoRef, "-") || strings.Contains(repoNoRef, "..") {
 			return nil, fmt.Errorf("invalid repository spec on line %d: %s", lineNum, gitcmd.SanitizeURL(first))
 		}
@@ -218,9 +209,7 @@ func ownerRepoFromRemote(remote string) (string, error) {
 }
 
 func setRepoCodespacesSecret(repo, token string) error {
-	cmd := exec.Command("gh", "secret", "set", "GH_TOKEN", "--repo", repo, "--app", "codespaces")
-	cmd.Env = append(os.Environ(), "GH_TOKEN="+token)
-	cmd.Stdin = strings.NewReader(token)
+	cmd := exec.Command("gh", "secret", "set", "GH_TOKEN", "--repo", repo, "--app", "codespaces", "--body", token)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		msg := strings.TrimSpace(string(out))
