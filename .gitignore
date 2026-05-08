@@ -50,3 +50,6 @@ env/
 # Quarto
 _site/
 .quarto/
+
+# Go build artifacts
+/repos
