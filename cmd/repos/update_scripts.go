@@ -52,7 +52,7 @@ func runUpdateScripts(args []string) error {
 
 	if _, err := os.Stat(*reposFile); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("file %s not found", *reposFile)
+			return fmt.Errorf("file %s not found: %w", *reposFile, err)
 		}
 		return fmt.Errorf("stat repos file %s: %w", *reposFile, err)
 	}

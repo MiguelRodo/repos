@@ -78,7 +78,8 @@ LIST
 
 cd "$BASE_REPO"
 
-if OUTPUT=$("$REPOS_BIN" update-scripts --help 2>&1) && echo "$OUTPUT" | grep -q "Usage:"; then
+OUTPUT=$("$REPOS_BIN" update-scripts --help 2>&1)
+if echo "$OUTPUT" | grep -q "Usage:"; then
   print_pass "Help output is shown"
 else
   print_fail "Help output missing"
