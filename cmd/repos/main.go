@@ -208,12 +208,23 @@ func runGit(dir string, args ...string) (string, error) {
 	if dir != "" {
 		cmd.Dir = dir
 	}
+	cmd.Stdin = nil
+	cmd.Env = nonInteractiveGitEnv()
 	out, err := cmd.CombinedOutput()
 	trimmed := strings.TrimSpace(string(out))
 	if err != nil {
-		return trimmed, fmt.Errorf("git %s failed: %s", strings.Join(args, " "), sanitizeURL(trimmed))
+		return trimmed, fmt.Errorf("git %s failed: %s", sanitizeURL(strings.Join(args, " ")), sanitizeURL(trimmed))
 	}
 	return trimmed, nil
+}
+
+func nonInteractiveGitEnv() []string {
+	env := os.Environ()
+	env = append(env, "GIT_TERMINAL_PROMPT=0", "GIT_ASKPASS=/bin/false")
+	if _, ok := os.LookupEnv("GIT_SSH_COMMAND"); !ok {
+		env = append(env, "GIT_SSH_COMMAND=ssh -oBatchMode=yes")
+	}
+	return env
 }
 
 func sanitizeURL(in string) string {
@@ -410,7 +421,7 @@ func validateTargetDir(target string) error {
 	if target == "" {
 		return nil
 	}
-	if strings.HasPrefix(target, "/") || strings.Contains(target, "..") || strings.HasPrefix(target, "-") {
+	if strings.HasPrefix(target, "/") || strings.HasPrefix(target, `\\`) || isWindowsAbsPath(target) || strings.Contains(target, "..") || strings.HasPrefix(target, "-") {
 		return fmt.Errorf("error: target directory cannot be absolute, contain '..', or start with a hyphen: %s", target)
 	}
 	return nil
@@ -633,6 +644,14 @@ func isNonEmptyDir(path string) bool {
 	return err == nil
 }
 
+func isGitRepo(path string) bool {
+	if !dirExists(path) {
+		return false
+	}
+	_, err := runGit(path, "rev-parse", "--is-inside-work-tree")
+	return err == nil
+}
+
 func (s *state) ensureWildcardFetchRefspec(base string) {
 	wild := "+refs/heads/*:refs/remotes/origin/*"
 	out, err := runGit(base, "config", "--get-all", "--", "remote.origin.fetch")
@@ -754,7 +773,7 @@ func (s *state) cloneOneRepo(ins instruction) (int, error) {
 		dest = filepath.Join(s.parentDir, repoDir)
 	}
 
-	if dirExists(filepath.Join(dest, ".git")) {
+	if isGitRepo(dest) {
 		existingHTTPS := normaliseRemoteToHTTPS(safeGetOriginURL(dest))
 		if existingHTTPS != "" && existingHTTPS == remoteHTTPS {
 			fmt.Printf("Already exists: %s (matches %s)\n", dest, remoteHTTPS)
@@ -807,7 +826,11 @@ func (s *state) cloneOneRepo(ins instruction) (int, error) {
 		if _, err := runGit("", cloneArgs...); err != nil {
 			return 1, err
 		}
-		s.counts.clonedFull++
+		if ins.allBranches {
+			s.counts.clonedFull++
+		} else {
+			s.counts.clonedBranch++
+		}
 	}
 
 	if !ins.allBranches && ins.fetchMode == "deferred" {
@@ -841,14 +864,14 @@ func (s *state) createWorktreeForBranch(base, branch, targetDir, fetchMode strin
 	} else {
 		dest = filepath.Join(s.parentDir, repoBase+"-"+sanitizeBranchName(branch))
 	}
-	if dirExists(filepath.Join(dest, ".git")) {
+	if isGitRepo(dest) {
 		curb, err := runGit(dest, "rev-parse", "--abbrev-ref", "HEAD")
 		if err == nil && strings.TrimSpace(curb) == branch {
 			fmt.Printf("Already exists: %s (branch %s)\n", dest, branch)
 		} else if err == nil {
 			fmt.Printf("Skip: %s already exists (branch '%s'); leaving as-is.\n", dest, strings.TrimSpace(curb))
 		} else {
-			fmt.Printf("Skip: %s already exists and is a Git dir; leaving as-is.\n", dest)
+			fmt.Printf("Skip: %s already exists and is a Git repo; leaving as-is.\n", dest)
 		}
 		s.counts.skipped++
 		return 2, nil
