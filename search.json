@@ -256,7 +256,7 @@
     "href": "repos-list.html#cloning-a-specific-branch",
     "title": "repos.list Reference",
     "section": "Cloning a Specific Branch",
-    "text": "Cloning a Specific Branch\nAppend @branch to clone only that branch:\nowner/repo@develop"
+    "text": "Cloning a Specific Branch\nAppend @branch to clone only that branch:\nowner/repo@develop\nUse @branch without a repository name to clone only that branch from the most recently listed repository (or the current repository if none has been listed yet):\nowner/repo\n@feature-x\n@bugfix-123\nIf owner/repo is listed first, @feature-x and @bugfix-123 use that repository as the remote. If the file begins with bare @branch lines and no repository has been listed yet, the current local repository’s own remote is used as the fallback."
   },
   {
     "objectID": "repos-list.html#custom-target-directory",
@@ -270,7 +270,7 @@
     "href": "repos-list.html#worktrees",
     "title": "repos.list Reference",
     "section": "Worktrees",
-    "text": "Worktrees\nUse @branch without a repository name to clone only that branch from the most recently listed repository (or the current repository if none has been listed yet):\nowner/repo\n@feature-x\n@bugfix-123\nThis produces a full clone of owner/repo plus two single-branch clones — no extra network clones of the full repository required.\nAdd --worktree to an @branch line to create a Git worktree instead of a separate clone:\nowner/repo\n@feature-x --worktree\n@bugfix-123 --worktree\nThis produces a full clone of owner/repo plus two worktrees — no extra network clones required."
+    "text": "Worktrees\nAdd --worktree to an @branch line to create a Git worktree instead of a separate clone:\nowner/repo\n@feature-x --worktree\n@bugfix-123 --worktree\nThis produces a full clone of owner/repo plus two worktrees.\nIf the file begins with a bare @branch --worktree line and no repository has been listed yet, the current local repository’s remote is used as the fallback source, and the worktree is placed alongside the current repository."
   },
   {
     "objectID": "repos-list.html#visibility",
@@ -284,7 +284,7 @@
     "href": "repos-list.html#global-flags",
     "title": "repos.list Reference",
     "section": "Global Flags",
-    "text": "Global Flags\nPlace a flag on its own line (with nothing else except optional comments) to apply it to every subsequent repository:\n\n\n\n\n\n\n\nFlag\nEffect\n\n\n\n\n--public\nCreate all repositories as public by default\n\n\n--private\nCreate all repositories as private by default (the default)\n\n\n--codespaces\nConfigure Codespaces authentication for all repositories\n\n\n--worktree\nUse worktrees instead of separate clones for all @branch lines\n\n\n--fetch-all-deferred\n(Default) Fast single-branch clone; wildcard refspec restored immediately\n\n\n--fetch-single\nKeep restricted single-branch refspec (CI/CD or metered connections)\n\n\n--fetch-all\nFull clone — all remote branches downloaded upfront\n\n\n\nPer-line --public/--private flags always override the global default.\n--fetch-single, --fetch-all-deferred, and --fetch-all may also be specified per-line to override the global fetch mode for a specific repository or @branch line."
+    "text": "Global Flags\nPlace a flag on its own line (with nothing else except optional comments) to apply it to every repository in the file. The entire file is scanned for global flags before any cloning begins, so placement does not matter — a global flag at the bottom of the file applies to repositories listed above it.\n\n\n\n\n\n\n\nFlag\nEffect\n\n\n\n\n--public\nCreate all repositories as public by default\n\n\n--private\nCreate all repositories as private by default (the default)\n\n\n--codespaces\nConfigure Codespaces authentication for all repositories\n\n\n--worktree\nUse worktrees instead of separate clones for all @branch lines\n\n\n--fetch-all-deferred\n(Default) Fast single-branch clone; wildcard refspec restored immediately\n\n\n--fetch-single\nKeep restricted single-branch refspec (CI/CD or metered connections)\n\n\n--fetch-all\nFull clone — all remote branches downloaded upfront\n\n\n\nPer-line --public/--private flags always override the global default.\n--fetch-single, --fetch-all-deferred, and --fetch-all may also be specified per-line to override the global fetch mode for a specific repository or @branch line."
   },
   {
     "objectID": "repos-list.html#example",
