@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/MiguelRodo/repos/internal/gitcmd"
 	"github.com/MiguelRodo/repos/internal/sysutil"
 )
 
@@ -20,8 +21,14 @@ var githubNameRegex = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
 func runCreate(args []string) error {
 	defaultFile := "repos.list"
 	if _, err := os.Stat(defaultFile); err != nil {
-		if _, err2 := os.Stat("repos-to-clone.list"); err2 == nil {
-			defaultFile = "repos-to-clone.list"
+		if errors.Is(err, os.ErrNotExist) {
+			if _, err2 := os.Stat("repos-to-clone.list"); err2 == nil {
+				defaultFile = "repos-to-clone.list"
+			} else if err2 != nil && !errors.Is(err2, os.ErrNotExist) {
+				return fmt.Errorf("error checking fallback list file: %w", err2)
+			}
+		} else {
+			return fmt.Errorf("error checking list file '%s': %w", defaultFile, err)
 		}
 	}
 
@@ -46,7 +53,10 @@ func runCreate(args []string) error {
 		return errors.New("cannot use both --public and --private")
 	}
 	if _, err := os.Stat(*reposFile); err != nil {
-		return fmt.Errorf("file '%s' not found", *reposFile)
+		if errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("file '%s' not found", *reposFile)
+		}
+		return fmt.Errorf("error accessing file '%s': %w", *reposFile, err)
 	}
 	if err := sysutil.CheckGitHubCLIAuth(); err != nil {
 		return err
@@ -181,26 +191,24 @@ func processCreateLine(line string, privateDefault bool) error {
 }
 
 func extractOwnerRepo(repoSpec string) (string, error) {
+	sanitizedSpec := gitcmd.SanitizeURL(repoSpec)
 	repoNoRef, _ := splitRepoSpec(repoSpec)
+	normalizedSpec := normaliseRemoteToHTTPS(repoNoRef)
 	switch {
-	case strings.HasPrefix(repoNoRef, "https://github.com/"):
-		repoNoRef = strings.TrimPrefix(repoNoRef, "https://github.com/")
-	case strings.HasPrefix(repoNoRef, "http://github.com/"):
-		repoNoRef = strings.TrimPrefix(repoNoRef, "http://github.com/")
-	case strings.HasPrefix(repoNoRef, "git@github.com:"):
-		repoNoRef = strings.TrimPrefix(repoNoRef, "git@github.com:")
-	case strings.HasPrefix(repoNoRef, "ssh://git@github.com/"):
-		repoNoRef = strings.TrimPrefix(repoNoRef, "ssh://git@github.com/")
+	case strings.HasPrefix(normalizedSpec, "https://github.com/"):
+		repoNoRef = strings.TrimPrefix(normalizedSpec, "https://github.com/")
+	case strings.HasPrefix(normalizedSpec, "http://github.com/"):
+		repoNoRef = strings.TrimPrefix(normalizedSpec, "http://github.com/")
 	}
 	repoNoRef = strings.TrimSuffix(repoNoRef, ".git")
 	repoNoRef = strings.TrimSpace(repoNoRef)
 
 	if !ownerRepoRegex.MatchString(repoNoRef) {
-		return "", fmt.Errorf("error: repository spec must be in 'owner/repo' format: %s", repoSpec)
+		return "", fmt.Errorf("error: repository spec must be in 'owner/repo' format: %s", sanitizedSpec)
 	}
 	owner, repo, ok := strings.Cut(repoNoRef, "/")
 	if !ok || !githubNameRegex.MatchString(owner) || !githubNameRegex.MatchString(repo) {
-		return "", fmt.Errorf("error: repository spec must be in 'owner/repo' format: %s", repoSpec)
+		return "", fmt.Errorf("error: repository spec must be in 'owner/repo' format: %s", sanitizedSpec)
 	}
 	return repoNoRef, nil
 }
@@ -222,7 +230,8 @@ func ghCreateRepo(ownerRepo string, private bool) error {
 	if !private {
 		visibility = "--public"
 	}
-	cmd := exec.Command("gh", "repo", "create", ownerRepo, visibility)
+	cmd := exec.Command("gh", "repo", "create", ownerRepo, visibility, "--confirm")
+	cmd.Env = append(os.Environ(), "GH_PROMPT_DISABLED=1")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("error creating repository %s: %s", ownerRepo, strings.TrimSpace(string(out)))

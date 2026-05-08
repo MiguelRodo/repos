@@ -3,6 +3,7 @@ package sysutil
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -21,6 +22,9 @@ func TestCheckGitHubCLIAuthMissingGh(t *testing.T) {
 }
 
 func TestCheckGitHubCLIAuthStatusSuccess(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX gh stub script is not supported on Windows")
+	}
 	origPath := os.Getenv("PATH")
 	t.Cleanup(func() { _ = os.Setenv("PATH", origPath) })
 
@@ -43,6 +47,9 @@ exit 1
 }
 
 func TestCheckGitHubCLIAuthStatusFailure(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX gh stub script is not supported on Windows")
+	}
 	origPath := os.Getenv("PATH")
 	t.Cleanup(func() { _ = os.Setenv("PATH", origPath) })
 

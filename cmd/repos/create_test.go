@@ -17,6 +17,7 @@ func TestExtractOwnerRepo(t *testing.T) {
 		{name: "owner-repo", spec: "acme/api", want: "acme/api"},
 		{name: "owner-repo-with-branch", spec: "acme/api@dev", want: "acme/api"},
 		{name: "https-url", spec: "https://github.com/acme/api.git@dev", want: "acme/api"},
+		{name: "https-url-with-credentials", spec: "https://token123@github.com/acme/api.git@dev", want: "acme/api"},
 		{name: "ssh-url", spec: "git@github.com:acme/api@dev", want: "acme/api"},
 		{name: "invalid-local-path", spec: "/tmp/repo", wantErr: true},
 		{name: "invalid-format", spec: "acme", wantErr: true},
@@ -39,6 +40,16 @@ func TestExtractOwnerRepo(t *testing.T) {
 				t.Fatalf("expected %q, got %q", tt.want, got)
 			}
 		})
+	}
+}
+
+func TestExtractOwnerRepoDoesNotLeakCredentialsInError(t *testing.T) {
+	_, err := extractOwnerRepo("https://supersecret@github.com/not-valid")
+	if err == nil {
+		t.Fatalf("expected parse error")
+	}
+	if strings.Contains(err.Error(), "supersecret") {
+		t.Fatalf("error should not include credentials: %v", err)
 	}
 }
 
