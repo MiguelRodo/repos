@@ -256,6 +256,9 @@ func getCurrentRepoRemoteHTTPS(dir string) (string, error) {
 	if remoteURL == "" {
 		return "", errors.New("error: no Git remotes found in the current repository")
 	}
+	if strings.Contains(remoteURL, "..") {
+		return "", fmt.Errorf("error: current repository remote contains path traversal: %s", sanitizeURL(remoteURL))
+	}
 	n := normaliseRemoteToHTTPS(remoteURL)
 	if strings.Contains(n, "..") {
 		return "", fmt.Errorf("error: current repository remote contains path traversal: %s", n)
