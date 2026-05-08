@@ -192,7 +192,7 @@ func (s *state) dbg(format string, args ...any) {
 }
 
 func checkPrerequisites() error {
-	for _, tool := range []string{"git", "mktemp"} {
+	for _, tool := range []string{"git"} {
 		if _, err := exec.LookPath(tool); err != nil {
 			return fmt.Errorf("error: '%s' is required but not found in PATH", tool)
 		}
@@ -336,6 +336,8 @@ func splitRepoSpec(spec string) (string, string) {
 	return s[:idx], s[idx+1:]
 }
 
+// sanitizeBranchName converts a branch name into a filesystem-safe suffix
+// by replacing "/" with "-" (for directory names only, not git refs).
 func sanitizeBranchName(branch string) string {
 	return strings.ReplaceAll(branch, "/", "-")
 }
@@ -818,7 +820,9 @@ func (s *state) createWorktreeForBranch(base, branch, targetDir, fetchMode strin
 		return 1, errors.New("error: no fallback base path available for worktree")
 	}
 	// Best-effort cleanup of stale worktree references.
-	_, _ = runGit(base, "worktree", "prune")
+	if _, err := runGit(base, "worktree", "prune"); err != nil {
+		s.dbg("Ignoring worktree prune failure for %s: %v", base, err)
+	}
 	if existing := findWorktreeForBranch(base, branch); existing != "" {
 		fmt.Printf("Skip: branch '%s' already checked out at %s\n", branch, existing)
 		s.counts.skipped++
@@ -877,7 +881,9 @@ func (s *state) createWorktreeForBranch(base, branch, targetDir, fetchMode strin
 		fmt.Printf("Branch exists: %s (on remote)\n", branch)
 		fmt.Printf("Adding worktree %s (tracking origin/%s)\n", dest, branch)
 		// Best-effort fetch of remote-tracking branch in single-branch clones.
-		_, _ = runGit(base, "fetch", "origin", "refs/heads/"+branch+":refs/remotes/origin/"+branch)
+		if _, err := runGit(base, "fetch", "origin", "refs/heads/"+branch+":refs/remotes/origin/"+branch); err != nil {
+			s.dbg("Ignoring fetch failure for %s in %s: %v", branch, base, err)
+		}
 		if remoteBranchExists(base, branch) {
 			if _, err := runGit(base, "worktree", "add", "-b", branch, "--", dest, "origin/"+branch); err != nil {
 				return 1, err
