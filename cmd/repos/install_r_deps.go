@@ -256,9 +256,15 @@ func runRInstall(repo managedRepo, mode string) error {
 	var expr string
 	switch mode {
 	case "renv.lock":
-		expr = `if (!requireNamespace("renv", quietly=TRUE)) install.packages("renv", repos="https://cloud.r-project.org"); renv::restore(prompt = FALSE)`
+		expr = `if (!requireNamespace("renv", quietly = TRUE)) {
+  install.packages("renv", repos = "https://cloud.r-project.org")
+}
+renv::restore(prompt = FALSE)`
 	default:
-		expr = `if (!requireNamespace("remotes", quietly=TRUE)) install.packages("remotes", repos="https://cloud.r-project.org"); remotes::install_deps(dependencies = TRUE)`
+		expr = `if (!requireNamespace("remotes", quietly = TRUE)) {
+  install.packages("remotes", repos = "https://cloud.r-project.org")
+}
+remotes::install_deps(dependencies = TRUE)`
 	}
 
 	cmd := exec.Command("Rscript", "--vanilla", "-e", expr)
@@ -291,6 +297,8 @@ func runRInstall(repo managedRepo, mode string) error {
 func streamPrefixedOutput(name string, src io.Reader, dst *os.File, wg *sync.WaitGroup) {
 	defer wg.Done()
 	sc := bufio.NewScanner(src)
+	// R package compilation can emit very long single lines; raise scanner limits
+	// to avoid truncating prefixed, real-time output.
 	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 	for sc.Scan() {
 		line := sc.Text()
