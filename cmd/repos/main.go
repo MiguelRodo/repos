@@ -22,19 +22,24 @@ type counters struct {
 }
 
 type state struct {
-	startDir          string
-	parentDir         string
-	reposFile         string
-	debug             bool
-	globalWorktree    bool
-	globalFetchMode   string
-	currentRepoHTTPS  string
-	fallbackRepoHTTPS string
-	fallbackRepoLocal string
-	cloneDest         string
-	seenRemoteLocal   map[string]string
-	plan              map[string]planInfo
-	counts            counters
+	startDir              string
+	parentDir             string
+	reposFile             string
+	debug                 bool
+	globalWorktree        bool
+	globalWorktreeForced  bool
+	globalFetchMode       string
+	globalFetchModeForced bool
+	cliWorktreeSet        bool
+	cliFetchModeSet       bool
+	cliForce              bool
+	currentRepoHTTPS      string
+	fallbackRepoHTTPS     string
+	fallbackRepoLocal     string
+	cloneDest             string
+	seenRemoteLocal       map[string]string
+	plan                  map[string]planInfo
+	counts                counters
 }
 
 type planInfo struct {
@@ -88,11 +93,17 @@ Run 'repos clone --help' for more information.
 
 func cloneUsage() {
 	fmt.Print(`Usage: repos clone [--file <repo-list>] [--debug] [--worktree]
+                  [--fetch-all-deferred|--fetch-single|--fetch-all]
+                  [--force]
 
 Fetch modes:
   --fetch-all-deferred   (default) clone with --single-branch then restore wildcard refspec
   --fetch-single         keep strict single-branch refspec
   --fetch-all            full clone of all branches
+
+Precedence:
+  Per-line flags override global defaults by default.
+  Use --force to enforce CLI global flags over per-line overrides.
 `)
 }
 
@@ -242,13 +253,26 @@ func trimLine(line string) string {
 	return strings.TrimSpace(t)
 }
 
-func isGlobalFlagLine(line string) bool {
-	for _, p := range []string{"--codespaces", "--public", "--private", "--worktree", "--fetch-all-deferred", "--fetch-single", "--fetch-all"} {
-		if line == p || strings.HasPrefix(line, p+" ") {
-			return true
+func isGlobalFlagToken(tok string) bool {
+	switch tok {
+	case "--codespaces", "--public", "--private", "--worktree", "--fetch-all-deferred", "--fetch-single", "--fetch-all", "--force":
+		return true
+	default:
+		return false
+	}
+}
+
+func lineIsGlobalFlagsOnly(line string) bool {
+	parts := strings.Fields(line)
+	if len(parts) == 0 {
+		return false
+	}
+	for _, tok := range parts {
+		if !isGlobalFlagToken(tok) {
+			return false
 		}
 	}
-	return false
+	return true
 }
 
 func (s *state) applyGlobalFlagsFromFile() error {
@@ -263,15 +287,42 @@ func (s *state) applyGlobalFlagsFromFile() error {
 		if line == "" {
 			continue
 		}
-		switch {
-		case line == "--worktree" || strings.HasPrefix(line, "--worktree "):
-			s.globalWorktree = true
-		case line == "--fetch-all-deferred" || strings.HasPrefix(line, "--fetch-all-deferred "):
-			s.globalFetchMode = "deferred"
-		case line == "--fetch-single" || strings.HasPrefix(line, "--fetch-single "):
-			s.globalFetchMode = "single"
-		case line == "--fetch-all" || strings.HasPrefix(line, "--fetch-all "):
-			s.globalFetchMode = "all"
+		if !lineIsGlobalFlagsOnly(line) {
+			continue
+		}
+		parts := strings.Fields(line)
+		lineForce := false
+		for _, tok := range parts {
+			if tok == "--force" {
+				lineForce = true
+				break
+			}
+		}
+		for _, tok := range parts {
+			switch tok {
+			case "--worktree":
+				if !s.cliWorktreeSet {
+					s.globalWorktree = true
+					if lineForce {
+						s.globalWorktreeForced = true
+					}
+				}
+			case "--fetch-all-deferred":
+				if !s.cliFetchModeSet {
+					s.globalFetchMode = "deferred"
+					s.globalFetchModeForced = lineForce
+				}
+			case "--fetch-single":
+				if !s.cliFetchModeSet {
+					s.globalFetchMode = "single"
+					s.globalFetchModeForced = lineForce
+				}
+			case "--fetch-all":
+				if !s.cliFetchModeSet {
+					s.globalFetchMode = "all"
+					s.globalFetchModeForced = lineForce
+				}
+			}
 		}
 	}
 	return sc.Err()
@@ -300,6 +351,9 @@ func validateTargetDir(target string) error {
 
 func (s *state) parseEffectiveLine(trimmed string, fallbackHTTPS string) (instruction, error) {
 	ins := instruction{fetchMode: s.globalFetchMode}
+	ignoreLineFlags := s.cliForce
+	worktreeLocked := s.globalWorktreeForced
+	fetchModeLocked := s.globalFetchModeForced
 	parts := strings.Fields(trimmed)
 	if len(parts) == 0 {
 		return ins, nil
@@ -312,20 +366,30 @@ func (s *state) parseEffectiveLine(trimmed string, fallbackHTTPS string) (instru
 		if err := validateBranch(branch); err != nil {
 			return ins, err
 		}
-		useWorktree := false
+		useWorktree := s.globalWorktree
 		for _, tok := range rest {
 			switch tok {
 			case "-w", "--worktree":
-				useWorktree = true
+				if !ignoreLineFlags && !worktreeLocked {
+					useWorktree = true
+				}
 			case "-a", "--all-branches":
-				ins.allBranches = true
+				if !ignoreLineFlags && !fetchModeLocked {
+					ins.allBranches = true
+				}
 			case "--fetch-all-deferred":
-				ins.fetchMode = "deferred"
+				if !ignoreLineFlags && !fetchModeLocked {
+					ins.fetchMode = "deferred"
+				}
 			case "--fetch-single":
-				ins.fetchMode = "single"
+				if !ignoreLineFlags && !fetchModeLocked {
+					ins.fetchMode = "single"
+				}
 			case "--fetch-all":
-				ins.fetchMode = "all"
-			case "--public", "--private", "--codespaces":
+				if !ignoreLineFlags && !fetchModeLocked {
+					ins.fetchMode = "all"
+				}
+			case "--public", "--private", "--codespaces", "--force":
 			default:
 				if strings.HasPrefix(tok, "-") {
 					return ins, fmt.Errorf("error: unknown option '%s' on line: %s", tok, trimmed)
@@ -338,9 +402,6 @@ func (s *state) parseEffectiveLine(trimmed string, fallbackHTTPS string) (instru
 		}
 		if fallbackHTTPS == "" {
 			return ins, fmt.Errorf("error: no fallback repo available for '%s'", trimmed)
-		}
-		if !useWorktree && s.globalWorktree {
-			useWorktree = true
 		}
 		if err := validateTargetDir(ins.targetDir); err != nil {
 			return ins, err
@@ -362,17 +423,25 @@ func (s *state) parseEffectiveLine(trimmed string, fallbackHTTPS string) (instru
 	for _, tok := range rest {
 		switch tok {
 		case "-a", "--all-branches":
-			ins.allBranches = true
+			if !ignoreLineFlags && !fetchModeLocked {
+				ins.allBranches = true
+			}
 		case "--fetch-all-deferred":
-			ins.fetchMode = "deferred"
+			if !ignoreLineFlags && !fetchModeLocked {
+				ins.fetchMode = "deferred"
+			}
 		case "--fetch-single":
-			ins.fetchMode = "single"
+			if !ignoreLineFlags && !fetchModeLocked {
+				ins.fetchMode = "single"
+			}
 		case "--fetch-all":
-			ins.fetchMode = "all"
-			ins.allBranches = true
+			if !ignoreLineFlags && !fetchModeLocked {
+				ins.fetchMode = "all"
+				ins.allBranches = true
+			}
 		case "-w", "--worktree":
 			fmt.Fprintf(os.Stderr, "Warning: '--worktree' ignored on clone line: %s\n", trimmed)
-		case "--public", "--private", "--codespaces":
+		case "--public", "--private", "--codespaces", "--force":
 		default:
 			if strings.HasPrefix(tok, "-") {
 				return ins, fmt.Errorf("error: unknown option '%s' on line: %s", tok, trimmed)
@@ -403,23 +472,18 @@ func (s *state) planForward() error {
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {
 		trimmed := trimLine(sc.Text())
-		if trimmed == "" || isGlobalFlagLine(trimmed) {
+		if trimmed == "" || lineIsGlobalFlagsOnly(trimmed) {
 			continue
 		}
-		parts := strings.Fields(trimmed)
-		if len(parts) == 0 {
+		ins, err := s.parseEffectiveLine(trimmed, fallback)
+		if err != nil {
+			return err
+		}
+		if ins.repoSpec == "" {
 			continue
 		}
-		first := parts[0]
-		rest := parts[1:]
-		if strings.HasPrefix(first, "@") {
-			useWorktree := s.globalWorktree
-			for _, tok := range rest {
-				if tok == "-w" || tok == "--worktree" {
-					useWorktree = true
-				}
-			}
-			if useWorktree {
+		if ins.isAtBranch {
+			if ins.isWorktree {
 				pi := s.plan[fallback]
 				pi.refCount++
 				s.plan[fallback] = pi
@@ -427,18 +491,12 @@ func (s *state) planForward() error {
 			continue
 		}
 
-		repoNoRef, ref := splitRepoSpec(first)
+		repoNoRef, ref := splitRepoSpec(ins.repoSpec)
 		if strings.HasPrefix(repoNoRef, "-") || strings.Contains(repoNoRef, "..") {
 			continue
 		}
 		remote := specToHTTPS(repoNoRef)
-		target := ""
-		for _, tok := range rest {
-			if !strings.HasPrefix(tok, "-") {
-				target = tok
-				break
-			}
-		}
+		target := ins.targetDir
 		pi := s.plan[remote]
 		pi.refCount++
 		if ref == "" {
@@ -535,6 +593,23 @@ func (s *state) ensureWildcardFetchRefspec(base string) {
 	}
 	if _, err := gitcmd.RunGit(base, "config", "--add", "--", "remote.origin.fetch", wild); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: could not add wildcard fetch refspec in %s: %v\n", base, err)
+	}
+}
+
+func (s *state) ensureBranchFetchRefspec(base, branch string) {
+	wild := "+refs/heads/*:refs/remotes/origin/*"
+	branchRef := "+refs/heads/" + branch + ":refs/remotes/origin/" + branch
+	out, err := gitcmd.RunGit(base, "config", "--get-all", "--", "remote.origin.fetch")
+	if err == nil {
+		for _, l := range strings.Split(out, "\n") {
+			entry := strings.TrimSpace(l)
+			if entry == wild || entry == branchRef {
+				return
+			}
+		}
+	}
+	if _, err := gitcmd.RunGit(base, "config", "--add", "--", "remote.origin.fetch", branchRef); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: could not add branch fetch refspec for %s in %s: %v\n", branch, base, err)
 	}
 }
 
@@ -718,6 +793,9 @@ func (s *state) createWorktreeForBranch(base, branch, targetDir, fetchMode strin
 			if fetchMode == "deferred" {
 				s.ensureWildcardFetchRefspec(base)
 			}
+			if fetchMode == "single" {
+				s.ensureBranchFetchRefspec(base, branch)
+			}
 			if _, err := gitcmd.RunGit(dest, "branch", "--set-upstream-to", "origin/"+branch, "--"); err != nil {
 				fmt.Fprintf(os.Stderr, "Warning: failed to set upstream for %s: %v\n", branch, err)
 			}
@@ -737,13 +815,16 @@ func (s *state) createWorktreeForBranch(base, branch, targetDir, fetchMode strin
 			fmt.Fprintf(os.Stderr, "Warning: ignoring remote-tracking fetch failure for %s in %s: %v\n", branch, base, err)
 		}
 		if gitcmd.RemoteBranchExists(base, branch) {
+			if fetchMode == "deferred" {
+				s.ensureWildcardFetchRefspec(base)
+			}
+			if fetchMode == "single" {
+				s.ensureBranchFetchRefspec(base, branch)
+			}
 			if _, err := gitcmd.RunGit(base, "worktree", "add", "-b", branch, "--", dest, "origin/"+branch); err != nil {
 				return 1, err
 			}
 			s.counts.worktrees++
-			if fetchMode == "deferred" {
-				s.ensureWildcardFetchRefspec(base)
-			}
 			if _, err := gitcmd.RunGit(dest, "branch", "--set-upstream-to", "origin/"+branch, "--"); err != nil {
 				fmt.Fprintf(os.Stderr, "Warning: failed to set upstream for %s: %v\n", branch, err)
 			}
@@ -791,7 +872,7 @@ func (s *state) processFile() error {
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {
 		trimmed := trimLine(sc.Text())
-		if trimmed == "" || isGlobalFlagLine(trimmed) {
+		if trimmed == "" || lineIsGlobalFlagsOnly(trimmed) {
 			continue
 		}
 		fmt.Fprintf(os.Stderr, "Processing: %s\n", gitcmd.SanitizeURL(trimmed))
