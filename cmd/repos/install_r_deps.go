@@ -17,10 +17,13 @@ type managedRepo struct {
 }
 
 const (
+	// renvInstallExpr bootstraps renv (if needed) then restores from renv.lock.
 	renvInstallExpr = `if (!requireNamespace("renv", quietly = TRUE)) {
   install.packages("renv", repos = "https://cloud.r-project.org")
 }
 renv::restore(prompt = FALSE)`
+	// remotesInstallExpr bootstraps remotes (if needed) then installs dependencies
+	// declared by DESCRIPTION in the current repository.
 	remotesInstallExpr = `if (!requireNamespace("remotes", quietly = TRUE)) {
   install.packages("remotes", repos = "https://cloud.r-project.org")
 }
@@ -95,30 +98,30 @@ func runInstallRDeps(args []string) error {
 	var processed, skipped, failed int
 	for _, repo := range repos {
 		if !dirExists(repo.path) {
-			fmt.Printf("[%s] ⏭ directory not found, skipping (%s)\n", repo.name, repo.path)
+			fmt.Printf("[%s] SKIPPED: directory not found (%s)\n", repo.name, repo.path)
 			skipped++
 			continue
 		}
 
 		mode, ok, err := detectRProject(repo.path)
 		if err != nil {
-			fmt.Printf("[%s] ✗ failed to inspect project: %v\n", repo.name, err)
+			fmt.Printf("[%s] ERROR: failed to inspect project: %v\n", repo.name, err)
 			failed++
 			continue
 		}
 		if !ok {
-			fmt.Printf("[%s] ℹ no DESCRIPTION or renv.lock, skipping\n", repo.name)
+			fmt.Printf("[%s] INFO: no DESCRIPTION or renv.lock, skipping\n", repo.name)
 			skipped++
 			continue
 		}
 
 		fmt.Printf("[%s] Installing R dependencies (%s)\n", repo.name, mode)
 		if err := runRInstall(repo, mode); err != nil {
-			fmt.Printf("[%s] ✗ dependency installation failed: %v\n", repo.name, err)
+			fmt.Printf("[%s] ERROR: dependency installation failed: %v\n", repo.name, err)
 			failed++
 			continue
 		}
-		fmt.Printf("[%s] ✓ dependency installation complete\n", repo.name)
+		fmt.Printf("[%s] SUCCESS: dependency installation complete\n", repo.name)
 		processed++
 	}
 
@@ -291,10 +294,17 @@ func runRInstall(repo managedRepo, mode string) error {
 	}
 
 	var wg sync.WaitGroup
+	errCh := make(chan error, 2)
 	wg.Add(2)
-	go streamPrefixedOutput(repo.name, stdout, os.Stdout, &wg)
-	go streamPrefixedOutput(repo.name, stderr, os.Stderr, &wg)
+	go streamPrefixedOutput(repo.name, stdout, os.Stdout, &wg, errCh)
+	go streamPrefixedOutput(repo.name, stderr, os.Stderr, &wg, errCh)
 	wg.Wait()
+	close(errCh)
+	for scanErr := range errCh {
+		if scanErr != nil {
+			return fmt.Errorf("streaming Rscript output for %s: %w", repo.path, scanErr)
+		}
+	}
 
 	if err := cmd.Wait(); err != nil {
 		return err
@@ -302,14 +312,17 @@ func runRInstall(repo managedRepo, mode string) error {
 	return nil
 }
 
-func streamPrefixedOutput(name string, src io.Reader, dst *os.File, wg *sync.WaitGroup) {
+func streamPrefixedOutput(name string, src io.Reader, dst *os.File, wg *sync.WaitGroup, errCh chan<- error) {
 	defer wg.Done()
 	sc := bufio.NewScanner(src)
-	// R package compilation can emit very long single lines; raise scanner limits
-	// to avoid truncating prefixed, real-time output.
+	// R compilation output can exceed bufio.Scanner's 64 KiB default token limit.
+	// Keep a 64 KiB initial buffer and raise max token size to 1 MiB.
 	sc.Buffer(make([]byte, 0, streamScannerInitialBuffer), streamScannerMaxBuffer)
 	for sc.Scan() {
 		fmt.Fprintf(dst, "[%s] %s\n", name, sc.Text())
+	}
+	if err := sc.Err(); err != nil {
+		errCh <- err
 	}
 }
 
