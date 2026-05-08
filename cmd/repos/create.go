@@ -7,14 +7,15 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 
 	"github.com/MiguelRodo/repos/internal/sysutil"
 )
 
-var ownerRepoPattern = ownerRepoRegex
 var ghRepoExistsFunc = ghRepoExists
 var ghCreateRepoFunc = ghCreateRepo
+var githubNameRegex = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
 
 func runCreate(args []string) error {
 	defaultFile := "repos.list"
@@ -194,7 +195,11 @@ func extractOwnerRepo(repoSpec string) (string, error) {
 	repoNoRef = strings.TrimSuffix(repoNoRef, ".git")
 	repoNoRef = strings.TrimSpace(repoNoRef)
 
-	if !ownerRepoPattern.MatchString(repoNoRef) || strings.Contains(repoNoRef, "..") {
+	if !ownerRepoRegex.MatchString(repoNoRef) {
+		return "", fmt.Errorf("error: repository spec must be in 'owner/repo' format: %s", repoSpec)
+	}
+	owner, repo, ok := strings.Cut(repoNoRef, "/")
+	if !ok || !githubNameRegex.MatchString(owner) || !githubNameRegex.MatchString(repo) {
 		return "", fmt.Errorf("error: repository spec must be in 'owner/repo' format: %s", repoSpec)
 	}
 	return repoNoRef, nil

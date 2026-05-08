@@ -26,7 +26,10 @@ func TestCheckGitHubCLIAuthStatusSuccess(t *testing.T) {
 
 	tmp := t.TempDir()
 	ghPath := filepath.Join(tmp, "gh")
-	script := "#!/bin/sh\nif [ \"$1\" = \"auth\" ] && [ \"$2\" = \"status\" ]; then exit 0; fi\nexit 1\n"
+	script := `#!/bin/sh
+if [ "$1" = "auth" ] && [ "$2" = "status" ]; then exit 0; fi
+exit 1
+`
 	if err := os.WriteFile(ghPath, []byte(script), 0o755); err != nil {
 		t.Fatalf("write fake gh: %v", err)
 	}
@@ -45,7 +48,10 @@ func TestCheckGitHubCLIAuthStatusFailure(t *testing.T) {
 
 	tmp := t.TempDir()
 	ghPath := filepath.Join(tmp, "gh")
-	script := "#!/bin/sh\nif [ \"$1\" = \"auth\" ] && [ \"$2\" = \"status\" ]; then echo \"not logged in\"; exit 1; fi\nexit 1\n"
+	script := `#!/bin/sh
+if [ "$1" = "auth" ] && [ "$2" = "status" ]; then echo "not logged in"; exit 1; fi
+exit 1
+`
 	if err := os.WriteFile(ghPath, []byte(script), 0o755); err != nil {
 		t.Fatalf("write fake gh: %v", err)
 	}

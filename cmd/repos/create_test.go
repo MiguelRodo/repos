@@ -20,6 +20,7 @@ func TestExtractOwnerRepo(t *testing.T) {
 		{name: "ssh-url", spec: "git@github.com:acme/api@dev", want: "acme/api"},
 		{name: "invalid-local-path", spec: "/tmp/repo", wantErr: true},
 		{name: "invalid-format", spec: "acme", wantErr: true},
+		{name: "invalid-owner-dots", spec: "..../repo", wantErr: true},
 	}
 
 	for _, tt := range tests {
