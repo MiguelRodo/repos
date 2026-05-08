@@ -329,7 +329,7 @@ else
 fi
 
 echo ""
-echo "TEST: CLI flags override repos.list globals, but per-line flags still win"
+echo "TEST: CLI flags override repos.list globals, but per-line flags take precedence"
 run_test
 
 cd "$TEST_DIR"

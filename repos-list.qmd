@@ -98,7 +98,7 @@ Precedence rules:
 2. Per-line flags override both CLI and `repos.list` global flags by default.
 3. `repos clone --force` ignores per-line flag overrides entirely.
 4. A global line such as `--fetch-single --force` or `--worktree --force`
-   forces that global setting to win over conflicting per-line flags.
+   forces that global setting to override conflicting per-line flags.
 
 Per-line `--public`/`--private` flags always override the global default.
 

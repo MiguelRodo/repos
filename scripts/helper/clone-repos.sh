@@ -326,7 +326,9 @@ EOF
 # --- Usage -------------------------------------------------------------------
 usage() {
   cat <<'EOF'
-Usage: clone-repos.sh [--file <repo-list>] [--debug] [--worktree] [--fetch-*] [--force] [--help]
+Usage: clone-repos.sh [--file <repo-list>] [--debug] [--worktree]
+                      [--fetch-all-deferred|--fetch-single|--fetch-all]
+                      [--force] [--help]
 
 Each non-empty, non-comment line in <repo-list> is one instruction. There are three kinds:
 
@@ -407,7 +409,7 @@ Fetch modes (per-line flags or global CLI flags)
 
 Options
   -f, --file <repo-list>   Use an alternate repo list file (default: repos.list,
-                            or repos-to-clone.list if repos.list is absent).
+                           or repos-to-clone.list if repos.list is absent).
   -d, --debug              Enable debug tracing to stderr.
   --worktree               Make every @branch line use a worktree by default.
   --fetch-all-deferred     Global default fetch mode (fast clone, then restore
@@ -841,7 +843,7 @@ parse_effective_line() {
               fetch_mode="all"
             fi
             ;;
-          --public|--private|--codespaces|--force) ;;   # ignore valid non-clone flags
+          --public|--private|--codespaces|--force) ;;   # ignore metadata/preference flags
           -*)
             printf "Error: unknown option '%s' on line: %s\n" "$1" "$line" >&2
             set +f; return 1 ;;
@@ -900,7 +902,7 @@ parse_effective_line() {
             fi
             ;;
           -w|--worktree)  printf "Warning: '--worktree' ignored on clone line: %s\n" "$line" >&2 ;;
-          --public|--private|--codespaces|--force) ;;   # ignore valid non-clone flags
+          --public|--private|--codespaces|--force) ;;   # ignore metadata/preference flags
           -*)
             printf "Error: unknown option '%s' on line: %s\n" "$1" "$line" >&2
             set +f; return 1 ;;
