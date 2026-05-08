@@ -30,6 +30,14 @@ repos clone
 
 This clones all listed repositories into the parent directory of your current location.
 
+### Go command (from source)
+
+A native Go implementation of `repos clone` is available in `cmd/repos`.
+
+```bash
+go run ./cmd/repos clone
+```
+
 ### Fetch modes
 
 `repos clone` supports explicit fetch behaviour:
