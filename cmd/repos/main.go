@@ -52,6 +52,9 @@ type instruction struct {
 	fetchMode   string
 }
 
+var sanitizeURLRegex = regexp.MustCompile(`https?://[^/@\s]+@`)
+var ownerRepoRegex = regexp.MustCompile(`^[^/]+/[^/]+$`)
+
 func main() {
 	if len(os.Args) < 2 {
 		usage()
@@ -214,8 +217,7 @@ func runGit(dir string, args ...string) (string, error) {
 }
 
 func sanitizeURL(in string) string {
-	re := regexp.MustCompile(`https?://[^/@\s]+@`)
-	return re.ReplaceAllString(in, "https://")
+	return sanitizeURLRegex.ReplaceAllString(in, "https://")
 }
 
 func (s *state) initFallback() error {
@@ -305,13 +307,11 @@ func specToHTTPS(spec string) string {
 	if strings.HasPrefix(s, "https://") || strings.HasPrefix(s, "http://") {
 		return normaliseRemoteToHTTPS(s)
 	}
-	if ownerRepoRe.MatchString(s) {
+	if ownerRepoRegex.MatchString(s) {
 		return normaliseRemoteToHTTPS("https://github.com/" + s)
 	}
 	return normaliseRemoteToHTTPS(s)
 }
-
-var ownerRepoRe = regexp.MustCompile(`^[^/]+/[^/]+$`)
 
 func splitRepoSpec(spec string) (string, string) {
 	s := strings.TrimSpace(spec)
@@ -585,7 +585,7 @@ func parseRepoURL(repoURLNoRef string) (repoURL, repoDir string, err error) {
 	case strings.HasPrefix(s, "https://") || strings.HasPrefix(s, "http://"):
 		repoURL = s
 		repoDir = filepath.Base(sNoGit)
-	case ownerRepoRe.MatchString(s):
+	case ownerRepoRegex.MatchString(s):
 		repoURL = "https://github.com/" + s
 		repoDir = strings.SplitN(s, "/", 2)[1]
 	case strings.Contains(s, "/"):
@@ -821,7 +821,7 @@ func (s *state) createWorktreeForBranch(base, branch, targetDir, fetchMode strin
 	}
 	// Best-effort cleanup of stale worktree references.
 	if _, err := runGit(base, "worktree", "prune"); err != nil {
-		s.dbg("Ignoring worktree prune failure for %s: %v", base, err)
+		fmt.Fprintf(os.Stderr, "Warning: ignoring worktree prune failure for %s: %v\n", base, err)
 	}
 	if existing := findWorktreeForBranch(base, branch); existing != "" {
 		fmt.Printf("Skip: branch '%s' already checked out at %s\n", branch, existing)
@@ -882,7 +882,7 @@ func (s *state) createWorktreeForBranch(base, branch, targetDir, fetchMode strin
 		fmt.Printf("Adding worktree %s (tracking origin/%s)\n", dest, branch)
 		// Best-effort fetch of remote-tracking branch in single-branch clones.
 		if _, err := runGit(base, "fetch", "origin", "refs/heads/"+branch+":refs/remotes/origin/"+branch); err != nil {
-			s.dbg("Ignoring fetch failure for %s in %s: %v", branch, base, err)
+			fmt.Fprintf(os.Stderr, "Warning: ignoring remote-tracking fetch failure for %s in %s: %v\n", branch, base, err)
 		}
 		if remoteBranchExists(base, branch) {
 			if _, err := runGit(base, "worktree", "add", "-b", branch, "--", dest, "origin/"+branch); err != nil {
