@@ -475,20 +475,15 @@ func (s *state) planForward() error {
 		if trimmed == "" || lineIsGlobalFlagsOnly(trimmed) {
 			continue
 		}
-		parts := strings.Fields(trimmed)
-		if len(parts) == 0 {
+		ins, err := s.parseEffectiveLine(trimmed, fallback)
+		if err != nil {
+			return err
+		}
+		if ins.repoSpec == "" {
 			continue
 		}
-		first := parts[0]
-		rest := parts[1:]
-		if strings.HasPrefix(first, "@") {
-			useWorktree := s.globalWorktree
-			for _, tok := range rest {
-				if tok == "-w" || tok == "--worktree" {
-					useWorktree = true
-				}
-			}
-			if useWorktree {
+		if ins.isAtBranch {
+			if ins.isWorktree {
 				pi := s.plan[fallback]
 				pi.refCount++
 				s.plan[fallback] = pi
@@ -496,18 +491,12 @@ func (s *state) planForward() error {
 			continue
 		}
 
-		repoNoRef, ref := splitRepoSpec(first)
+		repoNoRef, ref := splitRepoSpec(ins.repoSpec)
 		if strings.HasPrefix(repoNoRef, "-") || strings.Contains(repoNoRef, "..") {
 			continue
 		}
 		remote := specToHTTPS(repoNoRef)
-		target := ""
-		for _, tok := range rest {
-			if !strings.HasPrefix(tok, "-") {
-				target = tok
-				break
-			}
-		}
+		target := ins.targetDir
 		pi := s.plan[remote]
 		pi.refCount++
 		if ref == "" {
