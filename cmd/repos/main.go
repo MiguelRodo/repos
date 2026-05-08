@@ -87,6 +87,11 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
+	case "update-scripts":
+		if err := runUpdateScripts(os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	case "-h", "--help", "help":
 		usage()
 	default:
@@ -104,6 +109,7 @@ Commands:
   workspace         Manage VS Code .code-workspace files
   update-branches   Fetch and fast-forward all git repos in the parent directory
   add-branch        Create a new worktree/branch off the current repository
+  update-scripts    Sync shared scripts/workflows to managed repositories
 
 Run 'repos <command> --help' for more information.
 `)
