@@ -53,7 +53,7 @@ func runInstallRDeps(args []string) error {
 	}
 
 	if _, err := exec.LookPath("Rscript"); err != nil {
-		return fmt.Errorf("Rscript not found in PATH: %w", err)
+		return fmt.Errorf("Rscript not found in PATH. Please install R from https://www.r-project.org/ (%w)", err)
 	}
 
 	cwd, err := os.Getwd()
@@ -204,11 +204,10 @@ func (s *state) collectManagedRepoPaths() ([]managedRepo, error) {
 		}
 
 		repoNoRef, ref := splitRepoSpec(ins.repoSpec)
-		repoURL, repoDir, err := parseRepoURL(repoNoRef)
+		_, repoDir, err := parseRepoURL(repoNoRef)
 		if err != nil {
 			return nil, err
 		}
-		_ = repoURL
 		remoteHTTPS := specToHTTPS(repoNoRef)
 		_, seenBefore := seenRemoteLocal[remoteHTTPS]
 
