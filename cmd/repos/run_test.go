@@ -97,6 +97,35 @@ func TestRunPrefixesStdoutAndStderrLines(t *testing.T) {
 	}
 }
 
+func TestRunConcurrentExecutesCommandInAllRepos(t *testing.T) {
+	tmp := t.TempDir()
+	projectDir := filepath.Join(tmp, "project")
+	repo1 := filepath.Join(tmp, "repo-one")
+	repo2 := filepath.Join(tmp, "repo-two")
+
+	mustMkdirAll(t, projectDir, repo1, repo2)
+	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "example/repo-one\nexample/repo-two\n")
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chdir(oldWD)
+	})
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatalf("chdir project dir: %v", err)
+	}
+
+	err = runRun([]string{"--concurrent", "sh", "-c", "echo ran > .ran.concurrent"})
+	if err != nil {
+		t.Fatalf("runRun returned error: %v", err)
+	}
+
+	assertFileExists(t, filepath.Join(repo1, ".ran.concurrent"))
+	assertFileExists(t, filepath.Join(repo2, ".ran.concurrent"))
+}
+
 func captureStdout(t *testing.T, fn func()) string {
 	t.Helper()
 	oldStdout := os.Stdout
@@ -107,6 +136,10 @@ func captureStdout(t *testing.T, fn func()) string {
 	os.Stdout = w
 	t.Cleanup(func() {
 		os.Stdout = oldStdout
+	})
+	t.Cleanup(func() {
+		_ = w.Close()
+		_ = r.Close()
 	})
 
 	done := make(chan string, 1)

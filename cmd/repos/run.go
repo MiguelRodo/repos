@@ -74,7 +74,10 @@ func runRun(args []string) error {
 	}
 
 	if _, err := os.Stat(st.reposFile); err != nil {
-		return fmt.Errorf("file '%s' not found", st.reposFile)
+		if errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("file '%s' not found", st.reposFile)
+		}
+		return fmt.Errorf("checking repos file '%s': %w", st.reposFile, err)
 	}
 	if err := st.applyGlobalFlagsFromFile(); err != nil {
 		return err
@@ -237,9 +240,19 @@ func runCommandInTarget(target runTarget, command []string, outMu *sync.Mutex) r
 	res := runResult{target: target}
 
 	info, err := os.Stat(target.path)
-	if err != nil || !info.IsDir() {
+	if err != nil {
 		res.exitCode = 1
-		res.err = fmt.Errorf("directory not found: %s", target.path)
+		if errors.Is(err, os.ErrNotExist) {
+			res.err = fmt.Errorf("directory not found: %s", target.path)
+		} else {
+			res.err = fmt.Errorf("checking directory %s: %w", target.path, err)
+		}
+		printPrefixedLine(target.name, "ERROR: "+res.err.Error(), outMu)
+		return res
+	}
+	if !info.IsDir() {
+		res.exitCode = 1
+		res.err = fmt.Errorf("path is not a directory: %s", target.path)
 		printPrefixedLine(target.name, "ERROR: "+res.err.Error(), outMu)
 		return res
 	}
