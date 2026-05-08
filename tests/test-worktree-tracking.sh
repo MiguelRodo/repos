@@ -253,9 +253,10 @@ echo "lib feature" > lib-feature.txt && git add . && git commit -m "lib feature"
 git push origin lib-feature >/dev/null 2>&1
 cd ..
 
-# Run from the existing "slides" workspace (different remote from remote2)
+# Run from the existing "slides" workspace (different remote from remote2).
+# Use the absolute path to the bare remote so the URL is independent of CWD.
 cd slides
-LIB_REMOTE="$(cd "$TEST_DIR/lib-init" && git remote get-url origin)"
+LIB_REMOTE="$TEST_DIR/remote2.git"
 cat > repos2.list << EOF
 --fetch-single
 $LIB_REMOTE lib-clone
