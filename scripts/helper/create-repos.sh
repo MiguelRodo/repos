@@ -80,23 +80,6 @@ debug() {
 # Global variable for the Authorization header file
 AUTH_HDR_FILE=""
 
-# Get platform-independent temp directory
-get_temp_dir() {
-  # Try various temp directory variables in order of preference
-  if [ -n "${TMPDIR:-}" ] && [ -d "${TMPDIR}" ]; then
-    printf '%s\n' "${TMPDIR%/}"  # Remove trailing slash if present
-  elif [ -n "${TEMP:-}" ] && [ -d "${TEMP}" ]; then
-    printf '%s\n' "${TEMP%/}"
-  elif [ -n "${TMP:-}" ] && [ -d "${TMP}" ]; then
-    printf '%s\n' "${TMP%/}"
-  elif [ -d "/tmp" ]; then
-    printf '%s\n' "/tmp"
-  else
-    # Fallback to current directory
-    printf '%s\n' "."
-  fi
-}
-
 # URL encode a string using jq
 urlencode() {
   printf '%s' "$1" | jq -rR '@uri'
