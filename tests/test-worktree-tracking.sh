@@ -434,6 +434,10 @@ if [[ $GLOBAL_FORCE_ALIAS_RC -ne 0 ]]; then
   fail "clone-repos.sh failed for global --force alias test (exit $GLOBAL_FORCE_ALIAS_RC)"
 fi
 
+if [[ ! -d "$TEST_DIR/global-forced-alias/.git" ]]; then
+  fail "Expected forced-alias clone directory was not created"
+fi
+
 FETCH_REFSPEC_ALIAS=$(git -C "$TEST_DIR/global-forced-alias" config --get remote.origin.fetch)
 if [[ "$FETCH_REFSPEC_ALIAS" == "+refs/heads/slides-branch:refs/remotes/origin/slides-branch" ]]; then
   test_passed

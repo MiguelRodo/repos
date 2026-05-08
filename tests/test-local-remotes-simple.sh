@@ -129,6 +129,7 @@ fi
 print_test "create-repos.sh ignores standalone global --force lines"
 
 cd "$TEST_ROOT"
+git init --bare -q "$TEST_ROOT/force-local.git"
 cat > repos.list <<EOF
 --force
 file://$TEST_ROOT/force-local.git
