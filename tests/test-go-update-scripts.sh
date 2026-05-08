@@ -62,8 +62,6 @@ BETA_REPO="$TEST_DIR/custom-beta"
 setup_repo "$ALPHA_REPO"
 setup_repo "$BETA_REPO"
 
-echo '#!/usr/bin/env bash' > "$ALPHA_REPO/scripts_old.sh"
-chmod -x "$ALPHA_REPO/scripts_old.sh"
 mkdir -p "$ALPHA_REPO/scripts" "$ALPHA_REPO/.github/workflows"
 echo 'echo old-tool' > "$ALPHA_REPO/scripts/tool.sh"
 chmod -x "$ALPHA_REPO/scripts/tool.sh"

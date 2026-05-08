@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 )
 
-const compareBufferSize = 32 * 1024
+const fileCompareBufferSize = 32 * 1024
 
 // MirrorOptions controls mirror behaviour.
 type MirrorOptions struct {
@@ -195,6 +195,8 @@ func mirrorSymlink(src, dst string) (bool, error) {
 	return true, nil
 }
 
+// RegularFilesEqual compares two regular files byte-by-byte and reports whether
+// they are identical in content and size.
 func RegularFilesEqual(src, dst string) (equal bool, err error) {
 	srcInfo, err := os.Stat(src)
 	if err != nil {
@@ -233,8 +235,8 @@ func RegularFilesEqual(src, dst string) (equal bool, err error) {
 		}
 	}()
 
-	srcBuf := make([]byte, compareBufferSize)
-	dstBuf := make([]byte, compareBufferSize)
+	srcBuf := make([]byte, fileCompareBufferSize)
+	dstBuf := make([]byte, fileCompareBufferSize)
 	for {
 		srcN, srcErr := srcFile.Read(srcBuf)
 		dstN, dstErr := dstFile.Read(dstBuf)

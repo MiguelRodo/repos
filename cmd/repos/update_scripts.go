@@ -162,6 +162,9 @@ func runUpdateScripts(args []string) error {
 	return nil
 }
 
+// collectManagedRepoPaths parses repos.list semantics and returns absolute local
+// paths for managed repositories, including custom target directories and
+// @branch worktree destinations.
 func collectManagedRepoPaths(cwd, reposFile string) ([]string, error) {
 	st := &state{
 		startDir:        cwd,
@@ -245,6 +248,8 @@ func collectManagedRepoPaths(cwd, reposFile string) ([]string, error) {
 	return repos, nil
 }
 
+// plannedDestination returns (local destination path, normalized remote HTTPS
+// URL, error) for an instruction, mirroring clone destination rules.
 func plannedDestination(st *state, ins instruction, fallbackLocal string) (string, string, error) {
 	repoURLNoRef, ref := splitRepoSpec(ins.repoSpec)
 	_, repoDir, err := parseRepoURL(repoURLNoRef)
@@ -278,6 +283,8 @@ func plannedDestination(st *state, ins instruction, fallbackLocal string) (strin
 	return filepath.Join(st.parentDir, repoDir), remoteHTTPS, nil
 }
 
+// hasMirrorChanges recursively compares src and dst and reports whether a mirror
+// operation would modify destination content, structure, or permissions.
 func hasMirrorChanges(src, dst string) (bool, error) {
 	srcInfo, err := os.Lstat(src)
 	if err != nil {
