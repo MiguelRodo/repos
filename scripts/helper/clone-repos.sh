@@ -1054,8 +1054,12 @@ create_worktree_for_branch() {
     # Ensure the remote-tracking ref exists even in single-branch clones
     git -C "$base" fetch origin "refs/heads/$branch:refs/remotes/origin/$branch" || true
     if git -C "$base" rev-parse --verify --quiet "refs/remotes/origin/$branch" >/dev/null; then
-      # Persist refspec before adding worktree so git can resolve tracking automatically.
-      # For deferred mode use the wildcard; for single mode add only this branch's refspec.
+      # Persist refspec before adding worktree so git can resolve tracking
+      # automatically.  Without this, --fetch-single bases produce
+      # "fatal: cannot set up tracking information" during 'worktree add -b'
+      # because git cannot recognise origin/$branch as a tracked remote
+      # branch.  For deferred mode use the wildcard; for single mode add
+      # only this branch's refspec to preserve isolation.
       if [ "$fetch_mode" = "deferred" ]; then ensure_wildcard_fetch_refspec "$base"; fi
       if [ "$fetch_mode" = "single" ]; then ensure_branch_fetch_refspec "$base" "$branch"; fi
       git -C "$base" worktree add -b "$branch" -- "$dest" "origin/$branch" </dev/null
