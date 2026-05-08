@@ -67,7 +67,7 @@
     "href": "clone.html#options",
     "title": "repos clone",
     "section": "Options",
-    "text": "Options\n\n\n\n\n\n\n\nFlag\nDescription\n\n\n\n\n-f &lt;file&gt;\nUse a different list file (default: repos.list)\n\n\n--fetch-all-deferred\n(Default) Fast --single-branch clone; wildcard refspec restored immediately\n\n\n--fetch-single\nKeep restricted single-branch refspec (CI/CD or metered connections)\n\n\n--fetch-all\nFull clone — all remote branches downloaded upfront\n\n\n\n# Use a custom list file\nrepos clone -f my-repos.list\n\n# CI/CD pipeline — strict single-branch isolation\nrepos clone --fetch-single\n\n# Download everything upfront\nrepos clone --fetch-all"
+    "text": "Options\n\n\n\n\n\n\n\nFlag\nDescription\n\n\n\n\n-f &lt;file&gt;\nUse a different list file (default: repos.list)\n\n\n--worktree\nMake every @branch line use a worktree by default\n\n\n--fetch-all-deferred\n(Default) Fast --single-branch clone; wildcard refspec restored immediately\n\n\n--fetch-single\nKeep restricted single-branch refspec (CI/CD or metered connections)\n\n\n--fetch-all\nFull clone — all remote branches downloaded upfront\n\n\n--force\nIgnore per-line flag overrides and enforce CLI flags\n\n\n\n# Use a custom list file\nrepos clone -f my-repos.list\n\n# CI/CD pipeline — strict single-branch isolation\nrepos clone --fetch-single\n\n# Download everything upfront\nrepos clone --fetch-all\n\n# Force all @branch lines to be worktrees, ignoring per-line flag overrides\nrepos clone --worktree --force"
   },
   {
     "objectID": "clone.html#default-fetch-behaviour",
@@ -75,6 +75,13 @@
     "title": "repos clone",
     "section": "Default Fetch Behaviour",
     "text": "Default Fetch Behaviour\nBy default (--fetch-all-deferred), repos clone performs a fast --single-branch clone and then immediately restores the standard wildcard fetch refspec (+refs/heads/*:refs/remotes/origin/*). This means:\n\nInitial clone is as fast as a --single-branch clone.\nAfter the clone, running git fetch inside any cloned repo transparently downloads the rest of the history, and git checkout &lt;other-branch&gt; works without any manual config changes.\n\nUse --fetch-single to opt out — for example in CI/CD pipelines where you only ever need one branch and want to minimise network traffic."
+  },
+  {
+    "objectID": "clone.html#flag-precedence",
+    "href": "clone.html#flag-precedence",
+    "title": "repos clone",
+    "section": "Flag Precedence",
+    "text": "Flag Precedence\nBy default, CLI flags override repos.list global flags, and per-line flags are the most specific setting so they win over both. Add --force on the CLI to ignore per-line flag overrides entirely. Inside repos.list, a global-only line such as --fetch-single --force or --worktree --force forces that global setting to override conflicting per-line flags."
   },
   {
     "objectID": "clone.html#repository-layout",
@@ -284,7 +291,7 @@
     "href": "repos-list.html#global-flags",
     "title": "repos.list Reference",
     "section": "Global Flags",
-    "text": "Global Flags\nPlace a flag on its own line (with nothing else except optional comments) to apply it to every repository in the file. The entire file is scanned for global flags before any cloning begins, so placement does not matter — a global flag at the bottom of the file applies to repositories listed above it.\n\n\n\n\n\n\n\nFlag\nEffect\n\n\n\n\n--public\nCreate all repositories as public by default\n\n\n--private\nCreate all repositories as private by default (the default)\n\n\n--codespaces\nConfigure Codespaces authentication for all repositories\n\n\n--worktree\nUse worktrees instead of separate clones for all @branch lines\n\n\n--fetch-all-deferred\n(Default) Fast single-branch clone; wildcard refspec restored immediately\n\n\n--fetch-single\nKeep restricted single-branch refspec (CI/CD or metered connections)\n\n\n--fetch-all\nFull clone — all remote branches downloaded upfront\n\n\n\nPer-line --public/--private flags always override the global default.\n--fetch-single, --fetch-all-deferred, and --fetch-all may also be specified per-line to override the global fetch mode for a specific repository or @branch line."
+    "text": "Global Flags\nPlace a flag on its own line (with nothing else except optional comments) to apply it to every repository in the file. The entire file is scanned for global flags before any cloning begins, so placement does not matter — a global flag at the bottom of the file applies to repositories listed above it.\n\n\n\n\n\n\n\nFlag\nEffect\n\n\n\n\n--public\nCreate all repositories as public by default\n\n\n--private\nCreate all repositories as private by default (the default)\n\n\n--codespaces\nConfigure Codespaces authentication for all repositories\n\n\n--worktree\nUse worktrees instead of separate clones for all @branch lines\n\n\n--fetch-all-deferred\n(Default) Fast single-branch clone; wildcard refspec restored immediately\n\n\n--fetch-single\nKeep restricted single-branch refspec (CI/CD or metered connections)\n\n\n--fetch-all\nFull clone — all remote branches downloaded upfront\n\n\n--force\nOn a global-only flag line, make the other flag(s) on that line override conflicting per-line flags\n\n\n\nPrecedence rules:\n\nrepos clone CLI flags override repos.list global flags.\nPer-line flags override both CLI and repos.list global flags by default.\nrepos clone --force ignores per-line flag overrides entirely.\nA global line such as --fetch-single --force or --worktree --force forces that global setting to override conflicting per-line flags.\n\nPer-line --public/--private flags always override the global default.\n--fetch-single, --fetch-all-deferred, and --fetch-all may also be specified per-line to override the global fetch mode for a specific repository or @branch line."
   },
   {
     "objectID": "repos-list.html#example",

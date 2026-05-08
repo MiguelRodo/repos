@@ -188,6 +188,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#basic-usage" id="toc-basic-usage" class="nav-link active" data-scroll-target="#basic-usage">Basic Usage</a></li>
   <li><a href="#options" id="toc-options" class="nav-link" data-scroll-target="#options">Options</a></li>
   <li><a href="#default-fetch-behaviour" id="toc-default-fetch-behaviour" class="nav-link" data-scroll-target="#default-fetch-behaviour">Default Fetch Behaviour</a></li>
+  <li><a href="#flag-precedence" id="toc-flag-precedence" class="nav-link" data-scroll-target="#flag-precedence">Flag Precedence</a></li>
   <li><a href="#repository-layout" id="toc-repository-layout" class="nav-link" data-scroll-target="#repository-layout">Repository Layout</a></li>
   <li><a href="#whats-in-repos.list" id="toc-whats-in-repos.list" class="nav-link" data-scroll-target="#whats-in-repos.list">What’s in repos.list?</a></li>
   <li><a href="#github-authentication" id="toc-github-authentication" class="nav-link" data-scroll-target="#github-authentication">GitHub Authentication</a></li>
@@ -241,16 +242,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td>Use a different list file (default: <code>repos.list</code>)</td>
 </tr>
 <tr class="even">
+<td><code>--worktree</code></td>
+<td>Make every <code>@branch</code> line use a worktree by default</td>
+</tr>
+<tr class="odd">
 <td><code>--fetch-all-deferred</code></td>
 <td><em>(Default)</em> Fast <code>--single-branch</code> clone; wildcard refspec restored immediately</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>--fetch-single</code></td>
 <td>Keep restricted single-branch refspec (CI/CD or metered connections)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>--fetch-all</code></td>
 <td>Full clone — all remote branches downloaded upfront</td>
+</tr>
+<tr class="even">
+<td><code>--force</code></td>
+<td>Ignore per-line flag overrides and enforce CLI flags</td>
 </tr>
 </tbody>
 </table>
@@ -261,7 +270,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> clone <span class="at">--fetch-single</span></span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Download everything upfront</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> clone <span class="at">--fetch-all</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> clone <span class="at">--fetch-all</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Force all @branch lines to be worktrees, ignoring per-line flag overrides</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> clone <span class="at">--worktree</span> <span class="at">--force</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="default-fetch-behaviour" class="level2">
 <h2 class="anchored" data-anchor-id="default-fetch-behaviour">Default Fetch Behaviour</h2>
@@ -271,6 +283,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>After the clone, running <code>git fetch</code> inside any cloned repo transparently downloads the rest of the history, and <code>git checkout &lt;other-branch&gt;</code> works without any manual config changes.</li>
 </ul>
 <p>Use <code>--fetch-single</code> to opt out — for example in CI/CD pipelines where you only ever need one branch and want to minimise network traffic.</p>
+</section>
+<section id="flag-precedence" class="level2">
+<h2 class="anchored" data-anchor-id="flag-precedence">Flag Precedence</h2>
+<p>By default, CLI flags override <code>repos.list</code> global flags, and per-line flags are the most specific setting so they win over both. Add <code>--force</code> on the CLI to ignore per-line flag overrides entirely. Inside <code>repos.list</code>, a global-only line such as <code>--fetch-single --force</code> or <code>--worktree --force</code> forces that global setting to override conflicting per-line flags.</p>
 </section>
 <section id="repository-layout" class="level2">
 <h2 class="anchored" data-anchor-id="repository-layout">Repository Layout</h2>

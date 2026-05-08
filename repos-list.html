@@ -262,8 +262,19 @@ owner/other-repo --private</code></pre>
 <td><code>--fetch-all</code></td>
 <td>Full clone — all remote branches downloaded upfront</td>
 </tr>
+<tr class="even">
+<td><code>--force</code></td>
+<td>On a global-only flag line, make the other flag(s) on that line override conflicting per-line flags</td>
+</tr>
 </tbody>
 </table>
+<p>Precedence rules:</p>
+<ol type="1">
+<li><code>repos clone</code> CLI flags override <code>repos.list</code> global flags.</li>
+<li>Per-line flags override both CLI and <code>repos.list</code> global flags by default.</li>
+<li><code>repos clone --force</code> ignores per-line flag overrides entirely.</li>
+<li>A global line such as <code>--fetch-single --force</code> or <code>--worktree --force</code> forces that global setting to override conflicting per-line flags.</li>
+</ol>
 <p>Per-line <code>--public</code>/<code>--private</code> flags always override the global default.</p>
 <p><code>--fetch-single</code>, <code>--fetch-all-deferred</code>, and <code>--fetch-all</code> may also be specified per-line to override the global fetch mode for a specific repository or <code>@branch</code> line.</p>
 </section>
