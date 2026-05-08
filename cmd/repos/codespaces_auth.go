@@ -209,7 +209,8 @@ func ownerRepoFromRemote(remote string) (string, error) {
 }
 
 func setRepoCodespacesSecret(repo, token string) error {
-	cmd := exec.Command("gh", "secret", "set", "GH_TOKEN", "--repo", repo, "--app", "codespaces", "--body", token)
+	cmd := exec.Command("gh", "secret", "set", "GH_TOKEN", "--repo", repo, "--app", "codespaces")
+	cmd.Stdin = strings.NewReader(token)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		msg := strings.TrimSpace(string(out))
