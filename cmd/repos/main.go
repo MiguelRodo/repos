@@ -175,12 +175,12 @@ func runClone(args []string) error {
 
 	fmt.Println()
 	fmt.Println("Summary:")
-	fmt.Printf("  Instructions processed : %d\n", st.counts.total)
+	fmt.Printf("  Instructions processed: %d\n", st.counts.total)
 	fmt.Printf("  Skipped (already present): %d\n", st.counts.skipped)
-	fmt.Printf("  Cloned (full)           : %d\n", st.counts.clonedFull)
-	fmt.Printf("  Cloned (single-branch)  : %d\n", st.counts.clonedBranch)
-	fmt.Printf("  Worktrees added         : %d\n", st.counts.worktrees)
-	fmt.Printf("  Errors                  : %d\n", st.counts.errors)
+	fmt.Printf("  Cloned (full): %d\n", st.counts.clonedFull)
+	fmt.Printf("  Cloned (single-branch): %d\n", st.counts.clonedBranch)
+	fmt.Printf("  Worktrees added: %d\n", st.counts.worktrees)
+	fmt.Printf("  Errors: %d\n", st.counts.errors)
 
 	if st.counts.errors > 0 {
 		return errors.New("clone finished with errors")
@@ -689,6 +689,9 @@ func remoteBranchExists(base, branch string) bool {
 func defaultRemoteBranch(base string) string {
 	if out, err := runGit(base, "symbolic-ref", "-q", "--short", "refs/remotes/origin/HEAD"); err == nil {
 		return strings.TrimPrefix(strings.TrimSpace(out), "origin/")
+	}
+	if remoteBranchExists(base, "master") {
+		return "master"
 	}
 	return "main"
 }
