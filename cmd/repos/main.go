@@ -653,7 +653,7 @@ func (s *state) ensureBaseExists(remote, base, fetchMode string) (int, error) {
 		fmt.Fprintf(os.Stderr, "Error: intended base '%s' exists and is not a Git repo (non-empty). Skipping.\n", base)
 		return 2, nil
 	}
-	if err := os.MkdirAll(base, 0o755); err != nil {
+	if err := os.MkdirAll(base, 0o700); err != nil {
 		return 1, err
 	}
 	cloneArgs := []string{"clone"}
