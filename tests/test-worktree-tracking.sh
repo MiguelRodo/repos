@@ -211,7 +211,98 @@ else
   test_passed
   pass "--fetch-single correctly preserves single-branch refspec after worktree creation"
 fi
+
+# Verify the specific branch refspec WAS added (fixes the bug: future git fetch tracks branch)
+BRANCH_REFSPEC="+refs/heads/data-branch:refs/remotes/origin/data-branch"
+if git config --get-all remote.origin.fetch | grep -qF "$BRANCH_REFSPEC"; then
+  test_passed
+  pass "--fetch-single worktree adds specific branch refspec: $BRANCH_REFSPEC"
+else
+  fail "--fetch-single worktree did NOT add specific branch refspec (future git fetch won't track data-branch)"
+fi
+
+# Verify worktree branch has proper upstream tracking
+TRACKING_REMOTE=$(git -C ../data-single config --get branch.data-branch.remote 2>/dev/null || true)
+if [[ "$TRACKING_REMOTE" == "origin" ]]; then
+  test_passed
+  pass "--fetch-single worktree branch has upstream tracking set to origin"
+else
+  fail "--fetch-single worktree branch missing upstream tracking (got: '$TRACKING_REMOTE')"
+fi
+
 cd "$TEST_DIR/slides"  # Restore for subsequent tests
+
+echo ""
+echo "TEST: --fetch-single: fresh base clone + worktree in same repos.list"
+run_test
+
+# This tests the exact scenario from the issue:
+# A repos.list that (1) clones a DIFFERENT base repo with --fetch-single and
+# (2) immediately requests a worktree for a different branch off that base.
+# We use a second bare remote to avoid same-URL ambiguity.
+cd "$TEST_DIR"
+
+# Create a second bare remote with its own branches (simulates "library-repo")
+git init --bare remote2.git >/dev/null 2>&1
+git clone remote2.git lib-init >/dev/null 2>&1
+cd lib-init
+echo "lib main" > lib.md && git add . && git commit -m "lib init" >/dev/null 2>&1
+git branch -M main && git push origin main >/dev/null 2>&1
+git checkout -b lib-feature >/dev/null 2>&1
+echo "lib feature" > lib-feature.txt && git add . && git commit -m "lib feature" >/dev/null 2>&1
+git push origin lib-feature >/dev/null 2>&1
+cd ..
+
+# Run from the existing "slides" workspace (different remote from remote2).
+# Use the absolute path to the bare remote so the URL is independent of CWD.
+cd slides
+LIB_REMOTE="$TEST_DIR/remote2.git"
+cat > repos2.list << EOF
+--fetch-single
+$LIB_REMOTE lib-clone
+@lib-feature lib-wt --worktree
+EOF
+
+set +e
+ISSUE_OUTPUT=$("$REPO_ROOT/scripts/helper/clone-repos.sh" -f repos2.list 2>&1)
+ISSUE_RC=$?
+set -e
+
+if [[ $ISSUE_RC -ne 0 ]]; then
+  echo "$ISSUE_OUTPUT"
+  fail "clone-repos.sh failed for issue scenario (exit $ISSUE_RC)"
+fi
+
+if [[ ! -d ../lib-wt ]]; then
+  echo "$ISSUE_OUTPUT"
+  fail "Expected worktree directory ../lib-wt was not created"
+fi
+
+# The lib-clone base should have the specific branch refspec for lib-feature
+LIB_BRANCH_REFSPEC="+refs/heads/lib-feature:refs/remotes/origin/lib-feature"
+if git -C ../lib-clone config --get-all remote.origin.fetch | grep -qF "$LIB_BRANCH_REFSPEC"; then
+  test_passed
+  pass "Fresh --fetch-single clone got specific branch refspec for worktree branch"
+else
+  fail "Fresh --fetch-single clone missing specific branch refspec for worktree branch"
+fi
+
+# Wildcard should NOT be added
+if git -C ../lib-clone config --get-all remote.origin.fetch | grep -qF "$WILDCARD_REFSPEC"; then
+  fail "Fresh --fetch-single clone should NOT have wildcard refspec, but it does"
+else
+  test_passed
+  pass "Fresh --fetch-single clone correctly has no wildcard refspec"
+fi
+
+# Worktree tracking should be set
+TRACKING_REMOTE=$(git -C ../lib-wt config --get branch.lib-feature.remote 2>/dev/null || true)
+if [[ "$TRACKING_REMOTE" == "origin" ]]; then
+  test_passed
+  pass "Issue scenario: worktree branch properly tracks origin"
+else
+  fail "Issue scenario: worktree branch missing upstream tracking (got: '$TRACKING_REMOTE')"
+fi
 
 echo ""
 echo "TEST: Worktree can perform git operations"
