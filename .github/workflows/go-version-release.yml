@@ -1,0 +1,34 @@
+name: Go Version and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Exact version (e.g. 1.2.3). Cannot be used with bump_type.'
+        required: false
+      bump_type:
+        description: 'Component to bump: major | minor | patch. Cannot be used with version.'
+        required: false
+      version_check:
+        description: 'Run strict version progression checks (true/false).'
+        required: false
+      go_version:
+        description: 'Go version to install.'
+        required: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: MiguelRodo/actions/go-version-release@v2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          version: ${{ inputs.version }}
+          bump_type: ${{ inputs.bump_type }}
+          version_check: ${{ inputs.version_check }}
+          go_version: ${{ inputs.go_version }}
