@@ -132,7 +132,7 @@ Commands:
   update-branches   Fetch and fast-forward all git repos in the parent directory
   add-branch        Create a new worktree/branch off the current repository
   install-r-deps    Install R dependencies for managed repositories
-  codespace         Configure Codespaces repository permissions in devcontainer.json
+  codespace         Set GH_TOKEN Codespaces secrets for managed repositories
   codespaces        Alias for codespace
   codespaces-auth   Legacy alias for codespace
   run               Execute a command inside each repository from repos.list

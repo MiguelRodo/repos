@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -124,6 +125,98 @@ func TestRunConcurrentExecutesCommandInAllRepos(t *testing.T) {
 
 	assertFileExists(t, filepath.Join(repo1, ".ran.concurrent"))
 	assertFileExists(t, filepath.Join(repo2, ".ran.concurrent"))
+}
+
+func TestRunPipelineModeExecutesDefaultScript(t *testing.T) {
+	tmp := t.TempDir()
+	projectDir := filepath.Join(tmp, "project")
+	repo1 := filepath.Join(tmp, "repo-one")
+	repo2 := filepath.Join(tmp, "repo-two")
+
+	mustMkdirAll(t, projectDir, repo1, repo2)
+	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "example/repo-one\nexample/repo-two\n")
+	mustWriteFile(t, filepath.Join(repo1, "run.sh"), "#!/usr/bin/env sh\ntouch .pipeline\n")
+	mustWriteFile(t, filepath.Join(repo2, "run.sh"), "#!/usr/bin/env sh\ntouch .pipeline\n")
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chdir(oldWD)
+	})
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatalf("chdir project dir: %v", err)
+	}
+
+	if err := runRun([]string{"--skip-deps"}); err != nil {
+		t.Fatalf("runRun returned error: %v", err)
+	}
+
+	assertFileExists(t, filepath.Join(repo1, ".pipeline"))
+	assertFileExists(t, filepath.Join(repo2, ".pipeline"))
+}
+
+func TestRunPipelineModeHonorsIncludeFilter(t *testing.T) {
+	tmp := t.TempDir()
+	projectDir := filepath.Join(tmp, "project")
+	repo1 := filepath.Join(tmp, "repo-one")
+	repo2 := filepath.Join(tmp, "repo-two")
+
+	mustMkdirAll(t, projectDir, repo1, repo2)
+	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "example/repo-one\nexample/repo-two\n")
+	mustWriteFile(t, filepath.Join(repo1, "run.sh"), "#!/usr/bin/env sh\ntouch .included\n")
+	mustWriteFile(t, filepath.Join(repo2, "run.sh"), "#!/usr/bin/env sh\ntouch .excluded\n")
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chdir(oldWD)
+	})
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatalf("chdir project dir: %v", err)
+	}
+
+	if err := runRun([]string{"--skip-deps", "--include", "repo-one"}); err != nil {
+		t.Fatalf("runRun returned error: %v", err)
+	}
+
+	assertFileExists(t, filepath.Join(repo1, ".included"))
+	if _, err := os.Stat(filepath.Join(repo2, ".excluded")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected repo-two script not to run, got stat err: %v", err)
+	}
+}
+
+func TestRunPipelineModeSupportsConciseListPerLineScript(t *testing.T) {
+	tmp := t.TempDir()
+	projectDir := filepath.Join(tmp, "project")
+	repo1 := filepath.Join(tmp, "repo-one")
+	repo2 := filepath.Join(tmp, "repo-two")
+
+	mustMkdirAll(t, projectDir, repo1, repo2)
+	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "repo-one custom.sh\nrepo-two\n")
+	mustWriteFile(t, filepath.Join(repo1, "custom.sh"), "#!/usr/bin/env sh\ntouch .custom\n")
+	mustWriteFile(t, filepath.Join(repo2, "run.sh"), "#!/usr/bin/env sh\ntouch .default\n")
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chdir(oldWD)
+	})
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatalf("chdir project dir: %v", err)
+	}
+
+	if err := runRun([]string{"--skip-deps"}); err != nil {
+		t.Fatalf("runRun returned error: %v", err)
+	}
+
+	assertFileExists(t, filepath.Join(repo1, ".custom"))
+	assertFileExists(t, filepath.Join(repo2, ".default"))
 }
 
 func captureStdout(t *testing.T, fn func()) string {
