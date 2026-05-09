@@ -176,6 +176,10 @@ func processCreateFile(reposFile string, privateDefault bool) error {
 			fmt.Fprintf(os.Stderr, "Skipping local remote: %s\n", gitcmd.SanitizeURL(repoSpec))
 			continue
 		}
+		if shouldSkipNonGitHubRemote(repoNoRef) {
+			fmt.Fprintf(os.Stderr, "Skipping non-GitHub remote: %s\n", gitcmd.SanitizeURL(repoSpec))
+			continue
+		}
 
 		if err := processCreateLine(line, privateDefault); err != nil {
 			return err
@@ -263,6 +267,19 @@ func isLocalRepoSpec(repoSpec string) bool {
 		strings.HasPrefix(s, "/") ||
 		strings.HasPrefix(s, `\`) ||
 		isWindowsAbsPath(s)
+}
+
+func shouldSkipNonGitHubRemote(repoSpec string) bool {
+	s := strings.TrimSpace(repoSpec)
+	normalized := normaliseRemoteToHTTPS(s)
+	isGitHubURL := strings.HasPrefix(normalized, "https://github.com/") || strings.HasPrefix(normalized, "http://github.com/")
+	if isGitHubURL {
+		return false
+	}
+	return strings.HasPrefix(s, "https://") ||
+		strings.HasPrefix(s, "http://") ||
+		strings.HasPrefix(s, "git@") ||
+		strings.HasPrefix(s, "ssh://")
 }
 
 func resolveCreateFallbackRepo() (string, error) {

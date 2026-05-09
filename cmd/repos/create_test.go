@@ -20,6 +20,7 @@ func TestExtractOwnerRepo(t *testing.T) {
 		{name: "https-url", spec: "https://github.com/acme/api.git@dev", want: "acme/api"},
 		{name: "https-url-with-credentials", spec: "https://token123@github.com/acme/api.git@dev", want: "acme/api"},
 		{name: "ssh-url", spec: "git@github.com:acme/api@dev", want: "acme/api"},
+		{name: "ssh-url-no-branch", spec: "git@github.com:acme/api.git", want: "acme/api"},
 		{name: "invalid-local-path", spec: "/tmp/repo", wantErr: true},
 		{name: "invalid-format", spec: "acme", wantErr: true},
 		{name: "invalid-owner-dots", spec: "..../repo", wantErr: true},
@@ -153,6 +154,48 @@ func TestProcessCreateFileSkipsLocalRemotes(t *testing.T) {
 	}
 	if len(seen) != 1 || seen[0] != "acme/remote" {
 		t.Fatalf("expected only remote repo to be processed, got %#v", seen)
+	}
+}
+
+func TestProcessCreateFileSkipsNonGitHubRemotes(t *testing.T) {
+	tmp := t.TempDir()
+	list := filepath.Join(tmp, "repos.list")
+	content := strings.Join([]string{
+		"https://gitlab.com/acme/skip-me.git",
+		"git@gitlab.com:acme/skip-me-too.git",
+		"acme/process-me",
+	}, "\n")
+	if err := os.WriteFile(list, []byte(content), 0o644); err != nil {
+		t.Fatalf("write repos.list: %v", err)
+	}
+
+	origExists := ghRepoExistsFunc
+	origCreate := ghCreateRepoFunc
+	origFallback := resolveCreateFallbackRepoFunc
+	defer func() {
+		ghRepoExistsFunc = origExists
+		ghCreateRepoFunc = origCreate
+		resolveCreateFallbackRepoFunc = origFallback
+	}()
+
+	resolveCreateFallbackRepoFunc = func() (string, error) { return "", nil }
+	var seen []string
+	ghRepoExistsFunc = func(ownerRepo string) (bool, error) {
+		seen = append(seen, ownerRepo)
+		return true, nil
+	}
+	ghCreateRepoFunc = func(ownerRepo string, private bool) error { return nil }
+
+	stderr := captureStderr(t, func() {
+		if err := processCreateFile(list, true); err != nil {
+			t.Fatalf("processCreateFile error: %v", err)
+		}
+	})
+	if len(seen) != 1 || seen[0] != "acme/process-me" {
+		t.Fatalf("expected only GitHub owner/repo line to be processed, got %#v", seen)
+	}
+	if !strings.Contains(stderr, "Skipping non-GitHub remote") {
+		t.Fatalf("expected skip warning for non-GitHub remotes, got: %q", stderr)
 	}
 }
 

@@ -324,7 +324,7 @@ func lineIsGlobalFlagsOnly(line string) bool {
 }
 
 func isWindowsAbsPath(s string) bool {
-	return len(s) >= 3 && ((s[1] == ':' && (s[2] == '/' || s[2] == '\\')) || strings.HasPrefix(s, `\\`))
+	return len(s) >= 3 && ((s[1] == ':' && (s[2] == '/' || s[2] == '\\')) || strings.HasPrefix(s, `\\`) || strings.HasPrefix(s, `\`))
 }
 
 func validateBranch(branch string) error {
@@ -372,7 +372,12 @@ func sanitizeBranchName(branch string) string {
 func specToHTTPS(spec string) string {
 	s := strings.TrimSpace(spec)
 	s = strings.TrimSuffix(s, ".git")
-	if strings.HasPrefix(s, "file://") || strings.HasPrefix(s, "/") || isWindowsAbsPath(s) {
+	if strings.HasPrefix(s, "file://") ||
+		strings.HasPrefix(s, "/") ||
+		strings.HasPrefix(s, `\`) ||
+		strings.HasPrefix(s, `.\\`) ||
+		strings.HasPrefix(s, `..\\`) ||
+		isWindowsAbsPath(s) {
 		return normaliseRemoteToHTTPS(s)
 	}
 	if strings.HasPrefix(s, "https://") || strings.HasPrefix(s, "http://") {
@@ -435,6 +440,28 @@ func splitRepoSpec(spec string) (string, string) {
 		}
 		return s, ""
 	}
+	if strings.HasPrefix(s, "ssh://") {
+		if i := strings.Index(s, "://"); i >= 0 {
+			rest := s[i+3:]
+			slash := strings.Index(rest, "/")
+			if slash >= 0 {
+				start := i + 3 + slash + 1
+				if at := strings.LastIndex(s[start:], "@"); at >= 0 {
+					idx := start + at
+					return s[:idx], s[idx+1:]
+				}
+			}
+		}
+		return s, ""
+	}
+	if strings.HasPrefix(s, "git@") && strings.Contains(s, ":") {
+		start := strings.Index(s, ":") + 1
+		if at := strings.LastIndex(s[start:], "@"); at >= 0 {
+			idx := start + at
+			return s[:idx], s[idx+1:]
+		}
+		return s, ""
+	}
 	idx := strings.LastIndex(s, "@")
 	if idx < 0 {
 		return s, ""
@@ -449,9 +476,13 @@ func parseRepoURL(repoURLNoRef string) (repoURL, repoDir string, err error) {
 	case strings.HasPrefix(s, "file://"):
 		repoURL = s
 		repoDir = filepath.Base(strings.TrimPrefix(sNoGit, "file://"))
-	case strings.HasPrefix(s, "/") || isWindowsAbsPath(s):
+	case strings.HasPrefix(s, "/") ||
+		strings.HasPrefix(s, `\`) ||
+		strings.HasPrefix(s, `.\\`) ||
+		strings.HasPrefix(s, `..\\`) ||
+		isWindowsAbsPath(s):
 		repoURL = s
-		repoDir = filepath.Base(sNoGit)
+		repoDir = filepath.Base(strings.ReplaceAll(sNoGit, `\`, "/"))
 	case strings.HasPrefix(s, "https://") || strings.HasPrefix(s, "http://"):
 		repoURL = s
 		repoDir = filepath.Base(sNoGit)
