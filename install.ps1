@@ -1,55 +1,96 @@
 #!/usr/bin/env pwsh
-# install.ps1 - Install repos tool for Windows (Manual Installation)
-# This script adds the bin/ directory to the user's PATH
+# install.ps1 - Install repos CLI binary into a writable directory already in PATH
 
 param(
     [switch]$Uninstall
 )
 
-# Determine the absolute path to the bin directory
-$ScriptRoot = Split-Path -Parent $PSCommandPath
-$BinDir = Join-Path $ScriptRoot "bin"
+$ErrorActionPreference = "Stop"
 
-# Verify bin directory exists
-if (-not (Test-Path $BinDir)) {
-    Write-Error "Error: bin directory not found at $BinDir"
-    exit 1
+function Get-ArchName {
+    $arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
+    switch ($arch.ToString()) {
+        "X64" { return "amd64" }
+        "Arm64" { return "arm64" }
+        default { throw "Unsupported architecture: $arch" }
+    }
 }
 
-# Get the current user PATH
-$UserPath = [Environment]::GetEnvironmentVariable("Path", "User")
+function Test-WritableDirectory([string]$PathEntry) {
+    if ([string]::IsNullOrWhiteSpace($PathEntry) -or -not (Test-Path -LiteralPath $PathEntry -PathType Container)) {
+        return $false
+    }
+    try {
+        $probe = Join-Path $PathEntry ".repos-write-test-$PID.tmp"
+        Set-Content -LiteralPath $probe -Value "ok" -Encoding ascii
+        Remove-Item -LiteralPath $probe -Force
+        return $true
+    } catch {
+        return $false
+    }
+}
+
+function Get-WritablePathDirectory {
+    $pathEntries = $env:Path -split ';'
+    foreach ($entry in $pathEntries) {
+        if (Test-WritableDirectory $entry) {
+            return $entry
+        }
+    }
+    throw "No writable directory found in PATH."
+}
 
 if ($Uninstall) {
-    # Remove from PATH
-    if ($UserPath -like "*$BinDir*") {
-        $NewPath = ($UserPath -split ';' | Where-Object { $_ -ne $BinDir }) -join ';'
-        [Environment]::SetEnvironmentVariable("Path", $NewPath, "User")
-        Write-Host "Successfully removed $BinDir from PATH" -ForegroundColor Green
-        Write-Host "Please restart your PowerShell session for changes to take effect." -ForegroundColor Yellow
-    } else {
-        Write-Host "repos bin directory was not found in PATH." -ForegroundColor Yellow
+    $removed = $false
+    foreach ($entry in ($env:Path -split ';')) {
+        if ([string]::IsNullOrWhiteSpace($entry)) { continue }
+        $candidate = Join-Path $entry "repos.exe"
+        if (Test-Path -LiteralPath $candidate -PathType Leaf) {
+            try {
+                Remove-Item -LiteralPath $candidate -Force
+                Write-Host "Removed $candidate" -ForegroundColor Green
+                $removed = $true
+            } catch {
+                Write-Warning "Could not remove ${candidate}: $($_.Exception.Message)"
+            }
+        }
     }
-} else {
-    # Add to PATH
-    if ($UserPath -like "*$BinDir*") {
-        Write-Host "repos bin directory is already in PATH." -ForegroundColor Yellow
-    } else {
-        $NewPath = "$UserPath;$BinDir"
-        [Environment]::SetEnvironmentVariable("Path", $NewPath, "User")
-        Write-Host "Successfully added $BinDir to PATH" -ForegroundColor Green
-        Write-Host "Please restart your PowerShell session for changes to take effect." -ForegroundColor Yellow
+
+    if (-not $removed) {
+        Write-Host "No repos.exe found in PATH directories." -ForegroundColor Yellow
+    }
+    exit 0
+}
+
+$releaseRepo = if ($env:REPOS_RELEASE_REPO) { $env:REPOS_RELEASE_REPO } else { "miguelrodo/repos-go" }
+$binaryName = if ($env:REPOS_BINARY_NAME) { $env:REPOS_BINARY_NAME } else { "repos" }
+$osName = "windows"
+$archName = Get-ArchName
+$installDir = Get-WritablePathDirectory
+$downloadBase = "https://github.com/$releaseRepo/releases/latest/download"
+$tmpFile = Join-Path ([System.IO.Path]::GetTempPath()) "$binaryName-$PID.exe"
+
+$assets = @(
+    "$binaryName-$osName-$archName.exe",
+    "$binaryName" + "_" + "$osName" + "_" + "$archName.exe"
+)
+
+$downloadedAsset = $null
+foreach ($asset in $assets) {
+    $url = "$downloadBase/$asset"
+    try {
+        Invoke-WebRequest -Uri $url -OutFile $tmpFile
+        $downloadedAsset = $asset
+        break
+    } catch {
     }
 }
 
-if (-not $Uninstall) {
-    Write-Host ""
-    Write-Host "Installation complete!" -ForegroundColor Green
-    Write-Host ""
-    Write-Host "After restarting PowerShell, you can run:" -ForegroundColor Cyan
-    Write-Host "  repos --help" -ForegroundColor White
-    Write-Host ""
-    Write-Host "Dependencies required:" -ForegroundColor Cyan
-    Write-Host "  - Git for Windows (includes bash, git, curl)" -ForegroundColor White
-    Write-Host "  - jq (download from https://jqlang.github.io/jq/download/)" -ForegroundColor White
-    Write-Host ""
+if (-not $downloadedAsset) {
+    throw "Could not download a release asset for $osName/$archName. Tried: $($assets -join ', ') from $downloadBase"
 }
+
+$target = Join-Path $installDir "$binaryName.exe"
+Move-Item -LiteralPath $tmpFile -Destination $target -Force
+Write-Host "Installed $binaryName ($downloadedAsset) to $target" -ForegroundColor Green
+Write-Host "Run: $binaryName --help"

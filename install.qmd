@@ -34,7 +34,8 @@ sudo apt-get remove repos
 
 ### Option 2: Local Installation (No sudo required)
 
-Install to your user directory (`~/.local/bin`):
+Install the latest precompiled `repos` binary into the first writable directory
+already present in your `PATH`:
 
 ```bash
 git clone https://github.com/MiguelRodo/repos.git
@@ -42,17 +43,7 @@ cd repos
 bash install-local.sh
 ```
 
-If `~/.local/bin` is not on your PATH, add this to `~/.bashrc` or `~/.profile`:
-
-```bash
-export PATH="$HOME/.local/bin:$PATH"
-```
-
-Then reload:
-
-```bash
-source ~/.bashrc
-```
+If no writable path entry exists, the installer will stop with guidance.
 
 To uninstall:
 
@@ -127,12 +118,10 @@ scoop install repos
    ```powershell
    .\install.ps1
    ```
-3. Restart your PowerShell session.
+3. The installer places `repos.exe` in the first writable directory already in your
+   current `PATH`.
 
-**Dependencies:**
-
-- [Git for Windows](https://git-scm.com/download/win) — provides `bash`, `git`, and `curl`
-- [jq](https://jqlang.github.io/jq/download/) — JSON processor
+**Dependency:** [curl](https://curl.se/windows/) (required for downloading releases)
 
 ---
 

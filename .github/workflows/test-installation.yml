@@ -161,6 +161,8 @@ jobs:
       
       - name: Run local installation script
         run: |
+          mkdir -p "$HOME/.local/bin"
+          export PATH="$HOME/.local/bin:$PATH"
           bash install-local.sh
       
       - name: Verify repos command is available
@@ -172,8 +174,7 @@ jobs:
       - name: Verify script installation
         run: |
           test -f $HOME/.local/bin/repos || exit 1
-          test -d $HOME/.local/share/repos/scripts || exit 1
-          test -f $HOME/.local/share/repos/scripts/run-pipeline.sh || exit 1
+          test -x $HOME/.local/bin/repos || exit 1
           echo "Local installation test passed"
       
       - name: Test repos functionality
@@ -186,13 +187,10 @@ jobs:
       
       - name: Test uninstall
         run: |
+          export PATH="$HOME/.local/bin:$PATH"
           bash uninstall-local.sh
           if [ -f $HOME/.local/bin/repos ]; then
             echo "Error: repos command not removed"
-            exit 1
-          fi
-          if [ -d $HOME/.local/share/repos ]; then
-            echo "Error: repos scripts directory not removed"
             exit 1
           fi
           echo "Uninstallation successful"
@@ -217,32 +215,30 @@ jobs:
       - name: Run install.ps1
         shell: pwsh
         run: |
+          $installDir = Join-Path $env:USERPROFILE ".local\bin"
+          New-Item -ItemType Directory -Path $installDir -Force | Out-Null
+          $env:Path = "$installDir;$env:Path"
           .\install.ps1
           Write-Host "Installation script executed"
       
       - name: Verify repos is in PATH (new session)
         shell: pwsh
         run: |
-          # Reload environment variables
-          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","User") + ";" + [System.Environment]::GetEnvironmentVariable("Path","Machine")
-          
-          # Verify the bin directory is in path
-          $binDir = Join-Path $PWD "bin"
-          if ($env:Path -like "*$binDir*") {
-            Write-Host "repos bin directory found in PATH"
+          $installDir = Join-Path $env:USERPROFILE ".local\bin"
+          $env:Path = "$installDir;$env:Path"
+          if (Test-Path (Join-Path $installDir "repos.exe")) {
+            Write-Host "repos.exe installed to writable PATH directory"
           } else {
-            Write-Error "repos bin directory not found in PATH"
+            Write-Error "repos.exe not found in expected install directory"
             exit 1
           }
       
       - name: Test repos command
         shell: pwsh
         run: |
-          # Reload PATH and run repos command
-          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","User") + ";" + [System.Environment]::GetEnvironmentVariable("Path","Machine")
-          
-          # Test repos.ps1 directly
-          pwsh ./bin/repos.ps1 --help
+          $installDir = Join-Path $env:USERPROFILE ".local\bin"
+          $env:Path = "$installDir;$env:Path"
+          & (Join-Path $installDir "repos.exe") --help
           Write-Host "Windows manual installation test passed"
 
   # Test from source (direct script usage)
