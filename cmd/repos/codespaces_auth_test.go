@@ -1,95 +1,108 @@
 package main
 
 import (
-	"os"
-	"path/filepath"
+	"errors"
 	"strings"
 	"testing"
 )
 
-func TestResolveCodespacesScriptPathFromCWD(t *testing.T) {
-	tmp := t.TempDir()
-	scriptPath := filepath.Join(tmp, "scripts", "helper", "codespaces-auth-add.sh")
-	if err := os.MkdirAll(filepath.Dir(scriptPath), 0o755); err != nil {
-		t.Fatalf("mkdir script dir: %v", err)
-	}
-	if err := os.WriteFile(scriptPath, []byte("#!/usr/bin/env bash\nexit 0\n"), 0o755); err != nil {
-		t.Fatalf("write script: %v", err)
+func TestParseManagedRepos_TracksFallbackAndDeduplicates(t *testing.T) {
+	input := `
+--worktree
+# comment
+acme/base
+@dev
+acme/next@feature/x ./next-dir
+@hotfix
+`
+
+	repos, err := parseManagedRepos(strings.NewReader(input), func() (string, error) {
+		return "https://github.com/example/current", nil
+	})
+	if err != nil {
+		t.Fatalf("parseManagedRepos returned error: %v", err)
 	}
 
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
+	want := []string{"acme/base", "acme/next"}
+	if len(repos) != len(want) {
+		t.Fatalf("unexpected repo count: got %d, want %d (%v)", len(repos), len(want), repos)
 	}
-	t.Cleanup(func() { _ = os.Chdir(oldWD) })
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatalf("chdir tmp: %v", err)
-	}
-
-	got, err := resolveCodespacesScriptPath()
-	if err != nil {
-		t.Fatalf("resolveCodespacesScriptPath error: %v", err)
-	}
-	if got != scriptPath {
-		t.Fatalf("expected %q, got %q", scriptPath, got)
+	for i := range want {
+		if repos[i] != want[i] {
+			t.Fatalf("unexpected repos[%d]: got %q, want %q (all=%v)", i, repos[i], want[i], repos)
+		}
 	}
 }
 
-func TestRunCodespacesAuthExecutesHelperWithArgs(t *testing.T) {
-	tmp := t.TempDir()
-	argsFile := filepath.Join(tmp, "args.txt")
-	scriptPath := filepath.Join(tmp, "codespaces-auth-add.sh")
-	scriptBody := "#!/usr/bin/env bash\nprintf '%s' \"$*\" > \"$ARGS_FILE\"\n"
-	if err := os.WriteFile(scriptPath, []byte(scriptBody), 0o755); err != nil {
-		t.Fatalf("write helper script: %v", err)
-	}
+func TestParseManagedRepos_UsesInitialFallbackForAtBranch(t *testing.T) {
+	input := `
+@feature/test
+`
 
-	origResolver := scriptPathResolver
-	scriptPathResolver = func() (string, error) { return scriptPath, nil }
-	t.Cleanup(func() {
-		scriptPathResolver = origResolver
+	repos, err := parseManagedRepos(strings.NewReader(input), func() (string, error) {
+		return "https://github.com/acme/root", nil
 	})
-
-	oldEnv := os.Getenv("ARGS_FILE")
-	if err := os.Setenv("ARGS_FILE", argsFile); err != nil {
-		t.Fatalf("setenv: %v", err)
-	}
-	t.Cleanup(func() {
-		_ = os.Setenv("ARGS_FILE", oldEnv)
-	})
-
-	if err := runCodespacesAuth([]string{"-f", "repos.list", "-d", ".devcontainer/devcontainer.json"}); err != nil {
-		t.Fatalf("runCodespacesAuth returned error: %v", err)
-	}
-
-	raw, err := os.ReadFile(argsFile)
 	if err != nil {
-		t.Fatalf("read args file: %v", err)
+		t.Fatalf("parseManagedRepos returned error: %v", err)
 	}
-	got := strings.TrimSpace(string(raw))
-	if got != "-f repos.list -d .devcontainer/devcontainer.json" {
-		t.Fatalf("unexpected helper args: %q", got)
+
+	if len(repos) != 1 || repos[0] != "acme/root" {
+		t.Fatalf("unexpected repos: %v", repos)
 	}
 }
 
-func TestRunCodespacesAuthReturnsExitCodeError(t *testing.T) {
-	tmp := t.TempDir()
-	scriptPath := filepath.Join(tmp, "codespaces-auth-add.sh")
-	if err := os.WriteFile(scriptPath, []byte("#!/usr/bin/env bash\nexit 7\n"), 0o755); err != nil {
-		t.Fatalf("write helper script: %v", err)
+func TestParseManagedRepos_SkipsUnsupportedRepoSpecs(t *testing.T) {
+	input := `
+/tmp/local-repo
+@branch
+`
+
+	repos, err := parseManagedRepos(strings.NewReader(input), func() (string, error) {
+		return "https://github.com/acme/root", nil
+	})
+	if err != nil {
+		t.Fatalf("parseManagedRepos returned error: %v", err)
 	}
 
-	origResolver := scriptPathResolver
-	scriptPathResolver = func() (string, error) { return scriptPath, nil }
-	t.Cleanup(func() {
-		scriptPathResolver = origResolver
-	})
+	if len(repos) != 1 || repos[0] != "acme/root" {
+		t.Fatalf("unexpected repos: %v", repos)
+	}
+}
 
-	err := runCodespacesAuth(nil)
+func TestParseManagedRepos_ErrorsForInvalidSpec(t *testing.T) {
+	input := `
+-bad/repo
+`
+
+	_, err := parseManagedRepos(strings.NewReader(input), func() (string, error) {
+		return "https://github.com/acme/root", nil
+	})
 	if err == nil {
-		t.Fatal("expected error from non-zero helper exit code")
+		t.Fatal("expected error for invalid repository spec, got nil")
 	}
-	if !strings.Contains(err.Error(), "exit code 7") {
-		t.Fatalf("expected exit-code error message, got: %v", err)
+}
+
+func TestParseManagedRepos_DoesNotRequireFallbackWithoutAtBranch(t *testing.T) {
+	input := `
+acme/base
+acme/next
+`
+	_, err := parseManagedRepos(strings.NewReader(input), func() (string, error) {
+		return "", errors.New("should not be called")
+	})
+	if err != nil {
+		t.Fatalf("unexpected error without @branch lines: %v", err)
+	}
+}
+
+func TestParseManagedRepos_ErrorsWhenAtBranchNeedsFallback(t *testing.T) {
+	input := `
+@feature/test
+`
+	_, err := parseManagedRepos(strings.NewReader(input), func() (string, error) {
+		return "", errors.New("not in a git working tree")
+	})
+	if err == nil {
+		t.Fatal("expected fallback resolution error, got nil")
 	}
 }
