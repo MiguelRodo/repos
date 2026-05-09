@@ -114,3 +114,92 @@ func TestIsRepoNotFoundError(t *testing.T) {
 		t.Fatalf("did not expect auth failure to be recognized as not-found")
 	}
 }
+
+func TestProcessCreateFileSkipsLocalRemotes(t *testing.T) {
+	tmp := t.TempDir()
+	list := filepath.Join(tmp, "repos.list")
+	content := strings.Join([]string{
+		"file:///tmp/local.git",
+		"/tmp/local2.git",
+		"acme/remote",
+	}, "\n")
+	if err := os.WriteFile(list, []byte(content), 0o644); err != nil {
+		t.Fatalf("write repos.list: %v", err)
+	}
+
+	origExists := ghRepoExistsFunc
+	origCreate := ghCreateRepoFunc
+	origFallback := resolveCreateFallbackRepoFunc
+	defer func() {
+		ghRepoExistsFunc = origExists
+		ghCreateRepoFunc = origCreate
+		resolveCreateFallbackRepoFunc = origFallback
+	}()
+
+	resolveCreateFallbackRepoFunc = func() (string, error) { return "", nil }
+
+	var seen []string
+	ghRepoExistsFunc = func(ownerRepo string) (bool, error) {
+		seen = append(seen, ownerRepo)
+		return false, nil
+	}
+	ghCreateRepoFunc = func(ownerRepo string, private bool) error { return nil }
+
+	if err := processCreateFile(list, true); err != nil {
+		t.Fatalf("processCreateFile error: %v", err)
+	}
+	if len(seen) != 1 || seen[0] != "acme/remote" {
+		t.Fatalf("expected only remote repo to be processed, got %#v", seen)
+	}
+}
+
+func TestProcessCreateFileAtBranchUsesFallbackRepo(t *testing.T) {
+	tmp := t.TempDir()
+	list := filepath.Join(tmp, "repos.list")
+	content := strings.Join([]string{
+		"acme/base",
+		"@feature-x",
+	}, "\n")
+	if err := os.WriteFile(list, []byte(content), 0o644); err != nil {
+		t.Fatalf("write repos.list: %v", err)
+	}
+
+	origExists := ghRepoExistsFunc
+	origCreate := ghCreateRepoFunc
+	origBranchExists := ghBranchExistsFunc
+	origCreateBranch := ghCreateBranchFunc
+	origFallback := resolveCreateFallbackRepoFunc
+	defer func() {
+		ghRepoExistsFunc = origExists
+		ghCreateRepoFunc = origCreate
+		ghBranchExistsFunc = origBranchExists
+		ghCreateBranchFunc = origCreateBranch
+		resolveCreateFallbackRepoFunc = origFallback
+	}()
+
+	resolveCreateFallbackRepoFunc = func() (string, error) { return "", nil }
+	ghRepoExistsFunc = func(ownerRepo string) (bool, error) { return true, nil }
+	ghCreateRepoFunc = func(ownerRepo string, private bool) error { return nil }
+
+	var gotOwnerRepo, gotBranch string
+	var createCalled bool
+	ghBranchExistsFunc = func(ownerRepo, branch string) (bool, error) {
+		gotOwnerRepo = ownerRepo
+		gotBranch = branch
+		return false, nil
+	}
+	ghCreateBranchFunc = func(ownerRepo, branch string) error {
+		createCalled = true
+		return nil
+	}
+
+	if err := processCreateFile(list, true); err != nil {
+		t.Fatalf("processCreateFile error: %v", err)
+	}
+	if gotOwnerRepo != "acme/base" || gotBranch != "feature-x" {
+		t.Fatalf("expected fallback branch check on acme/base@feature-x, got %s@%s", gotOwnerRepo, gotBranch)
+	}
+	if !createCalled {
+		t.Fatalf("expected missing branch to be created")
+	}
+}

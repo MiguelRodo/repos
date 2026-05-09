@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"regexp"
@@ -16,6 +17,9 @@ import (
 
 var ghRepoExistsFunc = ghRepoExists
 var ghCreateRepoFunc = ghCreateRepo
+var ghBranchExistsFunc = ghBranchExists
+var ghCreateBranchFunc = ghCreateBranch
+var resolveCreateFallbackRepoFunc = resolveCreateFallbackRepo
 var githubNameRegex = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
 
 func runCreate(args []string) error {
@@ -134,14 +138,45 @@ func processCreateFile(reposFile string, privateDefault bool) error {
 	}
 	defer f.Close()
 
+	fallbackRepo, _ := resolveCreateFallbackRepoFunc()
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {
 		line := trimLine(sc.Text())
 		if line == "" || lineIsGlobalFlagsOnly(line) {
 			continue
 		}
+		parts := strings.Fields(line)
+		if len(parts) == 0 {
+			continue
+		}
+
+		repoSpec := parts[0]
+		if strings.HasPrefix(repoSpec, "@") {
+			branch := strings.TrimPrefix(repoSpec, "@")
+			if err := validateBranch(branch); err != nil {
+				return err
+			}
+			if fallbackRepo == "" {
+				fmt.Printf("Warning: @%s cannot be processed - no fallback repository available; skipping branch check.\n", branch)
+				continue
+			}
+			if err := ensureBranchExistsOnRepo(fallbackRepo, branch); err != nil {
+				return err
+			}
+			continue
+		}
+
+		repoNoRef, _ := splitRepoSpec(repoSpec)
+		if isLocalRepoSpec(repoNoRef) {
+			fmt.Printf("Skipping local remote: %s\n", gitcmd.SanitizeURL(repoSpec))
+			continue
+		}
+
 		if err := processCreateLine(line, privateDefault); err != nil {
 			return err
+		}
+		if ownerRepo, err := extractOwnerRepo(repoSpec); err == nil {
+			fallbackRepo = ownerRepo
 		}
 	}
 	return sc.Err()
@@ -215,6 +250,45 @@ func extractOwnerRepo(repoSpec string) (string, error) {
 	return repoNoRef, nil
 }
 
+func isLocalRepoSpec(repoSpec string) bool {
+	s := strings.TrimSpace(repoSpec)
+	return strings.HasPrefix(s, "file://") ||
+		strings.HasPrefix(s, "/") ||
+		strings.HasPrefix(s, `\\`) ||
+		isWindowsAbsPath(s)
+}
+
+func resolveCreateFallbackRepo() (string, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	remote, err := getCurrentRepoRemoteHTTPS(cwd)
+	if err != nil {
+		return "", err
+	}
+	return ownerRepoFromRemote(remote)
+}
+
+func ensureBranchExistsOnRepo(ownerRepo, branch string) error {
+	exists, err := ghBranchExistsFunc(ownerRepo, branch)
+	if err != nil {
+		return err
+	}
+	if exists {
+		fmt.Printf("Branch exists: %s@%s\n", ownerRepo, branch)
+		return nil
+	}
+
+	fmt.Printf("Creating branch %s on %s ... ", branch, ownerRepo)
+	if err := ghCreateBranchFunc(ownerRepo, branch); err != nil {
+		fmt.Println("failed.")
+		return err
+	}
+	fmt.Println("done.")
+	return nil
+}
+
 func ghRepoExists(ownerRepo string) (bool, error) {
 	cmd := exec.Command("gh", "repo", "view", ownerRepo, "--json", "nameWithOwner")
 	out, err := cmd.CombinedOutput()
@@ -237,6 +311,54 @@ func ghCreateRepo(ownerRepo string, private bool) error {
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("error creating repository %s: %s", ownerRepo, strings.TrimSpace(string(out)))
+	}
+	return nil
+}
+
+func ghBranchExists(ownerRepo, branch string) (bool, error) {
+	endpoint := fmt.Sprintf("repos/%s/git/ref/heads/%s", ownerRepo, url.PathEscape(branch))
+	cmd := exec.Command("gh", "api", endpoint)
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		return true, nil
+	}
+	if isRepoNotFoundError(string(out)) {
+		return false, nil
+	}
+	return false, fmt.Errorf("error checking branch %s on %s: %s", branch, ownerRepo, strings.TrimSpace(string(out)))
+}
+
+func ghCreateBranch(ownerRepo, branch string) error {
+	defaultBranchCmd := exec.Command("gh", "api", "repos/"+ownerRepo, "--jq", ".default_branch")
+	defaultBranchOut, err := defaultBranchCmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("error determining default branch for %s: %s", ownerRepo, strings.TrimSpace(string(defaultBranchOut)))
+	}
+	defaultBranch := strings.TrimSpace(string(defaultBranchOut))
+	if defaultBranch == "" {
+		return fmt.Errorf("error determining default branch for %s: empty default branch", ownerRepo)
+	}
+
+	baseRefEndpoint := fmt.Sprintf("repos/%s/git/ref/heads/%s", ownerRepo, url.PathEscape(defaultBranch))
+	baseRefCmd := exec.Command("gh", "api", baseRefEndpoint, "--jq", ".object.sha")
+	baseRefOut, err := baseRefCmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("error resolving base commit for %s@%s: %s", ownerRepo, defaultBranch, strings.TrimSpace(string(baseRefOut)))
+	}
+	baseSHA := strings.TrimSpace(string(baseRefOut))
+	if baseSHA == "" {
+		return fmt.Errorf("error resolving base commit for %s@%s: empty SHA", ownerRepo, defaultBranch)
+	}
+
+	createCmd := exec.Command(
+		"gh", "api", fmt.Sprintf("repos/%s/git/refs", ownerRepo),
+		"-X", "POST",
+		"-f", "ref=refs/heads/"+branch,
+		"-f", "sha="+baseSHA,
+	)
+	out, err := createCmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("error creating branch %s on %s: %s", branch, ownerRepo, strings.TrimSpace(string(out)))
 	}
 	return nil
 }
