@@ -71,12 +71,13 @@ ASSET_CANDIDATES=(
   "${BINARY_NAME}_${OS_NAME}_${ARCH_NAME}"
 )
 
-TMP_BIN="$(mktemp)"
+TMP_BIN="$(mktemp "${TMPDIR:-/tmp}/repos-install.XXXXXX")"
 trap 'rm -f "$TMP_BIN"' EXIT
 
 DOWNLOADED_ASSET=""
 for asset in "${ASSET_CANDIDATES[@]}"; do
   url="${DOWNLOAD_BASE_URL}/${asset}"
+  echo "Trying ${url}..."
   if curl -fsSL "$url" -o "$TMP_BIN"; then
     DOWNLOADED_ASSET="$asset"
     break

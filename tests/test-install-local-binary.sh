@@ -58,7 +58,8 @@ exit 22
 EOF
 chmod +x "$MOCK_BIN/curl"
 
-export PATH="$INSTALL_DIR:$MOCK_BIN:/usr/bin:/bin"
+ORIGINAL_PATH="$PATH"
+export PATH="$INSTALL_DIR:$MOCK_BIN:$ORIGINAL_PATH"
 export REPOS_RELEASE_REPO="example/unused"
 
 bash "$PROJECT_ROOT/install-local.sh"

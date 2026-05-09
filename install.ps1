@@ -21,7 +21,7 @@ function Test-WritableDirectory([string]$PathEntry) {
         return $false
     }
     try {
-        $probe = Join-Path $PathEntry ".repos-write-test-$PID.tmp"
+        $probe = Join-Path $PathEntry ".repos-write-test-$([guid]::NewGuid().ToString()).tmp"
         Set-Content -LiteralPath $probe -Value "ok" -Encoding ascii
         Remove-Item -LiteralPath $probe -Force
         return $true
@@ -78,6 +78,7 @@ $assets = @(
 $downloadedAsset = $null
 foreach ($asset in $assets) {
     $url = "$downloadBase/$asset"
+    Write-Host "Trying $url..."
     try {
         Invoke-WebRequest -Uri $url -OutFile $tmpFile
         $downloadedAsset = $asset
