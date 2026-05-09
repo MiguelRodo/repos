@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 type Options struct {
@@ -34,6 +35,7 @@ type Instruction struct {
 }
 
 var ownerRepoRegex = regexp.MustCompile(`^[^/]+/[^/]+$`)
+var branchValidationCache sync.Map
 
 func ParseList(r io.Reader, opts Options) ([]Instruction, error) {
 	content, err := io.ReadAll(r)
@@ -327,21 +329,35 @@ func isWindowsAbsPath(s string) bool {
 
 func validateBranch(branch string) error {
 	if branch == "" || strings.HasPrefix(branch, "-") {
-		return fmt.Errorf("error: '%s' is not a valid Git branch name", branch)
+		return fmt.Errorf("'%s' is not a valid Git branch name", branch)
+	}
+	if cached, ok := branchValidationCache.Load(branch); ok {
+		if cached.(bool) {
+			return nil
+		}
+		return fmt.Errorf("'%s' is not a valid Git branch name", branch)
 	}
 	cmd := exec.Command("git", "check-ref-format", "--allow-onelevel", branch)
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("error: '%s' is not a valid Git branch name", branch)
+	if err := cmd.Run(); err == nil {
+		branchValidationCache.Store(branch, true)
+		return nil
 	}
-	return nil
+	branchValidationCache.Store(branch, false)
+	return fmt.Errorf("'%s' is not a valid Git branch name", branch)
 }
 
 func validateTargetDir(target string) error {
 	if target == "" {
 		return nil
 	}
-	if strings.HasPrefix(target, "/") || strings.HasPrefix(target, `\\`) || isWindowsAbsPath(target) || strings.Contains(target, "..") || strings.HasPrefix(target, "-") {
-		return fmt.Errorf("error: target directory cannot be absolute, contain '..', or start with a hyphen: %s", target)
+	if strings.HasPrefix(target, "/") || strings.HasPrefix(target, `\\`) || isWindowsAbsPath(target) {
+		return fmt.Errorf("target directory cannot be absolute: %s", target)
+	}
+	if strings.Contains(target, "..") {
+		return fmt.Errorf("target directory cannot contain '..': %s", target)
+	}
+	if strings.HasPrefix(target, "-") {
+		return fmt.Errorf("target directory cannot start with a hyphen: %s", target)
 	}
 	return nil
 }
