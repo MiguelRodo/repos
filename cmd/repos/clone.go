@@ -124,7 +124,7 @@ func runClone(args []string) error {
 		return err
 	}
 
-	currentHTTPS, err := parser.GetCurrentRepoRemoteHTTPS(cwd)
+	currentHTTPS, err := parser.GetRepoRemoteHTTPS(cwd)
 	if err != nil {
 		return err
 	}

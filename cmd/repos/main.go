@@ -16,7 +16,10 @@ type Command interface {
 	Name() string
 	// Run executes the subcommand with the given arguments.
 	Run(args []string) error
-	// Help returns a short description used in the top-level usage message.
+	// Help returns the help text for the subcommand.  The first line is used
+	// as the short one-line description in the top-level usage listing;
+	// subsequent lines (if any) are used when the subcommand's own --help
+	// flag is passed.
 	Help() string
 }
 

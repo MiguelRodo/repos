@@ -112,7 +112,7 @@ func ParseList(filePath string, opts GlobalOptions) ([]Instruction, error) {
 	}
 
 	// Step 2: initialise fallback from current repo.
-	currentHTTPS, err := GetCurrentRepoRemoteHTTPS(opts.StartDir)
+	currentHTTPS, err := GetRepoRemoteHTTPS(opts.StartDir)
 	if err != nil {
 		return nil, err
 	}
@@ -127,9 +127,9 @@ func ParseList(filePath string, opts GlobalOptions) ([]Instruction, error) {
 	return resolveInstructions(filePath, opts, currentHTTPS, plan)
 }
 
-// GetCurrentRepoRemoteHTTPS returns the HTTPS URL of the "origin" remote for
-// the Git repository rooted at (or containing) dir.
-func GetCurrentRepoRemoteHTTPS(dir string) (string, error) {
+// GetRepoRemoteHTTPS returns the HTTPS URL of the "origin" remote for the Git
+// repository rooted at (or containing) dir.
+func GetRepoRemoteHTTPS(dir string) (string, error) {
 	if _, err := gitcmd.RunGit(dir, "rev-parse", "--is-inside-work-tree"); err != nil {
 		return "", errors.New("error: not inside a Git working tree; cannot derive fallback repo")
 	}
