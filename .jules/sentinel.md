@@ -138,3 +138,8 @@
 **Vulnerability:** Sensitive Git credentials (tokens/passwords) embedded in URLs were leaked in terminal output, debug logs, and Git's own error messages (stderr).
 **Learning:** Hardening internal URL parsing (e.g. for directory naming) is insufficient if the raw URL is still passed to logging functions or external tools like `git`. Many commands echo their arguments back on failure, bypassing local sanitization.
 **Prevention:** Implement a systematic `sanitize_url` helper using a non-greedy regex (`[^/@]*@`) for all logging. Wrap the `git` command (or other external tools) to capture, sanitize, and re-emit `stderr` to prevent leakage from the tool's own output.
+
+## 2026-05-09 - [Medium] Race Condition in Sensitive Temporary File Permissions
+**Vulnerability:** Temporary files containing sensitive data (like GitHub tokens or Git error messages) were created with default umask permissions before being hardened with `chmod 600`, creating a brief window of exposure.
+**Learning:** Even if `chmod` is called immediately after `mktemp`, there is a race condition where the file exists with broader permissions. Using a subshell with `umask 077` during the `mktemp` call ensures the file is created with restricted permissions from the start.
+**Prevention:** Always use `tmp_file=$(umask 077 && mktemp ... )` for files that will store sensitive information.

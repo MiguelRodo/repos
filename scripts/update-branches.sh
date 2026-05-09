@@ -21,7 +21,8 @@ git() {
   # Wrap git to capture and sanitize stderr to prevent credential leakage
   # from git's own error messages (e.g. "fatal: could not read Password for 'https://token@github.com'")
   local tmp_stderr
-  tmp_stderr="$(mktemp "$(get_temp_dir)/git-stderr-XXXXXX")"
+  # Use restricted permissions for the temporary file
+  tmp_stderr="$(umask 077 && mktemp "$(get_temp_dir)/git-stderr-XXXXXX")"
   CLEANUP_FILES+=("$tmp_stderr")
 
   local rc=0

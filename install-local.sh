@@ -51,7 +51,7 @@ echo "Installing scripts to $LOCAL_SHARE..."
 cp -r "$SCRIPT_DIR/scripts" "$LOCAL_SHARE/"
 
 # Make all shell scripts executable
-find "$LOCAL_SHARE/scripts" -type f -name "*.sh" -exec chmod +x {} \;
+find "$LOCAL_SHARE/scripts" -type f -name "*.sh" -exec chmod -- +x {} \;
 echo -e "${GREEN}✓ Scripts installed${NC}"
 echo
 
@@ -101,7 +101,7 @@ case "$1" in
 esac
 WRAPPER_EOF
 
-chmod +x "$LOCAL_BIN/repos"
+chmod -- +x "$LOCAL_BIN/repos"
 echo -e "${GREEN}✓ repos command installed${NC}"
 echo
 

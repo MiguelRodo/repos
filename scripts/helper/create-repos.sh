@@ -37,7 +37,8 @@ git() {
   # Wrap git to capture and sanitize stderr to prevent credential leakage
   # from git's own error messages (e.g. "fatal: could not read Password for 'https://token@github.com'")
   local tmp_stderr
-  tmp_stderr="$(mktemp "$(get_temp_dir)/git-stderr-XXXXXX")"
+  # Use restricted permissions for the temporary file
+  tmp_stderr="$(umask 077 && mktemp "$(get_temp_dir)/git-stderr-XXXXXX")"
   CLEANUP_FILES+=("$tmp_stderr")
 
   local rc=0
@@ -258,10 +259,11 @@ get_credentials() {
 
   # Create a temporary file for the Authorization header to avoid exposing the token in process lists
   if [ -z "$AUTH_HDR_FILE" ]; then
-    AUTH_HDR_FILE="$(mktemp "$(get_temp_dir)/repos-auth-hdr-XXXXXX")"
+    # Use restricted permissions for the temporary file
+    AUTH_HDR_FILE="$(umask 077 && mktemp "$(get_temp_dir)/repos-auth-hdr-XXXXXX")"
     CLEANUP_FILES+=("$AUTH_HDR_FILE")
     printf "Authorization: token %s\n" "$GH_TOKEN" > "$AUTH_HDR_FILE"
-    chmod 600 "$AUTH_HDR_FILE"
+    chmod -- 600 "$AUTH_HDR_FILE"
   fi
 
   debug "Credentials successfully obtained and header file created"
