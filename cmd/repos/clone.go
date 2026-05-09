@@ -141,6 +141,11 @@ func runClone(args []string) error {
 	for _, ins := range instructions {
 		fmt.Fprintf(os.Stderr, "Processing: %s\n", gitcmd.SanitizeURL(ins.RemoteURL))
 
+		// Print any non-fatal warnings surfaced by the parser.
+		for _, w := range ins.Warnings {
+			fmt.Fprintln(os.Stderr, w)
+		}
+
 		var (
 			lineRC  int
 			lineErr error
@@ -188,14 +193,11 @@ func runClone(args []string) error {
 
 func (st *execState) execClone(ins parser.Instruction) (int, error) {
 	remoteHTTPS := ins.RemoteURL
+	// Use CloneURL (which preserves the original scheme — SSH, HTTPS, local)
+	// for git operations; RemoteURL is for normalised comparisons only.
+	cloneURL := ins.CloneURL
 	branch := ins.Branch
 	dest := ins.TargetDir
-
-	// Resolve the actual clone URL from the remote URL (handles file://, etc.).
-	repoURL, _, err := parser.ParseRepoURL(remoteHTTPS)
-	if err != nil {
-		return 1, err
-	}
 
 	if isGitRepo(dest) {
 		existingHTTPS := parser.NormaliseRemoteToHTTPS(gitcmd.SafeGetOriginURL(dest))
@@ -223,8 +225,8 @@ func (st *execState) execClone(ins parser.Instruction) (int, error) {
 	}
 
 	if branch != "" {
-		if _, err := gitcmd.RunGit("", "ls-remote", "--exit-code", "--heads", "--", repoURL, branch); err == nil {
-			args := append(append([]string{}, cloneArgs...), "--branch", branch, "--", repoURL, dest)
+		if _, err := gitcmd.RunGit("", "ls-remote", "--exit-code", "--heads", "--", cloneURL, branch); err == nil {
+			args := append(append([]string{}, cloneArgs...), "--branch", branch, "--", cloneURL, dest)
 			fmt.Printf("Cloning %s → %s (branch %s)\n", remoteHTTPS, dest, branch)
 			if _, err := gitcmd.RunGit("", args...); err != nil {
 				return 1, err
@@ -232,7 +234,7 @@ func (st *execState) execClone(ins parser.Instruction) (int, error) {
 		} else {
 			fmt.Printf("Remote branch '%s' not found on %s; creating it.\n", branch, remoteHTTPS)
 			fmt.Printf("Cloning default branch of %s → %s\n", remoteHTTPS, dest)
-			args := append(cloneArgs, "--", repoURL, dest)
+			args := append(cloneArgs, "--", cloneURL, dest)
 			if _, err := gitcmd.RunGit("", args...); err != nil {
 				return 1, err
 			}
@@ -245,7 +247,7 @@ func (st *execState) execClone(ins parser.Instruction) (int, error) {
 		}
 		st.counts.clonedBranch++
 	} else {
-		args := append(cloneArgs, "--", repoURL, dest)
+		args := append(cloneArgs, "--", cloneURL, dest)
 		fmt.Printf("Cloning %s → %s\n", remoteHTTPS, dest)
 		if _, err := gitcmd.RunGit("", args...); err != nil {
 			return 1, err
@@ -280,14 +282,26 @@ func (st *execState) execWorktree(ins parser.Instruction) (int, error) {
 		base = actual
 	}
 
-	if !isGitRepo(base) {
-		rc, err := st.ensureBaseExists(ins.RemoteURL, base, ins.FetchMode)
+	if isGitRepo(base) {
+		// Verify that the existing repo at base is actually for the expected
+		// remote.  A mismatch would mean worktree add (and any push) runs
+		// against a completely different repository.
+		existingHTTPS := parser.NormaliseRemoteToHTTPS(gitcmd.SafeGetOriginURL(base))
+		if existingHTTPS != "" && existingHTTPS != ins.RemoteURL {
+			return 1, fmt.Errorf(
+				"error: base directory '%s' is a Git repo for '%s', not '%s'; cannot add worktree",
+				base, existingHTTPS, ins.RemoteURL)
+		}
+	} else {
+		rc, err := st.ensureBaseExists(ins.CloneURL, base, ins.FetchMode)
 		if err != nil {
 			return 1, err
 		}
 		if rc != 0 {
 			return rc, nil
 		}
+		// Record the now-cloned base so future lookups use it.
+		st.seenRemoteLocal[ins.RemoteURL] = base
 	}
 
 	return st.createWorktreeForBranch(base, branch, dest, ins.FetchMode)

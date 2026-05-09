@@ -45,8 +45,19 @@ type GlobalOptions struct {
 // Instruction is a fully-resolved clone or worktree action derived from one
 // non-blank, non-comment, non-global-flag line in the repos list.
 type Instruction struct {
-	// RemoteURL is the normalised HTTPS remote URL (never contains @branch).
+	// RemoteURL is the normalised remote identifier derived from the repo spec
+	// (never contains @branch).  SSH, HTTPS, and local filesystem remotes are
+	// all normalised to a canonical form so they can be compared across
+	// instructions — e.g. `git@github.com:org/repo` and
+	// `https://github.com/org/repo` both normalise to the same HTTPS URL.
+	// Local file:// and absolute-path remotes normalise to the stripped path.
+	// Use CloneURL when invoking git directly to preserve the original scheme.
 	RemoteURL string
+	// CloneURL is the URL that should be passed to `git clone` / `git ls-remote`.
+	// It is derived from the raw spec via ParseRepoURL and preserves SSH,
+	// HTTPS, file://, and absolute-path schemes exactly as the user wrote them
+	// (short owner/repo specs expand to https://github.com/<owner>/<repo>).
+	CloneURL string
 	// Branch is the branch name, or "" for the default branch.
 	Branch string
 	// TargetDir is the absolute path of the intended clone/worktree
@@ -66,6 +77,9 @@ type Instruction struct {
 	AllBranches bool
 	// FetchMode is "deferred", "single", or "all".
 	FetchMode string
+	// Warnings contains non-fatal diagnostic messages produced during parsing
+	// (e.g. ignored flags).  Callers should print or log these as appropriate.
+	Warnings []string
 }
 
 // ---------------------------------------------------------------------------
@@ -81,12 +95,13 @@ type planInfo struct {
 // rawInstruction is the internal result of parseEffectiveLine before TargetDir
 // is resolved to an absolute path.
 type rawInstruction struct {
-	repoSpec    string // may be "<url>@<branch>" for @branch lines
-	targetDir   string // relative, possibly empty
-	allBranches bool
-	isWorktree  bool
-	isAtBranch  bool
-	fetchMode   string
+	repoSpec            string // may be "<url>@<branch>" for @branch lines
+	targetDir           string // relative, possibly empty
+	allBranches         bool
+	isWorktree          bool
+	isAtBranch          bool
+	fetchMode           string
+	worktreeOnCloneLine bool // --worktree appeared on a regular clone line
 }
 
 // ---------------------------------------------------------------------------
@@ -98,9 +113,9 @@ type rawInstruction struct {
 // flags found in the file are applied on top (unless the corresponding CLI
 // flag was already set).
 //
-// The function calls GetCurrentRepoRemoteHTTPS(opts.StartDir) to initialise
-// the @branch fallback; callers must ensure opts.StartDir is inside a Git
-// working tree.
+// The function calls GetRepoRemoteHTTPS(opts.StartDir) to initialise the
+// @branch fallback; callers must ensure opts.StartDir is inside a Git working
+// tree.
 func ParseList(filePath string, opts GlobalOptions) ([]Instruction, error) {
 	if opts.GlobalFetchMode == "" {
 		opts.GlobalFetchMode = "deferred"
@@ -569,7 +584,7 @@ func parseEffectiveLine(trimmed, fallbackHTTPS string, opts GlobalOptions) (rawI
 				ins.allBranches = true
 			}
 		case "-w", "--worktree":
-			fmt.Fprintf(os.Stderr, "Warning: '--worktree' ignored on clone line: %s\n", trimmed)
+			ins.worktreeOnCloneLine = true
 		case "--public", "--private", "--codespaces", "--force":
 			// ignore
 		default:
@@ -633,11 +648,18 @@ func resolveInstructions(
 			FetchMode:   raw.fetchMode,
 		}
 
+		// Surface non-fatal warnings from parsing so the caller controls UX.
+		if raw.worktreeOnCloneLine {
+			ins.Warnings = append(ins.Warnings,
+				fmt.Sprintf("Warning: '--worktree' is ignored on clone lines: %s", raw.repoSpec))
+		}
+
 		repoNoRef, branch := SplitRepoSpec(raw.repoSpec)
 
 		if raw.isAtBranch {
 			// @branch line: RemoteURL = fallback, BaseDir = fallback local path.
 			ins.RemoteURL = repoNoRef // already = fallbackHTTPS from parseEffectiveLine
+			ins.CloneURL = repoNoRef  // for worktrees the "clone URL" is the base remote
 			ins.Branch = branch
 			if fallbackHTTPS == currentHTTPS {
 				ins.BaseDir = opts.StartDir
@@ -653,12 +675,15 @@ func resolveInstructions(
 		} else {
 			// Regular clone line.
 			remoteHTTPS := SpecToHTTPS(repoNoRef)
-			_, repoDir, err := ParseRepoURL(repoNoRef)
+			cloneURL, repoDir, err := ParseRepoURL(repoNoRef)
 			if err != nil {
 				return nil, err
 			}
 
 			ins.RemoteURL = remoteHTTPS
+			// CloneURL preserves the original scheme (SSH, HTTPS, local path)
+			// so that `git clone` uses the user's intended transport.
+			ins.CloneURL = cloneURL
 			ins.Branch = branch
 
 			switch {
