@@ -39,7 +39,7 @@ func TestRunWorkspaceGeneratesFoldersFromReposList(t *testing.T) {
 		t.Fatalf("runWorkspace error: %v", err)
 	}
 
-	wsPath := filepath.Join(projectDir, "entire-project.code-workspace")
+	wsPath := findWorkspaceFile(projectDir)
 	data, err := os.ReadFile(wsPath)
 	if err != nil {
 		t.Fatalf("read workspace file: %v", err)

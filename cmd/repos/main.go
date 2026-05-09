@@ -314,7 +314,10 @@ func sanitizeBranchName(branch string) string {
 }
 
 func isWindowsAbsPath(s string) bool {
-	return len(s) >= 3 && ((s[1] == ':' && (s[2] == '/' || s[2] == '\\')) || strings.HasPrefix(s, `\\`) || strings.HasPrefix(s, `\`))
+	if strings.HasPrefix(s, `\\`) {
+		return true
+	}
+	return len(s) >= 3 && s[1] == ':' && (s[2] == '/' || s[2] == '\\')
 }
 
 func trimLine(line string) string {
@@ -597,8 +600,10 @@ func parseRepoURL(repoURLNoRef string) (repoURL, repoDir string, err error) {
 	case strings.HasPrefix(s, "file://"):
 		repoURL = s
 		repoDir = filepath.Base(strings.TrimPrefix(sNoGit, "file://"))
-	case strings.HasPrefix(s, "/") ||
-		strings.HasPrefix(s, `\`) ||
+	case strings.HasPrefix(s, "/"):
+		repoURL = s
+		repoDir = filepath.Base(sNoGit)
+	case strings.HasPrefix(s, `\`) ||
 		strings.HasPrefix(s, `.\\`) ||
 		strings.HasPrefix(s, `..\\`) ||
 		isWindowsAbsPath(s):

@@ -163,6 +163,7 @@ func TestProcessCreateFileSkipsNonGitHubRemotes(t *testing.T) {
 	content := strings.Join([]string{
 		"https://gitlab.com/acme/skip-me.git",
 		"git@gitlab.com:acme/skip-me-too.git",
+		"git@gitlab.com:acme/skip-with-branch.git@feature-x",
 		"acme/process-me",
 	}, "\n")
 	if err := os.WriteFile(list, []byte(content), 0o644); err != nil {
