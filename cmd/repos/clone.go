@@ -1,14 +1,20 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/MiguelRodo/repos/internal/sysutil"
 )
+
+var hasNonLocalRemotesInFileFunc = hasNonLocalRemotesInFile
+var checkNonInteractiveAuthForCloneFunc = checkNonInteractiveAuthForClone
 
 func runClone(args []string) error {
 	cwd, err := os.Getwd()
@@ -82,6 +88,15 @@ func runClone(args []string) error {
 	if err := sysutil.CheckPrerequisites(); err != nil {
 		return err
 	}
+	hasNonLocal, err := hasNonLocalRemotesInFileFunc(st.reposFile)
+	if err != nil {
+		return err
+	}
+	if hasNonLocal {
+		if err := checkNonInteractiveAuthForCloneFunc(); err != nil {
+			return err
+		}
+	}
 	if err := st.initFallback(); err != nil {
 		return err
 	}
@@ -105,4 +120,83 @@ func runClone(args []string) error {
 		return errors.New("clone finished with errors")
 	}
 	return nil
+}
+
+func isLocalRepoSpecForAuthCheck(repoSpec string) bool {
+	switch {
+	case strings.HasPrefix(repoSpec, "file://"),
+		strings.HasPrefix(repoSpec, "/"),
+		strings.HasPrefix(repoSpec, `\`),
+		isWindowsAbsPath(repoSpec),
+		strings.HasPrefix(repoSpec, "./"),
+		strings.HasPrefix(repoSpec, "../"),
+		strings.HasPrefix(repoSpec, `.\\`),
+		strings.HasPrefix(repoSpec, `..\\`):
+		return true
+	default:
+		return false
+	}
+}
+
+func hasNonLocalRemotesInFile(reposFile string) (bool, error) {
+	f, err := os.Open(reposFile)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	sc := bufio.NewScanner(f)
+	for sc.Scan() {
+		line := trimLine(sc.Text())
+		if line == "" || lineIsGlobalFlagsOnly(line) {
+			continue
+		}
+		parts := strings.Fields(line)
+		if len(parts) == 0 {
+			continue
+		}
+		first := parts[0]
+		if strings.HasPrefix(first, "@") {
+			continue
+		}
+		repoSpec, _ := splitRepoSpec(first)
+		if isLocalRepoSpecForAuthCheck(repoSpec) {
+			continue
+		}
+		if strings.HasPrefix(repoSpec, "https://") || ownerRepoRegex.MatchString(repoSpec) {
+			return true, nil
+		}
+	}
+	if err := sc.Err(); err != nil {
+		return false, err
+	}
+	return false, nil
+}
+
+func checkNonInteractiveAuthForClone() error {
+	if token := strings.TrimSpace(os.Getenv("GH_TOKEN")); token != "" {
+		return nil
+	}
+
+	if _, err := exec.LookPath("gh"); err == nil {
+		if err := exec.Command("gh", "auth", "status").Run(); err == nil {
+			return nil
+		}
+	}
+
+	if sock := strings.TrimSpace(os.Getenv("SSH_AUTH_SOCK")); sock != "" {
+		if st, err := os.Stat(sock); err == nil && st.Mode()&os.ModeSocket != 0 {
+			if _, err := exec.LookPath("ssh-add"); err == nil {
+				if err := exec.Command("ssh-add", "-l").Run(); err == nil {
+					return nil
+				}
+			}
+		}
+	}
+
+	if err := exec.Command("git", "config", "--get", "credential.helper").Run(); err == nil {
+		return nil
+	}
+
+	return errors.New("error: no non-interactive GitHub authentication available")
 }
