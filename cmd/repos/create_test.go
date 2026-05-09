@@ -118,9 +118,11 @@ func TestIsRepoNotFoundError(t *testing.T) {
 func TestProcessCreateFileSkipsLocalRemotes(t *testing.T) {
 	tmp := t.TempDir()
 	list := filepath.Join(tmp, "repos.list")
+	local1 := filepath.Join(tmp, "local.git")
+	local2 := filepath.Join(tmp, "local2.git")
 	content := strings.Join([]string{
-		"file:///tmp/local.git",
-		"/tmp/local2.git",
+		"file://" + local1,
+		local2,
 		"acme/remote",
 	}, "\n")
 	if err := os.WriteFile(list, []byte(content), 0o644); err != nil {
