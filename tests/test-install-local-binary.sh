@@ -59,13 +59,20 @@ EOF
 chmod +x "$MOCK_BIN/curl"
 
 ORIGINAL_PATH="$PATH"
-export PATH="$INSTALL_DIR:$MOCK_BIN:$ORIGINAL_PATH"
+export PATH=".:$INSTALL_DIR:$MOCK_BIN:$ORIGINAL_PATH"
 export REPOS_RELEASE_REPO="example/unused"
+export XDG_STATE_HOME="$TEST_DIR/state"
 
+cd "$TEST_DIR"
 bash "$PROJECT_ROOT/install-local.sh"
 
 if [ ! -x "$INSTALL_DIR/repos" ]; then
   echo "FAIL: repos binary was not installed to first writable PATH directory"
+  exit 1
+fi
+
+if [ -f "$TEST_DIR/repos" ]; then
+  echo "FAIL: installer incorrectly used relative PATH entry"
   exit 1
 fi
 

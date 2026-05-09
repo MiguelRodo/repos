@@ -6,6 +6,15 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$localAppData = if ($env:LOCALAPPDATA) {
+    $env:LOCALAPPDATA
+} elseif ($env:HOME) {
+    Join-Path $env:HOME ".local/share"
+} else {
+    [System.IO.Path]::GetTempPath()
+}
+$stateDir = Join-Path $localAppData "repos"
+$stateFile = Join-Path $stateDir "install-dir.txt"
 
 function Get-ArchName {
     $arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
@@ -17,7 +26,11 @@ function Get-ArchName {
 }
 
 function Test-WritableDirectory([string]$PathEntry) {
-    if ([string]::IsNullOrWhiteSpace($PathEntry) -or -not (Test-Path -LiteralPath $PathEntry -PathType Container)) {
+    if (
+        [string]::IsNullOrWhiteSpace($PathEntry) -or
+        -not [System.IO.Path]::IsPathRooted($PathEntry) -or
+        -not (Test-Path -LiteralPath $PathEntry -PathType Container)
+    ) {
         return $false
     }
     try {
@@ -42,9 +55,12 @@ function Get-WritablePathDirectory {
 
 if ($Uninstall) {
     $removed = $false
-    foreach ($entry in ($env:Path -split ';')) {
-        if ([string]::IsNullOrWhiteSpace($entry)) { continue }
-        $candidate = Join-Path $entry "repos.exe"
+    $installDir = $null
+    if (Test-Path -LiteralPath $stateFile -PathType Leaf) {
+        $installDir = Get-Content -LiteralPath $stateFile -TotalCount 1
+    }
+    if ($installDir -and [System.IO.Path]::IsPathRooted($installDir)) {
+        $candidate = Join-Path $installDir "repos.exe"
         if (Test-Path -LiteralPath $candidate -PathType Leaf) {
             try {
                 Remove-Item -LiteralPath $candidate -Force
@@ -57,7 +73,10 @@ if ($Uninstall) {
     }
 
     if (-not $removed) {
-        Write-Host "No repos.exe found in PATH directories." -ForegroundColor Yellow
+        Write-Host "No repos.exe found at recorded install location." -ForegroundColor Yellow
+    }
+    if (Test-Path -LiteralPath $stateFile -PathType Leaf) {
+        Remove-Item -LiteralPath $stateFile -Force -ErrorAction SilentlyContinue
     }
     exit 0
 }
@@ -84,6 +103,16 @@ foreach ($asset in $assets) {
         $downloadedAsset = $asset
         break
     } catch {
+        $statusCode = $null
+        if ($_.Exception.Response -and $_.Exception.Response.StatusCode) {
+            $statusCode = $_.Exception.Response.StatusCode.value__
+        }
+        $message = $_.Exception.Message
+        if ($statusCode -eq 404) {
+            Write-Warning "Asset not found at $url"
+            continue
+        }
+        throw "Download failed for ${url}: $message"
     }
 }
 
@@ -93,5 +122,7 @@ if (-not $downloadedAsset) {
 
 $target = Join-Path $installDir "$binaryName.exe"
 Move-Item -LiteralPath $tmpFile -Destination $target -Force
+New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
+Set-Content -LiteralPath $stateFile -Value $installDir -Encoding ascii
 Write-Host "Installed $binaryName ($downloadedAsset) to $target" -ForegroundColor Green
 Write-Host "Run: $binaryName --help"

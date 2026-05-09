@@ -164,6 +164,10 @@ jobs:
           mkdir -p "$HOME/.local/bin"
           export PATH="$HOME/.local/bin:$PATH"
           bash install-local.sh
+
+      - name: Run installer regression test
+        run: |
+          bash tests/test-install-local-binary.sh
       
       - name: Verify repos command is available
         run: |

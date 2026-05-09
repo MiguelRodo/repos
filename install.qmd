@@ -121,7 +121,7 @@ scoop install repos
 3. The installer places `repos.exe` in the first writable directory already in your
    current `PATH`.
 
-**Dependency:** [curl](https://curl.se/windows/) (required for downloading releases)
+**Requirements:** PowerShell (with `Invoke-WebRequest`) and network access to GitHub releases.
 
 ---
 
