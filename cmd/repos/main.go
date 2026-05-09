@@ -89,6 +89,21 @@ func main() {
 		}
 	case "codespaces-auth":
 		if err := runCodespacesAuth(os.Args[2:]); err != nil {
+      fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+    }
+	case "run":
+		if err := runRun(os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	case "update-scripts":
+		if err := runUpdateScripts(os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	case "create":
+		if err := runCreate(os.Args[2:]); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
@@ -110,6 +125,9 @@ Commands:
   update-branches   Fetch and fast-forward all git repos in the parent directory
   add-branch        Create a new worktree/branch off the current repository
   codespaces-auth   Set GH_TOKEN secret for repos listed in repos.list
+  run               Execute a command inside each repository from repos.list
+  update-scripts    Sync shared scripts/workflows to managed repositories
+  create            Create missing GitHub repositories from repos.list
 
 Run 'repos <command> --help' for more information.
 `)
