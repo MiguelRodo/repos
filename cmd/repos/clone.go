@@ -159,11 +159,19 @@ func hasNonLocalRemotesInFile(reposFile string) (bool, error) {
 		if strings.HasPrefix(first, "@") {
 			continue
 		}
+		if strings.HasPrefix(first, "git@github.com:") || strings.HasPrefix(first, "ssh://git@github.com/") {
+			return true, nil
+		}
 		repoSpec, _ := splitRepoSpec(first)
 		if isLocalRepoSpecForAuthCheck(repoSpec) {
 			continue
 		}
-		if strings.HasPrefix(repoSpec, "https://") || ownerRepoRegex.MatchString(repoSpec) {
+		normalized := normaliseRemoteToHTTPS(repoSpec)
+		if strings.HasPrefix(repoSpec, "https://") ||
+			strings.HasPrefix(repoSpec, "http://") ||
+			strings.HasPrefix(normalized, "https://github.com/") ||
+			strings.HasPrefix(normalized, "http://github.com/") ||
+			ownerRepoRegex.MatchString(repoSpec) {
 			return true, nil
 		}
 	}
@@ -198,5 +206,5 @@ func checkNonInteractiveAuthForClone() error {
 		return nil
 	}
 
-	return errors.New("error: no non-interactive GitHub authentication available")
+	return errors.New("error: no non-interactive GitHub authentication available (set GH_TOKEN, run 'gh auth login', ensure SSH agent keys are loaded, or configure a git credential.helper)")
 }

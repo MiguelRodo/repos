@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -206,6 +207,67 @@ func TestProcessCreateFileAtBranchUsesFallbackRepo(t *testing.T) {
 	}
 }
 
+func TestProcessCreateFileFallbackResolutionErrorDeferredUntilAtBranch(t *testing.T) {
+	tmp := t.TempDir()
+	list := filepath.Join(tmp, "repos.list")
+	content := "acme/remote\n"
+	if err := os.WriteFile(list, []byte(content), 0o644); err != nil {
+		t.Fatalf("write repos.list: %v", err)
+	}
+
+	origExists := ghRepoExistsFunc
+	origCreate := ghCreateRepoFunc
+	origFallback := resolveCreateFallbackRepoFunc
+	defer func() {
+		ghRepoExistsFunc = origExists
+		ghCreateRepoFunc = origCreate
+		resolveCreateFallbackRepoFunc = origFallback
+	}()
+
+	resolveCreateFallbackRepoFunc = func() (string, error) { return "", os.ErrNotExist }
+	ghRepoExistsFunc = func(ownerRepo string) (bool, error) { return true, nil }
+	ghCreateRepoFunc = func(ownerRepo string, private bool) error { return nil }
+
+	stderr := captureStderr(t, func() {
+		if err := processCreateFile(list, true); err != nil {
+			t.Fatalf("processCreateFile error: %v", err)
+		}
+	})
+	if strings.Contains(stderr, "unable to resolve initial fallback repository") {
+		t.Fatalf("did not expect fallback warning without @branch line, got: %q", stderr)
+	}
+}
+
+func TestProcessCreateFileAtBranchWarnsWhenInitialFallbackResolutionFailed(t *testing.T) {
+	tmp := t.TempDir()
+	list := filepath.Join(tmp, "repos.list")
+	content := "@feature-x\n"
+	if err := os.WriteFile(list, []byte(content), 0o644); err != nil {
+		t.Fatalf("write repos.list: %v", err)
+	}
+
+	origFallback := resolveCreateFallbackRepoFunc
+	defer func() {
+		resolveCreateFallbackRepoFunc = origFallback
+	}()
+	resolveCreateFallbackRepoFunc = func() (string, error) { return "", os.ErrNotExist }
+
+	stderr := captureStderr(t, func() {
+		if err := processCreateFile(list, true); err != nil {
+			t.Fatalf("processCreateFile error: %v", err)
+		}
+	})
+	if !strings.Contains(stderr, "initial fallback resolution failed") {
+		t.Fatalf("expected fallback warning with resolution error, got: %q", stderr)
+	}
+}
+
+func TestIsLocalRepoSpecTreatsSingleLeadingBackslashAsLocal(t *testing.T) {
+	if !isLocalRepoSpec(`\path\to\repo`) {
+		t.Fatalf("expected single-leading-backslash path to be treated as local")
+	}
+}
+
 func TestEnsureBranchExistsOnRepoNormalizesHeadRefPrefix(t *testing.T) {
 	origBranchExists := ghBranchExistsFunc
 	origCreateBranch := ghCreateBranchFunc
@@ -233,4 +295,32 @@ func TestEnsureBranchExistsOnRepoNormalizesHeadRefPrefix(t *testing.T) {
 	if createdBranch != "feature/x" {
 		t.Fatalf("expected branch creation to use normalized name, got %q", createdBranch)
 	}
+}
+
+func captureStderr(t *testing.T, fn func()) string {
+	t.Helper()
+
+	oldStderr := os.Stderr
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("pipe: %v", err)
+	}
+	os.Stderr = w
+	defer func() {
+		os.Stderr = oldStderr
+	}()
+
+	fn()
+
+	if err := w.Close(); err != nil {
+		t.Fatalf("close writer: %v", err)
+	}
+	out, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatalf("read stderr: %v", err)
+	}
+	if err := r.Close(); err != nil {
+		t.Fatalf("close reader: %v", err)
+	}
+	return string(out)
 }

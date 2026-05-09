@@ -139,9 +139,6 @@ func processCreateFile(reposFile string, privateDefault bool) error {
 	defer f.Close()
 
 	fallbackRepo, fallbackErr := resolveCreateFallbackRepoFunc()
-	if fallbackErr != nil {
-		fmt.Fprintf(os.Stderr, "Warning: unable to resolve initial fallback repository: %v. @branch lines will be skipped unless a repository is processed first.\n", fallbackErr)
-	}
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {
 		line := trimLine(sc.Text())
@@ -160,6 +157,10 @@ func processCreateFile(reposFile string, privateDefault bool) error {
 				return err
 			}
 			if fallbackRepo == "" {
+				if fallbackErr != nil {
+					fmt.Fprintf(os.Stderr, "Warning: @%s cannot be processed - no fallback repository available (initial fallback resolution failed: %v); skipping branch check.\n", branch, fallbackErr)
+					continue
+				}
 				fmt.Fprintf(os.Stderr, "Warning: @%s cannot be processed - no fallback repository available; skipping branch check.\n", branch)
 				continue
 			}
@@ -260,7 +261,7 @@ func isLocalRepoSpec(repoSpec string) bool {
 	s := strings.TrimSpace(repoSpec)
 	return strings.HasPrefix(s, "file://") ||
 		strings.HasPrefix(s, "/") ||
-		strings.HasPrefix(s, `\\`) ||
+		strings.HasPrefix(s, `\`) ||
 		isWindowsAbsPath(s)
 }
 

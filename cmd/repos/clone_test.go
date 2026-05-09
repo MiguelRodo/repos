@@ -147,6 +147,20 @@ func TestHasNonLocalRemotesInFile(t *testing.T) {
 			},
 			want: true,
 		},
+		{
+			name: "ssh-scp-github-remote",
+			lines: []string{
+				"git@github.com:acme/repo.git",
+			},
+			want: true,
+		},
+		{
+			name: "ssh-url-github-remote",
+			lines: []string{
+				"ssh://git@github.com/acme/repo.git",
+			},
+			want: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -253,6 +267,24 @@ func TestRunCloneFailsWhenAuthCheckFailsForNonLocalRemotes(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "auth missing") {
 		t.Fatalf("expected auth error, got: %v", err)
+	}
+}
+
+func TestCheckNonInteractiveAuthForCloneHasActionableError(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("PATH", tmp)
+	t.Setenv("GH_TOKEN", "")
+	t.Setenv("SSH_AUTH_SOCK", "")
+
+	err := checkNonInteractiveAuthForClone()
+	if err == nil {
+		t.Fatalf("expected auth check error")
+	}
+	msg := err.Error()
+	for _, expected := range []string{"GH_TOKEN", "gh auth login", "SSH agent", "credential.helper"} {
+		if !strings.Contains(msg, expected) {
+			t.Fatalf("expected error to mention %q, got: %q", expected, msg)
+		}
 	}
 }
 
