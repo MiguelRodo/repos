@@ -328,11 +328,14 @@ func isWindowsAbsPath(s string) bool {
 }
 
 func validateBranch(branch string) error {
-	if branch == "" || strings.HasPrefix(branch, "-") {
+	if branch == "" {
+		return fmt.Errorf("missing branch name")
+	}
+	if strings.HasPrefix(branch, "-") {
 		return fmt.Errorf("'%s' is not a valid Git branch name", branch)
 	}
 	if cached, ok := branchValidationCache.Load(branch); ok {
-		if cached.(bool) {
+		if valid, ok := cached.(bool); ok && valid {
 			return nil
 		}
 		return fmt.Errorf("'%s' is not a valid Git branch name", branch)
