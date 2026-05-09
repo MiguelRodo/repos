@@ -11,7 +11,8 @@ trap 'rm -rf "$TEST_DIR"' EXIT
 
 INSTALL_DIR="$TEST_DIR/install-bin"
 MOCK_BIN="$TEST_DIR/mock-bin"
-mkdir -p "$INSTALL_DIR" "$MOCK_BIN"
+RELATIVE_BIN="relative-bin"
+mkdir -p "$INSTALL_DIR" "$MOCK_BIN" "$TEST_DIR/$RELATIVE_BIN"
 
 cat > "$MOCK_BIN/uname" <<'EOF'
 #!/usr/bin/env bash
@@ -59,7 +60,7 @@ EOF
 chmod +x "$MOCK_BIN/curl"
 
 ORIGINAL_PATH="$PATH"
-export PATH=".:$INSTALL_DIR:$MOCK_BIN:$ORIGINAL_PATH"
+export PATH="$RELATIVE_BIN:$INSTALL_DIR:$MOCK_BIN:$ORIGINAL_PATH"
 export REPOS_RELEASE_REPO="example/unused"
 export XDG_STATE_HOME="$TEST_DIR/state"
 
@@ -71,7 +72,7 @@ if [ ! -x "$INSTALL_DIR/repos" ]; then
   exit 1
 fi
 
-if [ -f "$TEST_DIR/repos" ]; then
+if [ -f "$TEST_DIR/$RELATIVE_BIN/repos" ]; then
   echo "FAIL: installer incorrectly used relative PATH entry"
   exit 1
 fi

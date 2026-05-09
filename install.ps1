@@ -105,11 +105,11 @@ foreach ($asset in $assets) {
     } catch {
         $statusCode = $null
         if ($_.Exception.Response -and $_.Exception.Response.StatusCode) {
-            $statusCode = $_.Exception.Response.StatusCode.value__
+            $statusCode = [int]$_.Exception.Response.StatusCode
         }
         $message = $_.Exception.Message
         if ($statusCode -eq 404) {
-            Write-Warning "Asset not found at $url"
+            Write-Warning "Asset ${asset} not found at ${url}"
             continue
         }
         throw "Download failed for ${url}: $message"

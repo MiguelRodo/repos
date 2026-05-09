@@ -111,7 +111,7 @@ fi
 
 if [ -n "$sha256_tool" ]; then
   if curl -fsSL "${DOWNLOAD_BASE_URL}/${DOWNLOADED_ASSET}.sha256" -o "$TMP_SUM"; then
-    expected_sum="$(awk '{print $1}' "$TMP_SUM" | head -n 1)"
+    expected_sum="$(awk 'NR==1 {print $1}' "$TMP_SUM")"
     if [ -z "$expected_sum" ]; then
       echo -e "${RED}Error: Downloaded checksum file was empty or invalid.${NC}" >&2
       exit 1
@@ -122,7 +122,7 @@ if [ -n "$sha256_tool" ]; then
       exit 1
     fi
   else
-    echo "Warning: Checksum asset not found; skipping checksum verification."
+    echo "Warning: checksum not available for ${DOWNLOADED_ASSET}; skipping verification."
   fi
 fi
 
