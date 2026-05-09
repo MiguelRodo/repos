@@ -1,13 +1,17 @@
-# Version of the repos CLI bundled inside this package.
+# Version of the bundled bash scripts inside this package.
 # Updated automatically by the version-and-release workflow.
 .bundled_cli_version <- "1.3.9"
 
-#' Return the version of the repos CLI bundled in this package
+#' Return the version of the bundled bash scripts in this package
 #'
-#' The R package ships its own copy of the Bash scripts at a specific CLI
-#' version.  This function returns that pinned version string.
+#' The R package ships a copy of some Bash helper scripts (e.g.\ for
+#' \code{repos_workspace()}).  This function returns the version string of
+#' those bundled scripts.  Primary functionality (clone, run, etc.) uses the
+#' installed \code{repos} Go binary instead; see
+#' \code{\link{repos_installed_cli_version}} and
+#' \code{\link{repos_install_cli}}.
 #'
-#' @return A character string with the bundled CLI version (e.g. \code{"1.1.0"}).
+#' @return A character string with the bundled script version (e.g. \code{"1.3.9"}).
 #'
 #' @examples
 #' repos_bundled_cli_version()
@@ -56,18 +60,19 @@ repos_installed_cli_version <- function() {
 
 #' Install the repos CLI
 #'
-#' Prints OS-appropriate instructions for installing the \code{repos} command-line
-#' tool and, when \code{run = TRUE}, attempts to run the installer automatically.
+#' Prints OS-appropriate instructions for installing the \code{repos}
+#' Go binary and, when \code{run = TRUE}, attempts to run the installer
+#' automatically.
 #'
 #' @details
-#' The \code{repos} R package bundles all required Bash scripts, so functions
-#' such as \code{repos_run()} work without the \code{repos} CLI being on your
-#' \code{PATH}.  However, if you also want to invoke \code{repos} from a
-#' terminal, you need to install the CLI separately.
+#' Most R functions in this package (\code{repos_clone()}, \code{repos_run()},
+#' etc.) call the \code{repos} Go binary directly.  The binary must be on
+#' your \code{PATH} for those functions to work.  Use this function to install
+#' it.
 #'
-#' When \code{run = TRUE}, the function runs the user-level installer
-#' (\code{install-local.sh}) on Linux or the \code{brew} installer on macOS.
-#' On Windows, only instructions are printed.
+#' When \code{run = TRUE}, the function downloads the prebuilt Go binary from
+#' the latest GitHub release on Linux (via \code{install-local.sh}) or uses
+#' Homebrew on macOS.  On Windows, only instructions are printed.
 #'
 #' @param run Logical (default \code{FALSE}).  If \code{TRUE}, attempt to run
 #'   the installer automatically.
@@ -136,10 +141,34 @@ repos_install_cli <- function(run = FALSE) {
 }
 
 
-#' Run a repos script
+#' Run the repos Go binary
+#'
+#' Internal helper that locates the \code{repos} binary on PATH and invokes
+#' it with the given subcommand and arguments via \code{system2()}.
+#'
+#' @param subcommand Character string.  The repos subcommand to run (e.g.
+#'   \code{"clone"}, \code{"run"}, \code{"add-branch"}).
+#' @param args Character vector of arguments to pass after the subcommand.
+#' @return Invisibly returns the exit status of the binary (0 for success).
+#' @keywords internal
+run_repos_binary <- function(subcommand, args = character()) {
+  binary <- Sys.which("repos")
+  if (nchar(binary) == 0L) {
+    stop(
+      "The 'repos' binary was not found on PATH.\n",
+      "Install it with: repos_install_cli(run = TRUE)\n",
+      "or follow the guide at: https://miguelrodo.github.io/repos/install.html"
+    )
+  }
+  exit_status <- system2(binary, args = c(subcommand, args))
+  invisible(exit_status)
+}
+
+#' Run a bundled repos script
 #'
 #' Internal helper that locates a bundled script and executes it via
-#' \code{system2()}.
+#' \code{system2()}.  Retained for commands whose Go binary interface differs
+#' from the original bash script (e.g.\ \code{repos_workspace()}).
 #'
 #' @param script_name Name of the script file inside \code{inst/scripts/}.
 #' @param args Character vector of arguments to pass to the script.
@@ -167,39 +196,36 @@ run_repos_script <- function(script_name, args = character()) {
 #'   Must be one of \code{"clone"}, \code{"workspace"}, \code{"codespace"},
 #'   \code{"codespaces"}, \code{"run"}, \code{"add_branch"},
 #'   \code{"update_branches"}, or \code{"update_scripts"}.
-#' @param ... Additional arguments passed to the underlying script.
+#' @param ... Additional arguments passed to the underlying function.
 #'
-#' @return Invisibly returns the exit status of the script (0 for success).
+#' @return Invisibly returns the exit status of the command (0 for success).
 #'
 #' @details
-#' \code{repos("clone", ...)} delegates to \code{clone-repos.sh} (see
-#' \code{\link{repos_clone}}).
+#' Most subcommands delegate to the \code{repos} Go binary.  Install it with
+#' \code{\link{repos_install_cli}(run = TRUE)} if not already on your PATH.
 #'
-#' \code{repos("workspace", ...)} delegates to \code{vscode-workspace-add.sh} (see
-#' \code{\link{repos_workspace}}).
+#' \code{repos("clone", ...)} calls \code{\link{repos_clone}}.
 #'
-#' \code{repos("codespace", ...)} / \code{repos("codespaces", ...)} delegates to
-#' \code{codespaces-auth-add.sh} (see \code{\link{repos_codespace}}).
+#' \code{repos("workspace", ...)} calls \code{\link{repos_workspace}} (uses
+#' the bundled bash script).
 #'
-#' \code{repos("run", ...)} delegates to \code{run-pipeline.sh} (see
-#' \code{\link{repos_run}}).
+#' \code{repos("codespace", ...)} / \code{repos("codespaces", ...)} calls
+#' \code{\link{repos_codespace}}.
 #'
-#' \code{repos("add_branch", ...)} delegates to \code{add-branch.sh} (see
-#' \code{\link{repos_add_branch}}).
+#' \code{repos("run", ...)} calls \code{\link{repos_run}}.
 #'
-#' \code{repos("update_branches", ...)} delegates to \code{update-branches.sh} (see
-#' \code{\link{repos_update_branches}}).
+#' \code{repos("add_branch", ...)} calls \code{\link{repos_add_branch}}.
 #'
-#' \code{repos("update_scripts", ...)} delegates to \code{update-scripts.sh} (see
-#' \code{\link{repos_update_scripts}}).
+#' \code{repos("update_branches", ...)} calls \code{\link{repos_update_branches}}.
+#'
+#' \code{repos("update_scripts", ...)} calls \code{\link{repos_update_scripts}}.
 #'
 #' @examples
 #' \dontrun{
 #' repos("clone")
 #' repos("workspace")
 #' repos("codespace")
-#' repos("run")
-#' repos("run", script = "build.sh")
+#' repos("run", "bash", "run.sh")
 #' repos("add_branch", "data-tidy")
 #' repos("update_branches")
 #' repos("update_scripts")
@@ -215,10 +241,10 @@ repos <- function(command, ...) {
     message("  \"clone\"           Clone repositories listed in repos.list")
     message("  \"workspace\"       Generate or update the VS Code workspace file")
     message("  \"codespace\"       Configure GitHub Codespaces authentication")
-    message("  \"run\"             Execute a script inside each cloned repository")
+    message("  \"run\"             Execute a command inside each cloned repository")
     message("  \"add_branch\"      Create a new worktree/branch off the current repo")
-    message("  \"update_branches\" Update all worktrees with the latest devcontainer config")
-    message("  \"update_scripts\"  Update scripts from the upstream CompTemplate repository")
+    message("  \"update_branches\" Fetch and fast-forward all repos in the workspace")
+    message("  \"update_scripts\"  Mirror scripts and workflows to managed repositories")
     message("\nSee ?repos_clone, ?repos_workspace, ?repos_codespace, ?repos_run,")
     message("?repos_add_branch, ?repos_update_branches,")
     message("and ?repos_update_scripts for details.")
@@ -259,17 +285,18 @@ repos <- function(command, ...) {
 #'       remote branches are downloaded upfront.
 #'   }
 #' @param debug Logical. If \code{TRUE}, enable debug tracing to stderr.
-#' @param debug_file Character string or logical. Enable debug tracing to a
-#'   file.  If \code{TRUE}, an auto-generated filename is used; if a non-empty
-#'   string, that path is used as the log file.
-#' @param ... Additional arguments passed directly to the
-#'   \code{clone-repos.sh} script as-is.
+#' @param debug_file Ignored (retained for backward compatibility).
+#' @param ... Additional arguments passed directly to \code{repos clone}.
 #'
-#' @return Invisibly returns the exit status of the script (0 for success).
+#' @return Invisibly returns the exit status of the binary (0 for success).
 #'
 #' @details
-#' This function is a wrapper around \code{clone-repos.sh}.  Each non-empty,
-#' non-comment line in the repos list file describes one of three operations:
+#' This function calls \code{repos clone} from the \code{repos} Go binary.
+#' The binary must be on your \code{PATH}; install it with
+#' \code{\link{repos_install_cli}(run = TRUE)} if needed.
+#'
+#' Each non-empty, non-comment line in the repos list file describes one of
+#' three operations:
 #' \enumerate{
 #'   \item Clone a repository (default or all branches): \code{owner/repo}
 #'   \item Clone a specific branch: \code{owner/repo@branch}
@@ -314,7 +341,7 @@ repos_clone <- function(file = NULL, worktree = FALSE, debug = FALSE,
   }
 
   if (!is.null(file)) {
-    args <- c(args, "-f", file)
+    args <- c(args, "--file", file)
   }
 
   if (isTRUE(worktree)) {
@@ -340,20 +367,12 @@ repos_clone <- function(file = NULL, worktree = FALSE, debug = FALSE,
     args <- c(args, "--debug")
   }
 
-  if (!is.null(debug_file)) {
-    if (isTRUE(debug_file)) {
-      args <- c(args, "--debug-file")
-    } else {
-      args <- c(args, "--debug-file", debug_file)
-    }
-  }
-
   additional_args <- c(...)
   if (length(additional_args) > 0) {
     args <- c(args, additional_args)
   }
 
-  run_repos_script("helper/clone-repos.sh", args = args)
+  run_repos_binary("clone", args)
 }
 
 #' Generate VS Code Workspace File
@@ -365,16 +384,17 @@ repos_clone <- function(file = NULL, worktree = FALSE, debug = FALSE,
 #' @param debug Logical. If \code{TRUE}, enable debug output to stderr
 #' @param debug_file Character string or logical. Enable debug output to file
 #'   (auto-generated if \code{TRUE})
-#' @param ... Additional arguments passed directly to the
+#' @param ... Additional arguments passed directly to the bundled
 #'   \code{vscode-workspace-add.sh} script as-is.
 #'
 #' @return Invisibly returns the exit status of the script (0 for success).
 #'
 #' @details
-#' This function is a wrapper around \code{vscode-workspace-add.sh}.
+#' This function uses the bundled \code{vscode-workspace-add.sh} Bash script.
 #' It writes (or refreshes) the \code{entire-project.code-workspace} file in
 #' your project directory so you can open all cloned repositories as a
-#' multi-root workspace in VS Code or other IDEs that support the VS Code workspace format.
+#' multi-root workspace in VS Code or other IDEs that support the VS Code
+#' workspace format.
 #'
 #' @examples
 #' \dontrun{
@@ -415,71 +435,38 @@ repos_workspace <- function(file = NULL, debug = FALSE, debug_file = NULL, ...) 
 
 #' Configure GitHub Codespaces Authentication
 #'
-#' Inject the \code{GH_TOKEN} Codespaces secret into every cloned repository
-#' that has a \code{devcontainer.json}.
+#' Set the \code{GH_TOKEN} Codespaces secret for every repository listed in
+#' \code{repos.list}.
 #'
-#' @param file Path to repos list file (default: repos.list)
-#' @param devcontainer Character vector of paths to devcontainer.json files
-#' @param permissions Character string. \code{"all"} or \code{"contents"}
-#' @param tool Character string. Force tool for authentication helper
-#'   (e.g., \code{"jq"}, \code{"python"})
-#' @param debug Logical. If \code{TRUE}, enable debug output to stderr
-#' @param debug_file Character string or logical. Enable debug output to file
-#'   (auto-generated if \code{TRUE})
-#' @param ... Additional arguments passed directly to the
-#'   \code{codespaces-auth-add.sh} script as-is.
+#' @param file Path to repos list file (default: \code{repos.list}, falling
+#'   back to \code{repos-to-clone.list} if absent).
+#' @param ... Additional arguments passed directly to \code{repos codespaces-auth}.
 #'
-#' @return Invisibly returns the exit status of the script (0 for success).
+#' @return Invisibly returns the exit status of the binary (0 for success).
 #'
 #' @details
-#' This function is a wrapper around \code{codespaces-auth-add.sh}.
+#' This function calls \code{repos codespaces-auth} from the \code{repos} Go
+#' binary.  The binary must be on your \code{PATH}; install it with
+#' \code{\link{repos_install_cli}(run = TRUE)} if needed.
+#'
+#' The \code{gh} CLI must also be authenticated (\code{gh auth login}) before
+#' running this command.
 #'
 #' @examples
 #' \dontrun{
-#' # Configure Codespaces with default devcontainer path
+#' # Configure Codespaces for all repos in repos.list
 #' repos_codespace()
 #'
-#' # Specify devcontainer paths
-#' repos_codespace(devcontainer = ".devcontainer/devcontainer.json")
-#'
-#' # Multiple devcontainer paths
-#' repos_codespace(devcontainer = c("path1/devcontainer.json",
-#'                                  "path2/devcontainer.json"))
+#' # Use a different list file
+#' repos_codespace(file = "my-repos.list")
 #' }
 #'
 #' @export
-repos_codespace <- function(file = NULL, devcontainer = NULL, permissions = NULL,
-                            tool = NULL, debug = FALSE, debug_file = NULL, ...) {
+repos_codespace <- function(file = NULL, ...) {
   args <- character()
 
   if (!is.null(file)) {
-    args <- c(args, "-f", file)
-  }
-
-  if (!is.null(devcontainer)) {
-    for (dc in devcontainer) {
-      args <- c(args, "-d", dc)
-    }
-  }
-
-  if (!is.null(permissions)) {
-    args <- c(args, "--permissions", permissions)
-  }
-
-  if (!is.null(tool)) {
-    args <- c(args, "-t", tool)
-  }
-
-  if (isTRUE(debug)) {
-    args <- c(args, "--debug")
-  }
-
-  if (!is.null(debug_file)) {
-    if (isTRUE(debug_file)) {
-      args <- c(args, "--debug-file")
-    } else {
-      args <- c(args, "--debug-file", debug_file)
-    }
+    args <- c(args, "--file", file)
   }
 
   additional_args <- c(...)
@@ -487,132 +474,86 @@ repos_codespace <- function(file = NULL, devcontainer = NULL, permissions = NULL
     args <- c(args, additional_args)
   }
 
-  run_repos_script("helper/codespaces-auth-add.sh", args = args)
+  run_repos_binary("codespaces-auth", args)
 }
 
-#' Run Pipeline Across Repositories
+#' Run a Command Across Repositories
 #'
-#' Execute a script inside each cloned repository.
+#' Execute a shell command inside each cloned repository.
 #'
-#' @param file Path to repos list file (default: repos.list)
-#' @param script Script to run in each repo, relative to repo root (default: run.sh)
-#' @param include Character vector or comma-separated string of repo names to include
-#' @param exclude Character vector or comma-separated string of repo names to exclude
-#' @param ensure_setup Logical. If \code{TRUE}, clone repositories before executing scripts
-#' @param skip_deps Logical. If \code{TRUE}, skip the install-r-deps.sh step
-#' @param dry_run Logical. If \code{TRUE}, show what would be done without executing
-#' @param verbose Logical. If \code{TRUE}, enable verbose logging
-#' @param continue_on_error Logical. If \code{TRUE}, continue on failure and report all results
-#' @param ... Additional arguments passed directly to the \code{run-pipeline.sh} script as-is.
-#'   Useful for passing custom flags or for backward compatibility.
+#' @param file Path to repos list file (default: \code{repos.list}, falling
+#'   back to \code{repos-to-clone.list} if absent).
+#' @param concurrent Logical. If \code{TRUE}, run the command in all
+#'   repositories concurrently instead of sequentially.
+#' @param ... The command and its arguments to run in each repository (passed
+#'   as positional arguments after any flags).  For example,
+#'   \code{repos_run("bash", "build.sh")} or
+#'   \code{repos_run("make", "test")}.
 #'
-#' @return Invisibly returns the exit status of the script (0 for success).
+#' @return Invisibly returns the exit status of the binary (0 for success).
 #'
 #' @details
-#' This function is a wrapper around the \code{run-pipeline.sh} Bash script.
-#' It will:
-#' \itemize{
-#'   \item Optionally clone repositories (via \code{clone-repos.sh}) before running scripts
-#'   \item Optionally install R dependencies
-#'   \item Execute the target script (default: \code{run.sh}) in each repository
-#'   \item Print a per-repo summary at the end of execution
-#' }
+#' This function calls \code{repos run} from the \code{repos} Go binary.
+#' The binary must be on your \code{PATH}; install it with
+#' \code{\link{repos_install_cli}(run = TRUE)} if needed.
+#'
+#' The command is run inside each repository directory that appears in the
+#' repos list file.  If any repository's command exits with a non-zero status,
+#' the overall exit status is non-zero.
 #'
 #' @examples
 #' \dontrun{
-#' # Run the default script (run.sh) in each repo
-#' repos_run()
+#' # Run a bash script in each repo
+#' repos_run("bash", "run.sh")
 #'
-#' # Run a custom script
-#' repos_run(script = "build.sh")
+#' # Run make in each repo
+#' repos_run("make", "test")
 #'
-#' # Continue past failures
-#' repos_run(continue_on_error = TRUE)
+#' # Run concurrently
+#' repos_run("bash", "build.sh", concurrent = TRUE)
 #'
-#' # Dry-run mode
-#' repos_run(dry_run = TRUE)
-#'
-#' # Include only specific repos
-#' repos_run(include = c("repo1", "repo2"))
-#'
-#' # Exclude specific repos
-#' repos_run(exclude = "repo3")
-#'
-#' # Multiple options
-#' repos_run(script = "test.sh", verbose = TRUE, ensure_setup = TRUE)
-#'
-#' # Backward compatibility - still works
-#' repos_run("--script", "build.sh", "--dry-run")
+#' # Use a different repos list file
+#' repos_run("bash", "run.sh", file = "my-repos.list")
 #' }
 #'
 #' @export
-repos_run <- function(file = NULL, script = NULL, include = NULL, exclude = NULL,
-                      ensure_setup = FALSE, skip_deps = FALSE, dry_run = FALSE,
-                      verbose = FALSE, continue_on_error = FALSE, ...) {
+repos_run <- function(file = NULL, concurrent = FALSE, ...) {
   args <- character()
-  
-  # Build argument vector from named parameters
+
   if (!is.null(file)) {
-    args <- c(args, "-f", file)
+    args <- c(args, "--file", file)
   }
-  
-  if (!is.null(script)) {
-    args <- c(args, "--script", script)
+
+  if (isTRUE(concurrent)) {
+    args <- c(args, "--concurrent")
   }
-  
-  if (!is.null(include)) {
-    include_str <- if (length(include) > 1) paste(include, collapse = ",") else include
-    args <- c(args, "-i", include_str)
+
+  cmd_args <- c(...)
+  if (length(cmd_args) == 0L) {
+    stop("A command to run must be provided via '...' (e.g. repos_run(\"bash\", \"run.sh\"))")
   }
-  
-  if (!is.null(exclude)) {
-    exclude_str <- if (length(exclude) > 1) paste(exclude, collapse = ",") else exclude
-    args <- c(args, "-e", exclude_str)
-  }
-  
-  if (isTRUE(ensure_setup)) {
-    args <- c(args, "--ensure-setup")
-  }
-  
-  if (isTRUE(skip_deps)) {
-    args <- c(args, "-d")
-  }
-  
-  if (isTRUE(dry_run)) {
-    args <- c(args, "-n")
-  }
-  
-  if (isTRUE(verbose)) {
-    args <- c(args, "-v")
-  }
-  
-  if (isTRUE(continue_on_error)) {
-    args <- c(args, "--continue-on-error")
-  }
-  
-  # Append any additional arguments passed via ...
-  additional_args <- c(...)
-  if (length(additional_args) > 0) {
-    args <- c(args, additional_args)
-  }
-  
-  run_repos_script("run-pipeline.sh", args = args)
+
+  run_repos_binary("run", c(args, cmd_args))
 }
 
 #' Create a New Worktree/Branch
 #'
-#' Create a new worktree (or branch) off the current repository, push it to
-#' origin, clean the worktree, update devcontainer.json, add the branch to
-#' repos.list, and refresh the VS Code workspace file.
+#' Create a new Git worktree (or branch) from the current repository, push it
+#' to origin, and update \code{repos.list} and the VS Code workspace file.
 #'
 #' @param branch_name Character string. Name of the new branch to create.
 #' @param target_dir Character string. Optional custom directory name
 #'   (default: \code{<repo>-<branch>}).
-#' @param use_branch Logical. If \code{TRUE}, create as a separate branch
+#' @param use_branch Logical. If \code{TRUE}, create as a regular branch
 #'   instead of a worktree.
-#' @param ... Additional arguments passed directly to \code{add-branch.sh}.
+#' @param ... Additional arguments passed directly to \code{repos add-branch}.
 #'
-#' @return Invisibly returns the exit status of the script (0 for success).
+#' @return Invisibly returns the exit status of the binary (0 for success).
+#'
+#' @details
+#' This function calls \code{repos add-branch} from the \code{repos} Go
+#' binary.  The binary must be on your \code{PATH}; install it with
+#' \code{\link{repos_install_cli}(run = TRUE)} if needed.
 #'
 #' @examples
 #' \dontrun{
@@ -638,35 +579,46 @@ repos_add_branch <- function(branch_name, target_dir = NULL, use_branch = FALSE,
     args <- c(args, additional_args)
   }
 
-  run_repos_script("add-branch.sh", args = args)
+  run_repos_binary("add-branch", args)
 }
 
-#' Update All Worktrees
+#' Fetch and Fast-Forward All Repositories
 #'
-#' Update all worktrees with the latest devcontainer prebuild configuration.
-#' Reads \code{.devcontainer/prebuild/devcontainer.json} from the base repo,
-#' strips the codespaces repositories section, writes the result to
-#' \code{.devcontainer/devcontainer.json} in each worktree, then commits and
-#' pushes.
+#' Fetch from remote and fast-forward the current branch in every Git
+#' repository found in the workspace parent directory.
 #'
-#' @param dry_run Logical. If \code{TRUE}, show what would be done without
-#'   making changes.
-#' @param ... Additional arguments passed directly to \code{update-branches.sh}.
+#' @param dir Character string. Base directory to scan for repositories
+#'   (default: parent of the current working directory).
+#' @param jobs Integer. Maximum number of concurrent git operations
+#'   (default: number of CPU cores).
+#' @param ... Additional arguments passed directly to \code{repos update-branches}.
 #'
-#' @return Invisibly returns the exit status of the script (0 for success).
+#' @return Invisibly returns the exit status of the binary (0 for success).
+#'
+#' @details
+#' This function calls \code{repos update-branches} from the \code{repos} Go
+#' binary.  The binary must be on your \code{PATH}; install it with
+#' \code{\link{repos_install_cli}(run = TRUE)} if needed.
+#'
+#' Repositories with uncommitted changes are skipped.  Repositories whose
+#' current branch does not track a remote branch are also skipped.
 #'
 #' @examples
 #' \dontrun{
 #' repos_update_branches()
-#' repos_update_branches(dry_run = TRUE)
+#' repos_update_branches(jobs = 4L)
 #' }
 #'
 #' @export
-repos_update_branches <- function(dry_run = FALSE, ...) {
+repos_update_branches <- function(dir = NULL, jobs = NULL, ...) {
   args <- character()
 
-  if (isTRUE(dry_run)) {
-    args <- c(args, "--dry-run")
+  if (!is.null(dir)) {
+    args <- c(args, "--dir", dir)
+  }
+
+  if (!is.null(jobs)) {
+    args <- c(args, "--jobs", as.character(jobs))
   }
 
   additional_args <- c(...)
@@ -674,48 +626,50 @@ repos_update_branches <- function(dry_run = FALSE, ...) {
     args <- c(args, additional_args)
   }
 
-  run_repos_script("update-branches.sh", args = args)
+  run_repos_binary("update-branches", args)
 }
 
-#' Update Scripts from Upstream
+#' Mirror Scripts and Workflows to Managed Repositories
 #'
-#' Update scripts from the upstream CompTemplate repository. Clones/pulls
-#' \code{MiguelRodo/CompTemplate} and copies all scripts from its
-#' \code{scripts/} directory into the local scripts directory, then creates a
-#' commit with the updates.
+#' Copy the \code{.github/workflows} and \code{scripts} directories from the
+#' current repository into each repository listed in \code{repos.list}.
 #'
-#' @param branch Character string. Upstream branch to pull from
-#'   (default: main).
+#' @param file Path to repos list file (default: \code{repos.list}, falling
+#'   back to \code{repos-to-clone.list} if absent).
 #' @param dry_run Logical. If \code{TRUE}, show what would be updated without
 #'   making changes.
-#' @param force Logical. If \code{TRUE}, overwrite local changes without
-#'   prompting.
-#' @param ... Additional arguments passed directly to \code{update-scripts.sh}.
+#' @param stage Logical. If \code{TRUE}, stage synced paths with
+#'   \code{git add} after copying.
+#' @param ... Additional arguments passed directly to \code{repos update-scripts}.
 #'
-#' @return Invisibly returns the exit status of the script (0 for success).
+#' @return Invisibly returns the exit status of the binary (0 for success).
+#'
+#' @details
+#' This function calls \code{repos update-scripts} from the \code{repos} Go
+#' binary.  The binary must be on your \code{PATH}; install it with
+#' \code{\link{repos_install_cli}(run = TRUE)} if needed.
 #'
 #' @examples
 #' \dontrun{
 #' repos_update_scripts()
-#' repos_update_scripts(branch = "dev")
 #' repos_update_scripts(dry_run = TRUE)
-#' repos_update_scripts(force = TRUE)
+#' repos_update_scripts(stage = TRUE)
 #' }
 #'
 #' @export
-repos_update_scripts <- function(branch = NULL, dry_run = FALSE, force = FALSE, ...) {
+repos_update_scripts <- function(file = NULL, dry_run = FALSE, stage = FALSE, ...) {
   args <- character()
 
-  if (!is.null(branch)) {
-    args <- c(args, "--branch", branch)
+  if (!is.null(file)) {
+    args <- c(args, "--file", file)
   }
 
   if (isTRUE(dry_run)) {
     args <- c(args, "--dry-run")
   }
 
-  if (isTRUE(force)) {
-    args <- c(args, "--force")
+  if (isTRUE(stage)) {
+    args <- c(args, "--stage")
   }
 
   additional_args <- c(...)
@@ -723,5 +677,5 @@ repos_update_scripts <- function(branch = NULL, dry_run = FALSE, force = FALSE, 
     args <- c(args, additional_args)
   }
 
-  run_repos_script("update-scripts.sh", args = args)
+  run_repos_binary("update-scripts", args)
 }

@@ -2,16 +2,20 @@
 % Please edit documentation in R/wrappers.R
 \name{repos_bundled_cli_version}
 \alias{repos_bundled_cli_version}
-\title{Return the version of the repos CLI bundled in this package}
+\title{Return the version of the bundled bash scripts in this package}
 \usage{
 repos_bundled_cli_version()
 }
 \value{
-A character string with the bundled CLI version (e.g. \code{"1.1.0"}).
+A character string with the bundled script version (e.g. \code{"1.3.9"}).
 }
 \description{
-The R package ships its own copy of the Bash scripts at a specific CLI
-version.  This function returns that pinned version string.
+The R package ships a copy of some Bash helper scripts (e.g.\ for
+\code{repos_workspace()}).  This function returns the version string of
+those bundled scripts.  Primary functionality (clone, run, etc.) uses the
+installed \code{repos} Go binary instead; see
+\code{\link{repos_installed_cli_version}} and
+\code{\link{repos_install_cli}}.
 }
 \examples{
 repos_bundled_cli_version()

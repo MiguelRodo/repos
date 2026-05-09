@@ -2,37 +2,39 @@
 % Please edit documentation in R/wrappers.R
 \name{repos_update_scripts}
 \alias{repos_update_scripts}
-\title{Update Scripts from Upstream}
+\title{Mirror Scripts and Workflows to Managed Repositories}
 \usage{
-repos_update_scripts(branch = NULL, dry_run = FALSE, force = FALSE, ...)
+repos_update_scripts(file = NULL, dry_run = FALSE, stage = FALSE, ...)
 }
 \arguments{
-\item{branch}{Character string. Upstream branch to pull from
-(default: main).}
+\item{file}{Path to repos list file (default: \code{repos.list}, falling
+back to \code{repos-to-clone.list} if absent).}
 
 \item{dry_run}{Logical. If \code{TRUE}, show what would be updated without
 making changes.}
 
-\item{force}{Logical. If \code{TRUE}, overwrite local changes without
-prompting.}
+\item{stage}{Logical. If \code{TRUE}, stage synced paths with
+\code{git add} after copying.}
 
-\item{...}{Additional arguments passed directly to \code{update-scripts.sh}.}
+\item{...}{Additional arguments passed directly to \code{repos update-scripts}.}
 }
 \value{
-Invisibly returns the exit status of the script (0 for success).
+Invisibly returns the exit status of the binary (0 for success).
 }
 \description{
-Update scripts from the upstream CompTemplate repository. Clones/pulls
-\code{MiguelRodo/CompTemplate} and copies all scripts from its
-\code{scripts/} directory into the local scripts directory, then creates a
-commit with the updates.
+Copy the \code{.github/workflows} and \code{scripts} directories from the
+current repository into each repository listed in \code{repos.list}.
+}
+\details{
+This function calls \code{repos update-scripts} from the \code{repos} Go
+binary.  The binary must be on your \code{PATH}; install it with
+\code{\link{repos_install_cli}(run = TRUE)} if needed.
 }
 \examples{
 \dontrun{
 repos_update_scripts()
-repos_update_scripts(branch = "dev")
 repos_update_scripts(dry_run = TRUE)
-repos_update_scripts(force = TRUE)
+repos_update_scripts(stage = TRUE)
 }
 
 }

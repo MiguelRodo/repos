@@ -12,18 +12,22 @@ repos_add_branch(branch_name, target_dir = NULL, use_branch = FALSE, ...)
 \item{target_dir}{Character string. Optional custom directory name
 (default: \code{<repo>-<branch>}).}
 
-\item{use_branch}{Logical. If \code{TRUE}, create as a separate branch
+\item{use_branch}{Logical. If \code{TRUE}, create as a regular branch
 instead of a worktree.}
 
-\item{...}{Additional arguments passed directly to \code{add-branch.sh}.}
+\item{...}{Additional arguments passed directly to \code{repos add-branch}.}
 }
 \value{
-Invisibly returns the exit status of the script (0 for success).
+Invisibly returns the exit status of the binary (0 for success).
 }
 \description{
-Create a new worktree (or branch) off the current repository, push it to
-origin, clean the worktree, update devcontainer.json, add the branch to
-repos.list, and refresh the VS Code workspace file.
+Create a new Git worktree (or branch) from the current repository, push it
+to origin, and update \code{repos.list} and the VS Code workspace file.
+}
+\details{
+This function calls \code{repos add-branch} from the \code{repos} Go
+binary.  The binary must be on your \code{PATH}; install it with
+\code{\link{repos_install_cli}(run = TRUE)} if needed.
 }
 \examples{
 \dontrun{

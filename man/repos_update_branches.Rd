@@ -2,30 +2,38 @@
 % Please edit documentation in R/wrappers.R
 \name{repos_update_branches}
 \alias{repos_update_branches}
-\title{Update All Worktrees}
+\title{Fetch and Fast-Forward All Repositories}
 \usage{
-repos_update_branches(dry_run = FALSE, ...)
+repos_update_branches(dir = NULL, jobs = NULL, ...)
 }
 \arguments{
-\item{dry_run}{Logical. If \code{TRUE}, show what would be done without
-making changes.}
+\item{dir}{Character string. Base directory to scan for repositories
+(default: parent of the current working directory).}
 
-\item{...}{Additional arguments passed directly to \code{update-branches.sh}.}
+\item{jobs}{Integer. Maximum number of concurrent git operations
+(default: number of CPU cores).}
+
+\item{...}{Additional arguments passed directly to \code{repos update-branches}.}
 }
 \value{
-Invisibly returns the exit status of the script (0 for success).
+Invisibly returns the exit status of the binary (0 for success).
 }
 \description{
-Update all worktrees with the latest devcontainer prebuild configuration.
-Reads \code{.devcontainer/prebuild/devcontainer.json} from the base repo,
-strips the codespaces repositories section, writes the result to
-\code{.devcontainer/devcontainer.json} in each worktree, then commits and
-pushes.
+Fetch from remote and fast-forward the current branch in every Git
+repository found in the workspace parent directory.
+}
+\details{
+This function calls \code{repos update-branches} from the \code{repos} Go
+binary.  The binary must be on your \code{PATH}; install it with
+\code{\link{repos_install_cli}(run = TRUE)} if needed.
+
+Repositories with uncommitted changes are skipped.  Repositories whose
+current branch does not track a remote branch are also skipped.
 }
 \examples{
 \dontrun{
 repos_update_branches()
-repos_update_branches(dry_run = TRUE)
+repos_update_branches(jobs = 4L)
 }
 
 }

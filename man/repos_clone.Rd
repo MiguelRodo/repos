@@ -23,9 +23,7 @@ clone.}
 
 \item{debug}{Logical. If \code{TRUE}, enable debug tracing to stderr.}
 
-\item{debug_file}{Character string or logical. Enable debug tracing to a
-file.  If \code{TRUE}, an auto-generated filename is used; if a non-empty
-string, that path is used as the log file.}
+\item{debug_file}{Ignored (retained for backward compatibility).}
 
 \item{fetch_mode}{Character. Controls fetch refspec behaviour after cloning.
 One of:
@@ -39,19 +37,22 @@ One of:
     remote branches are downloaded upfront.
 }}
 
-\item{...}{Additional arguments passed directly to the
-\code{clone-repos.sh} script as-is.}
+\item{...}{Additional arguments passed directly to \code{repos clone}.}
 }
 \value{
-Invisibly returns the exit status of the script (0 for success).
+Invisibly returns the exit status of the binary (0 for success).
 }
 \description{
 Clone all repositories (and branches) described in a \code{repos.list} file
 into the parent directory of the current working directory.
 }
 \details{
-This function is a wrapper around \code{clone-repos.sh}.  Each non-empty,
-non-comment line in the repos list file describes one of three operations:
+This function calls \code{repos clone} from the \code{repos} Go binary.
+The binary must be on your \code{PATH}; install it with
+\code{\link{repos_install_cli}(run = TRUE)} if needed.
+
+Each non-empty, non-comment line in the repos list file describes one of
+three operations:
 \enumerate{
   \item Clone a repository (default or all branches): \code{owner/repo}
   \item Clone a specific branch: \code{owner/repo@branch}

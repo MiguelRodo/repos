@@ -2,84 +2,50 @@
 % Please edit documentation in R/wrappers.R
 \name{repos_run}
 \alias{repos_run}
-\title{Run Pipeline Across Repositories}
+\title{Run a Command Across Repositories}
 \usage{
-repos_run(
-  file = NULL,
-  script = NULL,
-  include = NULL,
-  exclude = NULL,
-  ensure_setup = FALSE,
-  skip_deps = FALSE,
-  dry_run = FALSE,
-  verbose = FALSE,
-  continue_on_error = FALSE,
-  ...
-)
+repos_run(file = NULL, concurrent = FALSE, ...)
 }
 \arguments{
-\item{file}{Path to repos list file (default: repos.list)}
+\item{file}{Path to repos list file (default: \code{repos.list}, falling
+back to \code{repos-to-clone.list} if absent).}
 
-\item{script}{Script to run in each repo, relative to repo root (default: run.sh)}
+\item{concurrent}{Logical. If \code{TRUE}, run the command in all
+repositories concurrently instead of sequentially.}
 
-\item{include}{Character vector or comma-separated string of repo names to include}
-
-\item{exclude}{Character vector or comma-separated string of repo names to exclude}
-
-\item{ensure_setup}{Logical. If \code{TRUE}, clone repositories before executing scripts}
-
-\item{skip_deps}{Logical. If \code{TRUE}, skip the install-r-deps.sh step}
-
-\item{dry_run}{Logical. If \code{TRUE}, show what would be done without executing}
-
-\item{verbose}{Logical. If \code{TRUE}, enable verbose logging}
-
-\item{continue_on_error}{Logical. If \code{TRUE}, continue on failure and report all results}
-
-\item{...}{Additional arguments passed directly to the \code{run-pipeline.sh} script as-is.
-Useful for passing custom flags or for backward compatibility.}
+\item{...}{The command and its arguments to run in each repository (passed
+as positional arguments after any flags).  For example,
+\code{repos_run("bash", "build.sh")} or
+\code{repos_run("make", "test")}.}
 }
 \value{
-Invisibly returns the exit status of the script (0 for success).
+Invisibly returns the exit status of the binary (0 for success).
 }
 \description{
-Execute a script inside each cloned repository.
+Execute a shell command inside each cloned repository.
 }
 \details{
-This function is a wrapper around the \code{run-pipeline.sh} Bash script.
-It will:
-\itemize{
-  \item Optionally clone repositories (via \code{clone-repos.sh}) before running scripts
-  \item Optionally install R dependencies
-  \item Execute the target script (default: \code{run.sh}) in each repository
-  \item Print a per-repo summary at the end of execution
-}
+This function calls \code{repos run} from the \code{repos} Go binary.
+The binary must be on your \code{PATH}; install it with
+\code{\link{repos_install_cli}(run = TRUE)} if needed.
+
+The command is run inside each repository directory that appears in the
+repos list file.  If any repository's command exits with a non-zero status,
+the overall exit status is non-zero.
 }
 \examples{
 \dontrun{
-# Run the default script (run.sh) in each repo
-repos_run()
+# Run a bash script in each repo
+repos_run("bash", "run.sh")
 
-# Run a custom script
-repos_run(script = "build.sh")
+# Run make in each repo
+repos_run("make", "test")
 
-# Continue past failures
-repos_run(continue_on_error = TRUE)
+# Run concurrently
+repos_run("bash", "build.sh", concurrent = TRUE)
 
-# Dry-run mode
-repos_run(dry_run = TRUE)
-
-# Include only specific repos
-repos_run(include = c("repo1", "repo2"))
-
-# Exclude specific repos
-repos_run(exclude = "repo3")
-
-# Multiple options
-repos_run(script = "test.sh", verbose = TRUE, ensure_setup = TRUE)
-
-# Backward compatibility - still works
-repos_run("--script", "build.sh", "--dry-run")
+# Use a different repos list file
+repos_run("bash", "run.sh", file = "my-repos.list")
 }
 
 }

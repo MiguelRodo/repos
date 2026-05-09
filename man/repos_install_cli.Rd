@@ -14,18 +14,19 @@ the installer automatically.}
 Invisibly returns \code{NULL}.
 }
 \description{
-Prints OS-appropriate instructions for installing the \code{repos} command-line
-tool and, when \code{run = TRUE}, attempts to run the installer automatically.
+Prints OS-appropriate instructions for installing the \code{repos}
+Go binary and, when \code{run = TRUE}, attempts to run the installer
+automatically.
 }
 \details{
-The \code{repos} R package bundles all required Bash scripts, so functions
-such as \code{repos_run()} work without the \code{repos} CLI being on your
-\code{PATH}.  However, if you also want to invoke \code{repos} from a
-terminal, you need to install the CLI separately.
+Most R functions in this package (\code{repos_clone()}, \code{repos_run()},
+etc.) call the \code{repos} Go binary directly.  The binary must be on
+your \code{PATH} for those functions to work.  Use this function to install
+it.
 
-When \code{run = TRUE}, the function runs the user-level installer
-(\code{install-local.sh}) on Linux or the \code{brew} installer on macOS.
-On Windows, only instructions are printed.
+When \code{run = TRUE}, the function downloads the prebuilt Go binary from
+the latest GitHub release on Linux (via \code{install-local.sh}) or uses
+Homebrew on macOS.  On Windows, only instructions are printed.
 }
 \examples{
 \dontrun{

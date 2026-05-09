@@ -12,43 +12,40 @@ Must be one of \code{"clone"}, \code{"workspace"}, \code{"codespace"},
 \code{"codespaces"}, \code{"run"}, \code{"add_branch"},
 \code{"update_branches"}, or \code{"update_scripts"}.}
 
-\item{...}{Additional arguments passed to the underlying script.}
+\item{...}{Additional arguments passed to the underlying function.}
 }
 \value{
-Invisibly returns the exit status of the script (0 for success).
+Invisibly returns the exit status of the command (0 for success).
 }
 \description{
 Dispatches to the appropriate repos subcommand.
 }
 \details{
-\code{repos("clone", ...)} delegates to \code{clone-repos.sh} (see
-\code{\link{repos_clone}}).
+Most subcommands delegate to the \code{repos} Go binary.  Install it with
+\code{\link{repos_install_cli}(run = TRUE)} if not already on your PATH.
 
-\code{repos("workspace", ...)} delegates to \code{vscode-workspace-add.sh} (see
-\code{\link{repos_workspace}}).
+\code{repos("clone", ...)} calls \code{\link{repos_clone}}.
 
-\code{repos("codespace", ...)} / \code{repos("codespaces", ...)} delegates to
-\code{codespaces-auth-add.sh} (see \code{\link{repos_codespace}}).
+\code{repos("workspace", ...)} calls \code{\link{repos_workspace}} (uses
+the bundled bash script).
 
-\code{repos("run", ...)} delegates to \code{run-pipeline.sh} (see
-\code{\link{repos_run}}).
+\code{repos("codespace", ...)} / \code{repos("codespaces", ...)} calls
+\code{\link{repos_codespace}}.
 
-\code{repos("add_branch", ...)} delegates to \code{add-branch.sh} (see
-\code{\link{repos_add_branch}}).
+\code{repos("run", ...)} calls \code{\link{repos_run}}.
 
-\code{repos("update_branches", ...)} delegates to \code{update-branches.sh} (see
-\code{\link{repos_update_branches}}).
+\code{repos("add_branch", ...)} calls \code{\link{repos_add_branch}}.
 
-\code{repos("update_scripts", ...)} delegates to \code{update-scripts.sh} (see
-\code{\link{repos_update_scripts}}).
+\code{repos("update_branches", ...)} calls \code{\link{repos_update_branches}}.
+
+\code{repos("update_scripts", ...)} calls \code{\link{repos_update_scripts}}.
 }
 \examples{
 \dontrun{
 repos("clone")
 repos("workspace")
 repos("codespace")
-repos("run")
-repos("run", script = "build.sh")
+repos("run", "bash", "run.sh")
 repos("add_branch", "data-tidy")
 repos("update_branches")
 repos("update_scripts")

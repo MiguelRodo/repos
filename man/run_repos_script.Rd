@@ -2,7 +2,7 @@
 % Please edit documentation in R/wrappers.R
 \name{run_repos_script}
 \alias{run_repos_script}
-\title{Run a repos script}
+\title{Run a bundled repos script}
 \usage{
 run_repos_script(script_name, args = character())
 }
@@ -16,6 +16,7 @@ Invisibly returns the exit status of the script (0 for success).
 }
 \description{
 Internal helper that locates a bundled script and executes it via
-\code{system2()}.
+\code{system2()}.  Retained for commands whose Go binary interface differs
+from the original bash script (e.g. \code{repos_workspace()}).
 }
 \keyword{internal}
