@@ -206,5 +206,5 @@ func checkNonInteractiveAuthForClone() error {
 		return nil
 	}
 
-	return errors.New("error: no non-interactive GitHub authentication available (set GH_TOKEN, run 'gh auth login', ensure SSH agent keys are loaded, or configure a git credential.helper)")
+	return errors.New("error: no non-interactive git authentication available for remote clones (set GH_TOKEN, run 'gh auth login', ensure SSH agent keys are loaded, or configure a git credential.helper)")
 }

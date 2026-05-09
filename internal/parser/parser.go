@@ -505,3 +505,15 @@ func parseRepoURL(repoURLNoRef string) (repoURL, repoDir string, err error) {
 	}
 	return repoURL, repoDir, nil
 }
+
+// Exported helper wrappers for reuse by command packages.
+func NormaliseRemoteToHTTPS(url string) string { return normaliseRemoteToHTTPS(url) }
+func SpecToHTTPS(spec string) string           { return specToHTTPS(spec) }
+func SplitRepoSpec(spec string) (string, string) {
+	return splitRepoSpec(spec)
+}
+func SanitizeBranchName(branch string) string { return sanitizeBranchName(branch) }
+func IsWindowsAbsPath(s string) bool          { return isWindowsAbsPath(s) }
+func ParseRepoURL(repoURLNoRef string) (repoURL, repoDir string, err error) {
+	return parseRepoURL(repoURLNoRef)
+}

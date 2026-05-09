@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/MiguelRodo/repos/internal/gitcmd"
+	"github.com/MiguelRodo/repos/internal/parser"
 )
 
 type counters struct {
@@ -92,7 +93,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-	case "codespaces-auth":
+	case "codespace", "codespaces", "codespaces-auth":
 		if err := runCodespacesAuth(os.Args[2:]); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
@@ -130,7 +131,9 @@ Commands:
   update-branches   Fetch and fast-forward all git repos in the parent directory
   add-branch        Create a new worktree/branch off the current repository
   install-r-deps    Install R dependencies for managed repositories
-  codespaces-auth   Set GH_TOKEN secret for repos listed in repos.list
+  codespace         Configure Codespaces repository permissions in devcontainer.json
+  codespaces        Alias for codespace
+  codespaces-auth   Legacy alias for codespace
   run               Execute a command inside each repository from repos.list
   update-scripts    Sync shared scripts/workflows to managed repositories
   create            Create missing GitHub repositories from repos.list
@@ -208,116 +211,25 @@ func getCurrentRepoRemoteHTTPS(dir string) (string, error) {
 }
 
 func normaliseRemoteToHTTPS(url string) string {
-	u := strings.TrimSpace(url)
-	u = strings.TrimSuffix(u, ".git")
-	if strings.HasPrefix(u, "file://") {
-		u = strings.TrimPrefix(u, "file://")
-	}
-	u = strings.ReplaceAll(u, "\\", "/")
-	if strings.HasPrefix(u, "http://") || strings.HasPrefix(u, "https://") {
-		if i := strings.Index(u, "://"); i >= 0 {
-			prefix := u[:i+3]
-			rest := u[i+3:]
-			if at := strings.Index(rest, "@"); at >= 0 {
-				rest = rest[at+1:]
-			}
-			u = prefix + rest
-		}
-		return strings.TrimSuffix(u, "/")
-	}
-	if strings.HasPrefix(u, "ssh://git@") {
-		t := strings.TrimPrefix(u, "ssh://git@")
-		parts := strings.SplitN(t, "/", 2)
-		if len(parts) == 2 {
-			return "https://" + parts[0] + "/" + strings.TrimSuffix(parts[1], ".git")
-		}
-	}
-	if strings.HasPrefix(u, "git@") && strings.Contains(u, ":") {
-		t := strings.TrimPrefix(u, "git@")
-		parts := strings.SplitN(t, ":", 2)
-		if len(parts) == 2 {
-			return "https://" + parts[0] + "/" + strings.TrimSuffix(parts[1], ".git")
-		}
-	}
-	return strings.TrimSuffix(u, "/")
+	return parser.NormaliseRemoteToHTTPS(url)
 }
 
 func specToHTTPS(spec string) string {
-	s := strings.TrimSpace(spec)
-	s = strings.TrimSuffix(s, ".git")
-	if strings.HasPrefix(s, "file://") ||
-		strings.HasPrefix(s, "/") ||
-		strings.HasPrefix(s, `\`) ||
-		strings.HasPrefix(s, `.\\`) ||
-		strings.HasPrefix(s, `..\\`) ||
-		isWindowsAbsPath(s) {
-		return normaliseRemoteToHTTPS(s)
-	}
-	if strings.HasPrefix(s, "https://") || strings.HasPrefix(s, "http://") {
-		return normaliseRemoteToHTTPS(s)
-	}
-	if ownerRepoRegex.MatchString(s) {
-		return normaliseRemoteToHTTPS("https://github.com/" + s)
-	}
-	return normaliseRemoteToHTTPS(s)
+	return parser.SpecToHTTPS(spec)
 }
 
 func splitRepoSpec(spec string) (string, string) {
-	s := strings.TrimSpace(spec)
-	if strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://") {
-		i := strings.Index(s, "://")
-		slash := strings.Index(s[i+3:], "/")
-		start := i + 3
-		if slash >= 0 {
-			start = i + 3 + slash + 1
-		}
-		at := strings.LastIndex(s[start:], "@")
-		if at >= 0 {
-			idx := start + at
-			return s[:idx], s[idx+1:]
-		}
-		return s, ""
-	}
-	if strings.HasPrefix(s, "ssh://") {
-		if i := strings.Index(s, "://"); i >= 0 {
-			rest := s[i+3:]
-			slash := strings.Index(rest, "/")
-			if slash >= 0 {
-				start := i + 3 + slash + 1
-				if at := strings.LastIndex(s[start:], "@"); at >= 0 {
-					idx := start + at
-					return s[:idx], s[idx+1:]
-				}
-			}
-		}
-		return s, ""
-	}
-	if strings.HasPrefix(s, "git@") && strings.Contains(s, ":") {
-		start := strings.Index(s, ":") + 1
-		if at := strings.LastIndex(s[start:], "@"); at >= 0 {
-			idx := start + at
-			return s[:idx], s[idx+1:]
-		}
-		return s, ""
-	}
-	idx := strings.LastIndex(s, "@")
-	if idx < 0 {
-		return s, ""
-	}
-	return s[:idx], s[idx+1:]
+	return parser.SplitRepoSpec(spec)
 }
 
 // sanitizeBranchName converts a branch name into a filesystem-safe suffix
 // by replacing "/" with "-" (for directory names only, not git refs).
 func sanitizeBranchName(branch string) string {
-	return strings.ReplaceAll(branch, "/", "-")
+	return parser.SanitizeBranchName(branch)
 }
 
 func isWindowsAbsPath(s string) bool {
-	if strings.HasPrefix(s, `\\`) {
-		return true
-	}
-	return len(s) >= 3 && s[1] == ':' && (s[2] == '/' || s[2] == '\\')
+	return parser.IsWindowsAbsPath(s)
 }
 
 func trimLine(line string) string {
@@ -594,37 +506,7 @@ func (s *state) planForward() error {
 }
 
 func parseRepoURL(repoURLNoRef string) (repoURL, repoDir string, err error) {
-	s := repoURLNoRef
-	sNoGit := strings.TrimSuffix(s, ".git")
-	switch {
-	case strings.HasPrefix(s, "file://"):
-		repoURL = s
-		repoDir = filepath.Base(strings.TrimPrefix(sNoGit, "file://"))
-	case strings.HasPrefix(s, "/"):
-		repoURL = s
-		repoDir = filepath.Base(sNoGit)
-	case strings.HasPrefix(s, `\`) ||
-		strings.HasPrefix(s, `.\\`) ||
-		strings.HasPrefix(s, `..\\`) ||
-		isWindowsAbsPath(s):
-		repoURL = s
-		repoDir = filepath.Base(strings.ReplaceAll(sNoGit, `\`, "/"))
-	case strings.HasPrefix(s, "https://") || strings.HasPrefix(s, "http://"):
-		repoURL = s
-		repoDir = filepath.Base(sNoGit)
-	case ownerRepoRegex.MatchString(s):
-		repoURL = "https://github.com/" + s
-		repoDir = strings.SplitN(s, "/", 2)[1]
-	case strings.Contains(s, "/"):
-		repoURL = s
-		repoDir = filepath.Base(sNoGit)
-	default:
-		return "", "", fmt.Errorf("error: invalid repo spec '%s'", s)
-	}
-	if repoDir == "" {
-		return "", "", fmt.Errorf("error: invalid repo spec '%s'", s)
-	}
-	return repoURL, repoDir, nil
+	return parser.ParseRepoURL(repoURLNoRef)
 }
 
 func (s *state) remoteRefCount(remote string) int {
