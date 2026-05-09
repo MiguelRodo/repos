@@ -20,7 +20,7 @@ func TestRunCloneSingleBranchRestoresWildcardRefspec(t *testing.T) {
 
 	projectDir := filepath.Join(tmp, "workspace")
 	mustInitWorkspaceRepo(t, projectDir, fallbackRemote)
-	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "file://"+branchRemote+"@hotfix/urgent\n")
+	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), branchRemote+"@hotfix/urgent\n")
 
 	oldWD, err := os.Getwd()
 	if err != nil {
@@ -65,7 +65,7 @@ func TestRunCloneWorktreeAndFallbackTracking(t *testing.T) {
 	mustInitWorkspaceRepo(t, projectDir, repoOneRemote)
 	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), strings.Join([]string{
 		"@dev --worktree",
-		"file://" + repoTwoRemote,
+		repoTwoRemote,
 		"@staging",
 		"",
 	}, "\n"))
@@ -162,7 +162,7 @@ func mustInitWorkspaceRepo(t *testing.T, repoDir, originBare string) {
 	runGit(t, repoDir, "init")
 	runGit(t, repoDir, "config", "user.email", "test@example.com")
 	runGit(t, repoDir, "config", "user.name", "Test User")
-	runGit(t, repoDir, "remote", "add", "origin", "file://"+originBare)
+	runGit(t, repoDir, "remote", "add", "origin", originBare)
 	mustWriteFile(t, filepath.Join(repoDir, "README.md"), "# workspace\n")
 	runGit(t, repoDir, "add", "README.md")
 	runGit(t, repoDir, "commit", "-m", "Initial commit")

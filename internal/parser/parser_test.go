@@ -93,3 +93,59 @@ owner/repo@feature/test --fetch-single
 		t.Fatalf("expected repo line allBranches=true under --fetch-all")
 	}
 }
+
+func TestParseListRejectsInvalidBranchNames(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{
+			name:  "invalid at-branch",
+			input: "@bad..branch\n",
+		},
+		{
+			name:  "invalid repo branch suffix",
+			input: "owner/repo@bad..branch\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := ParseList(strings.NewReader(tt.input), Options{
+				InitialFallbackRemote: "https://example.com/acme/root.git",
+				InitialBaseDir:        "workspace",
+			})
+			if err == nil {
+				t.Fatalf("expected error for invalid branch input %q", strings.TrimSpace(tt.input))
+			}
+		})
+	}
+}
+
+func TestParseListRejectsInvalidTargetDirs(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{
+			name:  "target contains traversal",
+			input: "owner/repo ../bad-target\n",
+		},
+		{
+			name:  "target starts with hyphen",
+			input: "@dev -bad-target\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := ParseList(strings.NewReader(tt.input), Options{
+				InitialFallbackRemote: "https://example.com/acme/root.git",
+				InitialBaseDir:        "workspace",
+			})
+			if err == nil {
+				t.Fatalf("expected error for invalid target input %q", strings.TrimSpace(tt.input))
+			}
+		})
+	}
+}

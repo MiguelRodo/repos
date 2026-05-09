@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -147,8 +148,8 @@ func ParseList(r io.Reader, opts Options) ([]Instruction, error) {
 
 		if strings.HasPrefix(first, "@") {
 			branch := strings.TrimPrefix(first, "@")
-			if branch == "" {
-				return nil, fmt.Errorf("line %d: missing branch name", lineNum)
+			if err := validateBranch(branch); err != nil {
+				return nil, fmt.Errorf("line %d: %w", lineNum, err)
 			}
 			if fallbackRemote == "" {
 				return nil, fmt.Errorf("line %d: no fallback repository available for %q", lineNum, trimmed)
@@ -197,6 +198,9 @@ func ParseList(r io.Reader, opts Options) ([]Instruction, error) {
 			if ins.TargetDir == "" {
 				ins.TargetDir = fallbackBase + "-" + sanitizeBranchName(branch)
 			}
+			if err := validateTargetDir(ins.TargetDir); err != nil {
+				return nil, fmt.Errorf("line %d: %w", lineNum, err)
+			}
 			if ins.FetchMode == "all" {
 				ins.AllBranches = true
 			}
@@ -207,6 +211,11 @@ func ParseList(r io.Reader, opts Options) ([]Instruction, error) {
 		repoNoRef, branch := splitRepoSpec(first)
 		if strings.HasPrefix(repoNoRef, "-") || strings.Contains(repoNoRef, "..") {
 			return nil, fmt.Errorf("line %d: invalid repository spec %q", lineNum, first)
+		}
+		if branch != "" {
+			if err := validateBranch(branch); err != nil {
+				return nil, fmt.Errorf("line %d: %w", lineNum, err)
+			}
 		}
 		ins.Branch = branch
 		ins.CloneURL = repoNoRef
@@ -264,6 +273,9 @@ func ParseList(r io.Reader, opts Options) ([]Instruction, error) {
 				ins.TargetDir = repoDir
 			}
 		}
+		if err := validateTargetDir(ins.TargetDir); err != nil {
+			return nil, fmt.Errorf("line %d: %w", lineNum, err)
+		}
 
 		instructions = append(instructions, ins)
 		fallbackRemote = repoNoRef
@@ -311,6 +323,27 @@ func lineIsGlobalFlagsOnly(line string) bool {
 
 func isWindowsAbsPath(s string) bool {
 	return len(s) >= 3 && ((s[1] == ':' && (s[2] == '/' || s[2] == '\\')) || strings.HasPrefix(s, `\\`))
+}
+
+func validateBranch(branch string) error {
+	if branch == "" || strings.HasPrefix(branch, "-") {
+		return fmt.Errorf("error: '%s' is not a valid Git branch name", branch)
+	}
+	cmd := exec.Command("git", "check-ref-format", "--allow-onelevel", branch)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("error: '%s' is not a valid Git branch name", branch)
+	}
+	return nil
+}
+
+func validateTargetDir(target string) error {
+	if target == "" {
+		return nil
+	}
+	if strings.HasPrefix(target, "/") || strings.HasPrefix(target, `\\`) || isWindowsAbsPath(target) || strings.Contains(target, "..") || strings.HasPrefix(target, "-") {
+		return fmt.Errorf("error: target directory cannot be absolute, contain '..', or start with a hyphen: %s", target)
+	}
+	return nil
 }
 
 func sanitizeBranchName(branch string) string {
