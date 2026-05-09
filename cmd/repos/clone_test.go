@@ -26,7 +26,11 @@ func TestRunCloneSingleBranchRestoresWildcardRefspec(t *testing.T) {
 	if err != nil {
 		t.Fatalf("getwd: %v", err)
 	}
-	t.Cleanup(func() { _ = os.Chdir(oldWD) })
+	t.Cleanup(func() {
+		if err := os.Chdir(oldWD); err != nil {
+			t.Logf("restore working directory: %v", err)
+		}
+	})
 	if err := os.Chdir(projectDir); err != nil {
 		t.Fatalf("chdir project dir: %v", err)
 	}
@@ -70,7 +74,11 @@ func TestRunCloneWorktreeAndFallbackTracking(t *testing.T) {
 	if err != nil {
 		t.Fatalf("getwd: %v", err)
 	}
-	t.Cleanup(func() { _ = os.Chdir(oldWD) })
+	t.Cleanup(func() {
+		if err := os.Chdir(oldWD); err != nil {
+			t.Logf("restore working directory: %v", err)
+		}
+	})
 	if err := os.Chdir(projectDir); err != nil {
 		t.Fatalf("chdir project dir: %v", err)
 	}

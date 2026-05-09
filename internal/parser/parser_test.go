@@ -7,13 +7,13 @@ import (
 
 func TestParseListFallbackStateMachine(t *testing.T) {
 	input := strings.NewReader(`
-file:///tmp/repo-one.git
+https://example.com/acme/repo-one.git
 @dev
-file:///tmp/repo-two.git custom-two
+https://example.com/acme/repo-two.git custom-two
 @staging
 `)
 
-	got, err := ParseList(input, Options{InitialFallbackRemote: "file:///tmp/root.git", InitialBaseDir: "workspace"})
+	got, err := ParseList(input, Options{InitialFallbackRemote: "https://example.com/acme/root.git", InitialBaseDir: "workspace"})
 	if err != nil {
 		t.Fatalf("ParseList returned error: %v", err)
 	}
@@ -22,10 +22,10 @@ file:///tmp/repo-two.git custom-two
 		t.Fatalf("expected 4 instructions, got %d", len(got))
 	}
 
-	if got[1].CloneURL != "file:///tmp/repo-one.git" || got[1].Branch != "dev" {
+	if got[1].CloneURL != "https://example.com/acme/repo-one.git" || got[1].Branch != "dev" {
 		t.Fatalf("@dev should use repo-one fallback, got cloneURL=%q branch=%q", got[1].CloneURL, got[1].Branch)
 	}
-	if got[3].CloneURL != "file:///tmp/repo-two.git" || got[3].Branch != "staging" {
+	if got[3].CloneURL != "https://example.com/acme/repo-two.git" || got[3].Branch != "staging" {
 		t.Fatalf("@staging should use repo-two fallback, got cloneURL=%q branch=%q", got[3].CloneURL, got[3].Branch)
 	}
 }
@@ -33,13 +33,13 @@ file:///tmp/repo-two.git custom-two
 func TestParseListTargetDirectoryResolution(t *testing.T) {
 	input := strings.NewReader(`
 @feature/test
-file:///tmp/repo-two.git
+https://example.com/acme/repo-two.git
 @release/v1.0
-file:///tmp/repo-three.git@hotfix/urgent
-file:///tmp/repo-three.git@dev
+https://example.com/acme/repo-three.git@hotfix/urgent
+https://example.com/acme/repo-three.git@dev
 `)
 
-	got, err := ParseList(input, Options{InitialFallbackRemote: "file:///tmp/root.git", InitialBaseDir: "workspace"})
+	got, err := ParseList(input, Options{InitialFallbackRemote: "https://example.com/acme/root.git", InitialBaseDir: "workspace"})
 	if err != nil {
 		t.Fatalf("ParseList returned error: %v", err)
 	}
@@ -68,7 +68,7 @@ func TestParseListGlobalFlagOverrides(t *testing.T) {
 owner/repo@feature/test --fetch-single
 `)
 
-	got, err := ParseList(input, Options{InitialFallbackRemote: "file:///tmp/root.git", InitialBaseDir: "workspace"})
+	got, err := ParseList(input, Options{InitialFallbackRemote: "https://example.com/acme/root.git", InitialBaseDir: "workspace"})
 	if err != nil {
 		t.Fatalf("ParseList returned error: %v", err)
 	}
