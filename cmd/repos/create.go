@@ -160,7 +160,7 @@ func processCreateFile(reposFile string, privateDefault bool) error {
 				return err
 			}
 			if fallbackRepo == "" {
-				fmt.Printf("Warning: @%s cannot be processed - no fallback repository available; skipping branch check.\n", branch)
+				fmt.Fprintf(os.Stderr, "Warning: @%s cannot be processed - no fallback repository available; skipping branch check.\n", branch)
 				continue
 			}
 			if err := ensureBranchExistsOnRepo(fallbackRepo, branch); err != nil {
