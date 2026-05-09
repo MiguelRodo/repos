@@ -116,13 +116,17 @@ if [ -n "$sha256_tool" ]; then
       echo -e "${RED}Error: Downloaded checksum file was empty or invalid.${NC}" >&2
       exit 1
     fi
+    if ! [[ "$expected_sum" =~ ^[0-9a-fA-F]{64}$ ]]; then
+      echo -e "${RED}Error: Downloaded checksum format was invalid.${NC}" >&2
+      exit 1
+    fi
     actual_sum="$($sha256_tool "$TMP_BIN" | awk '{print $1}')"
     if [ "$expected_sum" != "$actual_sum" ]; then
       echo -e "${RED}Error: Checksum verification failed for ${DOWNLOADED_ASSET}.${NC}" >&2
       exit 1
     fi
   else
-    echo "Warning: checksum not available for ${DOWNLOADED_ASSET}; skipping verification."
+    echo "Warning: checksum not available for ${DOWNLOADED_ASSET}; skipping verification." >&2
   fi
 fi
 

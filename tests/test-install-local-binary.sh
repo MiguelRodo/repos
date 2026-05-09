@@ -77,6 +77,12 @@ if [ -f "$TEST_DIR/$RELATIVE_BIN/repos" ]; then
   exit 1
 fi
 
+STATE_FILE="$XDG_STATE_HOME/repos/install-dir"
+if [ ! -f "$STATE_FILE" ] || [ "$(cat "$STATE_FILE")" != "$INSTALL_DIR" ]; then
+  echo "FAIL: installer did not record expected install directory state"
+  exit 1
+fi
+
 if [ "$("$INSTALL_DIR/repos")" != "repos mock" ]; then
   echo "FAIL: installed repos binary did not execute expected output"
   exit 1
