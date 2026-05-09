@@ -651,7 +651,7 @@ func resolveInstructions(
 		// Surface non-fatal warnings from parsing so the caller controls UX.
 		if raw.worktreeOnCloneLine {
 			ins.Warnings = append(ins.Warnings,
-				fmt.Sprintf("Warning: '--worktree' is ignored on clone lines: %s", raw.repoSpec))
+				fmt.Sprintf("Warning: '--worktree' is ignored on clone line: %s", raw.repoSpec))
 		}
 
 		repoNoRef, branch := SplitRepoSpec(raw.repoSpec)

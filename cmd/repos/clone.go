@@ -300,7 +300,8 @@ func (st *execState) execWorktree(ins parser.Instruction) (int, error) {
 		if rc != 0 {
 			return rc, nil
 		}
-		// Record the now-cloned base so future lookups use it.
+		// Cache the remote→local mapping so subsequent @branch worktree
+		// instructions for the same remote can find the correct base directory.
 		st.seenRemoteLocal[ins.RemoteURL] = base
 	}
 
