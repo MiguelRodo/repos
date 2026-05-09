@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -165,12 +166,18 @@ func parseManagedRepos(r io.Reader, resolveFallbackRemote func() (string, error)
 		}
 
 		repoNoRef, _ := splitRepoSpec(first)
-		if strings.HasPrefix(repoNoRef, "-") || strings.Contains(repoNoRef, "..") {
+		if strings.HasPrefix(repoNoRef, "-") || hasPathTraversal(repoNoRef) {
 			return nil, fmt.Errorf("invalid repository spec on line %d: %s", lineNum, gitcmd.SanitizeURL(first))
 		}
 		ownerRepo, err := parser.OwnerRepoFromRemote(specToHTTPS(repoNoRef))
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: skipping unsupported repository on line %d: %s\n", lineNum, gitcmd.SanitizeURL(first))
+			fmt.Fprintf(
+				os.Stderr,
+				"Warning: skipping unsupported repository on line %d (%s): %s\n",
+				lineNum,
+				err.Error(),
+				gitcmd.SanitizeURL(first),
+			)
 			continue
 		}
 		seen[ownerRepo] = struct{}{}
@@ -203,4 +210,24 @@ func setRepoCodespacesSecret(repo, token string) error {
 		return fmt.Errorf("failed setting GH_TOKEN secret for %s: %s", repo, gitcmd.SanitizeURL(msg))
 	}
 	return nil
+}
+
+func hasPathTraversal(spec string) bool {
+	candidates := []string{spec}
+	if decoded, err := url.PathUnescape(spec); err == nil {
+		candidates = append(candidates, decoded)
+	}
+	for _, c := range candidates {
+		normalized := strings.ReplaceAll(c, `\`, "/")
+		for _, part := range strings.Split(normalized, "/") {
+			if part == ".." {
+				return true
+			}
+		}
+		cleaned := filepath.Clean(normalized)
+		if cleaned == ".." || strings.HasPrefix(cleaned, "../") {
+			return true
+		}
+	}
+	return false
 }

@@ -17,7 +17,7 @@ acme/next@feature/x ./next-dir
 `
 
 	repos, err := parseManagedRepos(strings.NewReader(input), func() (string, error) {
-		return "https://github.com/example/current", nil
+		return "https://github.com/acme/current", nil
 	})
 	if err != nil {
 		t.Fatalf("parseManagedRepos returned error: %v", err)
@@ -30,6 +30,26 @@ acme/next@feature/x ./next-dir
 	for i := range want {
 		if repos[i] != want[i] {
 			t.Fatalf("unexpected repos[%d]: got %q, want %q (all=%v)", i, repos[i], want[i], repos)
+		}
+	}
+}
+
+func TestHasPathTraversal(t *testing.T) {
+	tests := []struct {
+		spec string
+		want bool
+	}{
+		{spec: "acme/repo", want: false},
+		{spec: "../repo", want: true},
+		{spec: "acme/../repo", want: true},
+		{spec: `..\repo`, want: true},
+		{spec: "%2e%2e/repo", want: true},
+	}
+
+	for _, tt := range tests {
+		got := hasPathTraversal(tt.spec)
+		if got != tt.want {
+			t.Fatalf("hasPathTraversal(%q)=%v, want %v", tt.spec, got, tt.want)
 		}
 	}
 }
@@ -51,7 +71,7 @@ func TestParseManagedRepos_UsesInitialFallbackForAtBranch(t *testing.T) {
 	}
 }
 
-func TestParseManagedRepos_SkipsUnsupportedRepoSpecs(t *testing.T) {
+func TestParseManagedRepos_SkipsLocalPaths(t *testing.T) {
 	input := `
 /tmp/local-repo
 @branch
