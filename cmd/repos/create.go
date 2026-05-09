@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/MiguelRodo/repos/internal/gitcmd"
+	"github.com/MiguelRodo/repos/internal/parser"
 	"github.com/MiguelRodo/repos/internal/sysutil"
 )
 
@@ -291,7 +292,7 @@ func resolveCreateFallbackRepo() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return ownerRepoFromRemote(remote)
+	return parser.OwnerRepoFromRemote(remote)
 }
 
 func ensureBranchExistsOnRepo(ownerRepo, branch string) error {

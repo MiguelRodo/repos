@@ -93,7 +93,8 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-	case "codespace", "codespaces", "codespaces-auth":
+	// codespace, codespaces, and codespaces-auth are aliases for the same helper-backed behavior.
+	case "codespace", "codespaces-auth", "codespaces":
 		if err := runCodespacesAuth(os.Args[2:]); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)

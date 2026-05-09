@@ -2,8 +2,10 @@ package parser
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -506,14 +508,53 @@ func parseRepoURL(repoURLNoRef string) (repoURL, repoDir string, err error) {
 	return repoURL, repoDir, nil
 }
 
-// Exported helper wrappers for reuse by command packages.
+// NormaliseRemoteToHTTPS converts git remote syntaxes to canonical HTTPS form.
+// It strips credentials and trailing ".git" when present.
 func NormaliseRemoteToHTTPS(url string) string { return normaliseRemoteToHTTPS(url) }
-func SpecToHTTPS(spec string) string           { return specToHTTPS(spec) }
+
+// SpecToHTTPS normalises a repo spec for identity comparisons.
+// Local paths are normalised to slash-separated forms, while owner/repo specs
+// become https://github.com/owner/repo.
+func SpecToHTTPS(spec string) string { return specToHTTPS(spec) }
+
+// SplitRepoSpec separates "<repo>@<branch>" into repo and branch components.
+// If no branch separator is present, the second return value is empty.
 func SplitRepoSpec(spec string) (string, string) {
 	return splitRepoSpec(spec)
 }
+
+// SanitizeBranchName makes a branch filesystem-safe by replacing "/" with "-".
 func SanitizeBranchName(branch string) string { return sanitizeBranchName(branch) }
-func IsWindowsAbsPath(s string) bool          { return isWindowsAbsPath(s) }
+
+// IsWindowsAbsPath reports whether s is a Windows absolute path.
+func IsWindowsAbsPath(s string) bool { return isWindowsAbsPath(s) }
+
+// ParseRepoURL parses a repository spec into clone URL and inferred directory name.
+// It returns an error for invalid/unsupported specs or when the inferred
+// directory name is empty.
 func ParseRepoURL(repoURLNoRef string) (repoURL, repoDir string, err error) {
 	return parseRepoURL(repoURLNoRef)
+}
+
+// OwnerRepoFromRemote extracts "owner/repo" from a remote spec or URL.
+// It accepts plain owner/repo strings and URL forms with owner/repo path
+// segments, and returns an error when the remote cannot be parsed.
+func OwnerRepoFromRemote(remote string) (string, error) {
+	trimmed := strings.TrimSpace(strings.TrimSuffix(remote, ".git"))
+	if ownerRepoRegex.MatchString(trimmed) {
+		return trimmed, nil
+	}
+	u, err := url.Parse(trimmed)
+	if err != nil || u.Path == "" || u.Host == "" {
+		return "", errors.New("not a valid repository URL")
+	}
+	parts := strings.Split(strings.Trim(u.Path, "/"), "/")
+	if len(parts) < 2 {
+		return "", errors.New("missing owner/repo path")
+	}
+	candidate := parts[0] + "/" + parts[1]
+	if !ownerRepoRegex.MatchString(candidate) {
+		return "", errors.New("invalid owner/repo")
+	}
+	return candidate, nil
 }

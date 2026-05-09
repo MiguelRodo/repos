@@ -44,10 +44,10 @@ func TestRunCodespacesAuthExecutesHelperWithArgs(t *testing.T) {
 		t.Fatalf("write helper script: %v", err)
 	}
 
-	origResolver := resolveCodespacesScriptPathFunc
-	resolveCodespacesScriptPathFunc = func() (string, error) { return scriptPath, nil }
+	origResolver := scriptPathResolver
+	scriptPathResolver = func() (string, error) { return scriptPath, nil }
 	t.Cleanup(func() {
-		resolveCodespacesScriptPathFunc = origResolver
+		scriptPathResolver = origResolver
 	})
 
 	oldEnv := os.Getenv("ARGS_FILE")
@@ -69,5 +69,27 @@ func TestRunCodespacesAuthExecutesHelperWithArgs(t *testing.T) {
 	got := strings.TrimSpace(string(raw))
 	if got != "-f repos.list -d .devcontainer/devcontainer.json" {
 		t.Fatalf("unexpected helper args: %q", got)
+	}
+}
+
+func TestRunCodespacesAuthReturnsExitCodeError(t *testing.T) {
+	tmp := t.TempDir()
+	scriptPath := filepath.Join(tmp, "codespaces-auth-add.sh")
+	if err := os.WriteFile(scriptPath, []byte("#!/usr/bin/env bash\nexit 7\n"), 0o755); err != nil {
+		t.Fatalf("write helper script: %v", err)
+	}
+
+	origResolver := scriptPathResolver
+	scriptPathResolver = func() (string, error) { return scriptPath, nil }
+	t.Cleanup(func() {
+		scriptPathResolver = origResolver
+	})
+
+	err := runCodespacesAuth(nil)
+	if err == nil {
+		t.Fatal("expected error from non-zero helper exit code")
+	}
+	if !strings.Contains(err.Error(), "exit code 7") {
+		t.Fatalf("expected exit-code error message, got: %v", err)
 	}
 }

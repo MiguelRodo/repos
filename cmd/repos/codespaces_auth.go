@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 )
 
-var resolveCodespacesScriptPathFunc = resolveCodespacesScriptPath
+var scriptPathResolver = resolveCodespacesScriptPath
 
 func runCodespacesAuth(args []string) error {
-	scriptPath, err := resolveCodespacesScriptPathFunc()
+	scriptPath, err := scriptPathResolver()
 	if err != nil {
 		return err
 	}
@@ -33,6 +33,10 @@ func resolveCodespacesScriptPath() (string, error) {
 	exePath, _ := os.Executable()
 	exeDir := filepath.Dir(exePath)
 
+	// Lookup order:
+	// 1) CWD-relative path for source checkouts and local development.
+	// 2) executable directory relative path for install layouts that keep scripts beside binary assets.
+	// 3) parent of executable directory for layouts that place binaries under bin/ (e.g. package managers).
 	candidates := []string{
 		filepath.Join("scripts", "helper", "codespaces-auth-add.sh"),
 		filepath.Join(exeDir, "scripts", "helper", "codespaces-auth-add.sh"),
