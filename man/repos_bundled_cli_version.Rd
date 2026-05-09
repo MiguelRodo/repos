@@ -10,7 +10,7 @@ repos_bundled_cli_version()
 A character string with the bundled script version (e.g. \code{"1.3.9"}).
 }
 \description{
-The R package ships a copy of some Bash helper scripts (e.g.\ for
+The R package ships a copy of some Bash helper scripts (e.g., for
 \code{repos_workspace()}).  This function returns the version string of
 those bundled scripts.  Primary functionality (clone, run, etc.) uses the
 installed \code{repos} Go binary instead; see

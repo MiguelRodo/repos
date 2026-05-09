@@ -4,7 +4,7 @@
 
 #' Return the version of the bundled bash scripts in this package
 #'
-#' The R package ships a copy of some Bash helper scripts (e.g.\ for
+#' The R package ships a copy of some Bash helper scripts (e.g., for
 #' \code{repos_workspace()}).  This function returns the version string of
 #' those bundled scripts.  Primary functionality (clone, run, etc.) uses the
 #' installed \code{repos} Go binary instead; see
@@ -168,7 +168,7 @@ run_repos_binary <- function(subcommand, args = character()) {
 #'
 #' Internal helper that locates a bundled script and executes it via
 #' \code{system2()}.  Retained for commands whose Go binary interface differs
-#' from the original bash script (e.g.\ \code{repos_workspace()}).
+#' from the original bash script (e.g., \code{repos_workspace()}).
 #'
 #' @param script_name Name of the script file inside \code{inst/scripts/}.
 #' @param args Character vector of arguments to pass to the script.
@@ -530,7 +530,7 @@ repos_run <- function(file = NULL, concurrent = FALSE, ...) {
 
   cmd_args <- c(...)
   if (length(cmd_args) == 0L) {
-    stop("A command to run must be provided via '...' (e.g. repos_run(\"bash\", \"run.sh\"))")
+    stop("A command to run must be provided via `...` (e.g. repos_run(\"bash\", \"run.sh\"))")
   }
 
   run_repos_binary("run", c(args, cmd_args))

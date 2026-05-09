@@ -17,6 +17,6 @@ Invisibly returns the exit status of the script (0 for success).
 \description{
 Internal helper that locates a bundled script and executes it via
 \code{system2()}.  Retained for commands whose Go binary interface differs
-from the original bash script (e.g. \code{repos_workspace()}).
+from the original bash script (e.g., \code{repos_workspace()}).
 }
 \keyword{internal}
