@@ -26,8 +26,9 @@ type runResult struct {
 }
 
 type runOptions struct {
-	reposFile       string
-	concurrent      bool
+	reposFile  string
+	concurrent bool
+	// script defaults to run.sh to match run-pipeline.sh behavior.
 	script          string
 	include         map[string]struct{}
 	exclude         map[string]struct{}
@@ -56,7 +57,8 @@ const (
 	maxScannerBufferSize     = 1024 * 1024
 )
 
-var allowedScriptPath = regexp.MustCompile(`^[a-zA-Z0-9._/-]+$`)
+var scriptPathCharPattern = regexp.MustCompile(`^[a-zA-Z0-9._/-]+$`)
+var conciseRepoNamePattern = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
 
 func runRun(args []string) error {
 	cwd, err := os.Getwd()
@@ -204,7 +206,7 @@ func parseRunOptions(args []string, defaultFile string) (runOptions, error) {
 	fs.StringVar(&excludeRaw, "exclude", "", "comma-separated list of repositories to exclude")
 	fs.StringVar(&excludeRaw, "e", "", "comma-separated list of repositories to exclude")
 	fs.BoolVar(&opts.ensureSetup, "ensure-setup", false, "clone repositories before running scripts")
-	fs.BoolVar(&opts.skipDeps, "skip-deps", true, "skip install-r-deps step")
+	fs.BoolVar(&opts.skipDeps, "skip-deps", false, "skip install-r-deps step")
 	fs.BoolVar(&opts.dryRun, "dry-run", false, "show what would run without executing")
 	fs.BoolVar(&opts.verbose, "verbose", false, "enable verbose logging")
 	fs.BoolVar(&opts.continueOnError, "continue-on-error", false, "continue processing repositories after failure")
@@ -247,8 +249,8 @@ func validateRunScriptPath(script string) error {
 	if filepath.IsAbs(script) || strings.Contains(script, "..") || strings.HasPrefix(script, "-") {
 		return fmt.Errorf("invalid script path: %s", script)
 	}
-	if !allowedScriptPath.MatchString(script) {
-		return fmt.Errorf("script path contains disallowed characters: %s", script)
+	if !scriptPathCharPattern.MatchString(script) {
+		return fmt.Errorf("script path must only contain alphanumeric characters, dots, underscores, slashes, or hyphens: %s", script)
 	}
 	return nil
 }
@@ -292,7 +294,7 @@ func isConciseRunList(path string) (bool, error) {
 			continue
 		}
 		switch {
-		case strings.HasPrefix(line, "@"), strings.Contains(line, "/"), lineIsGlobalFlagsOnly(line):
+		case strings.HasPrefix(line, "@"), strings.Contains(line, "/"):
 			return false, nil
 		}
 	}
@@ -349,6 +351,9 @@ func validateConciseRunRepoName(name string) error {
 	if filepath.IsAbs(name) || strings.Contains(name, "..") || strings.HasPrefix(name, "-") {
 		return fmt.Errorf("invalid repository directory in repos list: %s", name)
 	}
+	if !conciseRepoNamePattern.MatchString(name) {
+		return fmt.Errorf("repository directory must only contain alphanumeric characters, dots, underscores, or hyphens: %s", name)
+	}
 	return nil
 }
 
@@ -370,12 +375,12 @@ func runPipelineTargets(targets []pipelineTarget, opts runOptions) (runPipelineS
 	stats := runPipelineStats{}
 	for _, t := range targets {
 		stats.total++
-		r, skip := runScriptInTarget(t, opts)
-		if skip {
+		result := runScriptInTarget(t, opts)
+		if result.skipped {
 			stats.skipped++
 			continue
 		}
-		if r != nil {
+		if result.err != nil {
 			stats.failed++
 			if !opts.continueOnError {
 				return stats, fmt.Errorf("%d %s failed", stats.failed, pluralRepo(stats.failed))
@@ -390,23 +395,28 @@ func runPipelineTargets(targets []pipelineTarget, opts runOptions) (runPipelineS
 	return stats, nil
 }
 
-func runScriptInTarget(t pipelineTarget, opts runOptions) (error, bool) {
+type runScriptResult struct {
+	err     error
+	skipped bool
+}
+
+func runScriptInTarget(t pipelineTarget, opts runOptions) runScriptResult {
 	if opts.dryRun {
 		printPrefixedLine(t.target.name, "DRY-RUN: would execute ./"+t.script, nil)
-		return nil, false
+		return runScriptResult{}
 	}
 	info, err := os.Stat(t.target.path)
 	if err != nil || !info.IsDir() {
 		printPrefixedLine(t.target.name, "SKIP: directory not found", nil)
-		return nil, true
+		return runScriptResult{skipped: true}
 	}
 
 	scriptPath := filepath.Join(t.target.path, t.script)
 	if _, err := os.Stat(scriptPath); err != nil {
 		printPrefixedLine(t.target.name, "SKIP: no "+t.script+" found", nil)
-		return nil, true
+		return runScriptResult{skipped: true}
 	}
-	if err := os.Chmod(scriptPath, 0o755); err != nil && opts.verbose {
+	if err := os.Chmod(scriptPath, 0o755); err != nil {
 		printPrefixedLine(t.target.name, "Warning: could not chmod "+t.script+": "+err.Error(), nil)
 	}
 
@@ -415,9 +425,9 @@ func runScriptInTarget(t pipelineTarget, opts runOptions) (error, bool) {
 	outMu := &sync.Mutex{}
 	res := runCommandWithPrefixedOutput(t.target.name, cmd, outMu)
 	if res != nil {
-		return res, false
+		return runScriptResult{err: res}
 	}
-	return nil, false
+	return runScriptResult{}
 }
 
 func runCommandWithPrefixedOutput(repoName string, cmd *exec.Cmd, outMu *sync.Mutex) error {
@@ -712,7 +722,7 @@ Options:
   -i, --include <names>    Comma-separated repository names to include
   -e, --exclude <names>    Comma-separated repository names to exclude
       --ensure-setup       Run clone step before script execution
-      --skip-deps          Skip install-r-deps step
+      --skip-deps          Skip install-r-deps step (deps run by default)
       --dry-run            Show actions without executing
       --verbose            Enable verbose logging
       --continue-on-error  Continue after script failures

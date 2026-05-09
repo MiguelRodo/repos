@@ -184,7 +184,9 @@ func TestRunPipelineModeHonorsIncludeFilter(t *testing.T) {
 	}
 
 	assertFileExists(t, filepath.Join(repo1, ".included"))
-	if _, err := os.Stat(filepath.Join(repo2, ".excluded")); !errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(filepath.Join(repo2, ".excluded")); err == nil {
+		t.Fatal("expected repo-two script not to run")
+	} else if !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("expected repo-two script not to run, got stat err: %v", err)
 	}
 }
@@ -217,6 +219,56 @@ func TestRunPipelineModeSupportsConciseListPerLineScript(t *testing.T) {
 
 	assertFileExists(t, filepath.Join(repo1, ".custom"))
 	assertFileExists(t, filepath.Join(repo2, ".default"))
+}
+
+func TestValidateRunScriptPath(t *testing.T) {
+	bad := []string{
+		"",
+		"/abs/path.sh",
+		"../run.sh",
+		"-run.sh",
+		"run;rm.sh",
+	}
+	for _, script := range bad {
+		if err := validateRunScriptPath(script); err == nil {
+			t.Fatalf("expected validateRunScriptPath(%q) to fail", script)
+		}
+	}
+	if err := validateRunScriptPath("scripts/run.sh"); err != nil {
+		t.Fatalf("expected valid script path, got error: %v", err)
+	}
+}
+
+func TestValidateConciseRunRepoName(t *testing.T) {
+	bad := []string{
+		"/tmp/repo",
+		"../repo",
+		"-repo",
+		"repo/one",
+		"repo;one",
+	}
+	for _, name := range bad {
+		if err := validateConciseRunRepoName(name); err == nil {
+			t.Fatalf("expected validateConciseRunRepoName(%q) to fail", name)
+		}
+	}
+	if err := validateConciseRunRepoName("repo_one-1"); err != nil {
+		t.Fatalf("expected valid repo name, got error: %v", err)
+	}
+}
+
+func TestShouldRunRepo(t *testing.T) {
+	include := map[string]struct{}{"repo-one": {}}
+	exclude := map[string]struct{}{"repo-two": {}}
+	if !shouldRunRepo("repo-one", include, exclude) {
+		t.Fatal("expected included repo to run")
+	}
+	if shouldRunRepo("repo-two", nil, exclude) {
+		t.Fatal("expected excluded repo not to run")
+	}
+	if shouldRunRepo("repo-three", include, nil) {
+		t.Fatal("expected non-included repo not to run")
+	}
 }
 
 func captureStdout(t *testing.T, fn func()) string {
