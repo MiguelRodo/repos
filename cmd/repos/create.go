@@ -277,20 +277,21 @@ func resolveCreateFallbackRepo() (string, error) {
 }
 
 func ensureBranchExistsOnRepo(ownerRepo, branch string) error {
-	if err := validateBranch(branch); err != nil {
+	normalizedBranch := normalizeBranchForGitHubRef(branch)
+	if err := validateBranch(normalizedBranch); err != nil {
 		return err
 	}
-	exists, err := ghBranchExistsFunc(ownerRepo, branch)
+	exists, err := ghBranchExistsFunc(ownerRepo, normalizedBranch)
 	if err != nil {
 		return err
 	}
 	if exists {
-		fmt.Printf("Branch exists: %s@%s\n", ownerRepo, branch)
+		fmt.Printf("Branch exists: %s@%s\n", ownerRepo, normalizedBranch)
 		return nil
 	}
 
-	fmt.Printf("Creating branch %s on %s ... ", branch, ownerRepo)
-	if err := ghCreateBranchFunc(ownerRepo, branch); err != nil {
+	fmt.Printf("Creating branch %s on %s ... ", normalizedBranch, ownerRepo)
+	if err := ghCreateBranchFunc(ownerRepo, normalizedBranch); err != nil {
 		fmt.Println("failed.")
 		return err
 	}
@@ -329,7 +330,7 @@ func ghBranchExists(ownerRepo, branch string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	endpoint := fmt.Sprintf("%s/git/ref/heads/%s", repoPath, url.PathEscape(branch))
+	endpoint := fmt.Sprintf("%s/git/refs/heads/%s", repoPath, url.PathEscape(branch))
 	cmd := exec.Command("gh", "api", endpoint)
 	out, err := cmd.CombinedOutput()
 	if err == nil {
@@ -357,7 +358,7 @@ func ghCreateBranch(ownerRepo, branch string) error {
 		return fmt.Errorf("default branch for %s is empty", ownerRepo)
 	}
 
-	baseRefEndpoint := fmt.Sprintf("%s/git/ref/heads/%s", repoPath, url.PathEscape(defaultBranch))
+	baseRefEndpoint := fmt.Sprintf("%s/git/refs/heads/%s", repoPath, url.PathEscape(defaultBranch))
 	baseRefCmd := exec.Command("gh", "api", baseRefEndpoint, "--jq", ".object.sha")
 	baseRefOut, err := baseRefCmd.CombinedOutput()
 	if err != nil {
@@ -387,6 +388,10 @@ func ghAPIRepoPath(ownerRepo string) (string, error) {
 		return "", fmt.Errorf("invalid owner/repo: %s", ownerRepo)
 	}
 	return fmt.Sprintf("repos/%s/%s", url.PathEscape(owner), url.PathEscape(repo)), nil
+}
+
+func normalizeBranchForGitHubRef(branch string) string {
+	return strings.TrimPrefix(branch, "refs/heads/")
 }
 
 func isRepoNotFoundError(out string) bool {

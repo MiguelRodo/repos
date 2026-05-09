@@ -205,3 +205,32 @@ func TestProcessCreateFileAtBranchUsesFallbackRepo(t *testing.T) {
 		t.Fatalf("expected missing branch to be created")
 	}
 }
+
+func TestEnsureBranchExistsOnRepoNormalizesHeadRefPrefix(t *testing.T) {
+	origBranchExists := ghBranchExistsFunc
+	origCreateBranch := ghCreateBranchFunc
+	defer func() {
+		ghBranchExistsFunc = origBranchExists
+		ghCreateBranchFunc = origCreateBranch
+	}()
+
+	var checkedBranch, createdBranch string
+	ghBranchExistsFunc = func(ownerRepo, branch string) (bool, error) {
+		checkedBranch = branch
+		return false, nil
+	}
+	ghCreateBranchFunc = func(ownerRepo, branch string) error {
+		createdBranch = branch
+		return nil
+	}
+
+	if err := ensureBranchExistsOnRepo("acme/base", "refs/heads/feature/x"); err != nil {
+		t.Fatalf("ensureBranchExistsOnRepo error: %v", err)
+	}
+	if checkedBranch != "feature/x" {
+		t.Fatalf("expected branch check to use normalized name, got %q", checkedBranch)
+	}
+	if createdBranch != "feature/x" {
+		t.Fatalf("expected branch creation to use normalized name, got %q", createdBranch)
+	}
+}
