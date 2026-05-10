@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/MiguelRodo/repos/internal/parser"
 )
 
 // workspaceFolder represents a single entry in the VS Code workspace folders array.
@@ -106,21 +108,85 @@ func writeWorkspace(path string, ws workspaceFile) error {
 
 // runWorkspace dispatches workspace sub-commands.
 func runWorkspace(args []string) error {
-	if len(args) == 0 {
-		workspaceUsage()
-		return nil
-	}
-	switch args[0] {
-	case "add":
+	if len(args) > 0 && args[0] == "add" {
 		return runWorkspaceAdd(args[1:])
-	case "-h", "--help", "help":
+	}
+	if len(args) > 0 && (args[0] == "-h" || args[0] == "--help" || args[0] == "help") {
 		workspaceUsage()
 		return nil
-	default:
-		fmt.Fprintf(os.Stderr, "Error: unknown workspace command '%s'\n\n", args[0])
-		workspaceUsage()
-		return errors.New("unknown workspace command")
 	}
+	return runWorkspaceGenerate(args)
+}
+
+func runWorkspaceGenerate(args []string) error {
+	fs := flag.NewFlagSet("workspace", flag.ContinueOnError)
+	fs.SetOutput(os.Stderr)
+	reposFile := fs.String("file", "", "path to repos list file (default: repos.list)")
+	fs.StringVar(reposFile, "f", "", "path to repos list file")
+	help := fs.Bool("help", false, "show help")
+	fs.BoolVar(help, "h", false, "show help")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if *help {
+		workspaceUsage()
+		return nil
+	}
+	if fs.NArg() != 0 {
+		workspaceUsage()
+		return errors.New("workspace takes no positional arguments")
+	}
+
+	listPath := *reposFile
+	if listPath == "" {
+		listPath = "repos.list"
+		if _, err := os.Stat(listPath); errors.Is(err, os.ErrNotExist) {
+			if _, errAlt := os.Stat("repos-to-clone.list"); errAlt == nil {
+				listPath = "repos-to-clone.list"
+			}
+		}
+	}
+	file, err := os.Open(listPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("getting working directory: %w", err)
+	}
+	parentDir := filepath.Dir(cwd)
+	base := filepath.Base(cwd)
+	instructions, err := parser.ParseList(file, parser.Options{
+		InitialFallbackRemote: base,
+		InitialBaseDir:        base,
+	})
+	if err != nil {
+		return err
+	}
+
+	folders := []workspaceFolder{{Path: "."}}
+	for _, ins := range instructions {
+		absPath := filepath.Join(parentDir, ins.TargetDir)
+		rel, err := filepath.Rel(cwd, absPath)
+		if err != nil {
+			return fmt.Errorf("computing relative path for %s: %w", ins.TargetDir, err)
+		}
+		folders = append(folders, workspaceFolder{Path: filepath.ToSlash(rel)})
+	}
+
+	wsPath := findWorkspaceFile(cwd)
+	ws, err := readWorkspace(wsPath)
+	if err != nil {
+		return err
+	}
+	ws.Folders = folders
+	if err := writeWorkspace(wsPath, ws); err != nil {
+		return err
+	}
+	fmt.Printf("Updated '%s'.\n", wsPath)
+	return nil
 }
 
 // runWorkspaceAdd implements `repos workspace add <path> [--file <workspace>]`.
@@ -180,12 +246,17 @@ func runWorkspaceAdd(args []string) error {
 }
 
 func workspaceUsage() {
-	fmt.Print(`Usage: repos workspace <subcommand> [options]
+	fmt.Print(`Usage: repos workspace [options]
 
-Subcommands:
-  add <path>   Add a folder path to the VS Code .code-workspace file
+Generate or refresh the VS Code workspace file from repos.list.
 
-Run 'repos workspace add --help' for more information.
+Options:
+  -f, --file <file>   Path to repository list file (default: repos.list;
+                      falls back to repos-to-clone.list if repos.list is absent)
+  -h, --help          Show this help message.
+
+Legacy subcommand:
+  repos workspace add <path> [--file <workspace-file>]
 `)
 }
 
