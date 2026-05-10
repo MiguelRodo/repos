@@ -112,9 +112,9 @@ update_with_jq() {
   local folders_json_file=""
   local paths_list_file=""
 
-  folders_json_file="$(mktemp "$(get_temp_dir)/repos-folders-XXXXXX")"
+  folders_json_file="$(umask 077 && mktemp "$(get_temp_dir)/repos-folders-XXXXXX")"
   CLEANUP_FILES+=("$folders_json_file")
-  paths_list_file="$(mktemp "$(get_temp_dir)/repos-paths-list-XXXXXX")"
+  paths_list_file="$(umask 077 && mktemp "$(get_temp_dir)/repos-paths-list-XXXXXX")"
   CLEANUP_FILES+=("$paths_list_file")
 
   printf '%s\n' "$paths_list" > "$paths_list_file"
@@ -144,7 +144,7 @@ update_with_python() {
   local py_cmd="${3:-python}"
   local paths_file=""
 
-  paths_file="$(mktemp "$(get_temp_dir)/repos-paths-XXXXXX")"
+  paths_file="$(umask 077 && mktemp "$(get_temp_dir)/repos-paths-XXXXXX")"
   CLEANUP_FILES+=("$paths_file")
   printf '%s\n' "$paths_list" > "$paths_file"
 
@@ -176,7 +176,7 @@ update_with_rscript() {
   local paths_list="$2"
   local paths_file=""
 
-  paths_file="$(mktemp "$(get_temp_dir)/repos-paths-XXXXXX")"
+  paths_file="$(umask 077 && mktemp "$(get_temp_dir)/repos-paths-XXXXXX")"
   CLEANUP_FILES+=("$paths_file")
   printf '%s\n' "$paths_list" > "$paths_file"
 
@@ -657,7 +657,7 @@ update_workspace_file() {
 
   # Safely write via a temporary file, then move into place
   local tmp=""
-  tmp="$(mktemp "$(get_temp_dir)/repos-workspace-update-XXXXXX")"
+  tmp="$(umask 077 && mktemp "$(get_temp_dir)/repos-workspace-update-XXXXXX")"
   CLEANUP_FILES+=("$tmp")
 
   local rc=0
@@ -710,7 +710,7 @@ main() {
         else
           # Auto-generate debug file securely
           TEMP_DIR=$(get_temp_dir)
-          DEBUG_FILE=$(mktemp "${TEMP_DIR}/repos-workspace-debug-XXXXXX")
+          DEBUG_FILE=$(umask 077 && mktemp "${TEMP_DIR}/repos-workspace-debug-XXXXXX")
           CLEANUP_FILES+=("$DEBUG_FILE")
         fi
         ;;

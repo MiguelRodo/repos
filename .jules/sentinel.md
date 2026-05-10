@@ -138,3 +138,8 @@
 **Vulnerability:** Sensitive Git credentials (tokens/passwords) embedded in URLs were leaked in terminal output, debug logs, and Git's own error messages (stderr).
 **Learning:** Hardening internal URL parsing (e.g. for directory naming) is insufficient if the raw URL is still passed to logging functions or external tools like `git`. Many commands echo their arguments back on failure, bypassing local sanitization.
 **Prevention:** Implement a systematic `sanitize_url` helper using a non-greedy regex (`[^/@]*@`) for all logging. Wrap the `git` command (or other external tools) to capture, sanitize, and re-emit `stderr` to prevent leakage from the tool's own output.
+
+## 2026-05-10 - [High] Insecure Permissions on Temporary Files Containing Sensitive Data
+**Vulnerability:** Temporary files containing GitHub tokens (like `AUTH_HDR_FILE`) or Git stderr logs were created using `mktemp` without explicit umask hardening, potentially inheriting permissive system-wide default permissions.
+**Learning:** While most `mktemp` implementations default to `0600`, relying on this is not a solid "defense in depth" strategy. In a multi-user environment or a misconfigured container, sensitive data in `/tmp` could be readable by other users if only for a brief window.
+**Prevention:** Always wrap `mktemp` calls for sensitive data with `umask 077` in a subshell: `tmp_file="$(umask 077 && mktemp ...)"`. This ensures the file is created with `0600` permissions regardless of the process's current umask or the system default.

@@ -63,7 +63,7 @@ git() {
   # Wrap git to capture and sanitize stderr to prevent credential leakage
   # from git's own error messages (e.g. "fatal: could not read Password for 'https://token@github.com'")
   local tmp_stderr
-  tmp_stderr="$(mktemp "$(get_temp_dir)/git-stderr-XXXXXX")"
+  tmp_stderr="$(umask 077 && mktemp "$(get_temp_dir)/git-stderr-XXXXXX")"
   CLEANUP_FILES+=("$tmp_stderr")
 
   local rc=0
@@ -1284,7 +1284,7 @@ parse_args() {
         else
           # Auto-generate debug file securely
           TEMP_DIR=$(get_temp_dir)
-          DEBUG_FILE_ARG=$(mktemp "${TEMP_DIR}/repos-clone-debug-XXXXXX")
+          DEBUG_FILE_ARG=$(umask 077 && mktemp "${TEMP_DIR}/repos-clone-debug-XXXXXX")
           CLEANUP_FILES+=("$DEBUG_FILE_ARG")
         fi
         ;;

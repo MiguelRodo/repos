@@ -37,7 +37,7 @@ git() {
   # Wrap git to capture and sanitize stderr to prevent credential leakage
   # from git's own error messages (e.g. "fatal: could not read Password for 'https://token@github.com'")
   local tmp_stderr
-  tmp_stderr="$(mktemp "$(get_temp_dir)/git-stderr-XXXXXX")"
+  tmp_stderr="$(umask 077 && mktemp "$(get_temp_dir)/git-stderr-XXXXXX")"
   CLEANUP_FILES+=("$tmp_stderr")
 
   local rc=0
@@ -165,7 +165,7 @@ while [ $# -gt 0 ]; do
       else
         # Auto-generate debug file securely
         TEMP_DIR=$(get_temp_dir)
-        DEBUG_FILE=$(mktemp "${TEMP_DIR}/repos-create-debug-XXXXXX")
+        DEBUG_FILE=$(umask 077 && mktemp "${TEMP_DIR}/repos-create-debug-XXXXXX")
         CLEANUP_FILES+=("$DEBUG_FILE")
       fi
       ;;
@@ -258,7 +258,7 @@ get_credentials() {
 
   # Create a temporary file for the Authorization header to avoid exposing the token in process lists
   if [ -z "$AUTH_HDR_FILE" ]; then
-    AUTH_HDR_FILE="$(mktemp "$(get_temp_dir)/repos-auth-hdr-XXXXXX")"
+    AUTH_HDR_FILE="$(umask 077 && mktemp "$(get_temp_dir)/repos-auth-hdr-XXXXXX")"
     CLEANUP_FILES+=("$AUTH_HDR_FILE")
     printf "Authorization: token %s\n" "$GH_TOKEN" > "$AUTH_HDR_FILE"
     chmod 600 "$AUTH_HDR_FILE"
@@ -278,7 +278,7 @@ validate_token() {
   debug "Validating GitHub token..."
   
   local response_file
-  response_file="$(mktemp "$(get_temp_dir)/repos-token-val-XXXXXX")"
+  response_file="$(umask 077 && mktemp "$(get_temp_dir)/repos-token-val-XXXXXX")"
   CLEANUP_FILES+=("$response_file")
 
   # Make a simple API call to check token validity
