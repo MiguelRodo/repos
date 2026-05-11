@@ -149,7 +149,7 @@ func TestProcessCreateFileSkipsLocalRemotes(t *testing.T) {
 	}
 	ghCreateRepoFunc = func(ownerRepo string, private bool) error { return nil }
 
-	if err := processCreateFile(list, true); err != nil {
+	if err := processCreateFile(list, true, func(string, ...any) {}); err != nil {
 		t.Fatalf("processCreateFile error: %v", err)
 	}
 	if len(seen) != 1 || seen[0] != "acme/remote" {
@@ -188,7 +188,7 @@ func TestProcessCreateFileSkipsNonGitHubRemotes(t *testing.T) {
 	ghCreateRepoFunc = func(ownerRepo string, private bool) error { return nil }
 
 	stderr := captureStderr(t, func() {
-		if err := processCreateFile(list, true); err != nil {
+		if err := processCreateFile(list, true, func(string, ...any) {}); err != nil {
 			t.Fatalf("processCreateFile error: %v", err)
 		}
 	})
@@ -240,7 +240,7 @@ func TestProcessCreateFileAtBranchUsesFallbackRepo(t *testing.T) {
 		return nil
 	}
 
-	if err := processCreateFile(list, true); err != nil {
+	if err := processCreateFile(list, true, func(string, ...any) {}); err != nil {
 		t.Fatalf("processCreateFile error: %v", err)
 	}
 	if gotOwnerRepo != "acme/base" || gotBranch != "feature-x" {
@@ -273,7 +273,7 @@ func TestProcessCreateFileFallbackResolutionErrorDeferredUntilAtBranch(t *testin
 	ghCreateRepoFunc = func(ownerRepo string, private bool) error { return nil }
 
 	stderr := captureStderr(t, func() {
-		if err := processCreateFile(list, true); err != nil {
+		if err := processCreateFile(list, true, func(string, ...any) {}); err != nil {
 			t.Fatalf("processCreateFile error: %v", err)
 		}
 	})
@@ -297,7 +297,7 @@ func TestProcessCreateFileAtBranchWarnsWhenInitialFallbackResolutionFailed(t *te
 	resolveCreateFallbackRepoFunc = func() (string, error) { return "", os.ErrNotExist }
 
 	stderr := captureStderr(t, func() {
-		if err := processCreateFile(list, true); err != nil {
+		if err := processCreateFile(list, true, func(string, ...any) {}); err != nil {
 			t.Fatalf("processCreateFile error: %v", err)
 		}
 	})

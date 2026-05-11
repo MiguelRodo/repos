@@ -119,13 +119,24 @@ func runWorkspace(args []string) error {
 }
 
 func runWorkspaceGenerate(args []string) error {
+	// Pre-process --debug-file to support the optional-value form.
+	processedArgs, autoDebugPath, err := preProcessDebugFileFlag(args)
+	if err != nil {
+		return err
+	}
+	if autoDebugPath != "" {
+		fmt.Fprintf(os.Stderr, "Debug output will be written to: %s\n", autoDebugPath)
+	}
+
 	fs := flag.NewFlagSet("workspace", flag.ContinueOnError)
 	fs.SetOutput(os.Stderr)
 	reposFile := fs.String("file", "", "path to repos list file (default: repos.list)")
 	fs.StringVar(reposFile, "f", "", "path to repos list file")
+	debug := fs.Bool("debug", false, "enable debug output")
+	debugFile := fs.String("debug-file", "", "write debug output to file (auto-generate temp if no path given)")
 	help := fs.Bool("help", false, "show help")
 	fs.BoolVar(help, "h", false, "show help")
-	if err := fs.Parse(args); err != nil {
+	if err := fs.Parse(processedArgs); err != nil {
 		return err
 	}
 	if *help {
@@ -137,6 +148,28 @@ func runWorkspaceGenerate(args []string) error {
 		return errors.New("workspace takes no positional arguments")
 	}
 
+	// A non-empty --debug-file implies --debug.
+	if *debugFile != "" {
+		*debug = true
+	}
+
+	debugWriter, closeDebug, err := openDebugWriter(*debugFile)
+	if err != nil {
+		return err
+	}
+	defer closeDebug()
+
+	dbg := func(format string, a ...any) {
+		if !*debug {
+			return
+		}
+		w := debugWriter
+		if w == nil {
+			w = os.Stderr
+		}
+		fmt.Fprintf(w, "[DEBUG workspace-go] "+format+"\n", a...)
+	}
+
 	listPath := *reposFile
 	if listPath == "" {
 		listPath = "repos.list"
@@ -146,6 +179,7 @@ func runWorkspaceGenerate(args []string) error {
 			}
 		}
 	}
+	dbg("using repos list: %s", listPath)
 	file, err := os.Open(listPath)
 	if err != nil {
 		return err
@@ -158,6 +192,7 @@ func runWorkspaceGenerate(args []string) error {
 	}
 	parentDir := filepath.Dir(cwd)
 	base := filepath.Base(cwd)
+	dbg("cwd=%s parentDir=%s", cwd, parentDir)
 	instructions, err := parser.ParseList(file, parser.Options{
 		InitialFallbackRemote: base,
 		InitialBaseDir:        base,
@@ -173,10 +208,12 @@ func runWorkspaceGenerate(args []string) error {
 		if err != nil {
 			return fmt.Errorf("computing relative path for %s: %w", ins.TargetDir, err)
 		}
+		dbg("adding folder: %s", filepath.ToSlash(rel))
 		folders = append(folders, workspaceFolder{Path: filepath.ToSlash(rel)})
 	}
 
 	wsPath := findWorkspaceFile(cwd)
+	dbg("workspace file: %s", wsPath)
 	ws, err := readWorkspace(wsPath)
 	if err != nil {
 		return err
@@ -251,9 +288,11 @@ func workspaceUsage() {
 Generate or refresh the VS Code workspace file from repos.list.
 
 Options:
-  -f, --file <file>   Path to repository list file (default: repos.list;
-                      falls back to repos-to-clone.list if repos.list is absent)
-  -h, --help          Show this help message.
+  -f, --file <file>       Path to repository list file (default: repos.list;
+                          falls back to repos-to-clone.list if repos.list is absent)
+  --debug                 Enable debug output to stderr.
+  --debug-file [file]     Enable debug output to file (auto-generate temp if no path given).
+  -h, --help              Show this help message.
 
 Legacy subcommand:
   repos workspace add <path> [--file <workspace-file>]

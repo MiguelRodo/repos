@@ -54,3 +54,4 @@ _site/
 # Go build artifacts
 /repos
 /repos-bin
+cmd/repos/repos

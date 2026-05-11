@@ -22,6 +22,15 @@ func runClone(args []string) error {
 		return err
 	}
 
+	// Pre-process --debug-file to support the optional-value form.
+	processedArgs, autoDebugPath, err := preProcessDebugFileFlag(args)
+	if err != nil {
+		return err
+	}
+	if autoDebugPath != "" {
+		fmt.Fprintf(os.Stderr, "Debug output will be written to: %s\n", autoDebugPath)
+	}
+
 	defaultFile := "repos.list"
 	if _, err := os.Stat(defaultFile); err != nil {
 		if _, err2 := os.Stat("repos-to-clone.list"); err2 == nil {
@@ -35,6 +44,7 @@ func runClone(args []string) error {
 	fs.StringVar(reposFile, "f", defaultFile, "repos list file")
 	debug := fs.Bool("debug", false, "enable debug")
 	fs.BoolVar(debug, "d", false, "enable debug")
+	debugFile := fs.String("debug-file", "", "write debug output to file (auto-generate temp if no path given)")
 	globalWorktree := fs.Bool("worktree", false, "create @branch as worktrees by default")
 	fetchDeferred := fs.Bool("fetch-all-deferred", false, "deferred fetch mode")
 	fetchSingle := fs.Bool("fetch-single", false, "single fetch mode")
@@ -43,13 +53,24 @@ func runClone(args []string) error {
 	help := fs.Bool("help", false, "show help")
 	fs.BoolVar(help, "h", false, "show help")
 
-	if err := fs.Parse(args); err != nil {
+	if err := fs.Parse(processedArgs); err != nil {
 		return err
 	}
 	if *help {
 		cloneUsage()
 		return nil
 	}
+
+	// A non-empty --debug-file implies --debug.
+	if *debugFile != "" {
+		*debug = true
+	}
+
+	debugWriter, closeDebug, err := openDebugWriter(*debugFile)
+	if err != nil {
+		return err
+	}
+	defer closeDebug()
 
 	globalFetchMode := "deferred"
 	if *fetchSingle {
@@ -67,6 +88,7 @@ func runClone(args []string) error {
 		parentDir:             filepath.Dir(cwd),
 		reposFile:             *reposFile,
 		debug:                 *debug,
+		debugWriter:           debugWriter,
 		globalWorktree:        *globalWorktree,
 		globalWorktreeForced:  false,
 		globalFetchMode:       globalFetchMode,
