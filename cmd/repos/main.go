@@ -83,11 +83,6 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-	case "add-branch":
-		if err := runAddBranch(os.Args[2:]); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
 	case "install-r-deps":
 		if err := runInstallRDeps(os.Args[2:]); err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -130,7 +125,6 @@ Commands:
   clone             Clone repositories listed in repos.list into the parent directory
   workspace         Manage VS Code .code-workspace files
   update-branches   Fetch and fast-forward all git repos in the parent directory
-  add-branch        Create a new worktree/branch off the current repository
   install-r-deps    Install R dependencies for managed repositories
   codespace         Set GH_TOKEN Codespaces secrets for managed repositories
   codespaces        Alias for codespace
