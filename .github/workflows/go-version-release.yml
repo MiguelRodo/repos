@@ -22,7 +22,7 @@ on:
       goreleaser_config:
         description: "Optional path to the GoReleaser config file."
         required: false
-        default: "./cmd/repos"
+        default: ".goreleaser.yml"
 jobs:
   release:
     runs-on: ubuntu-latest

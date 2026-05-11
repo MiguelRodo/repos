@@ -1,0 +1,23 @@
+project_name: repos
+
+builds:
+  - id: repos
+    binary: repos
+    main: ./cmd/repos
+    env:
+      - CGO_ENABLED=0
+
+nfpms:
+  - id: repos
+    package_name: repos
+    file_name_template: "{{ .PackageName }}_{{ .Version }}_{{ .Arch }}"
+    homepage: "https://github.com/MiguelRodo/repos"
+    description: "Cross-platform CLI for managing multiple related Git repositories as a unified workspace"
+    license: "MIT"
+    maintainer: "Miguel Rodo"
+    formats:
+      - deb
+    bindir: /usr/bin
+
+archives:
+  - formats: [tar.gz]
