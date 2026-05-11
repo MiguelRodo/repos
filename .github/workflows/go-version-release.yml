@@ -15,6 +15,10 @@ on:
       go_version:
         description: 'Go version to install.'
         required: false
+      apt_repo:
+        description: 'GitHub repository functioning as an apt repository, to send .deb file to'
+        required: false
+        default: 'MiguelRodo/apt-miguelrodo'
 
 jobs:
   release:
@@ -32,3 +36,4 @@ jobs:
           bump_type: ${{ inputs.bump_type }}
           version_check: ${{ inputs.version_check }}
           go_version: ${{ inputs.go_version }}
+          apt_repo: ${{ inputs.apt_repo }}
