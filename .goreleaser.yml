@@ -1,14 +1,16 @@
 project_name: repos
 
 builds:
-  - id: repos
-    binary: repos
-    main: ./cmd/repos
-    env:
-      - CGO_ENABLED=0
+  - id: default
+    goos:
+      - linux
+    goarch:
+      - amd64
 
 nfpms:
   - id: repos
+    formats:
+    - deb
     package_name: repos
     file_name_template: "{{ .PackageName }}_{{ .Version }}_{{ .Arch }}"
     homepage: "https://github.com/MiguelRodo/repos"
