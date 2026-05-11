@@ -22,3 +22,7 @@
 ^entire-project\.code-workspace$
 ^AGENTS\.md$
 ^repos\.list$
+^go\.mod$
+^go\.sum$
+^cmd$
+^internal$
