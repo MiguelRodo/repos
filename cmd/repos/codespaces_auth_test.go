@@ -352,12 +352,22 @@ func TestUpdateDevcontainerFile_HandlesJSONC(t *testing.T) {
 	}
 }
 
-func TestStripJSONC_HandlesBackslashAtEndOfString(t *testing.T) {
+func TestStripJSONC_HandlesEscapedQuotes(t *testing.T) {
 	// A well-formed JSON string with an escaped quote.
 	input := `{"key": "value with \"escaped\" quotes"}`
 	got := string(stripJSONC([]byte(input)))
 	if !strings.Contains(got, "escaped") {
 		t.Fatalf("escaped content not preserved: %q", got)
+	}
+}
+
+func TestStripJSONC_HandlesEscapeAtEndOfString(t *testing.T) {
+	// JSON string ending with an escaped backslash (e.g., Windows path).
+	// Ensure no panic and correct output.
+	input := `{"path": "C:\\"}`
+	got := string(stripJSONC([]byte(input)))
+	if !strings.Contains(got, `"path"`) {
+		t.Fatalf("key not preserved: %q", got)
 	}
 }
 
