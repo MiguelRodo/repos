@@ -47,7 +47,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-if [[ "$url" == *"/repos-linux-amd64" ]]; then
+if [[ "$url" == *"github.com/MiguelRodo/repos/releases/latest/download/repos-linux-amd64" ]]; then
   cat > "$outfile" <<'BIN'
 #!/usr/bin/env bash
 echo "repos mock"
@@ -61,7 +61,6 @@ chmod +x "$MOCK_BIN/curl"
 
 ORIGINAL_PATH="$PATH"
 export PATH="$RELATIVE_BIN:$INSTALL_DIR:$MOCK_BIN:$ORIGINAL_PATH"
-export REPOS_RELEASE_REPO="example/unused"
 export XDG_STATE_HOME="$TEST_DIR/state"
 
 cd "$TEST_DIR"

@@ -1,12 +1,13 @@
 project_name: repos
 
 builds:
-  - id: default
+  - id: repos-linux
     main: ./cmd/repos
     goos:
       - linux
     goarch:
       - amd64
+      - arm64
 
 nfpms:
   - id: repos
@@ -19,6 +20,8 @@ nfpms:
     license: "MIT"
     maintainer: "Miguel Rodo"
     bindir: /usr/bin
+    builds:
+      - repos-linux
 
 archives:
   - format: tar.gz

@@ -7,7 +7,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
 
-RELEASE_REPO="${REPOS_RELEASE_REPO:-miguelrodo/repos-go}"
+RELEASE_REPO="${REPOS_RELEASE_REPO:-MiguelRodo/repos}"
 BINARY_NAME="${REPOS_BINARY_NAME:-repos}"
 DOWNLOAD_BASE_URL="https://github.com/${RELEASE_REPO}/releases/latest/download"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/repos"

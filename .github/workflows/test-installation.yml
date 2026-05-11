@@ -199,6 +199,36 @@ jobs:
           fi
           echo "Uninstallation successful"
 
+  # Test installation from published APT repository
+  test-apt-repo-installation:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Install APT repository prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl gpg
+
+      - name: Add MiguelRodo APT repository
+        run: |
+          curl -fsSL https://miguelrodo.github.io/apt-miguelrodo/KEY.gpg \
+            | sudo gpg --dearmor -o /usr/share/keyrings/apt-miguelrodo.gpg
+          echo "deb [signed-by=/usr/share/keyrings/apt-miguelrodo.gpg] https://miguelrodo.github.io/apt-miguelrodo stable main" \
+            | sudo tee /etc/apt/sources.list.d/apt-miguelrodo.list >/dev/null
+
+      - name: Install repos from APT
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y repos
+
+      - name: Verify installed binary and architecture
+        run: |
+          repos --help || true
+          dpkg -s repos | grep '^Architecture:'
+          echo "APT repository installation test passed"
+
   # Test Windows manual installation
   test-windows-manual:
     runs-on: windows-latest
@@ -282,7 +312,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    needs: [test-python-package, test-r-package, test-debian-package, test-local-installation, test-windows-manual, test-from-source]
+    needs: [test-python-package, test-r-package, test-debian-package, test-local-installation, test-apt-repo-installation, test-windows-manual, test-from-source]
     if: always()
     
     steps:
@@ -302,6 +332,10 @@ jobs:
           fi
           if [ "${{ needs.test-local-installation.result }}" != "success" ]; then
             echo "Local installation tests failed"
+            exit 1
+          fi
+          if [ "${{ needs.test-apt-repo-installation.result }}" != "success" ]; then
+            echo "APT repository installation tests failed"
             exit 1
           fi
           if [ "${{ needs.test-windows-manual.result }}" != "success" ]; then
