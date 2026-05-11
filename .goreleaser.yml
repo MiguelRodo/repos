@@ -17,8 +17,6 @@ nfpms:
     description: "Cross-platform CLI for managing multiple related Git repositories as a unified workspace"
     license: "MIT"
     maintainer: "Miguel Rodo"
-    formats:
-      - deb
     bindir: /usr/bin
 
 archives:
