@@ -37,6 +37,15 @@ func runCreate(args []string) error {
 		}
 	}
 
+	// Pre-process --debug-file to support the optional-value form.
+	processedArgs, autoDebugPath, err := preProcessDebugFileFlag(args)
+	if err != nil {
+		return err
+	}
+	if autoDebugPath != "" {
+		fmt.Fprintf(os.Stderr, "Debug output will be written to: %s\n", autoDebugPath)
+	}
+
 	fs := flag.NewFlagSet("create", flag.ContinueOnError)
 	fs.SetOutput(os.Stderr)
 	reposFile := fs.String("file", defaultFile, "repos list file")
@@ -44,10 +53,12 @@ func runCreate(args []string) error {
 	publicFlag := fs.Bool("public", false, "create repos as public by default")
 	fs.BoolVar(publicFlag, "p", false, "create repos as public by default")
 	privateFlag := fs.Bool("private", false, "create repos as private by default")
+	debug := fs.Bool("debug", false, "enable debug output")
+	debugFile := fs.String("debug-file", "", "write debug output to file (auto-generate temp if no path given)")
 	help := fs.Bool("help", false, "show help")
 	fs.BoolVar(help, "h", false, "show help")
 
-	if err := fs.Parse(args); err != nil {
+	if err := fs.Parse(processedArgs); err != nil {
 		return err
 	}
 	if *help {
@@ -57,6 +68,29 @@ func runCreate(args []string) error {
 	if *publicFlag && *privateFlag {
 		return errors.New("cannot use both --public and --private")
 	}
+
+	// A non-empty --debug-file implies --debug.
+	if *debugFile != "" {
+		*debug = true
+	}
+
+	debugWriter, closeDebug, err := openDebugWriter(*debugFile)
+	if err != nil {
+		return err
+	}
+	defer closeDebug()
+
+	dbg := func(format string, a ...any) {
+		if !*debug {
+			return
+		}
+		w := debugWriter
+		if w == nil {
+			w = os.Stderr
+		}
+		fmt.Fprintf(w, "[DEBUG create-go] "+format+"\n", a...)
+	}
+
 	if _, err := os.Stat(*reposFile); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return fmt.Errorf("file '%s' not found", *reposFile)
@@ -86,11 +120,12 @@ func runCreate(args []string) error {
 		privateDefault = fromFile
 	}
 
-	return processCreateFile(*reposFile, privateDefault)
+	dbg("processing %s (private default: %v)", *reposFile, privateDefault)
+	return processCreateFile(*reposFile, privateDefault, dbg)
 }
 
 func createUsage() {
-	fmt.Print(`Usage: repos create [--file <repo-list>] [--public|--private]
+	fmt.Print(`Usage: repos create [--file <repo-list>] [--public|--private] [--debug] [--debug-file [file]]
 
 Create missing GitHub repositories listed in repos.list.
 
@@ -132,7 +167,7 @@ func parseCreateGlobalVisibility(reposFile string, privateDefault bool) (bool, e
 	return privateValue, nil
 }
 
-func processCreateFile(reposFile string, privateDefault bool) error {
+func processCreateFile(reposFile string, privateDefault bool, dbg func(string, ...any)) error {
 	f, err := os.Open(reposFile)
 	if err != nil {
 		return err
@@ -165,6 +200,7 @@ func processCreateFile(reposFile string, privateDefault bool) error {
 				fmt.Fprintf(os.Stderr, "Warning: @%s cannot be processed - no fallback repository available; skipping branch check.\n", branch)
 				continue
 			}
+			dbg("ensuring branch %s exists on %s", branch, fallbackRepo)
 			if err := ensureBranchExistsOnRepo(fallbackRepo, branch); err != nil {
 				return err
 			}
@@ -182,11 +218,13 @@ func processCreateFile(reposFile string, privateDefault bool) error {
 			continue
 		}
 
+		dbg("processing create line: %s", gitcmd.SanitizeURL(line))
 		if err := processCreateLine(line, privateDefault); err != nil {
 			return err
 		}
 		if ownerRepo, err := extractOwnerRepo(repoSpec); err == nil {
 			fallbackRepo = ownerRepo
+			dbg("updated fallback repo to %s", fallbackRepo)
 		} else {
 			fmt.Fprintf(os.Stderr, "Warning: could not update fallback repository from %s: %v\n", gitcmd.SanitizeURL(repoSpec), err)
 		}
