@@ -9,7 +9,8 @@ repos(command, ...)
 \arguments{
 \item{command}{Character string specifying the subcommand to run.
 Must be one of \code{"clone"}, \code{"workspace"}, \code{"codespace"},
-\code{"codespaces"}, or \code{"run"}.}
+\code{"codespaces"}, \code{"run"}, \code{"add_branch"},
+\code{"update_branches"}, or \code{"update_scripts"}.}
 
 \item{...}{Additional arguments passed to the underlying script.}
 }
@@ -31,6 +32,15 @@ Dispatches to the appropriate repos subcommand.
 
 \code{repos("run", ...)} delegates to \code{run-pipeline.sh} (see
 \code{\link{repos_run}}).
+
+\code{repos("add_branch", ...)} delegates to \code{add-branch.sh} (see
+\code{\link{repos_add_branch}}).
+
+\code{repos("update_branches", ...)} delegates to \code{update-branches.sh} (see
+\code{\link{repos_update_branches}}).
+
+\code{repos("update_scripts", ...)} delegates to \code{update-scripts.sh} (see
+\code{\link{repos_update_scripts}}).
 }
 \examples{
 \dontrun{
@@ -39,6 +49,9 @@ repos("workspace")
 repos("codespace")
 repos("run")
 repos("run", script = "build.sh")
+repos("add_branch", "data-tidy")
+repos("update_branches")
+repos("update_scripts")
 }
 
 }

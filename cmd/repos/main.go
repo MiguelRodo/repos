@@ -78,6 +78,11 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
+	case "update-branches":
+		if err := runUpdateBranches(os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	case "install-r-deps":
 		if err := runInstallRDeps(os.Args[2:]); err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -91,6 +96,11 @@ func main() {
 		}
 	case "run":
 		if err := runRun(os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	case "update-scripts":
+		if err := runUpdateScripts(os.Args[2:]); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
@@ -114,11 +124,13 @@ func usage() {
 Commands:
   clone             Clone repositories listed in repos.list into the parent directory
   workspace         Manage VS Code .code-workspace files
+  update-branches   Fetch and fast-forward all git repos in the parent directory
   install-r-deps    Install R dependencies for managed repositories
   codespace         Set GH_TOKEN Codespaces secrets for managed repositories
   codespaces        Alias for codespace
   codespaces-auth   Legacy alias for codespace
   run               Execute a command inside each repository from repos.list
+  update-scripts    Sync shared scripts/workflows to managed repositories
   create            Create missing GitHub repositories from repos.list
 
 Run 'repos <command> --help' for more information.
