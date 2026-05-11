@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tests/test-go-add-branch.sh — Integration tests for `repos add-branch` Go subcommand
+# tests/test-go-branch-create.sh — Integration tests for `repos branch-create` Go subcommand
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -46,10 +46,10 @@ echo "Building test environment..."
 make_repo "$TEST_DIR"
 
 # ---------------------------------------------------------------------------
-echo "Running repos add-branch Go subcommand tests..."
+echo "Running repos branch-create Go subcommand tests..."
 
 # Test 1: Help flag
-OUTPUT=$("$REPOS_BIN" add-branch --help 2>&1) || true
+OUTPUT=$("$REPOS_BIN" branch-create --help 2>&1) || true
 if echo "$OUTPUT" | grep -q "branch-name"; then
   print_pass "Help flag shows usage"
 else
@@ -57,7 +57,7 @@ else
 fi
 
 # Test 2: Missing branch name
-OUTPUT=$("$REPOS_BIN" add-branch 2>&1) || true
+OUTPUT=$("$REPOS_BIN" branch-create 2>&1) || true
 if echo "$OUTPUT" | grep -q "branch-name is required"; then
   print_pass "Missing branch name gives error"
 else
@@ -65,7 +65,7 @@ else
 fi
 
 # Test 3: Hyphenated branch name (treated as unknown option)
-OUTPUT=$("$REPOS_BIN" add-branch "-bad-branch" 2>&1) || true
+OUTPUT=$("$REPOS_BIN" branch-create "-bad-branch" 2>&1) || true
 if echo "$OUTPUT" | grep -q "unknown option"; then
   print_pass "Hyphenated branch name rejected as unknown option"
 else
@@ -73,7 +73,7 @@ else
 fi
 
 # Test 4: Hyphenated branch name after --
-OUTPUT=$("$REPOS_BIN" add-branch -- "-bad-branch" 2>&1) || true
+OUTPUT=$("$REPOS_BIN" branch-create -- "-bad-branch" 2>&1) || true
 if echo "$OUTPUT" | grep -q "is not a valid Git branch name"; then
   print_pass "Hyphenated branch name after -- rejected as invalid"
 else
@@ -82,7 +82,7 @@ fi
 
 # Test 5: Path traversal in target directory
 cd "$TEST_DIR/repo"
-OUTPUT=$("$REPOS_BIN" add-branch valid-branch "../../outside" 2>&1) || true
+OUTPUT=$("$REPOS_BIN" branch-create valid-branch "../../outside" 2>&1) || true
 if echo "$OUTPUT" | grep -q "cannot be absolute"; then
   print_pass "Path traversal in target directory rejected"
 else
@@ -90,7 +90,7 @@ else
 fi
 
 # Test 6: --branch flag not implemented (flag before positional)
-OUTPUT=$("$REPOS_BIN" add-branch -b test-br 2>&1) || true
+OUTPUT=$("$REPOS_BIN" branch-create -b test-br 2>&1) || true
 if echo "$OUTPUT" | grep -q "not yet implemented"; then
   print_pass "--branch (-b) before positional reports not implemented"
 else
@@ -98,7 +98,7 @@ else
 fi
 
 # Test 7: --branch flag not implemented (flag after positional)
-OUTPUT=$("$REPOS_BIN" add-branch test-br --branch 2>&1) || true
+OUTPUT=$("$REPOS_BIN" branch-create test-br --branch 2>&1) || true
 if echo "$OUTPUT" | grep -q "not yet implemented"; then
   print_pass "--branch after positional reports not implemented"
 else
@@ -107,7 +107,7 @@ fi
 
 # Test 8: Successful worktree creation (default target dir)
 cd "$TEST_DIR/repo"
-"$REPOS_BIN" add-branch feature-x >/dev/null 2>&1
+"$REPOS_BIN" branch-create feature-x >/dev/null 2>&1
 if [ -d "$TEST_DIR/repo-feature-x" ]; then
   print_pass "Worktree created at default location"
 else
@@ -122,7 +122,7 @@ else
 fi
 
 # Test 10: Destination already exists
-OUTPUT=$("$REPOS_BIN" add-branch feature-x 2>&1) || true
+OUTPUT=$("$REPOS_BIN" branch-create feature-x 2>&1) || true
 if echo "$OUTPUT" | grep -q "destination already exists"; then
   print_pass "Duplicate destination rejected"
 else
@@ -131,7 +131,7 @@ fi
 
 # Test 11: Custom target directory
 cd "$TEST_DIR/repo"
-"$REPOS_BIN" add-branch analysis custom-analysis-dir >/dev/null 2>&1
+"$REPOS_BIN" branch-create analysis custom-analysis-dir >/dev/null 2>&1
 if [ -d "$TEST_DIR/custom-analysis-dir" ]; then
   print_pass "Worktree created at custom target directory"
 else
@@ -154,4 +154,4 @@ else
 fi
 
 echo ""
-echo "✅ All repos add-branch Go subcommand tests passed!"
+echo "✅ All repos branch-create Go subcommand tests passed!"

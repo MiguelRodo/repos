@@ -18,10 +18,10 @@ const (
 	addBranchDirMode  os.FileMode = 0755
 )
 
-// runAddBranch implements `repos add-branch <branch-name> [target-dir] [--branch]`.
+// runBranchCreate implements `repos branch-create <branch-name> [target-dir] [--branch]`.
 // Flags may appear before or after positional arguments, matching the behaviour
-// of the original add-branch.sh script.
-func runAddBranch(args []string) error {
+// of the original branch-create.sh script.
+func runBranchCreate(args []string) error {
 	var branchName, targetDir string
 	useBranch := false
 	endOfFlags := false
@@ -44,7 +44,7 @@ func runAddBranch(args []string) error {
 		case "-b", "--branch":
 			useBranch = true
 		case "-h", "--help":
-			addBranchUsage()
+			branchCreateUsage()
 			return nil
 		default:
 			if strings.HasPrefix(arg, "-") {
@@ -64,7 +64,7 @@ func runAddBranch(args []string) error {
 		return errors.New("--branch mode not yet implemented. Use worktrees instead")
 	}
 	if branchName == "" {
-		addBranchUsage()
+		branchCreateUsage()
 		return errors.New("branch-name is required")
 	}
 
@@ -219,7 +219,7 @@ func cleanWorktree(dest string) error {
 
 // setupDevcontainer moves .devcontainer/prebuild/devcontainer.json to
 // .devcontainer/devcontainer.json and strips the codespaces repositories key,
-// mirroring the behaviour of add-branch.sh.
+// mirroring the behaviour of branch-create.sh.
 func setupDevcontainer(dest string) error {
 	prebuildFile := filepath.Join(dest, ".devcontainer", "prebuild", "devcontainer.json")
 	targetFile := filepath.Join(dest, ".devcontainer", "devcontainer.json")
@@ -368,8 +368,8 @@ func addPathToWorkspace(wsPath, wsRelPath string) error {
 	return writeWorkspace(wsPath, ws)
 }
 
-func addBranchUsage() {
-	fmt.Print(`Usage: repos add-branch <branch-name> [target-directory] [options]
+func branchCreateUsage() {
+	fmt.Print(`Usage: repos branch-create <branch-name> [target-directory] [options]
 
 Create a new worktree off the current repository with minimal infrastructure.
 
@@ -393,7 +393,7 @@ What this command does:
   8. Adds the new path to the VS Code workspace file
 
 Examples:
-  repos add-branch data-tidy
-  repos add-branch analysis my-analysis
+  repos branch-create data-tidy
+  repos branch-create analysis my-analysis
 `)
 }
