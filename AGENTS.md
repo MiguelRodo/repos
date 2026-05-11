@@ -25,7 +25,7 @@ When modifying or extending the tool:
 ### Key Architectural Patterns
 1. A user creates a `repos.list` file listing repositories (and optionally branches) they want cloned.
 2. Repositories are always cloned to the **parent directory** of the working directory — never inside it.
-3. Branch-only clones use Git **worktrees** rather than fresh full clones to save space and simplify management.
+3. Branch-only clones clone only that branch down (before, by default, allowing `git fetch` to fetch all remote branches), or else use Git **worktrees** rather than fresh full clones to save space and simplify management.
 4. Fallback repository logic: a bare `@<branch>` line reuses the most recently seen repo (or the current repo's remote if none has been seen yet).
 
 ---
