@@ -11,7 +11,7 @@
     "href": "install.html#ubuntu-debian",
     "title": "Installation",
     "section": "Ubuntu / Debian",
-    "text": "Ubuntu / Debian\n\nOption 1: Install from APT Repository (Recommended)\nInstall and keep repos up to date directly via apt:\n# Add repository signing key\ncurl -fsSL https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/KEY.gpg \\\n   | sudo gpg --dearmor -o /usr/share/keyrings/miguelrodo-repos.gpg\n\n# Add apt source\necho \"deb [signed-by=/usr/share/keyrings/miguelrodo-repos.gpg] https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/ ./\" \\\n   | sudo tee /etc/apt/sources.list.d/miguelrodo-repos.list &gt;/dev/null\n\n# Install repos\nsudo apt-get update\nsudo apt-get install -y repos\nTo uninstall:\nsudo apt-get remove repos\n\n\nOption 2: Local Installation (No sudo required)\nInstall to your user directory (~/.local/bin):\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\nbash install-local.sh\nIf ~/.local/bin is not on your PATH, add this to ~/.bashrc or ~/.profile:\nexport PATH=\"$HOME/.local/bin:$PATH\"\nThen reload:\nsource ~/.bashrc\nTo uninstall:\nbash uninstall-local.sh\n\n\nOption 3: System-wide from Release .deb (requires sudo)\nDownload and install the latest .deb from the Releases page:\nVERSION_REPOS=1.2.6\nwget https://github.com/MiguelRodo/repos/releases/download/v${VERSION_REPOS}/repos_${VERSION_REPOS}_all.deb\nsudo dpkg -i repos_${VERSION_REPOS}_all.deb\nrm repos_${VERSION_REPOS}_all.deb\n\n# Fix any dependency issues\nsudo apt-get install -f\nTo uninstall:\nsudo dpkg -r repos\n\n\nDependencies\nAll Ubuntu/Debian methods require bash, git, curl, and jq. These are typically pre-installed. If not:\nsudo apt-get install bash git curl jq"
+    "text": "Ubuntu / Debian\n\nOption 1: Install from APT Repository (Recommended)\nInstall and keep repos up to date directly via apt:\n# Add repository signing key\ncurl -fsSL https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/KEY.gpg \\\n   | sudo gpg --dearmor -o /usr/share/keyrings/miguelrodo-repos.gpg\n\n# Add apt source\necho \"deb [signed-by=/usr/share/keyrings/miguelrodo-repos.gpg] https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/ ./\" \\\n   | sudo tee /etc/apt/sources.list.d/miguelrodo-repos.list &gt;/dev/null\n\n# Install repos\nsudo apt-get update\nsudo apt-get install -y repos\nTo uninstall:\nsudo apt-get remove repos\n\n\nOption 2: Local Installation (No sudo required)\nInstall the latest precompiled repos binary into the first writable directory already present in your PATH:\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\nbash install-local.sh\nIf no writable path entry exists, the installer will stop with guidance.\nTo uninstall:\nbash uninstall-local.sh\n\n\nOption 3: System-wide from Release .deb (requires sudo)\nDownload and install the latest .deb from the Releases page:\nVERSION_REPOS=1.2.6\nwget https://github.com/MiguelRodo/repos/releases/download/v${VERSION_REPOS}/repos_${VERSION_REPOS}_all.deb\nsudo dpkg -i repos_${VERSION_REPOS}_all.deb\nrm repos_${VERSION_REPOS}_all.deb\n\n# Fix any dependency issues\nsudo apt-get install -f\nTo uninstall:\nsudo dpkg -r repos\n\n\nDependencies\nAll Ubuntu/Debian methods require bash, git, curl, and jq. These are typically pre-installed. If not:\nsudo apt-get install bash git curl jq"
   },
   {
     "objectID": "install.html#macos-homebrew",
@@ -25,7 +25,7 @@
     "href": "install.html#windows",
     "title": "Installation",
     "section": "Windows",
-    "text": "Windows\n\nScoop (recommended)\nscoop bucket add repos https://github.com/MiguelRodo/scoop-bucket\nscoop install repos\ngit and jq are installed automatically by Scoop. You will also need Git for Windows for Bash support.\n\n\nManual\n\nClone the repository:\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\nRun the installer:\n.\\install.ps1\nRestart your PowerShell session.\n\nDependencies:\n\nGit for Windows — provides bash, git, and curl\njq — JSON processor"
+    "text": "Windows\n\nScoop (recommended)\nscoop bucket add repos https://github.com/MiguelRodo/scoop-bucket\nscoop install repos\ngit and jq are installed automatically by Scoop. You will also need Git for Windows for Bash support.\n\n\nManual\n\nClone the repository:\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\nRun the installer:\n.\\install.ps1\nThe installer places repos.exe in the first writable directory already in your current PATH.\n\nRequirements: PowerShell (with Invoke-WebRequest) and network access to GitHub releases."
   },
   {
     "objectID": "install.html#from-source",
@@ -180,34 +180,6 @@
     "title": "Python Package",
     "section": "Bundled CLI vs. System CLI",
     "text": "Bundled CLI vs. System CLI\nThe Python package ships a bundled copy of the Bash scripts that it uses for all Python functions (run(), workspace(), etc.). This bundled version is independent of any repos binary you may have installed on your system PATH.\nYou can inspect both versions at any time:\nfrom repos import bundled_cli_version, installed_cli_version\n\nprint(\"Bundled:\", bundled_cli_version())\nprint(\"System: \", installed_cli_version())  # None if not installed\n\nDoes installing the Python package also install the repos CLI?\nNo. Installing the package via pip does not place a repos command on your system PATH. All Python functions work immediately through the package’s own bundled scripts, but you will need to install the CLI separately if you also want to use repos directly from a terminal.\nThe easiest way is to call install_cli() from Python:\nfrom repos import install_cli\n\n# Print OS-appropriate installation instructions\ninstall_cli()\n\n# Or print instructions AND run the installer automatically\ninstall_cli(run=True)\nSee install_cli() above for details, or visit the Installation guide for all options."
-  },
-  {
-    "objectID": "worktrees.html",
-    "href": "worktrees.html",
-    "title": "Worktree & Branch Management",
-    "section": "",
-    "text": "repos provides three convenience commands for managing Git worktrees and keeping multi-branch projects in sync."
-  },
-  {
-    "objectID": "worktrees.html#repos-add_branch",
-    "href": "worktrees.html#repos-add_branch",
-    "title": "Worktree & Branch Management",
-    "section": "repos add_branch",
-    "text": "repos add_branch\nCreate a new worktree (or branch) off the current repository and wire it into the project scaffolding in one step:\nrepos add_branch &lt;branch-name&gt; [target-directory]\nThe command:\n\nCreates a new worktree at ../&lt;repo&gt;-&lt;branch&gt; (or ../&lt;target-directory&gt;)\nPushes the branch to origin with tracking set up\nCleans the worktree (keeps only .devcontainer/devcontainer.json and .gitignore)\nPromotes .devcontainer/prebuild/devcontainer.json → .devcontainer/devcontainer.json\nStrips the Codespaces repositories config from devcontainer.json\nAppends an @&lt;branch&gt; line to repos.list\nRefreshes the VS Code workspace file\n\nThe resulting worktree can be opened independently in VS Code or Codespaces.\n\nOptions\n\n\n\n\n\n\n\nFlag\nDescription\n\n\n\n\n&lt;branch-name&gt;\nName of the new branch to create (required)\n\n\n[target-directory]\nCustom directory name (default: &lt;repo&gt;-&lt;branch&gt;)\n\n\n-b, --branch\nCreate as a plain branch instead of a worktree (not recommended)\n\n\n\n\n\nExamples\n# Create a worktree at ../MyProject-data-tidy\nrepos add_branch data-tidy\n\n# Create a worktree at a custom location\nrepos add_branch analysis my-analysis\n\n# Create as a branch rather than a worktree\nrepos add_branch paper --branch\n\n\nNotes\n\nWorktrees share .git with the base repository — saves disk space and simplifies fetching.\nA branch can only be checked out in one worktree at a time.\nTo remove a worktree: git worktree remove &lt;path&gt;"
-  },
-  {
-    "objectID": "worktrees.html#repos-update_branches",
-    "href": "worktrees.html#repos-update_branches",
-    "title": "Worktree & Branch Management",
-    "section": "repos update_branches",
-    "text": "repos update_branches\nPropagate the latest devcontainer prebuild configuration from the base repository to every worktree:\nrepos update_branches\nThe command:\n\nReads .devcontainer/prebuild/devcontainer.json from the base repository\nStrips the Codespaces repositories section\nWrites the result to .devcontainer/devcontainer.json in each worktree\nCommits and pushes the changes in each worktree\n\n\nOptions\n\n\n\nFlag\nDescription\n\n\n\n\n-n, --dry-run\nShow what would be done without making changes\n\n\n\n\n\nExamples\n# Update all worktrees\nrepos update_branches\n\n# Preview changes without applying them\nrepos update_branches --dry-run\n\n\nPrerequisites\n\n.devcontainer/prebuild/devcontainer.json must exist in the base repository.\njq or python3 must be available for JSON manipulation."
-  },
-  {
-    "objectID": "worktrees.html#repos-update_scripts",
-    "href": "worktrees.html#repos-update_scripts",
-    "title": "Worktree & Branch Management",
-    "section": "repos update_scripts",
-    "text": "repos update_scripts\nPull the latest helper scripts from the upstream CompTemplate repository:\nrepos update_scripts\nThe command:\n\nClones / pulls the latest MiguelRodo/CompTemplate repository\nCopies all scripts from its scripts/ directory (including helper/)\nPreserves executable permissions\nCreates a git commit with the updates\n\n\nOptions\n\n\n\n\n\n\n\nFlag\nDescription\n\n\n\n\n-b &lt;name&gt;, --branch &lt;name&gt;\nUse a specific upstream branch (default: main)\n\n\n-n, --dry-run\nShow what would be updated without making changes\n\n\n-f, --force\nOverwrite local changes without prompting\n\n\n\n\n\nEnvironment variables\n\n\n\nVariable\nDescription\n\n\n\n\nUPSTREAM_BRANCH\nOverride the default upstream branch\n\n\n\n\n\nExamples\n# Update from the default (main) branch\nrepos update_scripts\n\n# Update from a specific branch\nrepos update_scripts --branch dev\n\n# Preview what would change\nrepos update_scripts --dry-run\n\n# Force-overwrite local modifications\nrepos update_scripts --force"
   },
   {
     "objectID": "pipelines.html",
