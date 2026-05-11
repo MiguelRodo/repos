@@ -352,6 +352,25 @@ func TestUpdateDevcontainerFile_HandlesJSONC(t *testing.T) {
 	}
 }
 
+func TestStripJSONC_HandlesBackslashAtEndOfString(t *testing.T) {
+	// A well-formed JSON string with an escaped quote.
+	input := `{"key": "value with \"escaped\" quotes"}`
+	got := string(stripJSONC([]byte(input)))
+	if !strings.Contains(got, "escaped") {
+		t.Fatalf("escaped content not preserved: %q", got)
+	}
+}
+
+func TestStripJSONC_HandlesUnclosedBlockComment(t *testing.T) {
+	// Should not panic or produce garbled output with unclosed /* comment.
+	input := `{"key": "value" /* unclosed block comment`
+	// Should not panic; result may be incomplete but must not include the comment text.
+	got := string(stripJSONC([]byte(input)))
+	if strings.Contains(got, "unclosed block comment") {
+		t.Fatalf("unclosed comment content leaked into output: %q", got)
+	}
+}
+
 func TestPreProcessDebugFileFlag_NoFlag(t *testing.T) {
 	args := []string{"--file", "repos.list", "--debug"}
 	got, auto, err := preProcessDebugFileFlag(args)

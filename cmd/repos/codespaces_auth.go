@@ -389,7 +389,10 @@ func stripJSONC(data []byte) []byte {
 			i++
 			for i < len(data) {
 				if data[i] == '\\' {
-					i += 2
+					i++ // skip the backslash
+					if i < len(data) {
+						i++ // skip the escaped character
+					}
 					continue
 				}
 				if data[i] == '"' {
@@ -410,14 +413,20 @@ func stripJSONC(data []byte) []byte {
 			continue
 		}
 
-		// Block comment: skip to */.
+		// Block comment: skip to */ (or EOF if unclosed).
 		if b == '/' && i+1 < len(data) && data[i+1] == '*' {
 			i += 2
+			closed := false
 			for i+1 < len(data) {
 				if data[i] == '*' && data[i+1] == '/' {
 					i += 2
+					closed = true
 					break
 				}
+				i++
+			}
+			if !closed {
+				// Consume the last remaining byte of the unclosed comment.
 				i++
 			}
 			continue
