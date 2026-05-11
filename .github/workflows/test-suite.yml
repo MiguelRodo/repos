@@ -48,6 +48,8 @@ jobs:
         run: |
           cd tests
           ./test-security-hardening.sh
+          ./test-add-branch-security.sh
+          ./test-branch-hardening.sh
           ./test-create-repos-security.sh
           ./test-git-hardening.sh
           ./test-pipeline-traversal.sh
@@ -56,6 +58,11 @@ jobs:
         run: |
           cd tests
           ./test-auth-check.sh
+
+      - name: Run branch with slashes test
+        run: |
+          cd tests
+          ./test-branch-with-slashes.sh
 
       - name: Run clone variations comprehensive test
         run: |
@@ -87,6 +94,11 @@ jobs:
           cd tests
           ./test-fallback-repo-worktree.sh
 
+      - name: Run integration branch slashes test
+        run: |
+          cd tests
+          ./test-integration-branch-slashes.sh
+
       - name: Run invalid token test
         run: |
           cd tests
@@ -116,6 +128,11 @@ jobs:
         run: |
           cd tests
           ./test-token-validation-unit.sh
+
+      - name: Run update scripts test
+        run: |
+          cd tests
+          ./test-update-scripts.sh
 
       - name: Run worktree custom base dir test
         run: |
@@ -164,6 +181,8 @@ jobs:
         run: |
           cd tests
           ./test-security-hardening.sh
+          ./test-add-branch-security.sh
+          ./test-branch-hardening.sh
           ./test-create-repos-security.sh
           ./test-git-hardening.sh
           ./test-pipeline-traversal.sh
@@ -172,6 +191,11 @@ jobs:
         run: |
           cd tests
           ./test-auth-check.sh
+
+      - name: Run branch with slashes test
+        run: |
+          cd tests
+          ./test-branch-with-slashes.sh
 
       - name: Run clone variations comprehensive test
         run: |
@@ -203,6 +227,11 @@ jobs:
           cd tests
           ./test-fallback-repo-worktree.sh
 
+      - name: Run integration branch slashes test
+        run: |
+          cd tests
+          ./test-integration-branch-slashes.sh
+
       - name: Run invalid token test
         run: |
           cd tests
@@ -232,6 +261,11 @@ jobs:
         run: |
           cd tests
           ./test-token-validation-unit.sh
+
+      - name: Run update scripts test
+        run: |
+          cd tests
+          ./test-update-scripts.sh
 
       - name: Run worktree custom base dir test
         run: |
