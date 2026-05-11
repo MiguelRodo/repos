@@ -21,7 +21,7 @@ git() {
   # Wrap git to capture and sanitize stderr to prevent credential leakage
   # from git's own error messages (e.g. "fatal: could not read Password for 'https://token@github.com'")
   local tmp_stderr
-  tmp_stderr="$(mktemp "$(get_temp_dir)/git-stderr-XXXXXX")"
+  tmp_stderr="$(umask 077 && mktemp "$(get_temp_dir)/git-stderr-XXXXXX")"
   CLEANUP_FILES+=("$tmp_stderr")
 
   local rc=0
@@ -175,7 +175,7 @@ while IFS= read -r line; do
   fi
   
   # Read and process the prebuild file securely
-  TMP_DEST=$(mktemp "$(get_temp_dir)/update-branches-XXXXXX")
+  TMP_DEST=$(umask 077 && mktemp "$(get_temp_dir)/update-branches-XXXXXX")
   CLEANUP_FILES+=("$TMP_DEST")
   if [ "$JSON_TOOL" = "jq" ]; then
     jq 'del(.customizations.codespaces.repositories)' -- "$PREBUILD_FILE" > "$TMP_DEST"

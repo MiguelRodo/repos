@@ -39,7 +39,7 @@ git() {
   # Wrap git to capture and sanitize stderr to prevent credential leakage
   # from git's own error messages (e.g. "fatal: could not read Password for 'https://token@github.com'")
   local tmp_stderr
-  tmp_stderr="$(mktemp "$(get_temp_dir)/git-stderr-XXXXXX")"
+  tmp_stderr="$(umask 077 && mktemp "$(get_temp_dir)/git-stderr-XXXXXX")"
   CLEANUP_FILES+=("$tmp_stderr")
 
   local rc=0
@@ -497,7 +497,7 @@ filter_valid_list(){
 build_repos_json_file(){
   local output_file="$1"
   local valid_list_file
-  valid_list_file="$(mktemp "$(get_temp_dir)/repos-valid-list-XXXXXX")"
+  valid_list_file="$(umask 077 && mktemp "$(get_temp_dir)/repos-valid-list-XXXXXX")"
   CLEANUP_FILES+=("$valid_list_file")
   printf '%s\n' "$VALID_LIST" > "$valid_list_file"
 
@@ -533,7 +533,7 @@ update_with_jq(){
   local file="$1"
   local repos_file=""
 
-  repos_file="$(mktemp "$(get_temp_dir)/repos-json-XXXXXX")"
+  repos_file="$(umask 077 && mktemp "$(get_temp_dir)/repos-json-XXXXXX")"
   CLEANUP_FILES+=("$repos_file")
   build_repos_json_file "$repos_file"
 
@@ -557,7 +557,7 @@ update_with_python(){
   local py_cmd="${2:-python}"
   local repos_file=""
 
-  repos_file="$(mktemp "$(get_temp_dir)/repos-json-XXXXXX")"
+  repos_file="$(umask 077 && mktemp "$(get_temp_dir)/repos-json-XXXXXX")"
   CLEANUP_FILES+=("$repos_file")
   build_repos_json_file "$repos_file"
 
@@ -622,7 +622,7 @@ update_with_rscript(){
   local file="$1"
   local repos_file=""
 
-  repos_file="$(mktemp "$(get_temp_dir)/repos-json-XXXXXX")"
+  repos_file="$(umask 077 && mktemp "$(get_temp_dir)/repos-json-XXXXXX")"
   CLEANUP_FILES+=("$repos_file")
   build_repos_json_file "$repos_file"
 
@@ -693,7 +693,7 @@ update_devfile(){
   else
     # Safely write via a temporary file, then move into place
     local tmp=""
-    tmp="$(mktemp "$(get_temp_dir)/repos-auth-XXXXXX")"
+    tmp="$(umask 077 && mktemp "$(get_temp_dir)/repos-auth-XXXXXX")"
     CLEANUP_FILES+=("$tmp")
 
     local rc=0

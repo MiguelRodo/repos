@@ -51,7 +51,7 @@ git() {
   # Wrap git to capture and sanitize stderr to prevent credential leakage
   # from git's own error messages (e.g. "fatal: could not read Password for 'https://token@github.com'")
   local tmp_stderr
-  tmp_stderr="$(mktemp "$(get_temp_dir)/git-stderr-XXXXXX")"
+  tmp_stderr="$(umask 077 && mktemp "$(get_temp_dir)/git-stderr-XXXXXX")"
   CLEANUP_FILES+=("$tmp_stderr")
 
   local rc=0
@@ -161,7 +161,7 @@ fi
 
 # --- Create temp directory ---
 # Use mktemp without -- for portability with BSD/macOS
-TEMP_DIR="$(mktemp -d)"
+TEMP_DIR="$(umask 077 && mktemp -d)"
 
 printf 'Fetching scripts from %s (branch: %s)...\n' "$UPSTREAM_REPO" "$UPSTREAM_BRANCH"
 
