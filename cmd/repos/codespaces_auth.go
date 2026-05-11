@@ -78,6 +78,14 @@ func runCodespacesAuth(args []string) error {
 		return errors.New("unexpected positional arguments")
 	}
 
+	// Validate --permissions value.
+	switch *permissions {
+	case "default", "all", "contents":
+		// valid
+	default:
+		return fmt.Errorf("invalid --permissions value %q: must be \"default\", \"all\", or \"contents\"", *permissions)
+	}
+
 	// A non-empty --debug-file implies --debug.
 	if *debugFile != "" {
 		*debug = true
@@ -432,11 +440,38 @@ func stripJSONC(data []byte) []byte {
 			continue
 		}
 
-		// Trailing comma: , followed (possibly by whitespace) by } or ].
+		// Trailing comma: , followed (possibly by whitespace and/or comments) by } or ].
 		if b == ',' {
 			j := i + 1
-			for j < len(data) && (data[j] == ' ' || data[j] == '\t' || data[j] == '\n' || data[j] == '\r') {
-				j++
+			// Skip whitespace and comments to find the next significant character.
+			for j < len(data) {
+				c := data[j]
+				// Skip whitespace.
+				if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
+					j++
+					continue
+				}
+				// Skip line comment.
+				if c == '/' && j+1 < len(data) && data[j+1] == '/' {
+					j += 2
+					for j < len(data) && data[j] != '\n' {
+						j++
+					}
+					continue
+				}
+				// Skip block comment.
+				if c == '/' && j+1 < len(data) && data[j+1] == '*' {
+					j += 2
+					for j+1 < len(data) {
+						if data[j] == '*' && data[j+1] == '/' {
+							j += 2
+							break
+						}
+						j++
+					}
+					continue
+				}
+				break
 			}
 			if j < len(data) && (data[j] == '}' || data[j] == ']') {
 				i++ // skip the comma

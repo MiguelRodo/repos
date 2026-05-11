@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
 	"strings"
@@ -164,6 +165,27 @@ func TestStripJSONC_RemovesTrailingCommas(t *testing.T) {
 	}
 }
 
+func TestStripJSONC_RemovesTrailingCommaBeforeLineComment(t *testing.T) {
+	// Trailing comma where only whitespace+comment separates it from the closing brace.
+	input := `{ "a": 1, // comment
+ }`
+	clean := stripJSONC([]byte(input))
+	var out map[string]interface{}
+	if err := json.Unmarshal(clean, &out); err != nil {
+		t.Fatalf("json.Unmarshal failed after stripping: %v (stripped: %q)", err, clean)
+	}
+}
+
+func TestStripJSONC_RemovesTrailingCommaBeforeBlockComment(t *testing.T) {
+	// Trailing comma where a block comment separates it from the closing brace.
+	input := `{ "a": 1, /* block */ }`
+	clean := stripJSONC([]byte(input))
+	var out map[string]interface{}
+	if err := json.Unmarshal(clean, &out); err != nil {
+		t.Fatalf("json.Unmarshal failed after stripping: %v (stripped: %q)", err, clean)
+	}
+}
+
 func TestStripJSONC_PreservesCommasInStrings(t *testing.T) {
 	input := `{"url":"https://example.com/a,b","key":"value"}`
 	got := string(stripJSONC([]byte(input)))
@@ -210,6 +232,17 @@ func TestBuildRepoPermissionsBlock_Contents(t *testing.T) {
 	}
 	if perms["contents"] != "write" {
 		t.Fatalf("expected contents:write, got %v", perms)
+	}
+}
+
+func TestRunCodespacesAuth_InvalidPermissionsReturnsError(t *testing.T) {
+	// --permissions with an unknown value must return an error, not silently use default.
+	err := runCodespacesAuth([]string{"--permissions", "readall"})
+	if err == nil {
+		t.Fatal("expected error for invalid --permissions value, got nil")
+	}
+	if !strings.Contains(err.Error(), "readall") {
+		t.Fatalf("error should mention the invalid value, got: %v", err)
 	}
 }
 
