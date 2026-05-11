@@ -165,7 +165,7 @@ run_repos_script <- function(script_name, args = character()) {
 #'
 #' @param command Character string specifying the subcommand to run.
 #'   Must be one of \code{"clone"}, \code{"workspace"}, \code{"codespace"},
-#'   \code{"codespaces"}, \code{"run"}, or \code{"update_scripts"}.
+#'   \code{"codespaces"}, or \code{"run"}.
 #' @param ... Additional arguments passed to the underlying script.
 #'
 #' @return Invisibly returns the exit status of the script (0 for success).
@@ -183,9 +183,6 @@ run_repos_script <- function(script_name, args = character()) {
 #' \code{repos("run", ...)} delegates to \code{run-pipeline.sh} (see
 #' \code{\link{repos_run}}).
 #'
-#' \code{repos("update_scripts", ...)} delegates to \code{update-scripts.sh} (see
-#' \code{\link{repos_update_scripts}}).
-#'
 #' @examples
 #' \dontrun{
 #' repos("clone")
@@ -193,33 +190,28 @@ run_repos_script <- function(script_name, args = character()) {
 #' repos("codespace")
 #' repos("run")
 #' repos("run", script = "build.sh")
-#' repos("update_scripts")
 #' }
 #'
 #' @export
 repos <- function(command, ...) {
-  valid <- c("clone", "workspace", "codespace", "codespaces", "run",
-             "update_scripts")
+  valid <- c("clone", "workspace", "codespace", "codespaces", "run")
   if (missing(command) || !(command %in% valid)) {
     message("Usage: repos(command, ...)\n")
     message("Commands:")
-    message("  \"clone\"           Clone repositories listed in repos.list")
-    message("  \"workspace\"       Generate or update the VS Code workspace file")
-    message("  \"codespace\"       Configure GitHub Codespaces authentication")
-    message("  \"run\"             Execute a script inside each cloned repository")
-    message("  \"update_scripts\"  Update scripts from the upstream CompTemplate repository")
-    message("\nSee ?repos_clone, ?repos_workspace, ?repos_codespace, ?repos_run,")
-    message("and ?repos_update_scripts for details.")
+    message("  \"clone\"      Clone repositories listed in repos.list")
+    message("  \"workspace\"  Generate or update the VS Code workspace file")
+    message("  \"codespace\"  Configure GitHub Codespaces authentication")
+    message("  \"run\"        Execute a script inside each cloned repository")
+    message("\nSee ?repos_clone, ?repos_workspace, ?repos_codespace, and ?repos_run for details.")
     return(invisible(1L))
   }
 
   switch(command,
-    clone           = repos_clone(...),
-    workspace       = repos_workspace(...),
-    codespace       = repos_codespace(...),
-    codespaces      = repos_codespace(...),
-    run             = repos_run(...),
-    update_scripts  = repos_update_scripts(...)
+    clone      = repos_clone(...),
+    workspace  = repos_workspace(...),
+    codespace  = repos_codespace(...),
+    codespaces = repos_codespace(...),
+    run        = repos_run(...)
   )
 }
 
@@ -585,51 +577,3 @@ repos_run <- function(file = NULL, script = NULL, include = NULL, exclude = NULL
   run_repos_script("run-pipeline.sh", args = args)
 }
 
-#' Update Scripts from Upstream
-#'
-#' Update scripts from the upstream CompTemplate repository. Clones/pulls
-#' \code{MiguelRodo/CompTemplate} and copies all scripts from its
-#' \code{scripts/} directory into the local scripts directory, then creates a
-#' commit with the updates.
-#'
-#' @param branch Character string. Upstream branch to pull from
-#'   (default: main).
-#' @param dry_run Logical. If \code{TRUE}, show what would be updated without
-#'   making changes.
-#' @param force Logical. If \code{TRUE}, overwrite local changes without
-#'   prompting.
-#' @param ... Additional arguments passed directly to \code{update-scripts.sh}.
-#'
-#' @return Invisibly returns the exit status of the script (0 for success).
-#'
-#' @examples
-#' \dontrun{
-#' repos_update_scripts()
-#' repos_update_scripts(branch = "dev")
-#' repos_update_scripts(dry_run = TRUE)
-#' repos_update_scripts(force = TRUE)
-#' }
-#'
-#' @export
-repos_update_scripts <- function(branch = NULL, dry_run = FALSE, force = FALSE, ...) {
-  args <- character()
-
-  if (!is.null(branch)) {
-    args <- c(args, "--branch", branch)
-  }
-
-  if (isTRUE(dry_run)) {
-    args <- c(args, "--dry-run")
-  }
-
-  if (isTRUE(force)) {
-    args <- c(args, "--force")
-  }
-
-  additional_args <- c(...)
-  if (length(additional_args) > 0) {
-    args <- c(args, additional_args)
-  }
-
-  run_repos_script("update-scripts.sh", args = args)
-}
