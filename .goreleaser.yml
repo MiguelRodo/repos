@@ -20,4 +20,4 @@ nfpms:
     bindir: /usr/bin
 
 archives:
-  - format: [tar.gz]
+  - format: tar.gz
