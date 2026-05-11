@@ -30,6 +30,10 @@ on:
         description: >
           Override: exact version to set for the R package (e.g. 1.2.3).
         required: false
+      apt_repo:
+         description: GitHub repo to send .deb file to.
+         required: false
+         default: MiguelRodo/apt-miguelrodo
 
 jobs:
   build-deb:
