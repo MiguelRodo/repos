@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/MiguelRodo/repos/internal/parser"
+	"github.com/MiguelRodo/repos/v2/internal/parser"
 )
 
 // workspaceFolder represents a single entry in the VS Code workspace folders array.

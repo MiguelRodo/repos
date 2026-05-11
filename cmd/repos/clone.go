@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/MiguelRodo/repos/internal/sysutil"
+	"github.com/MiguelRodo/repos/v2/internal/sysutil"
 )
 
 var hasNonLocalRemotesInFileFunc = hasNonLocalRemotesInFile

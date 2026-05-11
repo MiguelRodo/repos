@@ -1,4 +1,4 @@
-module github.com/MiguelRodo/repos
+module github.com/MiguelRodo/repos/v2
 
 go 1.22
 

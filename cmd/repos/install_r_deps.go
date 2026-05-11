@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/MiguelRodo/repos/internal/sysutil"
+	"github.com/MiguelRodo/repos/v2/internal/sysutil"
 )
 
 type managedRepo struct {

@@ -10,8 +10,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/MiguelRodo/repos/internal/gitcmd"
-	"github.com/MiguelRodo/repos/internal/parser"
+	"github.com/MiguelRodo/repos/v2/internal/gitcmd"
+	"github.com/MiguelRodo/repos/v2/internal/parser"
 )
 
 type counters struct {

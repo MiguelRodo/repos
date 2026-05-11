@@ -2,6 +2,7 @@ project_name: repos
 
 builds:
   - id: default
+    main: ./cmd/repos
     goos:
       - linux
     goarch:
