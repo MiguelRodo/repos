@@ -3,8 +3,8 @@ title: "Worktree & Branch Management"
 toc: true
 ---
 
-`repos` provides a convenience command for keeping shared scripts up to date
-across all managed repositories.
+`repos` provides a convenience command, `update_scripts`, for keeping shared
+scripts up to date across all managed repositories.
 
 ## `repos update_scripts`
 
