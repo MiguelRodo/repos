@@ -171,14 +171,10 @@ func runAddBranch(args []string) error {
 		return fmt.Errorf("updating repos.list: %w", err)
 	}
 
-	// Add the new worktree path to the VS Code workspace file.
+	// Update workspace
 	fmt.Println("Updating VS Code workspace...")
-	wsPath := findWorkspaceFile(projectRoot)
-	// filepath.Rel on two absolute paths from the same root always succeeds on
-	// any supported OS, so the error value is intentionally ignored.
-	wsRelPath, _ := filepath.Rel(projectRoot, dest)
-	if err := addPathToWorkspace(wsPath, wsRelPath); err != nil {
-		fmt.Printf("  Warning: workspace update failed: %v\n", err)
+	if wsErr := generateWorkspace(projectRoot, reposListPath); wsErr != nil {
+		fmt.Printf("  Warning: workspace update failed: %v\n", wsErr)
 	} else {
 		fmt.Println("  ✓ Workspace updated")
 	}
@@ -190,7 +186,7 @@ func runAddBranch(args []string) error {
 	fmt.Println()
 	fmt.Println("Next steps:")
 	fmt.Printf("  - Open in VS Code: code %q\n", dest)
-	fmt.Printf("  - Or open workspace: code %q\n", wsPath)
+	fmt.Printf("  - Or open workspace: code %q\n", findWorkspaceFile(projectRoot))
 	fmt.Printf("  - To remove: git worktree remove %q\n", dest)
 	return nil
 }
@@ -202,8 +198,10 @@ func cleanWorktree(dest string) error {
 	if err != nil {
 		return fmt.Errorf("reading directory %s: %w", dest, err)
 	}
+
 	for _, e := range entries {
 		name := e.Name()
+
 		switch name {
 		case ".git", ".gitignore", ".devcontainer":
 			// keep
@@ -349,23 +347,6 @@ func branchInReposList(path, branch string) (bool, error) {
 		}
 	}
 	return false, scanner.Err()
-}
-
-// addPathToWorkspace adds wsRelPath to the workspace file at wsPath (creating
-// the file if necessary), unless the path is already present.
-func addPathToWorkspace(wsPath, wsRelPath string) error {
-	ws, err := readWorkspace(wsPath)
-	if err != nil {
-		return err
-	}
-	for _, f := range ws.Folders {
-		if f.Path == wsRelPath {
-			fmt.Printf("  Path '%s' is already present in %s\n", wsRelPath, wsPath)
-			return nil
-		}
-	}
-	ws.Folders = append(ws.Folders, workspaceFolder{Path: wsRelPath})
-	return writeWorkspace(wsPath, ws)
 }
 
 func addBranchUsage() {

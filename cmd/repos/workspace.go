@@ -146,16 +146,24 @@ func runWorkspaceGenerate(args []string) error {
 			}
 		}
 	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("getting working directory: %w", err)
+	}
+
+	return generateWorkspace(cwd, listPath)
+}
+
+// generateWorkspace reads the repos list file and writes the workspace JSON
+// file in the directory specified by cwd.
+func generateWorkspace(cwd string, listPath string) error {
 	file, err := os.Open(listPath)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("getting working directory: %w", err)
-	}
 	parentDir := filepath.Dir(cwd)
 	base := filepath.Base(cwd)
 	instructions, err := parser.ParseList(file, parser.Options{
