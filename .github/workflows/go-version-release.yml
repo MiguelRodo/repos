@@ -16,10 +16,13 @@ on:
         description: 'Go version to install.'
         required: false
       apt_repo:
-        description: 'GitHub repository functioning as an apt repository, to send .deb file to'
+        description: 'Optional target GitHub repository in owner/name form for publishing generated .deb artifacts as an apt repository.'
         required: false
         default: 'MiguelRodo/apt-miguelrodo'
-
+      goreleaser_config:
+        description: "Optional path to the GoReleaser config file."
+        required: false
+        default: "./cmd/repos"
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -37,3 +40,4 @@ jobs:
           version_check: ${{ inputs.version_check }}
           go_version: ${{ inputs.go_version }}
           apt_repo: ${{ inputs.apt_repo }}
+          goreleaser_config: ${{ inputs.goreleaser_config }}
