@@ -6,7 +6,8 @@ toc: true
 [![Test Installation Methods](https://github.com/MiguelRodo/repos/actions/workflows/test-installation.yml/badge.svg)](https://github.com/MiguelRodo/repos/actions/workflows/test-installation.yml)
 [![Test Suite](https://github.com/MiguelRodo/repos/actions/workflows/test-suite.yml/badge.svg)](https://github.com/MiguelRodo/repos/actions/workflows/test-suite.yml)
 
-Manage multiple Git repositories as a unified workspace from a single `repos.list` file.
+`repos` is a Go command-line utility for managing multiple Git repositories as a
+unified workspace from a single `repos.list` file.
 
 ## Quick Start
 
@@ -32,23 +33,32 @@ By default, `repos clone` uses `--fetch-all-deferred`: a fast single-branch
 clone plus immediate wildcard fetch-refspec restoration. You can also use
 `--fetch-single` (strict isolation) or `--fetch-all` (full clone upfront).
 
-## What else can you do?
+## Commands and capabilities
 
-**Customise `repos.list`** — clone specific branches (`owner/repo@branch`), use
-worktrees (`@branch-name`), set repository visibility (`--public`/`--private`),
-and more. → [repos.list reference](repos-list.html)
+- `repos clone` — clone repos listed in `repos.list` (including branch/worktree
+  patterns and fetch modes)
+- `repos workspace` — generate or refresh `entire-project.code-workspace`
+- `repos run` — run scripts or explicit commands across managed repos
+- `repos create` — create missing GitHub repos from `repos.list`
+- `repos codespace` — configure `GH_TOKEN` Codespaces secrets and devcontainer
+  repository permissions
+- `repos install-r-deps` — install R dependencies across managed repos
+
+`repos.list` supports specific branches (`owner/repo@branch`), fallback
+`@branch` entries, worktrees, visibility flags, and global flags.
+→ [repos.list reference](repos-list.html)
 
 **IDE integration** — generate a VS Code multi-root workspace file
 (`repos workspace`) and configure GitHub Codespaces authentication
 (`repos codespace`). → [VS Code integration](vscode.html)
 
-**Run a pipeline across all repos** — if your repositories contain a `run.sh`
-script (or any script you specify), `repos run` executes it in each one.
+**Run a pipeline across all repos** — run `run.sh` (or another script), or run
+an explicit command in each repo.
 → [Running pipelines](pipelines.html)
 
 ## Language Packages
 
-Use `repos` directly from R or Python — all the same commands, no terminal required.
+Use `repos` directly from R or Python — wrappers dispatch to the installed CLI.
 
 → [Python package](python-package.html)  
 → [R package](r-package.html)
