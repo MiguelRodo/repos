@@ -128,8 +128,8 @@ scoop bucket add repos https://github.com/MiguelRodo/scoop-bucket
 scoop install repos
 ```
 
-`git` is installed automatically by Scoop. Git Bash is only needed if your
-workspace scripts rely on Bash (for example `run.sh` pipelines).
+`git` and `jq` are installed automatically by Scoop. Git Bash is only needed
+if your workspace scripts rely on Bash (for example `run.sh` pipelines).
 
 ---
 

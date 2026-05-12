@@ -68,7 +68,7 @@ repos codespace
 | Flag | Description |
 |---|---|
 | `-f <file>` | Use a different list file (default: `repos.list`) |
-| `-d <path>` | Path to a `devcontainer.json` file (repeatable) |
+| `-d <path>` | Path relative to `.devcontainer/` (repeatable) |
 | `--all` | Update all `devcontainer.json` files found under `.devcontainer/` |
 | `--permissions <level>` | Codespaces permission level (`default`, `all`, or `contents`) |
 | `--dry-run` | Preview secret/file updates without writing changes |
@@ -83,8 +83,8 @@ Permission levels:
 # Use a custom list file
 repos codespace -f my-repos.list
 
-# Specify a devcontainer.json path
-repos codespace -d .devcontainer/devcontainer.json
+# Specify a devcontainer path relative to .devcontainer/
+repos codespace -d devcontainer.json
 
 # Multiple devcontainer paths
 repos codespace -d path1/devcontainer.json -d path2/devcontainer.json
