@@ -270,6 +270,119 @@ func TestRunCloneFailsWhenAuthCheckFailsForNonLocalRemotes(t *testing.T) {
 	}
 }
 
+func TestRunCloneMissingBranchRequiresCreateFlag(t *testing.T) {
+	enableBareRepoAccess(t)
+
+	tmp := t.TempDir()
+	remotes := filepath.Join(tmp, "remotes")
+	mustMkdir(t, remotes)
+	remote := createBareRepo(t, remotes, "repo-one")
+
+	projectDir := filepath.Join(tmp, "workspace")
+	mustInitWorkspaceRepo(t, projectDir, remote)
+	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), remote+"@feature/new-api\n")
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(oldWD); err != nil {
+			t.Logf("restore working directory: %v", err)
+		}
+	})
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatalf("chdir project dir: %v", err)
+	}
+
+	var stderr string
+	stderr = captureStderr(t, func() {
+		err = runClone([]string{"-f", "repos.list"})
+	})
+	if err == nil {
+		t.Fatalf("expected missing-branch error")
+	}
+	if !strings.Contains(stderr, "--create") {
+		t.Fatalf("expected guidance to use --create, got stderr: %s", stderr)
+	}
+	if branchExistsInBare(t, remote, "feature/new-api") {
+		t.Fatalf("branch should not be created unless --create is set")
+	}
+}
+
+func TestRunCloneCreateFlagCreatesMissingBranch(t *testing.T) {
+	enableBareRepoAccess(t)
+
+	tmp := t.TempDir()
+	remotes := filepath.Join(tmp, "remotes")
+	mustMkdir(t, remotes)
+	remote := createBareRepo(t, remotes, "repo-one")
+
+	projectDir := filepath.Join(tmp, "workspace")
+	mustInitWorkspaceRepo(t, projectDir, remote)
+	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), remote+"@feature/new-api\n")
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(oldWD); err != nil {
+			t.Logf("restore working directory: %v", err)
+		}
+	})
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatalf("chdir project dir: %v", err)
+	}
+
+	if err := runClone([]string{"-f", "repos.list", "--create"}); err != nil {
+		t.Fatalf("runClone returned error: %v", err)
+	}
+	if !branchExistsInBare(t, remote, "feature/new-api") {
+		t.Fatalf("expected branch to be created when --create is set")
+	}
+}
+
+func TestRunCloneWorktreeMissingBranchRequiresCreateFlag(t *testing.T) {
+	enableBareRepoAccess(t)
+
+	tmp := t.TempDir()
+	remotes := filepath.Join(tmp, "remotes")
+	mustMkdir(t, remotes)
+	remote := createBareRepo(t, remotes, "repo-one")
+
+	projectDir := filepath.Join(tmp, "workspace")
+	mustInitWorkspaceRepo(t, projectDir, remote)
+	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "@feature/needs-create --worktree\n")
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(oldWD); err != nil {
+			t.Logf("restore working directory: %v", err)
+		}
+	})
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatalf("chdir project dir: %v", err)
+	}
+
+	var stderr string
+	stderr = captureStderr(t, func() {
+		err = runClone([]string{"-f", "repos.list"})
+	})
+	if err == nil {
+		t.Fatalf("expected missing-branch error")
+	}
+	if !strings.Contains(stderr, "--create") {
+		t.Fatalf("expected guidance to use --create, got stderr: %s", stderr)
+	}
+	if branchExistsInBare(t, remote, "feature/needs-create") {
+		t.Fatalf("branch should not be created unless --create is set")
+	}
+}
+
 func TestCheckNonInteractiveAuthForCloneHasActionableError(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("PATH", tmp)
@@ -356,6 +469,12 @@ func runGit(t *testing.T, dir string, args ...string) string {
 		t.Fatalf("git %s failed: %v\n%s", strings.Join(args, " "), err, string(out))
 	}
 	return string(out)
+}
+
+func branchExistsInBare(t *testing.T, barePath, branch string) bool {
+	t.Helper()
+	cmd := exec.Command("git", "--git-dir", barePath, "show-ref", "--verify", "--", "refs/heads/"+branch)
+	return cmd.Run() == nil
 }
 
 func assertDirExists(t *testing.T, dir string) {

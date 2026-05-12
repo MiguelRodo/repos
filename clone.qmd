@@ -23,6 +23,7 @@ repos clone
 | `--fetch-single` | Keep restricted single-branch refspec (CI/CD or metered connections) |
 | `--fetch-all` | Full clone — all remote branches downloaded upfront |
 | `--force` | Ignore per-line flag overrides and enforce CLI flags |
+| `--create` | Create and push missing branches referenced in `repos.list` |
 
 ```bash
 # Use a custom list file
@@ -59,6 +60,14 @@ the most specific setting so they win over both.  Add `--force` on the CLI to
 ignore per-line flag overrides entirely.  Inside `repos.list`, a global-only
 line such as `--fetch-single --force` or `--worktree --force` forces that
 global setting to override conflicting per-line flags.
+
+## Missing Branches
+
+When a requested branch does not exist on the remote, `repos clone` now fails by
+default and tells you to rerun with `--create`.
+
+Use `--create` when you explicitly want `repos clone` to create and push missing
+branches for `owner/repo@branch` or `@branch` entries.
 
 ## Repository Layout
 
