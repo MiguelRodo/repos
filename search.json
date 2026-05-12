@@ -67,7 +67,7 @@
     "href": "clone.html#options",
     "title": "repos clone",
     "section": "Options",
-    "text": "Options\n\n\n\n\n\n\n\nFlag\nDescription\n\n\n\n\n-f &lt;file&gt;\nUse a different list file (default: repos.list)\n\n\n--worktree\nMake every @branch line use a worktree by default\n\n\n--fetch-all-deferred\n(Default) Fast --single-branch clone; wildcard refspec restored immediately\n\n\n--fetch-single\nKeep restricted single-branch refspec (CI/CD or metered connections)\n\n\n--fetch-all\nFull clone — all remote branches downloaded upfront\n\n\n--force\nIgnore per-line flag overrides and enforce CLI flags\n\n\n\n# Use a custom list file\nrepos clone -f my-repos.list\n\n# CI/CD pipeline — strict single-branch isolation\nrepos clone --fetch-single\n\n# Download everything upfront\nrepos clone --fetch-all\n\n# Force all @branch lines to be worktrees, ignoring per-line flag overrides\nrepos clone --worktree --force"
+    "text": "Options\n\n\n\n\n\n\n\nFlag\nDescription\n\n\n\n\n-f &lt;file&gt;\nUse a different list file (default: repos.list)\n\n\n--worktree\nMake every @branch line use a worktree by default\n\n\n--fetch-all-deferred\n(Default) Fast --single-branch clone; wildcard refspec restored immediately\n\n\n--fetch-single\nKeep restricted single-branch refspec (CI/CD or metered connections)\n\n\n--fetch-all\nFull clone — all remote branches downloaded upfront\n\n\n--force\nIgnore per-line flag overrides and enforce CLI flags\n\n\n--create\nCreate and push missing branches referenced in repos.list\n\n\n\n# Use a custom list file\nrepos clone -f my-repos.list\n\n# CI/CD pipeline — strict single-branch isolation\nrepos clone --fetch-single\n\n# Download everything upfront\nrepos clone --fetch-all\n\n# Force all @branch lines to be worktrees, ignoring per-line flag overrides\nrepos clone --worktree --force"
   },
   {
     "objectID": "clone.html#default-fetch-behaviour",
@@ -82,6 +82,13 @@
     "title": "repos clone",
     "section": "Flag Precedence",
     "text": "Flag Precedence\nBy default, CLI flags override repos.list global flags, and per-line flags are the most specific setting so they win over both. Add --force on the CLI to ignore per-line flag overrides entirely. Inside repos.list, a global-only line such as --fetch-single --force or --worktree --force forces that global setting to override conflicting per-line flags."
+  },
+  {
+    "objectID": "clone.html#missing-branches",
+    "href": "clone.html#missing-branches",
+    "title": "repos clone",
+    "section": "Missing Branches",
+    "text": "Missing Branches\nWhen a requested branch does not exist on the remote, repos clone now fails by default and tells you to rerun with --create.\nUse --create when you explicitly want repos clone to create and push missing branches for owner/repo@branch or @branch entries."
   },
   {
     "objectID": "clone.html#repository-layout",

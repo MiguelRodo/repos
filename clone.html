@@ -185,6 +185,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#options" id="toc-options" class="nav-link" data-scroll-target="#options">Options</a></li>
   <li><a href="#default-fetch-behaviour" id="toc-default-fetch-behaviour" class="nav-link" data-scroll-target="#default-fetch-behaviour">Default Fetch Behaviour</a></li>
   <li><a href="#flag-precedence" id="toc-flag-precedence" class="nav-link" data-scroll-target="#flag-precedence">Flag Precedence</a></li>
+  <li><a href="#missing-branches" id="toc-missing-branches" class="nav-link" data-scroll-target="#missing-branches">Missing Branches</a></li>
   <li><a href="#repository-layout" id="toc-repository-layout" class="nav-link" data-scroll-target="#repository-layout">Repository Layout</a></li>
   <li><a href="#whats-in-repos.list" id="toc-whats-in-repos.list" class="nav-link" data-scroll-target="#whats-in-repos.list">What’s in repos.list?</a></li>
   <li><a href="#github-authentication" id="toc-github-authentication" class="nav-link" data-scroll-target="#github-authentication">GitHub Authentication</a></li>
@@ -257,6 +258,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td><code>--force</code></td>
 <td>Ignore per-line flag overrides and enforce CLI flags</td>
 </tr>
+<tr class="odd">
+<td><code>--create</code></td>
+<td>Create and push missing branches referenced in <code>repos.list</code></td>
+</tr>
 </tbody>
 </table>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Use a custom list file</span></span>
@@ -283,6 +288,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="flag-precedence" class="level2">
 <h2 class="anchored" data-anchor-id="flag-precedence">Flag Precedence</h2>
 <p>By default, CLI flags override <code>repos.list</code> global flags, and per-line flags are the most specific setting so they win over both. Add <code>--force</code> on the CLI to ignore per-line flag overrides entirely. Inside <code>repos.list</code>, a global-only line such as <code>--fetch-single --force</code> or <code>--worktree --force</code> forces that global setting to override conflicting per-line flags.</p>
+</section>
+<section id="missing-branches" class="level2">
+<h2 class="anchored" data-anchor-id="missing-branches">Missing Branches</h2>
+<p>When a requested branch does not exist on the remote, <code>repos clone</code> now fails by default and tells you to rerun with <code>--create</code>.</p>
+<p>Use <code>--create</code> when you explicitly want <code>repos clone</code> to create and push missing branches for <code>owner/repo@branch</code> or <code>@branch</code> entries.</p>
 </section>
 <section id="repository-layout" class="level2">
 <h2 class="anchored" data-anchor-id="repository-layout">Repository Layout</h2>
