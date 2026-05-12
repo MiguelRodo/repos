@@ -176,7 +176,7 @@ run_repos_script <- function(script_name, args = character()) {
 #' @param ... Additional arguments passed to the underlying \code{repos}
 #'   subcommand.
 #'
-#' @return Invisibly returns the exit status of the script (0 for success).
+#' @return Invisibly returns the exit status of the command (0 for success).
 #'
 #' @details
 #' \code{repos("clone", ...)} delegates to \code{repos clone} (see
@@ -407,7 +407,8 @@ repos_workspace <- function(file = NULL, debug = FALSE, debug_file = NULL, ...) 
 #'
 #' @param file Path to repos list file (default: repos.list)
 #' @param devcontainer Character vector of paths to devcontainer.json files
-#' @param permissions Character string. \code{"all"} or \code{"contents"}
+#' @param permissions Character string. \code{"default"}, \code{"all"}, or
+#'   \code{"contents"}
 #' @param tool Deprecated and ignored. Kept for backward compatibility.
 #' @param debug Logical. If \code{TRUE}, enable debug output to stderr
 #' @param debug_file Character string or logical. Enable debug output to file

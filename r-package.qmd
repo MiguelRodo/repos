@@ -14,6 +14,7 @@ devtools::install_github("MiguelRodo/repos")
 ```
 
 **System requirements:** `repos` and `git` must be available on your `PATH`.
+For Codespaces support (`repos_codespace()`), `gh` must also be available.
 
 ## End-to-End Workflow
 
@@ -126,7 +127,7 @@ repos_bundled_cli_version()
 ```r
 library(repos)
 
-repos_bundled_cli_version()  # e.g. "1.1.0"
+repos_bundled_cli_version()  # e.g. "2.0.0"
 ```
 
 ---
@@ -250,7 +251,7 @@ repos_codespace(
 |---|---|---|---|
 | `file` | `character` | `NULL` | Path to repos list file (default: `repos.list`) |
 | `devcontainer` | `character` or `character vector` | `NULL` | Path(s) to `devcontainer.json` |
-| `permissions` | `character` | `NULL` | `"all"` or `"contents"` |
+| `permissions` | `character` | `NULL` | `"default"`, `"all"`, or `"contents"` |
 | `tool` | `character` | `NULL` | Deprecated; ignored |
 | `debug` | `logical` | `FALSE` | Print debug output to stderr |
 | `debug_file` | `logical` or `character` | `NULL` | Write debug output to a file |

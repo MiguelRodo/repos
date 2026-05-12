@@ -221,19 +221,18 @@ def run_repos_command(command: str, args=None):
 
 def run_script(script_name="run-pipeline.sh", args=None):
     """
-    Run a repos script with the given arguments.
+    Map a legacy script name to a repos subcommand and execute it.
     
     Args:
-        script_name: Name of the script to run (e.g., "helper/clone-repos.sh")
-        args: List of arguments to pass to the script
+        script_name: Legacy script name (e.g., "helper/clone-repos.sh")
+        args: List of arguments to pass to the mapped repos subcommand
         
     Returns:
         subprocess.CompletedProcess object
         
     Raises:
-        FileNotFoundError: If the script cannot be found
-        subprocess.CalledProcessError: If the script exits with non-zero status
-        PermissionError: If the script cannot be made executable
+        FileNotFoundError: If the script name cannot be mapped to a repos subcommand
+        subprocess.CalledProcessError: If the repos command exits with non-zero status
     """
     command = _SCRIPT_TO_COMMAND.get(script_name)
     if command is None:
@@ -317,8 +316,9 @@ def codespace(
     Args:
         file: Path to repos list file (default: repos.list)
         devcontainer: Path(s) to devcontainer.json file(s)
-        permissions: Pass through to codespaces-auth-add.sh ("all" or "contents")
-        tool: Force tool for codespaces-auth-add.sh (e.g., "jq", "python")
+        permissions: Permission level for repos codespace
+            ("default", "all", or "contents")
+        tool: Deprecated and ignored (kept for backward compatibility)
         debug: If True, enable debug output to stderr
         debug_file: Enable debug output to file (auto-generated if True, or specify path)
         **kwargs: Additional keyword arguments (captured but ignored, for extensibility)
@@ -406,7 +406,7 @@ def run(
         include: Repo name(s) to include (string or list of strings)
         exclude: Repo name(s) to exclude (string or list of strings)
         ensure_setup: If True, clone repositories before executing scripts
-        skip_deps: If True, skip the install-r-deps.sh step
+        skip_deps: If True, skip the install-r-deps step
         dry_run: If True, show what would be done without executing
         verbose: If True, enable verbose logging
         continue_on_error: If True, continue on failure and report all results

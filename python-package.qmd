@@ -21,6 +21,7 @@ pip install .
 ```
 
 **System requirements:** `repos` and `git` must be available on your `PATH`.
+For Codespaces support (`codespace()`), `gh` must also be available.
 
 ## End-to-End Workflow
 
@@ -141,7 +142,7 @@ bundled_cli_version()
 ```python
 from repos import bundled_cli_version
 
-print(bundled_cli_version())  # e.g. "1.1.0"
+print(bundled_cli_version())  # e.g. "2.0.0"
 ```
 
 ---
@@ -234,7 +235,7 @@ codespace(
 |---|---|---|---|
 | `file` | `str` | `None` | Path to repos list file (default: `repos.list`) |
 | `devcontainer` | `str` or `list[str]` | `None` | Path(s) to `devcontainer.json` |
-| `permissions` | `str` | `None` | `"all"` or `"contents"` |
+| `permissions` | `str` | `None` | `"default"`, `"all"`, or `"contents"` |
 | `tool` | `str` | `None` | Deprecated; ignored |
 | `debug` | `bool` | `False` | Print debug output to stderr |
 | `debug_file` | `bool` or `str` | `None` | Write debug output to a file |

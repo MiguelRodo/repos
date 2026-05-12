@@ -9,5 +9,5 @@ Description: A command-line tool for managing multiple related Git repositories 
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-SystemRequirements: repos, git
+SystemRequirements: repos, git, gh
 RoxygenNote: 7.3.1
