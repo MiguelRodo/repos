@@ -85,8 +85,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-	// codespace, codespaces, and codespaces-auth are aliases for the same behavior.
-	case "codespace", "codespaces-auth", "codespaces":
+	case "codespace":
 		if err := runCodespacesAuth(os.Args[2:]); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
@@ -118,8 +117,6 @@ Commands:
   workspace         Manage VS Code .code-workspace files
   install-r-deps    Install R dependencies for managed repositories
   codespace         Set GH_TOKEN Codespaces secrets for managed repositories
-  codespaces        Alias for codespace
-  codespaces-auth   Legacy alias for codespace
   run               Execute a command inside each repository from repos.list
   create            Create missing GitHub repositories from repos.list
 
