@@ -25,7 +25,7 @@
     "href": "install.html#windows",
     "title": "Installation",
     "section": "Windows",
-    "text": "Windows\n\nScoop (recommended)\nscoop bucket add repos https://github.com/MiguelRodo/scoop-bucket\nscoop install repos\ngit and jq are installed automatically by Scoop. You will also need Git for Windows for Bash support.\n\n\nManual\n\nClone the repository:\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\nRun the installer:\n.\\install.ps1\nThe installer places repos.exe in the first writable directory already in your current PATH.\n\nRequirements: PowerShell (with Invoke-WebRequest) and network access to GitHub releases."
+    "text": "Windows\n\nOption 1: Installer Script (Recommended)\nDownload and install the pre-compiled repos.exe into the first writable directory already present in your PATH:\n\nClone the repository:\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\nRun the installer:\n.\\install.ps1\n\nThe installer downloads the latest repos.exe binary from GitHub releases and places it in the first writable directory in your current PATH.\nRequirements: PowerShell and network access to GitHub releases.\n\n\nOption 2: Scoop\nscoop bucket add repos https://github.com/MiguelRodo/scoop-bucket\nscoop install repos\ngit and jq are installed automatically by Scoop. You will also need Git for Windows for Bash support."
   },
   {
     "objectID": "install.html#from-source",

@@ -191,8 +191,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#macos-homebrew" id="toc-macos-homebrew" class="nav-link" data-scroll-target="#macos-homebrew">macOS (Homebrew)</a></li>
   <li><a href="#windows" id="toc-windows" class="nav-link" data-scroll-target="#windows">Windows</a>
   <ul class="collapse">
-  <li><a href="#scoop-recommended" id="toc-scoop-recommended" class="nav-link" data-scroll-target="#scoop-recommended">Scoop (recommended)</a></li>
-  <li><a href="#manual" id="toc-manual" class="nav-link" data-scroll-target="#manual">Manual</a></li>
+  <li><a href="#option-1-installer-script-recommended" id="toc-option-1-installer-script-recommended" class="nav-link" data-scroll-target="#option-1-installer-script-recommended">Option 1: Installer Script (Recommended)</a></li>
+  <li><a href="#option-2-scoop" id="toc-option-2-scoop" class="nav-link" data-scroll-target="#option-2-scoop">Option 2: Scoop</a></li>
   </ul></li>
   <li><a href="#from-source" id="toc-from-source" class="nav-link" data-scroll-target="#from-source">From Source</a></li>
   <li><a href="#language-wrappers" id="toc-language-wrappers" class="nav-link" data-scroll-target="#language-wrappers">Language Wrappers</a>
@@ -286,23 +286,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="windows" class="level2">
 <h2 class="anchored" data-anchor-id="windows">Windows</h2>
-<section id="scoop-recommended" class="level3">
-<h3 class="anchored" data-anchor-id="scoop-recommended">Scoop (recommended)</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>scoop bucket add repos https<span class="op">://</span>github<span class="op">.</span><span class="fu">com</span><span class="op">/</span>MiguelRodo<span class="op">/</span>scoop-bucket</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>scoop install repos</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><code>git</code> and <code>jq</code> are installed automatically by Scoop. You will also need <a href="https://git-scm.com/download/win">Git for Windows</a> for Bash support.</p>
-</section>
-<section id="manual" class="level3">
-<h3 class="anchored" data-anchor-id="manual">Manual</h3>
+<section id="option-1-installer-script-recommended" class="level3">
+<h3 class="anchored" data-anchor-id="option-1-installer-script-recommended">Option 1: Installer Script (Recommended)</h3>
+<p>Download and install the pre-compiled <code>repos.exe</code> into the first writable directory already present in your <code>PATH</code>:</p>
 <ol type="1">
 <li><p>Clone the repository:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>git clone https<span class="op">://</span>github<span class="op">.</span><span class="fu">com</span><span class="op">/</span>MiguelRodo<span class="op">/</span>repos<span class="op">.</span><span class="fu">git</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span> repos</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>git clone https<span class="op">://</span>github<span class="op">.</span><span class="fu">com</span><span class="op">/</span>MiguelRodo<span class="op">/</span>repos<span class="op">.</span><span class="fu">git</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span> repos</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
 <li><p>Run the installer:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="op">.</span>\install<span class="op">.</span><span class="fu">ps1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
-<li><p>The installer places <code>repos.exe</code> in the first writable directory already in your current <code>PATH</code>.</p></li>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="op">.</span>\install<span class="op">.</span><span class="fu">ps1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
 </ol>
-<p><strong>Requirements:</strong> PowerShell (with <code>Invoke-WebRequest</code>) and network access to GitHub releases.</p>
+<p>The installer downloads the latest <code>repos.exe</code> binary from GitHub releases and places it in the first writable directory in your current <code>PATH</code>.</p>
+<p><strong>Requirements:</strong> PowerShell and network access to GitHub releases.</p>
+</section>
+<section id="option-2-scoop" class="level3">
+<h3 class="anchored" data-anchor-id="option-2-scoop">Option 2: Scoop</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>scoop bucket add repos https<span class="op">://</span>github<span class="op">.</span><span class="fu">com</span><span class="op">/</span>MiguelRodo<span class="op">/</span>scoop-bucket</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>scoop install repos</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>git</code> and <code>jq</code> are installed automatically by Scoop. You will also need <a href="https://git-scm.com/download/win">Git for Windows</a> for Bash support.</p>
 <hr>
 </section>
 </section>
