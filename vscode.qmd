@@ -54,8 +54,8 @@ workspace/
 
 ## `repos codespace`
 
-Inject the `GH_TOKEN` Codespaces secret into every cloned repository that has
-a `devcontainer.json`.  `repos codespaces` is an alias for `repos codespace`.
+Inject the `GH_TOKEN` Codespaces secret into every managed repository and update
+its `devcontainer.json` Codespaces repository permissions.
 
 ```bash
 repos codespace
@@ -67,8 +67,9 @@ repos codespace
 |---|---|
 | `-f <file>` | Use a different list file (default: `repos.list`) |
 | `-d <path>` | Path to a `devcontainer.json` file (repeatable) |
-| `--permissions <all\|contents>` | Codespaces permission level |
-| `-t <tool>` | Force tool used for JSON processing (`jq` or `python`) |
+| `--all` | Update all `devcontainer.json` files found under `.devcontainer/` |
+| `--permissions <default\|all\|contents>` | Codespaces permission level |
+| `--dry-run` | Preview secret/file updates without writing changes |
 
 ```bash
 # Use a custom list file
@@ -79,6 +80,12 @@ repos codespace -d .devcontainer/devcontainer.json
 
 # Multiple devcontainer paths
 repos codespace -d path1/devcontainer.json -d path2/devcontainer.json
+
+# Update all devcontainer files under .devcontainer/
+repos codespace --all
+
+# Preview without changing files or secrets
+repos codespace --dry-run
 ```
 
 ### GitHub Authentication

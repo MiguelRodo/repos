@@ -3,8 +3,9 @@ title: "Installation"
 toc: true
 ---
 
-You can install `repos` as a system package (Ubuntu/Debian, macOS, Windows), from
-source, or as a language-specific wrapper (R or Python).
+`repos` is distributed as a compiled Go CLI binary.
+Install it via system package managers, release installers, or from source.
+Optional R and Python wrappers dispatch to the installed `repos` binary.
 
 ## Ubuntu / Debian
 
@@ -32,10 +33,10 @@ To uninstall:
 sudo apt-get remove repos
 ```
 
-### Option 2: Local Installation (No sudo required)
+### Option 2: Local Release Installer (No sudo required)
 
-Install the latest precompiled `repos` binary into the first writable directory
-already present in your `PATH`:
+Install the latest release binary into the first writable directory already
+present in your `PATH`:
 
 ```bash
 git clone https://github.com/MiguelRodo/repos.git
@@ -53,12 +54,12 @@ bash uninstall-local.sh
 
 ### Option 3: System-wide from Release `.deb` (requires sudo)
 
-Prefer Option 1 (APT) for automatic updates. If needed, you can manually download
-and install a release `.deb` from the
+Prefer Option 1 (APT) for automatic updates. If needed, manually download and
+install a release `.deb` from the
 [Releases page](https://github.com/MiguelRodo/repos/releases):
 
 ```bash
-VERSION_REPOS=1.2.6
+VERSION_REPOS=<version>
 ARCH="$(dpkg --print-architecture)"
 wget "https://github.com/MiguelRodo/repos/releases/download/v${VERSION_REPOS}/repos_${VERSION_REPOS}_${ARCH}.deb"
 sudo dpkg -i "repos_${VERSION_REPOS}_${ARCH}.deb"
@@ -74,14 +75,11 @@ To uninstall:
 sudo dpkg -r repos
 ```
 
-### Dependencies
+### Runtime Requirements
 
-All Ubuntu/Debian methods require `bash`, `git`, `curl`, and `jq`.  These are
-typically pre-installed.  If not:
-
-```bash
-sudo apt-get install bash git curl jq
-```
+- `git` is required for core multi-repo operations.
+- `gh` is required for `repos codespace` and `repos create`.
+- `Rscript` is required for `repos install-r-deps`.
 
 ---
 
@@ -92,8 +90,7 @@ brew tap MiguelRodo/repos
 brew install repos
 ```
 
-The formula automatically handles the `jq` dependency. Git is typically
-pre-installed on macOS.
+Git is typically pre-installed on macOS.
 
 ---
 
@@ -126,23 +123,25 @@ scoop bucket add repos https://github.com/MiguelRodo/scoop-bucket
 scoop install repos
 ```
 
-`git` and `jq` are installed automatically by Scoop. You will also need
-[Git for Windows](https://git-scm.com/download/win) for Bash support.
+`git` is installed automatically by Scoop. You will also need
+[Git for Windows](https://git-scm.com/download/win) for Git Bash support.
 
 ---
 
-## From Source
+## From Source (Go)
+
+```bash
+# Install latest from module path
+go install github.com/MiguelRodo/repos/v2/cmd/repos@latest
+```
+
+Or build from a local clone:
 
 ```bash
 git clone https://github.com/MiguelRodo/repos.git
 cd repos
-
-# Local install (no sudo)
-bash install-local.sh
-
-# Or system-wide on Ubuntu/Debian
-sudo dpkg-buildpackage -us -uc -b
-sudo dpkg -i ../repos_*.deb
+go build -o repos ./cmd/repos
+# Optional: move ./repos somewhere on PATH
 ```
 
 ---
@@ -156,7 +155,8 @@ install.packages("devtools")
 devtools::install_github("MiguelRodo/repos")
 ```
 
-Requires `repos` and `git` on your system `PATH`.
+Requires `repos`, `git`, and `gh` on your system `PATH` for full wrapper
+coverage (including Codespaces helpers).
 
 ### Python Package
 
@@ -172,7 +172,8 @@ cd repos
 pip install .
 ```
 
-Requires `repos` and `git` on your system `PATH`.
+Requires `repos`, `git`, and `gh` on your system `PATH` for full wrapper
+coverage (including Codespaces helpers).
 
 ---
 

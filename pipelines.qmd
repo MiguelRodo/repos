@@ -3,13 +3,15 @@ title: "Running Pipelines"
 toc: true
 ---
 
-`repos run` executes a script inside each repository listed in your `repos.list`
-file.  This lets you run a build, test, or any other task across your entire
-workspace with a single command.
+`repos run` executes tasks inside each repository listed in your repo list file.
+It supports both:
+
+- **Script mode** (default): run `run.sh` or another script across repos
+- **Explicit command mode**: run a command (and args) in each repo
 
 ## Basic Usage
 
-By default, `repos run` looks for a file called `run.sh` in each cloned
+By default, `repos run` looks for a file called `run.sh` in each managed
 repository and executes it:
 
 ```bash
@@ -27,6 +29,9 @@ repos run
 | `--continue-on-error` | Keep running even if a repository fails |
 | `--dry-run` | Print what would be run without executing anything |
 | `--ensure-setup` | Clone repositories before running the pipeline |
+| `--skip-deps` | Skip the default `install-r-deps` setup step |
+| `--verbose` | Enable verbose logging |
+| `--concurrent` | Run explicit command mode in parallel |
 
 ```bash
 # Run a custom script in each repo
@@ -46,6 +51,12 @@ repos run --dry-run
 
 # Make sure repos are cloned before running
 repos run --ensure-setup
+
+# Explicit command mode (runs in each repo)
+repos run make test
+
+# Explicit command mode in parallel
+repos run --concurrent npm install
 ```
 
 ## Writing a Pipeline Script
