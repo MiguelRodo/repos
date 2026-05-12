@@ -85,6 +85,9 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
+	case "codespaces", "codespaces-auth":
+		fmt.Fprintln(os.Stderr, "Error: command removed; use 'repos codespace'")
+		os.Exit(1)
 	case "codespace":
 		if err := runCodespacesAuth(os.Args[2:]); err != nil {
 			fmt.Fprintln(os.Stderr, err)
