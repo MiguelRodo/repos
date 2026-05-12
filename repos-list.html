@@ -259,6 +259,10 @@ owner/other-repo --private</code></pre>
 <td>Full clone — all remote branches downloaded upfront</td>
 </tr>
 <tr class="even">
+<td><code>--depth &lt;n&gt;</code></td>
+<td>Opt-in shallow clone depth for all clone operations</td>
+</tr>
+<tr class="odd">
 <td><code>--force</code></td>
 <td>On a global-only flag line, make the other flag(s) on that line override conflicting per-line flags</td>
 </tr>
@@ -272,7 +276,7 @@ owner/other-repo --private</code></pre>
 <li>A global line such as <code>--fetch-single --force</code> or <code>--worktree --force</code> forces that global setting to override conflicting per-line flags.</li>
 </ol>
 <p>Per-line <code>--public</code>/<code>--private</code> flags always override the global default.</p>
-<p><code>--fetch-single</code>, <code>--fetch-all-deferred</code>, and <code>--fetch-all</code> may also be specified per-line to override the global fetch mode for a specific repository or <code>@branch</code> line.</p>
+<p><code>--fetch-single</code>, <code>--fetch-all-deferred</code>, <code>--fetch-all</code>, and <code>--depth &lt;n&gt;</code> may also be specified per-line to override global clone behavior for a specific repository or <code>@branch</code> line.</p>
 </section>
 <section id="example" class="level2">
 <h2 class="anchored" data-anchor-id="example">Example</h2>

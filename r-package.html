@@ -255,7 +255,8 @@ myorg/documentation</code></pre>
 <p><code>repos_clone()</code> supports explicit fetch modes:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_clone</span>(<span class="at">fetch_mode =</span> <span class="st">"deferred"</span>)  <span class="co"># default: fast clone, then restore wildcard refspec</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_clone</span>(<span class="at">fetch_mode =</span> <span class="st">"single"</span>)    <span class="co"># strict single-branch isolation</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_clone</span>(<span class="at">fetch_mode =</span> <span class="st">"all"</span>)       <span class="co"># full clone (all branches upfront)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_clone</span>(<span class="at">fetch_mode =</span> <span class="st">"all"</span>)       <span class="co"># full clone (all branches upfront)</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_clone</span>(<span class="at">depth =</span> <span class="dv">1</span>)                <span class="co"># opt-in shallow clone</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="step-3-open-in-your-ide-optional" class="level3">
 <h3 class="anchored" data-anchor-id="step-3-open-in-your-ide-optional">Step 3 — Open in your IDE (optional)</h3>
