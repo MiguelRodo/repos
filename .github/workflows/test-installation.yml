@@ -159,7 +159,20 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y git curl jq bash
       
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+      
+      - name: Build fake release binary
+        run: |
+          mkdir -p /tmp/fake-release
+          cd cmd/repos
+          GOOS=linux GOARCH=amd64 go build -o /tmp/fake-release/repos_linux_amd64 .
+
       - name: Run local installation script
+        env:
+          REPOS_DOWNLOAD_BASE_URL: "file:///tmp/fake-release"
         run: |
           mkdir -p "$HOME/.local/bin"
           export PATH="$HOME/.local/bin:$PATH"
@@ -249,12 +262,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
       
-      - name: Install dependencies
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+      
+      - name: Build fake release binary
         shell: pwsh
         run: |
-          # Install jq using chocolatey
-          choco install jq -y
-          # Git is already installed on GitHub runners
+          $fakeRelease = Join-Path $env:TEMP "fake-release"
+          New-Item -ItemType Directory -Path $fakeRelease -Force | Out-Null
+          Set-Location cmd/repos
+          $env:GOOS = "windows"
+          $env:GOARCH = "amd64"
+          go build -o (Join-Path $fakeRelease "repos_windows_amd64.exe") .
+          Write-Host "Fake release binary built"
       
       - name: Run install.ps1
         shell: pwsh
@@ -262,6 +284,8 @@ jobs:
           $installDir = Join-Path $env:USERPROFILE ".local\bin"
           New-Item -ItemType Directory -Path $installDir -Force | Out-Null
           $env:Path = "$installDir;$env:Path"
+          $fakeRelease = Join-Path $env:TEMP "fake-release"
+          $env:REPOS_DOWNLOAD_BASE_URL = "file:///$($fakeRelease -replace '\\', '/')"
           .\install.ps1
           Write-Host "Installation script executed"
       

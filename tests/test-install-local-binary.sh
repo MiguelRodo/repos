@@ -47,7 +47,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-if [[ "$url" == *"github.com/MiguelRodo/repos/releases/latest/download/repos-linux-amd64" ]]; then
+if [[ "$url" == *"github.com/MiguelRodo/repos/releases/latest/download/repos_linux_amd64" ]]; then
   cat > "$outfile" <<'BIN'
 #!/usr/bin/env bash
 echo "repos mock"

@@ -99,7 +99,26 @@ pre-installed on macOS.
 
 ## Windows
 
-### Scoop (recommended)
+### Option 1: Release Binary (Recommended)
+
+Download and install the pre-compiled `repos.exe` into the first writable directory
+already present in your `PATH`:
+
+1. Clone the repository:
+   ```powershell
+   git clone https://github.com/MiguelRodo/repos.git
+   cd repos
+   ```
+2. Run the installer:
+   ```powershell
+   .\install.ps1
+   ```
+3. The installer places `repos.exe` in the first writable directory already in your
+   current `PATH`.
+
+**Requirements:** PowerShell and network access to GitHub releases.
+
+### Option 2: Scoop
 
 ```powershell
 scoop bucket add repos https://github.com/MiguelRodo/scoop-bucket

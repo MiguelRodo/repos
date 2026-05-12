@@ -8,6 +8,13 @@ builds:
     goarch:
       - amd64
       - arm64
+  - id: repos-windows
+    main: ./cmd/repos
+    goos:
+      - windows
+    goarch:
+      - amd64
+      - arm64
 
 nfpms:
   - id: repos
@@ -24,4 +31,8 @@ nfpms:
       - repos-linux
 
 archives:
-  - format: tar.gz
+  - id: tarballs
+    format: tar.gz
+  - id: binaries
+    format: binary
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"

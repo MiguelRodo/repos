@@ -86,20 +86,33 @@ $binaryName = if ($env:REPOS_BINARY_NAME) { $env:REPOS_BINARY_NAME } else { "rep
 $osName = "windows"
 $archName = Get-ArchName
 $installDir = Get-WritablePathDirectory
-$downloadBase = "https://github.com/$releaseRepo/releases/latest/download"
+$downloadBase = if ($env:REPOS_DOWNLOAD_BASE_URL) {
+    $env:REPOS_DOWNLOAD_BASE_URL
+} else {
+    "https://github.com/$releaseRepo/releases/latest/download"
+}
 $tmpFile = Join-Path ([System.IO.Path]::GetTempPath()) "$binaryName-$PID.exe"
 
 $assets = @(
-    "$binaryName-$osName-$archName.exe",
-    "$binaryName" + "_" + "$osName" + "_" + "$archName.exe"
+    "${binaryName}_${osName}_${archName}.exe",
+    "${binaryName}-${osName}-${archName}.exe"
 )
+
+function Invoke-DownloadAsset([string]$Url, [string]$OutFile) {
+    if ($Url -match '^file:///(.+)$') {
+        $localPath = $Matches[1] -replace '/', [System.IO.Path]::DirectorySeparatorChar
+        Copy-Item -LiteralPath $localPath -Destination $OutFile -Force
+        return
+    }
+    Invoke-WebRequest -Uri $Url -OutFile $OutFile
+}
 
 $downloadedAsset = $null
 foreach ($asset in $assets) {
     $url = "$downloadBase/$asset"
     Write-Host "Trying $url..."
     try {
-        Invoke-WebRequest -Uri $url -OutFile $tmpFile
+        Invoke-DownloadAsset -Url $url -OutFile $tmpFile
         $downloadedAsset = $asset
         break
     } catch {
@@ -108,7 +121,7 @@ foreach ($asset in $assets) {
             $statusCode = [int]$_.Exception.Response.StatusCode
         }
         $message = $_.Exception.Message
-        if ($statusCode -eq 404) {
+        if ($statusCode -eq 404 -or $message -match '404') {
             Write-Warning "Asset ${asset} not found at ${url}"
             continue
         }
