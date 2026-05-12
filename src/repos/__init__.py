@@ -17,6 +17,24 @@ __version__ = "2.0.0"
 # Updated automatically by the version-and-release workflow.
 _BUNDLED_CLI_VERSION = "2.0.0"
 
+_SCRIPT_TO_COMMAND = {
+    "run-pipeline.sh": "run",
+    "helper/clone-repos.sh": "clone",
+    "clone-repos.sh": "clone",
+    "helper/vscode-workspace-add.sh": "workspace",
+    "vscode-workspace-add.sh": "workspace",
+    "helper/codespaces-auth-add.sh": "codespace",
+    "codespaces-auth-add.sh": "codespace",
+}
+
+
+def _warn_installer_failure(step: str, returncode: int) -> None:
+    print(
+        f"Warning: {step} step failed with status {returncode}."
+        " Check the output above for details.",
+        file=sys.stderr,
+    )
+
 
 def bundled_cli_version() -> str:
     """
@@ -114,11 +132,7 @@ def install_cli(run: bool = False) -> None:
                     check=True,
                 )
             except subprocess.CalledProcessError as e:
-                print(
-                    f"Warning: git clone step failed with status {e.returncode}."
-                    " Check the output above for details.",
-                    file=sys.stderr,
-                )
+                _warn_installer_failure("git clone", e.returncode)
                 return
             try:
                 subprocess.run(
@@ -126,11 +140,7 @@ def install_cli(run: bool = False) -> None:
                     check=True,
                 )
             except subprocess.CalledProcessError as e:
-                print(
-                    f"Warning: install-local.sh step failed with status {e.returncode}."
-                    " Check the output above for details.",
-                    file=sys.stderr,
-                )
+                _warn_installer_failure("install-local.sh", e.returncode)
     elif system == "Darwin":
         print("To install the repos CLI on macOS, run:\n")
         print("  brew tap MiguelRodo/repos")
@@ -225,16 +235,7 @@ def run_script(script_name="run-pipeline.sh", args=None):
         subprocess.CalledProcessError: If the script exits with non-zero status
         PermissionError: If the script cannot be made executable
     """
-    script_map = {
-        "run-pipeline.sh": "run",
-        "helper/clone-repos.sh": "clone",
-        "clone-repos.sh": "clone",
-        "helper/vscode-workspace-add.sh": "workspace",
-        "vscode-workspace-add.sh": "workspace",
-        "helper/codespaces-auth-add.sh": "codespace",
-        "codespaces-auth-add.sh": "codespace",
-    }
-    command = script_map.get(script_name)
+    command = _SCRIPT_TO_COMMAND.get(script_name)
     if command is None:
         raise FileNotFoundError(f"Unsupported script '{script_name}' for Go CLI wrapper.")
     return run_repos_command(command, args)

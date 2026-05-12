@@ -2,6 +2,16 @@
 # Updated automatically by the version-and-release workflow.
 .bundled_cli_version <- "2.0.0"
 
+.script_to_command <- c(
+  "run-pipeline.sh" = "run",
+  "helper/clone-repos.sh" = "clone",
+  "clone-repos.sh" = "clone",
+  "helper/vscode-workspace-add.sh" = "workspace",
+  "vscode-workspace-add.sh" = "workspace",
+  "helper/codespaces-auth-add.sh" = "codespace",
+  "codespaces-auth-add.sh" = "codespace"
+)
+
 #' Return the repos CLI version targeted by this package
 #'
 #' The R package targets a specific `repos` CLI version. This function returns
@@ -146,17 +156,7 @@ repos_install_cli <- function(run = FALSE) {
 #'   (0 for success).
 #' @keywords internal
 run_repos_script <- function(script_name, args = character()) {
-  command <- switch(
-    script_name,
-    "run-pipeline.sh" = "run",
-    "helper/clone-repos.sh" = "clone",
-    "clone-repos.sh" = "clone",
-    "helper/vscode-workspace-add.sh" = "workspace",
-    "vscode-workspace-add.sh" = "workspace",
-    "helper/codespaces-auth-add.sh" = "codespace",
-    "codespaces-auth-add.sh" = "codespace",
-    NULL
-  )
+  command <- unname(.script_to_command[[script_name]])
 
   if (is.null(command)) {
     stop("Unsupported script mapping: ", script_name)
