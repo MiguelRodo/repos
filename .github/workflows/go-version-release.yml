@@ -36,6 +36,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           apt_repo_token: ${{ secrets.APT_REPO_TOKEN }}
+          apt_signing_key: $${{ secrets.GPG_PRIVATE_KEY }}
           version: ${{ inputs.version }}
           bump_type: ${{ inputs.bump_type }}
           version_check: ${{ inputs.version_check }}
