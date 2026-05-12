@@ -51,6 +51,7 @@ func runClone(args []string) error {
 	fetchAll := fs.Bool("fetch-all", false, "all fetch mode")
 	depth := fs.Int("depth", 0, "opt-in shallow clone depth")
 	force := fs.Bool("force", false, "ignore per-line flag overrides")
+	create := fs.Bool("create", false, "create missing remote branches when requested branch is absent")
 	help := fs.Bool("help", false, "show help")
 	fs.BoolVar(help, "h", false, "show help")
 
@@ -111,6 +112,7 @@ func runClone(args []string) error {
 		cliFetchModeSet:       *fetchDeferred || *fetchSingle || *fetchAll,
 		cliDepthSet:           depthSet,
 		cliForce:              *force,
+		allowCreate:           *create,
 		seenRemoteLocal:       map[string]string{},
 		plan:                  map[string]planInfo{},
 	}
@@ -218,6 +220,26 @@ func hasNonLocalRemotesInFile(reposFile string) (bool, error) {
 	return false, nil
 }
 
+// checkNonInteractiveAuthForClone verifies that at least one non-interactive
+// git authentication method is available before attempting remote clones.
+//
+// repos clone delegates all network operations to the system git binary, so
+// whatever auth git has configured for the remote's protocol is what gets used.
+// This check is a best-effort pre-flight: if none of the recognised methods are
+// present, git would eventually prompt for credentials — which is undesirable in
+// non-interactive environments like CI/CD.
+//
+// Accepted methods:
+//   - GH_TOKEN env var: git does not read this directly — it only prevents
+//     interactive prompts when gh is also configured as git's credential helper
+//     (via "gh auth login" or "gh auth setup-git").  This check treats a
+//     non-empty GH_TOKEN as a best-effort signal that such an environment is
+//     in place, but does not verify it.
+//   - gh auth status: gh CLI is authenticated and will serve credentials to git.
+//   - SSH agent: SSH_AUTH_SOCK points to a socket with loaded keys, used for
+//     SSH remotes on any host (not just GitHub).
+//   - credential.helper: a git credential helper is configured, which handles
+//     HTTPS remotes on any host via the platform's own mechanism.
 func checkNonInteractiveAuthForClone() error {
 	if token := strings.TrimSpace(os.Getenv("GH_TOKEN")); token != "" {
 		return nil

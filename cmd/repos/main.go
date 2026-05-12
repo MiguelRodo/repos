@@ -30,6 +30,7 @@ type state struct {
 	reposFile             string
 	debug                 bool
 	debugWriter           io.Writer
+	allowCreate           bool
 	globalWorktree        bool
 	globalWorktreeForced  bool
 	globalFetchMode       string
@@ -133,9 +134,9 @@ Run 'repos <command> --help' for more information.
 }
 
 func cloneUsage() {
-	fmt.Print(`Usage: repos clone [--file <repo-list>] [--debug] [--debug-file [file]] [--worktree]
-                  [--fetch-all-deferred|--fetch-single|--fetch-all] [--depth <n>]
-                  [--force]
+	fmt.Print(`Usage: repos clone [--file <repo-list>] [--debug] [--debug-file [file]] [--worktree] [--create]
+                   [--fetch-all-deferred|--fetch-single|--fetch-all] [--depth <n>]
+                   [--force]
 
 Fetch modes:
   --fetch-all-deferred   (default) clone with --single-branch then restore wildcard refspec
@@ -146,6 +147,10 @@ Fetch modes:
 Precedence:
   Per-line flags override global defaults by default.
   Use --force to enforce CLI global flags over per-line overrides.
+
+Branch creation:
+  Missing remote branches are not created by default.
+  Use --create to create and push missing branches requested in repos.list.
 `)
 }
 
@@ -810,6 +815,9 @@ func (s *state) cloneOneRepo(ins instruction) (int, error) {
 				return 1, err
 			}
 		} else {
+			if !s.allowCreate {
+				return 1, fmt.Errorf("remote branch %q not found on %q (run with --create to create it)", ref, remoteHTTPS)
+			}
 			fmt.Printf("Remote branch '%s' not found on %s; creating it.\n", ref, remoteHTTPS)
 			fmt.Printf("Cloning default branch of %s → %s\n", remoteHTTPS, dest)
 			cloneArgs2 := append(cloneArgs, "--", repoURL, dest)
@@ -906,8 +914,12 @@ func (s *state) createWorktreeForBranch(base, branch, targetDir, fetchMode strin
 				fmt.Fprintf(os.Stderr, "Warning: failed to set upstream for %s: %v\n", branch, err)
 			}
 		} else {
-			if _, err := gitcmd.RunGit(dest, "push", "-u", "origin", "--", "HEAD:"+branch); err != nil {
-				fmt.Fprintf(os.Stderr, "Warning: failed to push branch %s: %v\n", branch, err)
+			if s.allowCreate {
+				if _, err := gitcmd.RunGit(dest, "push", "-u", "origin", "--", "HEAD:"+branch); err != nil {
+					fmt.Fprintf(os.Stderr, "Warning: failed to push branch %s: %v\n", branch, err)
+				}
+			} else {
+				fmt.Printf("Branch '%s' exists locally but not on origin; leaving it local (use --create to push).\n", branch)
 			}
 		}
 		return 0, nil
@@ -950,6 +962,14 @@ func (s *state) createWorktreeForBranch(base, branch, targetDir, fetchMode strin
 			fmt.Fprintf(os.Stderr, "Warning: failed to push branch %s: %v\n", branch, err)
 		}
 		return 0, nil
+	}
+
+	if !s.allowCreate {
+		origin := normaliseRemoteToHTTPS(gitcmd.SafeGetOriginURL(base))
+		if origin == "" {
+			origin = "origin"
+		}
+		return 1, fmt.Errorf("branch %q not found on %q (run with --create to create it)", branch, origin)
 	}
 
 	fmt.Printf("Branch not found: %s (on remote, creating new)\n", branch)
