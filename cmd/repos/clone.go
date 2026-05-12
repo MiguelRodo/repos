@@ -213,12 +213,11 @@ func hasNonLocalRemotesInFile(reposFile string) (bool, error) {
 // non-interactive environments like CI/CD.
 //
 // Accepted methods:
-//   - GH_TOKEN env var: git does not read this directly.  It works via the gh
-//     CLI acting as a git credential helper (configured automatically by
-//     "gh auth login" and by GitHub Actions).  When gh is the credential helper
-//     it reads GH_TOKEN from the environment and provides the token to git.
-//     This check therefore assumes that GH_TOKEN is only set in environments
-//     where gh is (or will be) the credential helper — e.g. GitHub Actions.
+//   - GH_TOKEN env var: git does not read this directly — it only prevents
+//     interactive prompts when gh is also configured as git's credential helper
+//     (via "gh auth login" or "gh auth setup-git").  This check treats a
+//     non-empty GH_TOKEN as a best-effort signal that such an environment is
+//     in place, but does not verify it.
 //   - gh auth status: gh CLI is authenticated and will serve credentials to git.
 //   - SSH agent: SSH_AUTH_SOCK points to a socket with loaded keys, used for
 //     SSH remotes on any host (not just GitHub).

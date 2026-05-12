@@ -91,7 +91,7 @@ Git uses your SSH key, either via an SSH agent (`SSH_AUTH_SOCK`) or through
 
 ### HTTPS remotes
 
-Git uses whatever credential helper is configured (`git config credential.helper`).
+Git uses whatever credential helper is configured (`git config --get credential.helper`).
 Common options include [Git Credential Manager](https://github.com/git-ecosystem/git-credential-manager),
 `osxkeychain`, `wincred`, or a custom script.  This works for any host,
 including GitHub.  Set one up with your hosting platform's instructions;
@@ -107,11 +107,10 @@ gh auth login
 export GH_TOKEN="your_personal_access_token"
 ```
 
-**Note on `GH_TOKEN`:** git does not read `GH_TOKEN` directly.  It works
-because the `gh` CLI, when registered as git's credential helper (which
-`gh auth login` does automatically, and which GitHub Actions sets up by
-default), reads `GH_TOKEN` from the environment and supplies the token to
-git on request.
+**Note on `GH_TOKEN`:** git does not read `GH_TOKEN` directly.  It only
+prevents interactive prompts when `gh` is also configured as git's credential
+helper (via `gh auth login` or `gh auth setup-git`), in which case `gh` reads
+`GH_TOKEN` from the environment and supplies the token to git on request.
 
 Public repositories on any host can be cloned without any credentials.
 
