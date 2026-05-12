@@ -188,7 +188,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#missing-branches" id="toc-missing-branches" class="nav-link" data-scroll-target="#missing-branches">Missing Branches</a></li>
   <li><a href="#repository-layout" id="toc-repository-layout" class="nav-link" data-scroll-target="#repository-layout">Repository Layout</a></li>
   <li><a href="#whats-in-repos.list" id="toc-whats-in-repos.list" class="nav-link" data-scroll-target="#whats-in-repos.list">What’s in repos.list?</a></li>
-  <li><a href="#github-authentication" id="toc-github-authentication" class="nav-link" data-scroll-target="#github-authentication">GitHub Authentication</a></li>
+  <li><a href="#authentication" id="toc-authentication" class="nav-link" data-scroll-target="#authentication">Authentication</a>
+  <ul class="collapse">
+  <li><a href="#ssh-remotes-githost-or-ssh" id="toc-ssh-remotes-githost-or-ssh" class="nav-link" data-scroll-target="#ssh-remotes-githost-or-ssh">SSH remotes (<code>git@host:…</code> or <code>ssh://…</code>)</a></li>
+  <li><a href="#https-remotes" id="toc-https-remotes" class="nav-link" data-scroll-target="#https-remotes">HTTPS remotes</a></li>
+  </ul></li>
   <li><a href="#going-further" id="toc-going-further" class="nav-link" data-scroll-target="#going-further">Going further</a></li>
   </ul>
 </nav>
@@ -307,13 +311,25 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="whats-in-repos.list">What’s in repos.list?</h2>
 <p><code>repos.list</code> lists the repositories (and optionally branches) to clone. See the <a href="repos-list.html">repos.list reference</a> for the full format, including cloning specific branches, creating worktrees, and setting per-repo visibility.</p>
 </section>
-<section id="github-authentication" class="level2">
-<h2 class="anchored" data-anchor-id="github-authentication">GitHub Authentication</h2>
-<p>For <strong>private</strong> repositories, provide a GitHub token:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GH_TOKEN</span><span class="op">=</span><span class="st">"your_personal_access_token"</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># or</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="ex">gh</span> auth login</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Public repositories can be cloned without any token.</p>
+<section id="authentication" class="level2">
+<h2 class="anchored" data-anchor-id="authentication">Authentication</h2>
+<p><code>repos clone</code> delegates all network operations to the system <code>git</code> binary — it has no built-in credential store of its own. Authentication is therefore whatever <code>git</code> has available for the remote’s protocol.</p>
+<section id="ssh-remotes-githost-or-ssh" class="level3">
+<h3 class="anchored" data-anchor-id="ssh-remotes-githost-or-ssh">SSH remotes (<code>git@host:…</code> or <code>ssh://…</code>)</h3>
+<p>Git uses your SSH key, either via an SSH agent (<code>SSH_AUTH_SOCK</code>) or through <code>~/.ssh/config</code>. No token is needed.</p>
+</section>
+<section id="https-remotes" class="level3">
+<h3 class="anchored" data-anchor-id="https-remotes">HTTPS remotes</h3>
+<p>Git uses whatever credential helper is configured (<code>git config --get credential.helper</code>). Common options include <a href="https://github.com/git-ecosystem/git-credential-manager">Git Credential Manager</a>, <code>osxkeychain</code>, <code>wincred</code>, or a custom script. This works for any host, including GitHub. Set one up with your hosting platform’s instructions; <code>repos clone</code> will work automatically once git can authenticate.</p>
+<p>For GitHub specifically, two additional shortcuts are available:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Option 1 — gh CLI (registers itself as a git credential helper automatically)</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">gh</span> auth login</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Option 2 — personal-access token via environment variable</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GH_TOKEN</span><span class="op">=</span><span class="st">"your_personal_access_token"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Note on <code>GH_TOKEN</code>:</strong> git does not read <code>GH_TOKEN</code> directly. It only prevents interactive prompts when <code>gh</code> is also configured as git’s credential helper (via <code>gh auth login</code> or <code>gh auth setup-git</code>), in which case <code>gh</code> reads <code>GH_TOKEN</code> from the environment and supplies the token to git on request.</p>
+<p>Public repositories on any host can be cloned without any credentials.</p>
+</section>
 </section>
 <section id="going-further" class="level2">
 <h2 class="anchored" data-anchor-id="going-further">Going further</h2>

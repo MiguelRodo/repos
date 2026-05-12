@@ -105,11 +105,11 @@
     "text": "What’s in repos.list?\nrepos.list lists the repositories (and optionally branches) to clone. See the repos.list reference for the full format, including cloning specific branches, creating worktrees, and setting per-repo visibility."
   },
   {
-    "objectID": "clone.html#github-authentication",
-    "href": "clone.html#github-authentication",
+    "objectID": "clone.html#authentication",
+    "href": "clone.html#authentication",
     "title": "repos clone",
-    "section": "GitHub Authentication",
-    "text": "GitHub Authentication\nFor private repositories, provide a GitHub token:\nexport GH_TOKEN=\"your_personal_access_token\"\n# or\ngh auth login\nPublic repositories can be cloned without any token."
+    "section": "Authentication",
+    "text": "Authentication\nrepos clone delegates all network operations to the system git binary — it has no built-in credential store of its own. Authentication is therefore whatever git has available for the remote’s protocol.\n\nSSH remotes (git@host:… or ssh://…)\nGit uses your SSH key, either via an SSH agent (SSH_AUTH_SOCK) or through ~/.ssh/config. No token is needed.\n\n\nHTTPS remotes\nGit uses whatever credential helper is configured (git config --get credential.helper). Common options include Git Credential Manager, osxkeychain, wincred, or a custom script. This works for any host, including GitHub. Set one up with your hosting platform’s instructions; repos clone will work automatically once git can authenticate.\nFor GitHub specifically, two additional shortcuts are available:\n# Option 1 — gh CLI (registers itself as a git credential helper automatically)\ngh auth login\n\n# Option 2 — personal-access token via environment variable\nexport GH_TOKEN=\"your_personal_access_token\"\nNote on GH_TOKEN: git does not read GH_TOKEN directly. It only prevents interactive prompts when gh is also configured as git’s credential helper (via gh auth login or gh auth setup-git), in which case gh reads GH_TOKEN from the environment and supplies the token to git on request.\nPublic repositories on any host can be cloned without any credentials."
   },
   {
     "objectID": "clone.html#going-further",
