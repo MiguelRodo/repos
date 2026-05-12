@@ -210,11 +210,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p><code>repos run</code> executes a script inside each repository listed in your <code>repos.list</code> file. This lets you run a build, test, or any other task across your entire workspace with a single command.</p>
+<p><code>repos run</code> executes tasks inside each repository listed in your repo list file. It supports both:</p>
+<ul>
+<li><strong>Script mode</strong> (default): run <code>run.sh</code> or another script across repos</li>
+<li><strong>Explicit command mode</strong>: run a command (and args) in each repo</li>
+</ul>
 <section id="basic-usage" class="level2">
 <h2 class="anchored" data-anchor-id="basic-usage">Basic Usage</h2>
-<p>By default, <code>repos run</code> looks for a file called <code>run.sh</code> in each cloned repository and executes it:</p>
+<p>By default, <code>repos run</code> looks for a file called <code>run.sh</code> in each managed repository and executes it:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> run</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>In script mode, <code>repos run</code> also runs the dependency setup step by default (<code>repos install-r-deps</code>) before executing scripts. That step only installs dependencies in repositories detected as R projects. Use <code>--skip-deps</code> to disable the setup step. R projects are detected by the presence of either <code>renv.lock</code> or <code>DESCRIPTION</code>.</p>
 </section>
 <section id="options" class="level2">
 <h2 class="anchored" data-anchor-id="options">Options</h2>
@@ -258,6 +263,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td><code>--ensure-setup</code></td>
 <td>Clone repositories before running the pipeline</td>
 </tr>
+<tr class="even">
+<td><code>--skip-deps</code></td>
+<td>Skip the default <code>install-r-deps</code> setup step</td>
+</tr>
+<tr class="odd">
+<td><code>--verbose</code></td>
+<td>Enable verbose logging</td>
+</tr>
+<tr class="even">
+<td><code>--concurrent</code></td>
+<td>Run explicit command mode in parallel</td>
+</tr>
 </tbody>
 </table>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Run a custom script in each repo</span></span>
@@ -276,7 +293,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> run <span class="at">--dry-run</span></span>
 <span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Make sure repos are cloned before running</span></span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> run <span class="at">--ensure-setup</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> run <span class="at">--ensure-setup</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Explicit command mode (runs in each repo)</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> run make test</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Explicit command mode in parallel</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> run <span class="at">--concurrent</span> npm install</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="writing-a-pipeline-script" class="level2">
 <h2 class="anchored" data-anchor-id="writing-a-pipeline-script">Writing a Pipeline Script</h2>

@@ -182,7 +182,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
    
   <ul>
   <li><a href="#quick-start" id="toc-quick-start" class="nav-link active" data-scroll-target="#quick-start">Quick Start</a></li>
-  <li><a href="#what-else-can-you-do" id="toc-what-else-can-you-do" class="nav-link" data-scroll-target="#what-else-can-you-do">What else can you do?</a></li>
+  <li><a href="#commands-and-capabilities" id="toc-commands-and-capabilities" class="nav-link" data-scroll-target="#commands-and-capabilities">Commands and capabilities</a></li>
   <li><a href="#language-packages" id="toc-language-packages" class="nav-link" data-scroll-target="#language-packages">Language Packages</a></li>
   <li><a href="#installation" id="toc-installation" class="nav-link" data-scroll-target="#installation">Installation</a></li>
   </ul>
@@ -211,7 +211,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 <p><a href="https://github.com/MiguelRodo/repos/actions/workflows/test-installation.yml"><img src="https://github.com/MiguelRodo/repos/actions/workflows/test-installation.yml/badge.svg" class="img-fluid" alt="Test Installation Methods"></a> <a href="https://github.com/MiguelRodo/repos/actions/workflows/test-suite.yml"><img src="https://github.com/MiguelRodo/repos/actions/workflows/test-suite.yml/badge.svg" class="img-fluid" alt="Test Suite"></a></p>
-<p>Manage multiple Git repositories as a unified workspace from a single <code>repos.list</code> file.</p>
+<p><code>repos</code> is a Go command-line utility for managing multiple Git repositories as a unified workspace from a single <code>repos.list</code> file.</p>
 <section id="quick-start" class="level2">
 <h2 class="anchored" data-anchor-id="quick-start">Quick Start</h2>
 <p>Create a <code>repos.list</code> file in your project directory listing the repositories you want:</p>
@@ -223,15 +223,23 @@ myorg/documentation</code></pre>
 <p>This clones all listed repositories into the parent directory of your current location.</p>
 <p>By default, <code>repos clone</code> uses <code>--fetch-all-deferred</code>: a fast single-branch clone plus immediate wildcard fetch-refspec restoration. You can also use <code>--fetch-single</code> (strict isolation) or <code>--fetch-all</code> (full clone upfront).</p>
 </section>
-<section id="what-else-can-you-do" class="level2">
-<h2 class="anchored" data-anchor-id="what-else-can-you-do">What else can you do?</h2>
-<p><strong>Customise <code>repos.list</code></strong> — clone specific branches (<code>owner/repo@branch</code>), use worktrees (<code>@branch-name</code>), set repository visibility (<code>--public</code>/<code>--private</code>), and more. → <a href="repos-list.html">repos.list reference</a></p>
+<section id="commands-and-capabilities" class="level2">
+<h2 class="anchored" data-anchor-id="commands-and-capabilities">Commands and capabilities</h2>
+<ul>
+<li><code>repos clone</code> — clone repos listed in <code>repos.list</code> (including branch/worktree patterns and fetch modes)</li>
+<li><code>repos workspace</code> — generate or refresh <code>entire-project.code-workspace</code></li>
+<li><code>repos run</code> — run scripts or explicit commands across managed repos</li>
+<li><code>repos create</code> — create missing GitHub repos from <code>repos.list</code></li>
+<li><code>repos codespace</code> — configure <code>GH_TOKEN</code> Codespaces secrets and devcontainer repository permissions</li>
+<li><code>repos install-r-deps</code> — install R dependencies across managed repos</li>
+</ul>
+<p><code>repos.list</code> supports specific branches (<code>owner/repo@branch</code>), fallback <code>@branch</code> entries, worktrees, visibility flags, and global flags. → <a href="repos-list.html">repos.list reference</a></p>
 <p><strong>IDE integration</strong> — generate a VS Code multi-root workspace file (<code>repos workspace</code>) and configure GitHub Codespaces authentication (<code>repos codespace</code>). → <a href="vscode.html">VS Code integration</a></p>
-<p><strong>Run a pipeline across all repos</strong> — if your repositories contain a <code>run.sh</code> script (or any script you specify), <code>repos run</code> executes it in each one. → <a href="pipelines.html">Running pipelines</a></p>
+<p><strong>Run a pipeline across all repos</strong> — run <code>run.sh</code> (or another script), or run an explicit command in each repo. → <a href="pipelines.html">Running pipelines</a></p>
 </section>
 <section id="language-packages" class="level2">
 <h2 class="anchored" data-anchor-id="language-packages">Language Packages</h2>
-<p>Use <code>repos</code> directly from R or Python — all the same commands, no terminal required.</p>
+<p>Use <code>repos</code> directly from R or Python — wrappers dispatch to the installed CLI.</p>
 <p>→ <a href="python-package.html">Python package</a><br>
 → <a href="r-package.html">R package</a></p>
 </section>

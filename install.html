@@ -184,9 +184,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#ubuntu-debian" id="toc-ubuntu-debian" class="nav-link active" data-scroll-target="#ubuntu-debian">Ubuntu / Debian</a>
   <ul class="collapse">
   <li><a href="#option-1-install-from-apt-repository-recommended" id="toc-option-1-install-from-apt-repository-recommended" class="nav-link" data-scroll-target="#option-1-install-from-apt-repository-recommended">Option 1: Install from APT Repository (Recommended)</a></li>
-  <li><a href="#option-2-local-installation-no-sudo-required" id="toc-option-2-local-installation-no-sudo-required" class="nav-link" data-scroll-target="#option-2-local-installation-no-sudo-required">Option 2: Local Installation (No sudo required)</a></li>
+  <li><a href="#option-2-local-release-installer-no-sudo-required" id="toc-option-2-local-release-installer-no-sudo-required" class="nav-link" data-scroll-target="#option-2-local-release-installer-no-sudo-required">Option 2: Local Release Installer (No sudo required)</a></li>
   <li><a href="#option-3-system-wide-from-release-.deb-requires-sudo" id="toc-option-3-system-wide-from-release-.deb-requires-sudo" class="nav-link" data-scroll-target="#option-3-system-wide-from-release-.deb-requires-sudo">Option 3: System-wide from Release <code>.deb</code> (requires sudo)</a></li>
-  <li><a href="#dependencies" id="toc-dependencies" class="nav-link" data-scroll-target="#dependencies">Dependencies</a></li>
+  <li><a href="#runtime-requirements" id="toc-runtime-requirements" class="nav-link" data-scroll-target="#runtime-requirements">Runtime Requirements</a></li>
   </ul></li>
   <li><a href="#macos-homebrew" id="toc-macos-homebrew" class="nav-link" data-scroll-target="#macos-homebrew">macOS (Homebrew)</a></li>
   <li><a href="#windows" id="toc-windows" class="nav-link" data-scroll-target="#windows">Windows</a>
@@ -194,7 +194,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#option-1-installer-script-recommended" id="toc-option-1-installer-script-recommended" class="nav-link" data-scroll-target="#option-1-installer-script-recommended">Option 1: Installer Script (Recommended)</a></li>
   <li><a href="#option-2-scoop" id="toc-option-2-scoop" class="nav-link" data-scroll-target="#option-2-scoop">Option 2: Scoop</a></li>
   </ul></li>
-  <li><a href="#from-source" id="toc-from-source" class="nav-link" data-scroll-target="#from-source">From Source</a></li>
+  <li><a href="#from-source-go" id="toc-from-source-go" class="nav-link" data-scroll-target="#from-source-go">From Source (Go)</a></li>
   <li><a href="#language-wrappers" id="toc-language-wrappers" class="nav-link" data-scroll-target="#language-wrappers">Language Wrappers</a>
   <ul class="collapse">
   <li><a href="#r-package" id="toc-r-package" class="nav-link" data-scroll-target="#r-package">R Package</a></li>
@@ -226,7 +226,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>You can install <code>repos</code> as a system package (Ubuntu/Debian, macOS, Windows), from source, or as a language-specific wrapper (R or Python).</p>
+<p><code>repos</code> is distributed as a compiled Go CLI binary. Install it via system package managers, release installers, or from source. Optional R and Python wrappers dispatch to the installed <code>repos</code> binary.</p>
 <section id="ubuntu-debian" class="level2">
 <h2 class="anchored" data-anchor-id="ubuntu-debian">Ubuntu / Debian</h2>
 <section id="option-1-install-from-apt-repository-recommended" class="level3">
@@ -246,9 +246,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>To uninstall:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get remove repos</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="option-2-local-installation-no-sudo-required" class="level3">
-<h3 class="anchored" data-anchor-id="option-2-local-installation-no-sudo-required">Option 2: Local Installation (No sudo required)</h3>
-<p>Install the latest precompiled <code>repos</code> binary into the first writable directory already present in your <code>PATH</code>:</p>
+<section id="option-2-local-release-installer-no-sudo-required" class="level3">
+<h3 class="anchored" data-anchor-id="option-2-local-release-installer-no-sudo-required">Option 2: Local Release Installer (No sudo required)</h3>
+<p>Install the latest release binary into the first writable directory already present in your <code>PATH</code>:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/MiguelRodo/repos.git</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> repos</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> install-local.sh</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -258,7 +258,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="option-3-system-wide-from-release-.deb-requires-sudo" class="level3">
 <h3 class="anchored" data-anchor-id="option-3-system-wide-from-release-.deb-requires-sudo">Option 3: System-wide from Release <code>.deb</code> (requires sudo)</h3>
-<p>Prefer Option 1 (APT) for automatic updates. If needed, you can manually download and install a release <code>.deb</code> from the <a href="https://github.com/MiguelRodo/repos/releases">Releases page</a>:</p>
+<p>Prefer Option 1 (APT) for automatic updates. If needed, manually download and install a release <code>.deb</code> from the <a href="https://github.com/MiguelRodo/repos/releases">Releases page</a>:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="va">VERSION_REPOS</span><span class="op">=</span>1.2.6</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="va">ARCH</span><span class="op">=</span><span class="st">"</span><span class="va">$(</span><span class="ex">dpkg</span> <span class="at">--print-architecture</span><span class="va">)</span><span class="st">"</span></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">wget</span> <span class="st">"https://github.com/MiguelRodo/repos/releases/download/v</span><span class="va">${VERSION_REPOS}</span><span class="st">/repos_</span><span class="va">${VERSION_REPOS}</span><span class="st">_</span><span class="va">${ARCH}</span><span class="st">.deb"</span></span>
@@ -270,18 +270,28 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>To uninstall:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> dpkg <span class="at">-r</span> repos</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="dependencies" class="level3">
-<h3 class="anchored" data-anchor-id="dependencies">Dependencies</h3>
-<p>All Ubuntu/Debian methods require <code>bash</code>, <code>git</code>, <code>curl</code>, and <code>jq</code>. These are typically pre-installed. If not:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get install bash git curl jq</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="runtime-requirements" class="level3">
+<h3 class="anchored" data-anchor-id="runtime-requirements">Runtime Requirements</h3>
+<ul>
+<li>Required for core usage:
+<ul>
+<li><code>git</code></li>
+</ul></li>
+<li>Required only for specific commands:
+<ul>
+<li><code>repos create</code>: <code>gh</code> CLI with authentication (<code>gh auth login</code> or <code>GH_TOKEN</code>)</li>
+<li><code>repos codespace</code>: token via <code>GH_TOKEN</code> (or <code>CODESPACES_TOKEN</code>) and <code>gh</code> available on <code>PATH</code></li>
+<li><code>Rscript</code> (<code>repos install-r-deps</code>)</li>
+</ul></li>
+</ul>
 <hr>
 </section>
 </section>
 <section id="macos-homebrew" class="level2">
 <h2 class="anchored" data-anchor-id="macos-homebrew">macOS (Homebrew)</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">brew</span> tap MiguelRodo/repos</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">brew</span> install repos</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>The formula automatically handles the <code>jq</code> dependency. Git is typically pre-installed on macOS.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">brew</span> tap MiguelRodo/repos</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">brew</span> install repos</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Git is typically pre-installed on macOS.</p>
 <hr>
 </section>
 <section id="windows" class="level2">
@@ -291,33 +301,31 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Download and install the pre-compiled <code>repos.exe</code> into the first writable directory already present in your <code>PATH</code>:</p>
 <ol type="1">
 <li><p>Clone the repository:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>git clone https<span class="op">://</span>github<span class="op">.</span><span class="fu">com</span><span class="op">/</span>MiguelRodo<span class="op">/</span>repos<span class="op">.</span><span class="fu">git</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span> repos</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>git clone https<span class="op">://</span>github<span class="op">.</span><span class="fu">com</span><span class="op">/</span>MiguelRodo<span class="op">/</span>repos<span class="op">.</span><span class="fu">git</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span> repos</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
 <li><p>Run the installer:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="op">.</span>\install<span class="op">.</span><span class="fu">ps1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="op">.</span>\install<span class="op">.</span><span class="fu">ps1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
 </ol>
 <p>The installer downloads the latest <code>repos.exe</code> binary from GitHub releases and places it in the first writable directory in your current <code>PATH</code>.</p>
 <p><strong>Requirements:</strong> PowerShell and network access to GitHub releases.</p>
 </section>
 <section id="option-2-scoop" class="level3">
 <h3 class="anchored" data-anchor-id="option-2-scoop">Option 2: Scoop</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>scoop bucket add repos https<span class="op">://</span>github<span class="op">.</span><span class="fu">com</span><span class="op">/</span>MiguelRodo<span class="op">/</span>scoop-bucket</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>scoop install repos</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><code>git</code> and <code>jq</code> are installed automatically by Scoop. You will also need <a href="https://git-scm.com/download/win">Git for Windows</a> for Bash support.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode powershell code-with-copy"><code class="sourceCode powershell"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>scoop bucket add repos https<span class="op">://</span>github<span class="op">.</span><span class="fu">com</span><span class="op">/</span>MiguelRodo<span class="op">/</span>scoop-bucket</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>scoop install repos</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>git</code> and <code>jq</code> are installed automatically by Scoop. Git Bash is only needed if your workspace scripts rely on Bash (for example <code>run.sh</code> pipelines).</p>
 <hr>
 </section>
 </section>
-<section id="from-source" class="level2">
-<h2 class="anchored" data-anchor-id="from-source">From Source</h2>
+<section id="from-source-go" class="level2">
+<h2 class="anchored" data-anchor-id="from-source-go">From Source (Go)</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install latest from module path</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> install github.com/MiguelRodo/repos/v2/cmd/repos@latest</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Or build from a local clone:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/MiguelRodo/repos.git</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> repos</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Local install (no sudo)</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> install-local.sh</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Or system-wide on Ubuntu/Debian</span></span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> dpkg-buildpackage <span class="at">-us</span> <span class="at">-uc</span> <span class="at">-b</span></span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> dpkg <span class="at">-i</span> ../repos_<span class="pp">*</span>.deb</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> build <span class="at">-o</span> repos ./cmd/repos</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Optional: move ./repos somewhere on PATH</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <hr>
 </section>
 <section id="language-wrappers" class="level2">
@@ -326,7 +334,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="r-package">R Package</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">"devtools"</span>)</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"MiguelRodo/repos"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Requires <code>repos</code> and <code>git</code> on your system <code>PATH</code>.</p>
+<p>Requires <code>repos</code>, <code>git</code>, and <code>gh</code> on your system <code>PATH</code> for full wrapper coverage (including Codespaces helpers).</p>
 </section>
 <section id="python-package" class="level3">
 <h3 class="anchored" data-anchor-id="python-package">Python Package</h3>
@@ -335,7 +343,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/MiguelRodo/repos.git</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> repos</span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install .</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Requires <code>repos</code> and <code>git</code> on your system <code>PATH</code>.</p>
+<p>Requires <code>repos</code>, <code>git</code>, and <code>gh</code> on your system <code>PATH</code> for full wrapper coverage (including Codespaces helpers).</p>
 <hr>
 </section>
 </section>

@@ -258,11 +258,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="repos-codespace" class="level2">
 <h2 class="anchored" data-anchor-id="repos-codespace"><code>repos codespace</code></h2>
-<p>Inject the <code>GH_TOKEN</code> Codespaces secret into every cloned repository that has a <code>devcontainer.json</code>. <code>repos codespaces</code> is an alias for <code>repos codespace</code>.</p>
+<p>Set the repository-level Codespaces secret named <code>GH_TOKEN</code> for each managed GitHub repository (via <code>gh secret set --app codespaces</code>) and update matching <code>devcontainer.json</code> files by writing repository permission entries under <code>customizations.codespaces.repositories</code>.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> codespace</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section id="options-1" class="level3">
 <h3 class="anchored" data-anchor-id="options-1">Options</h3>
 <table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
 <thead>
 <tr class="header">
 <th>Flag</th>
@@ -276,26 +280,42 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr class="even">
 <td><code>-d &lt;path&gt;</code></td>
-<td>Path to a <code>devcontainer.json</code> file (repeatable)</td>
+<td>Path relative to <code>.devcontainer/</code> (repeatable)</td>
 </tr>
 <tr class="odd">
-<td><code>--permissions &lt;all\|contents&gt;</code></td>
-<td>Codespaces permission level</td>
+<td><code>--all</code></td>
+<td>Update all <code>devcontainer.json</code> files found under <code>.devcontainer/</code></td>
 </tr>
 <tr class="even">
-<td><code>-t &lt;tool&gt;</code></td>
-<td>Force tool used for JSON processing (<code>jq</code> or <code>python</code>)</td>
+<td><code>--permissions &lt;level&gt;</code></td>
+<td>Codespaces permission level (<code>default</code>, <code>all</code>, or <code>contents</code>)</td>
+</tr>
+<tr class="odd">
+<td><code>--dry-run</code></td>
+<td>Preview secret/file updates without writing changes</td>
 </tr>
 </tbody>
 </table>
+<p>Permission levels:</p>
+<ul>
+<li><code>default</code>: actions/contents write, packages read, workflows write</li>
+<li><code>all</code>: write-all</li>
+<li><code>contents</code>: contents write only</li>
+</ul>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Use a custom list file</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> codespace <span class="at">-f</span> my-repos.list</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Specify a devcontainer.json path</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> codespace <span class="at">-d</span> .devcontainer/devcontainer.json</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Specify a devcontainer path relative to .devcontainer/</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> codespace <span class="at">-d</span> devcontainer.json</span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Multiple devcontainer paths</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> codespace <span class="at">-d</span> path1/devcontainer.json <span class="at">-d</span> path2/devcontainer.json</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> codespace <span class="at">-d</span> path1/devcontainer.json <span class="at">-d</span> path2/devcontainer.json</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Update all devcontainer files under .devcontainer/</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> codespace <span class="at">--all</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Preview without changing files or secrets</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> codespace <span class="at">--dry-run</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="github-authentication" class="level3">
 <h3 class="anchored" data-anchor-id="github-authentication">GitHub Authentication</h3>

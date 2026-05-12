@@ -4,42 +4,42 @@
     "href": "install.html",
     "title": "Installation",
     "section": "",
-    "text": "You can install repos as a system package (Ubuntu/Debian, macOS, Windows), from source, or as a language-specific wrapper (R or Python)."
+    "text": "repos is distributed as a compiled Go CLI binary. Install it via system package managers, release installers, or from source. Optional R and Python wrappers dispatch to the installed repos binary."
   },
   {
     "objectID": "install.html#ubuntu-debian",
     "href": "install.html#ubuntu-debian",
     "title": "Installation",
     "section": "Ubuntu / Debian",
-    "text": "Ubuntu / Debian\n\nOption 1: Install from APT Repository (Recommended)\nInstall and keep repos up to date directly via apt:\n# Add repository signing key\ncurl -fsSL https://miguelrodo.github.io/apt-miguelrodo/KEY.gpg \\\n   | sudo gpg --dearmor -o /usr/share/keyrings/apt-miguelrodo.gpg\n\n# Add apt source\necho \"deb [signed-by=/usr/share/keyrings/apt-miguelrodo.gpg] https://miguelrodo.github.io/apt-miguelrodo stable main\" \\\n   | sudo tee /etc/apt/sources.list.d/apt-miguelrodo.list &gt;/dev/null\n\n# Install repos\nsudo apt-get update\nsudo apt-get install -y repos\nTo uninstall:\nsudo apt-get remove repos\n\n\nOption 2: Local Installation (No sudo required)\nInstall the latest precompiled repos binary into the first writable directory already present in your PATH:\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\nbash install-local.sh\nIf no writable path entry exists, the installer will stop with guidance.\nTo uninstall:\nbash uninstall-local.sh\n\n\nOption 3: System-wide from Release .deb (requires sudo)\nPrefer Option 1 (APT) for automatic updates. If needed, you can manually download and install a release .deb from the Releases page:\nVERSION_REPOS=1.2.6\nARCH=\"$(dpkg --print-architecture)\"\nwget \"https://github.com/MiguelRodo/repos/releases/download/v${VERSION_REPOS}/repos_${VERSION_REPOS}_${ARCH}.deb\"\nsudo dpkg -i \"repos_${VERSION_REPOS}_${ARCH}.deb\"\nrm \"repos_${VERSION_REPOS}_${ARCH}.deb\"\n\n# Fix any dependency issues\nsudo apt-get install -f\nTo uninstall:\nsudo dpkg -r repos\n\n\nDependencies\nAll Ubuntu/Debian methods require bash, git, curl, and jq. These are typically pre-installed. If not:\nsudo apt-get install bash git curl jq"
+    "text": "Ubuntu / Debian\n\nOption 1: Install from APT Repository (Recommended)\nInstall and keep repos up to date directly via apt:\n# Add repository signing key\ncurl -fsSL https://miguelrodo.github.io/apt-miguelrodo/KEY.gpg \\\n   | sudo gpg --dearmor -o /usr/share/keyrings/apt-miguelrodo.gpg\n\n# Add apt source\necho \"deb [signed-by=/usr/share/keyrings/apt-miguelrodo.gpg] https://miguelrodo.github.io/apt-miguelrodo stable main\" \\\n   | sudo tee /etc/apt/sources.list.d/apt-miguelrodo.list &gt;/dev/null\n\n# Install repos\nsudo apt-get update\nsudo apt-get install -y repos\nTo uninstall:\nsudo apt-get remove repos\n\n\nOption 2: Local Release Installer (No sudo required)\nInstall the latest release binary into the first writable directory already present in your PATH:\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\nbash install-local.sh\nIf no writable path entry exists, the installer will stop with guidance.\nTo uninstall:\nbash uninstall-local.sh\n\n\nOption 3: System-wide from Release .deb (requires sudo)\nPrefer Option 1 (APT) for automatic updates. If needed, manually download and install a release .deb from the Releases page:\nVERSION_REPOS=1.2.6\nARCH=\"$(dpkg --print-architecture)\"\nwget \"https://github.com/MiguelRodo/repos/releases/download/v${VERSION_REPOS}/repos_${VERSION_REPOS}_${ARCH}.deb\"\nsudo dpkg -i \"repos_${VERSION_REPOS}_${ARCH}.deb\"\nrm \"repos_${VERSION_REPOS}_${ARCH}.deb\"\n\n# Fix any dependency issues\nsudo apt-get install -f\nTo uninstall:\nsudo dpkg -r repos\n\n\nRuntime Requirements\n\nRequired for core usage:\n\ngit\n\nRequired only for specific commands:\n\nrepos create: gh CLI with authentication (gh auth login or GH_TOKEN)\nrepos codespace: token via GH_TOKEN (or CODESPACES_TOKEN) and gh available on PATH\nRscript (repos install-r-deps)"
   },
   {
     "objectID": "install.html#macos-homebrew",
     "href": "install.html#macos-homebrew",
     "title": "Installation",
     "section": "macOS (Homebrew)",
-    "text": "macOS (Homebrew)\nbrew tap MiguelRodo/repos\nbrew install repos\nThe formula automatically handles the jq dependency. Git is typically pre-installed on macOS."
+    "text": "macOS (Homebrew)\nbrew tap MiguelRodo/repos\nbrew install repos\nGit is typically pre-installed on macOS."
   },
   {
     "objectID": "install.html#windows",
     "href": "install.html#windows",
     "title": "Installation",
     "section": "Windows",
-    "text": "Windows\n\nOption 1: Installer Script (Recommended)\nDownload and install the pre-compiled repos.exe into the first writable directory already present in your PATH:\n\nClone the repository:\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\nRun the installer:\n.\\install.ps1\n\nThe installer downloads the latest repos.exe binary from GitHub releases and places it in the first writable directory in your current PATH.\nRequirements: PowerShell and network access to GitHub releases.\n\n\nOption 2: Scoop\nscoop bucket add repos https://github.com/MiguelRodo/scoop-bucket\nscoop install repos\ngit and jq are installed automatically by Scoop. You will also need Git for Windows for Bash support."
+    "text": "Windows\n\nOption 1: Installer Script (Recommended)\nDownload and install the pre-compiled repos.exe into the first writable directory already present in your PATH:\n\nClone the repository:\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\nRun the installer:\n.\\install.ps1\n\nThe installer downloads the latest repos.exe binary from GitHub releases and places it in the first writable directory in your current PATH.\nRequirements: PowerShell and network access to GitHub releases.\n\n\nOption 2: Scoop\nscoop bucket add repos https://github.com/MiguelRodo/scoop-bucket\nscoop install repos\ngit and jq are installed automatically by Scoop. Git Bash is only needed if your workspace scripts rely on Bash (for example run.sh pipelines)."
   },
   {
-    "objectID": "install.html#from-source",
-    "href": "install.html#from-source",
+    "objectID": "install.html#from-source-go",
+    "href": "install.html#from-source-go",
     "title": "Installation",
-    "section": "From Source",
-    "text": "From Source\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\n\n# Local install (no sudo)\nbash install-local.sh\n\n# Or system-wide on Ubuntu/Debian\nsudo dpkg-buildpackage -us -uc -b\nsudo dpkg -i ../repos_*.deb"
+    "section": "From Source (Go)",
+    "text": "From Source (Go)\n# Install latest from module path\ngo install github.com/MiguelRodo/repos/v2/cmd/repos@latest\nOr build from a local clone:\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\ngo build -o repos ./cmd/repos\n# Optional: move ./repos somewhere on PATH"
   },
   {
     "objectID": "install.html#language-wrappers",
     "href": "install.html#language-wrappers",
     "title": "Installation",
     "section": "Language Wrappers",
-    "text": "Language Wrappers\n\nR Package\ninstall.packages(\"devtools\")\ndevtools::install_github(\"MiguelRodo/repos\")\nRequires repos and git on your system PATH.\n\n\nPython Package\npip install git+https://github.com/MiguelRodo/repos.git\nOr from a local clone:\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\npip install .\nRequires repos and git on your system PATH."
+    "text": "Language Wrappers\n\nR Package\ninstall.packages(\"devtools\")\ndevtools::install_github(\"MiguelRodo/repos\")\nRequires repos, git, and gh on your system PATH for full wrapper coverage (including Codespaces helpers).\n\n\nPython Package\npip install git+https://github.com/MiguelRodo/repos.git\nOr from a local clone:\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\npip install .\nRequires repos, git, and gh on your system PATH for full wrapper coverage (including Codespaces helpers)."
   },
   {
     "objectID": "install.html#verify-installation",
@@ -130,7 +130,7 @@
     "href": "vscode.html#repos-codespace",
     "title": "VS Code Integration",
     "section": "repos codespace",
-    "text": "repos codespace\nInject the GH_TOKEN Codespaces secret into every cloned repository that has a devcontainer.json. repos codespaces is an alias for repos codespace.\nrepos codespace\n\nOptions\n\n\n\nFlag\nDescription\n\n\n\n\n-f &lt;file&gt;\nUse a different list file (default: repos.list)\n\n\n-d &lt;path&gt;\nPath to a devcontainer.json file (repeatable)\n\n\n--permissions &lt;all\\|contents&gt;\nCodespaces permission level\n\n\n-t &lt;tool&gt;\nForce tool used for JSON processing (jq or python)\n\n\n\n# Use a custom list file\nrepos codespace -f my-repos.list\n\n# Specify a devcontainer.json path\nrepos codespace -d .devcontainer/devcontainer.json\n\n# Multiple devcontainer paths\nrepos codespace -d path1/devcontainer.json -d path2/devcontainer.json\n\n\nGitHub Authentication\nrepos codespace requires a GitHub token with Codespaces permissions:\nexport GH_TOKEN=\"your_personal_access_token\"\n# or\ngh auth login"
+    "text": "repos codespace\nSet the repository-level Codespaces secret named GH_TOKEN for each managed GitHub repository (via gh secret set --app codespaces) and update matching devcontainer.json files by writing repository permission entries under customizations.codespaces.repositories.\nrepos codespace\n\nOptions\n\n\n\n\n\n\n\nFlag\nDescription\n\n\n\n\n-f &lt;file&gt;\nUse a different list file (default: repos.list)\n\n\n-d &lt;path&gt;\nPath relative to .devcontainer/ (repeatable)\n\n\n--all\nUpdate all devcontainer.json files found under .devcontainer/\n\n\n--permissions &lt;level&gt;\nCodespaces permission level (default, all, or contents)\n\n\n--dry-run\nPreview secret/file updates without writing changes\n\n\n\nPermission levels:\n\ndefault: actions/contents write, packages read, workflows write\nall: write-all\ncontents: contents write only\n\n# Use a custom list file\nrepos codespace -f my-repos.list\n\n# Specify a devcontainer path relative to .devcontainer/\nrepos codespace -d devcontainer.json\n\n# Multiple devcontainer paths\nrepos codespace -d path1/devcontainer.json -d path2/devcontainer.json\n\n# Update all devcontainer files under .devcontainer/\nrepos codespace --all\n\n# Preview without changing files or secrets\nrepos codespace --dry-run\n\n\nGitHub Authentication\nrepos codespace requires a GitHub token with Codespaces permissions:\nexport GH_TOKEN=\"your_personal_access_token\"\n# or\ngh auth login"
   },
   {
     "objectID": "vscode.html#r-and-python-apis",
@@ -186,21 +186,21 @@
     "href": "pipelines.html",
     "title": "Running Pipelines",
     "section": "",
-    "text": "repos run executes a script inside each repository listed in your repos.list file. This lets you run a build, test, or any other task across your entire workspace with a single command."
+    "text": "repos run executes tasks inside each repository listed in your repo list file. It supports both:"
   },
   {
     "objectID": "pipelines.html#basic-usage",
     "href": "pipelines.html#basic-usage",
     "title": "Running Pipelines",
     "section": "Basic Usage",
-    "text": "Basic Usage\nBy default, repos run looks for a file called run.sh in each cloned repository and executes it:\nrepos run"
+    "text": "Basic Usage\nBy default, repos run looks for a file called run.sh in each managed repository and executes it:\nrepos run\nIn script mode, repos run also runs the dependency setup step by default (repos install-r-deps) before executing scripts. That step only installs dependencies in repositories detected as R projects. Use --skip-deps to disable the setup step. R projects are detected by the presence of either renv.lock or DESCRIPTION."
   },
   {
     "objectID": "pipelines.html#options",
     "href": "pipelines.html#options",
     "title": "Running Pipelines",
     "section": "Options",
-    "text": "Options\n\n\n\n\n\n\n\nFlag\nDescription\n\n\n\n\n--script &lt;file&gt;\nRun a different script (default: run.sh)\n\n\n-f &lt;file&gt;\nUse a different list file (default: repos.list)\n\n\n--include &lt;repos&gt;\nComma-separated list of repositories to include\n\n\n--exclude &lt;repos&gt;\nComma-separated list of repositories to skip\n\n\n--continue-on-error\nKeep running even if a repository fails\n\n\n--dry-run\nPrint what would be run without executing anything\n\n\n--ensure-setup\nClone repositories before running the pipeline\n\n\n\n# Run a custom script in each repo\nrepos run --script build.sh\n\n# Only run in specific repos\nrepos run --include \"backend,frontend\"\n\n# Skip a repo\nrepos run --exclude \"docs\"\n\n# Continue even if one repo fails, then report all results\nrepos run --continue-on-error\n\n# Preview without running\nrepos run --dry-run\n\n# Make sure repos are cloned before running\nrepos run --ensure-setup"
+    "text": "Options\n\n\n\n\n\n\n\nFlag\nDescription\n\n\n\n\n--script &lt;file&gt;\nRun a different script (default: run.sh)\n\n\n-f &lt;file&gt;\nUse a different list file (default: repos.list)\n\n\n--include &lt;repos&gt;\nComma-separated list of repositories to include\n\n\n--exclude &lt;repos&gt;\nComma-separated list of repositories to skip\n\n\n--continue-on-error\nKeep running even if a repository fails\n\n\n--dry-run\nPrint what would be run without executing anything\n\n\n--ensure-setup\nClone repositories before running the pipeline\n\n\n--skip-deps\nSkip the default install-r-deps setup step\n\n\n--verbose\nEnable verbose logging\n\n\n--concurrent\nRun explicit command mode in parallel\n\n\n\n# Run a custom script in each repo\nrepos run --script build.sh\n\n# Only run in specific repos\nrepos run --include \"backend,frontend\"\n\n# Skip a repo\nrepos run --exclude \"docs\"\n\n# Continue even if one repo fails, then report all results\nrepos run --continue-on-error\n\n# Preview without running\nrepos run --dry-run\n\n# Make sure repos are cloned before running\nrepos run --ensure-setup\n\n# Explicit command mode (runs in each repo)\nrepos run make test\n\n# Explicit command mode in parallel\nrepos run --concurrent npm install"
   },
   {
     "objectID": "pipelines.html#writing-a-pipeline-script",
@@ -319,7 +319,7 @@
     "href": "index.html",
     "title": "repos",
     "section": "",
-    "text": "Manage multiple Git repositories as a unified workspace from a single repos.list file."
+    "text": "repos is a Go command-line utility for managing multiple Git repositories as a unified workspace from a single repos.list file."
   },
   {
     "objectID": "index.html#quick-start",
@@ -329,18 +329,18 @@
     "text": "Quick Start\nCreate a repos.list file in your project directory listing the repositories you want:\nmyorg/data-curation\nmyorg/analysis\nmyorg/documentation\nThen run:\nrepos clone\nThis clones all listed repositories into the parent directory of your current location.\nBy default, repos clone uses --fetch-all-deferred: a fast single-branch clone plus immediate wildcard fetch-refspec restoration. You can also use --fetch-single (strict isolation) or --fetch-all (full clone upfront)."
   },
   {
-    "objectID": "index.html#what-else-can-you-do",
-    "href": "index.html#what-else-can-you-do",
+    "objectID": "index.html#commands-and-capabilities",
+    "href": "index.html#commands-and-capabilities",
     "title": "repos",
-    "section": "What else can you do?",
-    "text": "What else can you do?\nCustomise repos.list — clone specific branches (owner/repo@branch), use worktrees (@branch-name), set repository visibility (--public/--private), and more. → repos.list reference\nIDE integration — generate a VS Code multi-root workspace file (repos workspace) and configure GitHub Codespaces authentication (repos codespace). → VS Code integration\nRun a pipeline across all repos — if your repositories contain a run.sh script (or any script you specify), repos run executes it in each one. → Running pipelines"
+    "section": "Commands and capabilities",
+    "text": "Commands and capabilities\n\nrepos clone — clone repos listed in repos.list (including branch/worktree patterns and fetch modes)\nrepos workspace — generate or refresh entire-project.code-workspace\nrepos run — run scripts or explicit commands across managed repos\nrepos create — create missing GitHub repos from repos.list\nrepos codespace — configure GH_TOKEN Codespaces secrets and devcontainer repository permissions\nrepos install-r-deps — install R dependencies across managed repos\n\nrepos.list supports specific branches (owner/repo@branch), fallback @branch entries, worktrees, visibility flags, and global flags. → repos.list reference\nIDE integration — generate a VS Code multi-root workspace file (repos workspace) and configure GitHub Codespaces authentication (repos codespace). → VS Code integration\nRun a pipeline across all repos — run run.sh (or another script), or run an explicit command in each repo. → Running pipelines"
   },
   {
     "objectID": "index.html#language-packages",
     "href": "index.html#language-packages",
     "title": "repos",
     "section": "Language Packages",
-    "text": "Language Packages\nUse repos directly from R or Python — all the same commands, no terminal required.\n→ Python package\n→ R package"
+    "text": "Language Packages\nUse repos directly from R or Python — wrappers dispatch to the installed CLI.\n→ Python package\n→ R package"
   },
   {
     "objectID": "index.html#installation",
