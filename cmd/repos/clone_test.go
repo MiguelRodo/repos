@@ -295,15 +295,7 @@ func TestRunCloneMissingBranchRequiresCreateFlag(t *testing.T) {
 		t.Fatalf("chdir project dir: %v", err)
 	}
 
-	stderr := captureStderr(t, func() {
-		err = runClone([]string{"-f", "repos.list"})
-	})
-	if err == nil {
-		t.Fatalf("expected missing-branch error")
-	}
-	if !strings.Contains(stderr, "--create") {
-		t.Fatalf("expected guidance to use --create, got stderr: %s", stderr)
-	}
+	err = runCloneExpectCreateGuidance(t, []string{"-f", "repos.list"})
 	if branchExistsInBare(t, remote, "feature/new-api") {
 		t.Fatalf("branch should not be created unless --create is set")
 	}
@@ -367,15 +359,7 @@ func TestRunCloneWorktreeMissingBranchRequiresCreateFlag(t *testing.T) {
 		t.Fatalf("chdir project dir: %v", err)
 	}
 
-	stderr := captureStderr(t, func() {
-		err = runClone([]string{"-f", "repos.list"})
-	})
-	if err == nil {
-		t.Fatalf("expected missing-branch error")
-	}
-	if !strings.Contains(stderr, "--create") {
-		t.Fatalf("expected guidance to use --create, got stderr: %s", stderr)
-	}
+	err = runCloneExpectCreateGuidance(t, []string{"-f", "repos.list"})
 	if branchExistsInBare(t, remote, "feature/needs-create") {
 		t.Fatalf("branch should not be created unless --create is set")
 	}
@@ -473,6 +457,21 @@ func branchExistsInBare(t *testing.T, barePath, branch string) bool {
 	t.Helper()
 	cmd := exec.Command("git", "--git-dir", barePath, "show-ref", "--verify", "--", "refs/heads/"+branch)
 	return cmd.Run() == nil
+}
+
+func runCloneExpectCreateGuidance(t *testing.T, args []string) error {
+	t.Helper()
+	var err error
+	stderr := captureStderr(t, func() {
+		err = runClone(args)
+	})
+	if err == nil {
+		t.Fatalf("expected missing-branch error")
+	}
+	if !strings.Contains(stderr, "--create") {
+		t.Fatalf("expected guidance to use --create, got stderr: %s", stderr)
+	}
+	return err
 }
 
 func assertDirExists(t *testing.T, dir string) {
