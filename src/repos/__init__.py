@@ -113,13 +113,21 @@ def install_cli(run: bool = False) -> None:
                     ["git", "clone", "https://github.com/MiguelRodo/repos.git", tmp],
                     check=True,
                 )
+            except subprocess.CalledProcessError as e:
+                print(
+                    f"Warning: git clone step failed with status {e.returncode}."
+                    " Check the output above for details.",
+                    file=sys.stderr,
+                )
+                return
+            try:
                 subprocess.run(
                     ["bash", os.path.join(tmp, "install-local.sh")],
                     check=True,
                 )
             except subprocess.CalledProcessError as e:
                 print(
-                    f"Warning: installer exited with status {e.returncode}."
+                    f"Warning: install-local.sh step failed with status {e.returncode}."
                     " Check the output above for details.",
                     file=sys.stderr,
                 )

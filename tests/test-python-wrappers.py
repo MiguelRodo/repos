@@ -115,6 +115,7 @@ def test_codespace_tool():
     assert "-t" not in test_args["args"]
     assert "jq" not in test_args["args"]
     assert any("codespace(tool=...)" in str(w.message) for w in caught)
+    assert any(w.category is DeprecationWarning for w in caught)
 
 def test_codespace_debug():
     repos.codespace(debug=True)
