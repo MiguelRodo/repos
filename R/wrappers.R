@@ -1,13 +1,13 @@
-# Version of the repos CLI bundled inside this package.
+# Version of the repos CLI targeted by this package.
 # Updated automatically by the version-and-release workflow.
-.bundled_cli_version <- "1.3.10"
+.bundled_cli_version <- "2.0.0"
 
-#' Return the version of the repos CLI bundled in this package
+#' Return the repos CLI version targeted by this package
 #'
-#' The R package ships its own copy of the Bash scripts at a specific CLI
-#' version.  This function returns that pinned version string.
+#' The R package targets a specific `repos` CLI version. This function returns
+#' that version string.
 #'
-#' @return A character string with the bundled CLI version (e.g. \code{"1.1.0"}).
+#' @return A character string with the targeted CLI version (e.g. \code{"2.0.0"}).
 #'
 #' @examples
 #' repos_bundled_cli_version()
@@ -60,10 +60,8 @@ repos_installed_cli_version <- function() {
 #' tool and, when \code{run = TRUE}, attempts to run the installer automatically.
 #'
 #' @details
-#' The \code{repos} R package bundles all required Bash scripts, so functions
-#' such as \code{repos_run()} work without the \code{repos} CLI being on your
-#' \code{PATH}.  However, if you also want to invoke \code{repos} from a
-#' terminal, you need to install the CLI separately.
+#' The \code{repos} R package requires the \code{repos} CLI to be installed and
+#' available on your \code{PATH}.
 #'
 #' When \code{run = TRUE}, the function runs the user-level installer
 #' (\code{install-local.sh}) on Linux or the \code{brew} installer on macOS.
@@ -136,26 +134,35 @@ repos_install_cli <- function(run = FALSE) {
 }
 
 
-#' Run a repos script
+#' Run a repos CLI subcommand
 #'
-#' Internal helper that locates a bundled script and executes it via
-#' \code{system2()}.
+#' Internal helper that dispatches wrapper calls to the installed
+#' \code{repos} CLI.
 #'
-#' @param script_name Name of the script file inside \code{inst/scripts/}.
-#' @param args Character vector of arguments to pass to the script.
-#' @return Invisibly returns the exit status of the script (0 for success).
+#' @param script_name Legacy script name mapped internally to a \code{repos}
+#'   subcommand.
+#' @param args Character vector of arguments to pass to the subcommand.
+#' @return Invisibly returns the exit status of the \code{repos} command
+#'   (0 for success).
 #' @keywords internal
 run_repos_script <- function(script_name, args = character()) {
-  script_path <- system.file(file.path("scripts", script_name), package = "repos")
+  command <- switch(
+    script_name,
+    "run-pipeline.sh" = "run",
+    "helper/clone-repos.sh" = "clone",
+    "clone-repos.sh" = "clone",
+    "helper/vscode-workspace-add.sh" = "workspace",
+    "vscode-workspace-add.sh" = "workspace",
+    "helper/codespaces-auth-add.sh" = "codespace",
+    "codespaces-auth-add.sh" = "codespace",
+    NULL
+  )
 
-  if (script_path == "" || !file.exists(script_path)) {
-    stop(
-      "Cannot find ", script_name,
-      " script. Make sure the package is properly installed."
-    )
+  if (is.null(command)) {
+    stop("Unsupported script mapping: ", script_name)
   }
 
-  exit_status <- system2(script_path, args = args)
+  exit_status <- system2("repos", args = c(command, args))
   invisible(exit_status)
 }
 
@@ -166,21 +173,22 @@ run_repos_script <- function(script_name, args = character()) {
 #' @param command Character string specifying the subcommand to run.
 #'   Must be one of \code{"clone"}, \code{"workspace"}, \code{"codespace"},
 #'   \code{"codespaces"}, or \code{"run"}.
-#' @param ... Additional arguments passed to the underlying script.
+#' @param ... Additional arguments passed to the underlying \code{repos}
+#'   subcommand.
 #'
 #' @return Invisibly returns the exit status of the script (0 for success).
 #'
 #' @details
-#' \code{repos("clone", ...)} delegates to \code{clone-repos.sh} (see
+#' \code{repos("clone", ...)} delegates to \code{repos clone} (see
 #' \code{\link{repos_clone}}).
 #'
-#' \code{repos("workspace", ...)} delegates to \code{vscode-workspace-add.sh} (see
+#' \code{repos("workspace", ...)} delegates to \code{repos workspace} (see
 #' \code{\link{repos_workspace}}).
 #'
 #' \code{repos("codespace", ...)} / \code{repos("codespaces", ...)} delegates to
-#' \code{codespaces-auth-add.sh} (see \code{\link{repos_codespace}}).
+#' \code{repos codespace} (see \code{\link{repos_codespace}}).
 #'
-#' \code{repos("run", ...)} delegates to \code{run-pipeline.sh} (see
+#' \code{repos("run", ...)} delegates to \code{repos run} (see
 #' \code{\link{repos_run}}).
 #'
 #' @examples
@@ -240,13 +248,13 @@ repos <- function(command, ...) {
 #' @param debug_file Character string or logical. Enable debug tracing to a
 #'   file.  If \code{TRUE}, an auto-generated filename is used; if a non-empty
 #'   string, that path is used as the log file.
-#' @param ... Additional arguments passed directly to the
-#'   \code{clone-repos.sh} script as-is.
+#' @param ... Additional arguments passed directly to \code{repos clone} as-is.
 #'
-#' @return Invisibly returns the exit status of the script (0 for success).
+#' @return Invisibly returns the exit status of \code{repos clone} (0 for
+#'   success).
 #'
 #' @details
-#' This function is a wrapper around \code{clone-repos.sh}.  Each non-empty,
+#' This function is a wrapper around \code{repos clone}.  Each non-empty,
 #' non-comment line in the repos list file describes one of three operations:
 #' \enumerate{
 #'   \item Clone a repository (default or all branches): \code{owner/repo}
@@ -343,13 +351,14 @@ repos_clone <- function(file = NULL, worktree = FALSE, debug = FALSE,
 #' @param debug Logical. If \code{TRUE}, enable debug output to stderr
 #' @param debug_file Character string or logical. Enable debug output to file
 #'   (auto-generated if \code{TRUE})
-#' @param ... Additional arguments passed directly to the
-#'   \code{vscode-workspace-add.sh} script as-is.
+#' @param ... Additional arguments passed directly to \code{repos workspace}
+#'   as-is.
 #'
-#' @return Invisibly returns the exit status of the script (0 for success).
+#' @return Invisibly returns the exit status of \code{repos workspace}
+#'   (0 for success).
 #'
 #' @details
-#' This function is a wrapper around \code{vscode-workspace-add.sh}.
+#' This function is a wrapper around \code{repos workspace}.
 #' It writes (or refreshes) the \code{entire-project.code-workspace} file in
 #' your project directory so you can open all cloned repositories as a
 #' multi-root workspace in VS Code or other IDEs that support the VS Code workspace format.
@@ -399,18 +408,18 @@ repos_workspace <- function(file = NULL, debug = FALSE, debug_file = NULL, ...) 
 #' @param file Path to repos list file (default: repos.list)
 #' @param devcontainer Character vector of paths to devcontainer.json files
 #' @param permissions Character string. \code{"all"} or \code{"contents"}
-#' @param tool Character string. Force tool for authentication helper
-#'   (e.g., \code{"jq"}, \code{"python"})
+#' @param tool Deprecated and ignored. Kept for backward compatibility.
 #' @param debug Logical. If \code{TRUE}, enable debug output to stderr
 #' @param debug_file Character string or logical. Enable debug output to file
 #'   (auto-generated if \code{TRUE})
-#' @param ... Additional arguments passed directly to the
-#'   \code{codespaces-auth-add.sh} script as-is.
+#' @param ... Additional arguments passed directly to \code{repos codespace}
+#'   as-is.
 #'
-#' @return Invisibly returns the exit status of the script (0 for success).
+#' @return Invisibly returns the exit status of \code{repos codespace}
+#'   (0 for success).
 #'
 #' @details
-#' This function is a wrapper around \code{codespaces-auth-add.sh}.
+#' This function is a wrapper around \code{repos codespace}.
 #'
 #' @examples
 #' \dontrun{
@@ -445,7 +454,10 @@ repos_codespace <- function(file = NULL, devcontainer = NULL, permissions = NULL
   }
 
   if (!is.null(tool)) {
-    args <- c(args, "-t", tool)
+    warning(
+      "repos_codespace(tool=...) is not supported by the Go CLI and was ignored.",
+      call. = FALSE
+    )
   }
 
   if (isTRUE(debug)) {
@@ -477,20 +489,21 @@ repos_codespace <- function(file = NULL, devcontainer = NULL, permissions = NULL
 #' @param include Character vector or comma-separated string of repo names to include
 #' @param exclude Character vector or comma-separated string of repo names to exclude
 #' @param ensure_setup Logical. If \code{TRUE}, clone repositories before executing scripts
-#' @param skip_deps Logical. If \code{TRUE}, skip the install-r-deps.sh step
+#' @param skip_deps Logical. If \code{TRUE}, skip the install-r-deps step
 #' @param dry_run Logical. If \code{TRUE}, show what would be done without executing
 #' @param verbose Logical. If \code{TRUE}, enable verbose logging
 #' @param continue_on_error Logical. If \code{TRUE}, continue on failure and report all results
-#' @param ... Additional arguments passed directly to the \code{run-pipeline.sh} script as-is.
+#' @param ... Additional arguments passed directly to \code{repos run} as-is.
 #'   Useful for passing custom flags or for backward compatibility.
 #'
-#' @return Invisibly returns the exit status of the script (0 for success).
+#' @return Invisibly returns the exit status of \code{repos run} (0 for
+#'   success).
 #'
 #' @details
-#' This function is a wrapper around the \code{run-pipeline.sh} Bash script.
+#' This function is a wrapper around \code{repos run}.
 #' It will:
 #' \itemize{
-#'   \item Optionally clone repositories (via \code{clone-repos.sh}) before running scripts
+#'   \item Optionally clone repositories (via \code{repos clone}) before running scripts
 #'   \item Optionally install R dependencies
 #'   \item Execute the target script (default: \code{run.sh}) in each repository
 #'   \item Print a per-repo summary at the end of execution
@@ -553,15 +566,15 @@ repos_run <- function(file = NULL, script = NULL, include = NULL, exclude = NULL
   }
   
   if (isTRUE(skip_deps)) {
-    args <- c(args, "-d")
+    args <- c(args, "--skip-deps")
   }
   
   if (isTRUE(dry_run)) {
-    args <- c(args, "-n")
+    args <- c(args, "--dry-run")
   }
   
   if (isTRUE(verbose)) {
-    args <- c(args, "-v")
+    args <- c(args, "--verbose")
   }
   
   if (isTRUE(continue_on_error)) {

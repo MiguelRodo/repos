@@ -1,7 +1,7 @@
 """
 repos - Multi-Repository Management Tool
 
-A Python wrapper for the repos Bash scripts that manage multiple related Git repositories.
+A Python wrapper for the repos Go CLI that manages multiple related Git repositories.
 """
 
 import os
@@ -10,22 +10,19 @@ import subprocess
 from pathlib import Path
 from typing import Optional, List, Union
 
-__version__ = "1.1.0"
+__version__ = "2.0.0"
 
-# Version of the repos CLI bundled inside this package.
+# Version of the repos CLI targeted by this package.
 # Updated automatically by the version-and-release workflow.
-_BUNDLED_CLI_VERSION = "1.3.10"
+_BUNDLED_CLI_VERSION = "2.0.0"
 
 
 def bundled_cli_version() -> str:
     """
-    Return the version of the repos CLI bundled inside this package.
-
-    The Python package ships its own copy of the Bash scripts at a specific
-    CLI version.  This function returns that pinned version string.
+    Return the version of the repos CLI targeted by this package.
 
     Returns:
-        str: The bundled CLI version (e.g. ``"1.1.0"``).
+        str: The targeted CLI version (e.g. ``"2.0.0"``).
 
     Examples:
         >>> from repos import bundled_cli_version
@@ -72,11 +69,9 @@ def install_cli(run: bool = False) -> None:
     """
     Print OS-appropriate instructions for installing the repos CLI globally.
 
-    The Python package uses its own bundled copy of the CLI for all Python
-    functions (``run()``, ``workspace()``, etc.).  However, if you also want
-    to use ``repos`` directly from your terminal, you need to install the CLI
-    system-wide.  This function prints the recommended installation command for
-    your platform and, when *run* is ``True``, also executes it.
+    The Python package requires the ``repos`` CLI to be installed and available
+    on your ``PATH``. This function prints the recommended installation command
+    for your platform and, when *run* is ``True``, also executes it.
 
     Args:
         run (bool): If ``True``, attempt to run the installer automatically
@@ -94,8 +89,6 @@ def install_cli(run: bool = False) -> None:
         >>> install_cli(run=True)
     """
     import platform
-    import shutil
-
     system = platform.system()
 
     if system == "Linux":
@@ -114,11 +107,17 @@ def install_cli(run: bool = False) -> None:
             print("Running user-level installer...")
             import tempfile
             tmp = os.path.join(tempfile.mkdtemp(), "repos-cli")
-            ret = subprocess.run(
-                f"git clone https://github.com/MiguelRodo/repos.git {tmp!r}"
-                f" && bash {os.path.join(tmp, 'install-local.sh')!r}",
-                shell=True,
+            clone_ret = subprocess.run(
+                ["git", "clone", "https://github.com/MiguelRodo/repos.git", tmp],
+                check=False,
             ).returncode
+            if clone_ret == 0:
+                ret = subprocess.run(
+                    ["bash", os.path.join(tmp, "install-local.sh")],
+                    check=False,
+                ).returncode
+            else:
+                ret = clone_ret
             if ret != 0:
                 print(
                     f"Warning: installer exited with status {ret}."
@@ -193,6 +192,16 @@ def get_script_path(script_name="run-pipeline.sh"):
     )
 
 
+def run_repos_command(command: str, args=None):
+    """
+    Run the installed repos CLI with a subcommand and arguments.
+    """
+    cmd = ["repos", command]
+    if args:
+        cmd.extend(args)
+    return subprocess.run(cmd, check=True, text=True)
+
+
 def run_script(script_name="run-pipeline.sh", args=None):
     """
     Run a repos script with the given arguments.
@@ -209,29 +218,19 @@ def run_script(script_name="run-pipeline.sh", args=None):
         subprocess.CalledProcessError: If the script exits with non-zero status
         PermissionError: If the script cannot be made executable
     """
-    script_path = get_script_path(script_name)
-    
-    # Ensure the script is executable (may fail in restricted environments)
-    try:
-        os.chmod(script_path, 0o755)
-    except (OSError, PermissionError) as e:
-        # If we can't change permissions, try to run anyway
-        # (the script may already be executable)
-        pass
-    
-    # Prepare command
-    cmd = [script_path]
-    if args:
-        cmd.extend(args)
-    
-    # Run the script
-    result = subprocess.run(
-        cmd,
-        check=True,
-        text=True
-    )
-    
-    return result
+    script_map = {
+        "run-pipeline.sh": "run",
+        "helper/clone-repos.sh": "clone",
+        "clone-repos.sh": "clone",
+        "helper/vscode-workspace-add.sh": "workspace",
+        "vscode-workspace-add.sh": "workspace",
+        "helper/codespaces-auth-add.sh": "codespace",
+        "codespaces-auth-add.sh": "codespace",
+    }
+    command = script_map.get(script_name)
+    if command is None:
+        raise FileNotFoundError(f"Unsupported script '{script_name}' for Go CLI wrapper.")
+    return run_repos_command(command, args)
 
 
 def workspace(
@@ -344,7 +343,10 @@ def codespace(
         script_args.extend(["--permissions", permissions])
 
     if tool is not None:
-        script_args.extend(["-t", tool])
+        print(
+            "Warning: codespace(tool=...) is not supported by the Go CLI and will be ignored.",
+            file=sys.stderr,
+        )
 
     if debug:
         script_args.append("--debug")
@@ -447,13 +449,13 @@ def run(
         script_args.append("--ensure-setup")
     
     if skip_deps:
-        script_args.append("-d")
+        script_args.append("--skip-deps")
     
     if dry_run:
-        script_args.append("-n")
+        script_args.append("--dry-run")
     
     if verbose:
-        script_args.append("-v")
+        script_args.append("--verbose")
     
     if continue_on_error:
         script_args.append("--continue-on-error")

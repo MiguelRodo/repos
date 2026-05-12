@@ -11,19 +11,19 @@ sys.path.insert(0, str(repo_root / "src"))
 # Import the module
 import repos
 
-# Mock run_script to capture arguments
+# Mock run_repos_command to capture arguments
 test_args = {}
 
-def mock_run_script(script_name, args=None):
+def mock_run_repos_command(command, args=None):
     global test_args
-    test_args = {"script": script_name, "args": args or []}
+    test_args = {"command": command, "args": args or []}
     # Return a mock CompletedProcess
     class MockResult:
         returncode = 0
     return MockResult()
 
 # Replace the real function with our mock
-repos.run_script = mock_run_script
+repos.run_repos_command = mock_run_repos_command
 
 # Test tracking
 test_count = 0
@@ -49,46 +49,46 @@ def test(description, func):
 # Test repos.workspace with idiomatic syntax
 def test_workspace_no_args():
     repos.workspace()
-    assert test_args["script"] == "helper/vscode-workspace-add.sh"
+    assert test_args["command"] == "workspace"
     assert test_args["args"] == []
 
 def test_workspace_file():
     repos.workspace(file="custom.list")
-    assert test_args["script"] == "helper/vscode-workspace-add.sh"
+    assert test_args["command"] == "workspace"
     assert "-f" in test_args["args"]
     assert "custom.list" in test_args["args"]
 
 def test_workspace_debug():
     repos.workspace(debug=True)
-    assert test_args["script"] == "helper/vscode-workspace-add.sh"
+    assert test_args["command"] == "workspace"
     assert "--debug" in test_args["args"]
 
 def test_workspace_debug_file_bool():
     repos.workspace(debug_file=True)
-    assert test_args["script"] == "helper/vscode-workspace-add.sh"
+    assert test_args["command"] == "workspace"
     assert "--debug-file" in test_args["args"]
 
 def test_workspace_debug_file_path():
     repos.workspace(debug_file="debug.log")
-    assert test_args["script"] == "helper/vscode-workspace-add.sh"
+    assert test_args["command"] == "workspace"
     assert "--debug-file" in test_args["args"]
     assert "debug.log" in test_args["args"]
 
 # Test repos.codespace with idiomatic syntax
 def test_codespace_no_args():
     repos.codespace()
-    assert test_args["script"] == "helper/codespaces-auth-add.sh"
+    assert test_args["command"] == "codespace"
     assert test_args["args"] == []
 
 def test_codespace_file():
     repos.codespace(file="custom.list")
-    assert test_args["script"] == "helper/codespaces-auth-add.sh"
+    assert test_args["command"] == "codespace"
     assert "-f" in test_args["args"]
     assert "custom.list" in test_args["args"]
 
 def test_codespace_devcontainer_list():
     repos.codespace(devcontainer=["path1", "path2"])
-    assert test_args["script"] == "helper/codespaces-auth-add.sh"
+    assert test_args["command"] == "codespace"
     dc_indices = [i for i, x in enumerate(test_args["args"]) if x == "-d"]
     assert len(dc_indices) == 2
     assert test_args["args"][dc_indices[0] + 1] == "path1"
@@ -96,97 +96,97 @@ def test_codespace_devcontainer_list():
 
 def test_codespace_devcontainer_single():
     repos.codespace(devcontainer="path1")
-    assert test_args["script"] == "helper/codespaces-auth-add.sh"
+    assert test_args["command"] == "codespace"
     assert "-d" in test_args["args"]
     assert "path1" in test_args["args"]
 
 def test_codespace_permissions():
     repos.codespace(permissions="all")
-    assert test_args["script"] == "helper/codespaces-auth-add.sh"
+    assert test_args["command"] == "codespace"
     assert "--permissions" in test_args["args"]
     assert "all" in test_args["args"]
 
 def test_codespace_tool():
     repos.codespace(tool="jq")
-    assert test_args["script"] == "helper/codespaces-auth-add.sh"
-    assert "-t" in test_args["args"]
-    assert "jq" in test_args["args"]
+    assert test_args["command"] == "codespace"
+    assert "-t" not in test_args["args"]
+    assert "jq" not in test_args["args"]
 
 def test_codespace_debug():
     repos.codespace(debug=True)
-    assert test_args["script"] == "helper/codespaces-auth-add.sh"
+    assert test_args["command"] == "codespace"
     assert "--debug" in test_args["args"]
 
 # Test raw helpers
 def test_workspace_raw():
     repos.workspace_raw("-f", "custom.list")
-    assert test_args["script"] == "helper/vscode-workspace-add.sh"
+    assert test_args["command"] == "workspace"
     assert "-f" in test_args["args"]
     assert "custom.list" in test_args["args"]
 
 def test_codespace_raw():
     repos.codespace_raw("-d", ".devcontainer/devcontainer.json")
-    assert test_args["script"] == "helper/codespaces-auth-add.sh"
+    assert test_args["command"] == "codespace"
     assert "-d" in test_args["args"]
     assert ".devcontainer/devcontainer.json" in test_args["args"]
 
 # Test repos.run with idiomatic syntax
 def test_run_no_args():
     repos.run()
-    assert test_args["script"] == "run-pipeline.sh"
+    assert test_args["command"] == "run"
     assert test_args["args"] == []
 
 def test_run_script():
     repos.run(script="build.sh")
-    assert test_args["script"] == "run-pipeline.sh"
+    assert test_args["command"] == "run"
     assert "--script" in test_args["args"]
     assert "build.sh" in test_args["args"]
 
 def test_run_flags():
     repos.run(dry_run=True, verbose=True)
-    assert test_args["script"] == "run-pipeline.sh"
-    assert "-n" in test_args["args"]
-    assert "-v" in test_args["args"]
+    assert test_args["command"] == "run"
+    assert "--dry-run" in test_args["args"]
+    assert "--verbose" in test_args["args"]
 
 def test_run_include_list():
     repos.run(include=["repo1", "repo2"])
-    assert test_args["script"] == "run-pipeline.sh"
+    assert test_args["command"] == "run"
     i_idx = test_args["args"].index("-i")
     assert test_args["args"][i_idx + 1] == "repo1,repo2"
 
 def test_run_include_string():
     repos.run(include="repo1,repo2")
-    assert test_args["script"] == "run-pipeline.sh"
+    assert test_args["command"] == "run"
     i_idx = test_args["args"].index("-i")
     assert test_args["args"][i_idx + 1] == "repo1,repo2"
 
 def test_run_exclude_string():
     repos.run(exclude="repo3")
-    assert test_args["script"] == "run-pipeline.sh"
+    assert test_args["command"] == "run"
     e_idx = test_args["args"].index("-e")
     assert test_args["args"][e_idx + 1] == "repo3"
 
 def test_run_ensure_setup_skip_deps():
     repos.run(ensure_setup=True, skip_deps=True)
-    assert test_args["script"] == "run-pipeline.sh"
+    assert test_args["command"] == "run"
     assert "--ensure-setup" in test_args["args"]
-    assert "-d" in test_args["args"]
+    assert "--skip-deps" in test_args["args"]
 
 def test_run_continue_on_error():
     repos.run(continue_on_error=True)
-    assert test_args["script"] == "run-pipeline.sh"
+    assert test_args["command"] == "run"
     assert "--continue-on-error" in test_args["args"]
 
 def test_run_file():
     repos.run(file="custom.list")
-    assert test_args["script"] == "run-pipeline.sh"
+    assert test_args["command"] == "run"
     assert "-f" in test_args["args"]
     assert "custom.list" in test_args["args"]
 
 # Test backward compatibility
 def test_run_backward_compat():
     repos.run_raw("--script", "test.sh", "--dry-run")
-    assert test_args["script"] == "run-pipeline.sh"
+    assert test_args["command"] == "run"
     assert "--script" in test_args["args"]
     assert "test.sh" in test_args["args"]
     assert "--dry-run" in test_args["args"]
