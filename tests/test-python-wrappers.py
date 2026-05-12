@@ -63,6 +63,14 @@ def test_clone_invalid_depth():
         return
     raise AssertionError("Expected ValueError for non-positive depth")
 
+def test_clone_bool_depth_rejected():
+    try:
+        repos.clone(depth=True)
+    except ValueError as e:
+        assert "depth must be a positive integer" in str(e)
+        return
+    raise AssertionError("Expected ValueError for boolean depth")
+
 def test_workspace_no_args():
     repos.workspace()
     assert test_args["command"] == "workspace"
@@ -231,6 +239,7 @@ if __name__ == "__main__":
     test("repos.codespace_raw('-d', '.devcontainer/devcontainer.json')", test_codespace_raw)
     test("repos.clone(depth=1)", test_clone_depth)
     test("repos.clone(depth=0) raises ValueError", test_clone_invalid_depth)
+    test("repos.clone(depth=True) raises ValueError", test_clone_bool_depth_rejected)
     
     test("repos.run() with no args", test_run_no_args)
     test("repos.run(script='build.sh')", test_run_script)

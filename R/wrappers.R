@@ -329,7 +329,8 @@ repos_clone <- function(file = NULL, worktree = FALSE, debug = FALSE,
   }
 
   if (!is.null(depth)) {
-    if (length(depth) != 1 || !is.finite(depth) || depth <= 0 ||
+    if (is.logical(depth) || !is.numeric(depth) || length(depth) != 1 ||
+        !is.finite(depth) || depth <= 0 ||
         depth != as.integer(depth)) {
       stop(sprintf(
         "'depth' must be a positive whole number; got: %s",

@@ -54,6 +54,15 @@ test("repos_clone(depth = 0) errors", {
   stopifnot(grepl("'depth' must be a positive whole number", err, fixed = TRUE))
 })
 
+test("repos_clone(depth = TRUE) errors", {
+  err <- tryCatch({
+    repos_clone(depth = TRUE)
+    NULL
+  }, error = function(e) e$message)
+  stopifnot(!is.null(err))
+  stopifnot(grepl("'depth' must be a positive whole number", err, fixed = TRUE))
+})
+
 test("repos_workspace() with no args", {
   repos_workspace()
   stopifnot(test_args$command == "repos")

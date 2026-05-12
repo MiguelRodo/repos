@@ -572,7 +572,7 @@ def clone(
         script_args.append(flag)
 
     if depth is not None:
-        if not isinstance(depth, int) or depth <= 0:
+        if isinstance(depth, bool) or not isinstance(depth, int) or depth <= 0:
             raise ValueError(f"depth must be a positive integer; got: {depth!r}")
         script_args.extend(["--depth", str(depth)])
 
