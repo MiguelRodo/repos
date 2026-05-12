@@ -721,7 +721,8 @@ func (s *state) ensureBaseExists(remote, base, fetchMode string, depth int) (int
 	cloneArgs := []string{"clone"}
 	if fetchMode != "all" {
 		cloneArgs = append(cloneArgs, "--single-branch")
-	} else if depth > 0 {
+	}
+	if fetchMode == "all" && depth > 0 {
 		cloneArgs = append(cloneArgs, "--no-single-branch")
 	}
 	if depth > 0 {
@@ -793,7 +794,8 @@ func (s *state) cloneOneRepo(ins instruction) (int, error) {
 	cloneArgs := []string{"clone"}
 	if !ins.allBranches {
 		cloneArgs = append(cloneArgs, "--single-branch")
-	} else if ins.depth > 0 {
+	}
+	if ins.allBranches && ins.depth > 0 {
 		cloneArgs = append(cloneArgs, "--no-single-branch")
 	}
 	if ins.depth > 0 {
