@@ -100,6 +100,8 @@ $assets = @(
 
 function Invoke-DownloadAsset([string]$Url, [string]$OutFile) {
     if ($Url -match '^file:///(.+)$') {
+        # Convert forward slashes to OS path separators and handle Windows drive
+        # letters (e.g. file:///C:/path → C:\path).
         $localPath = $Matches[1] -replace '/', [System.IO.Path]::DirectorySeparatorChar
         Copy-Item -LiteralPath $localPath -Destination $OutFile -Force
         return
