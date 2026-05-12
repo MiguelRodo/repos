@@ -81,7 +81,7 @@ if ($Uninstall) {
     exit 0
 }
 
-$releaseRepo = if ($env:REPOS_RELEASE_REPO) { $env:REPOS_RELEASE_REPO } else { "miguelrodo/repos-go" }
+$releaseRepo = if ($env:REPOS_RELEASE_REPO) { $env:REPOS_RELEASE_REPO } else { "MiguelRodo/repos" }
 $binaryName = if ($env:REPOS_BINARY_NAME) { $env:REPOS_BINARY_NAME } else { "repos" }
 $osName = "windows"
 $archName = Get-ArchName

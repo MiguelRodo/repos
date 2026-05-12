@@ -90,10 +90,10 @@ repos_install_cli <- function(run = FALSE) {
   if (sysname == "Linux") {
     message("To install the repos CLI on Ubuntu/Debian, choose one of:\n")
     message("  # Option 1: APT repository (recommended -- keeps repos up to date):")
-    message("  curl -fsSL https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/KEY.gpg \\")
-    message("     | sudo gpg --dearmor -o /usr/share/keyrings/miguelrodo-repos.gpg")
-    message('  echo "deb [signed-by=/usr/share/keyrings/miguelrodo-repos.gpg] https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/ ./" \\')
-    message("     | sudo tee /etc/apt/sources.list.d/miguelrodo-repos.list >/dev/null")
+    message("  curl -fsSL https://miguelrodo.github.io/apt-miguelrodo/KEY.gpg \\")
+    message("     | sudo gpg --dearmor -o /usr/share/keyrings/apt-miguelrodo.gpg")
+    message('  echo "deb [signed-by=/usr/share/keyrings/apt-miguelrodo.gpg] https://miguelrodo.github.io/apt-miguelrodo stable main" \\')
+    message("     | sudo tee /etc/apt/sources.list.d/apt-miguelrodo.list >/dev/null")
     message("  sudo apt-get update && sudo apt-get install -y repos\n")
     message("  # Option 2: User-level install (no sudo required):")
     message("  git clone https://github.com/MiguelRodo/repos.git /tmp/repos-cli")
@@ -576,4 +576,3 @@ repos_run <- function(file = NULL, script = NULL, include = NULL, exclude = NULL
   
   run_repos_script("run-pipeline.sh", args = args)
 }
-

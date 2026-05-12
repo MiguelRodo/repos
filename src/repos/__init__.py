@@ -101,11 +101,11 @@ def install_cli(run: bool = False) -> None:
     if system == "Linux":
         print("To install the repos CLI on Ubuntu/Debian, choose one of:\n")
         print("  # Option 1: APT repository (recommended — keeps repos up to date):")
-        print("  curl -fsSL https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/KEY.gpg \\")
-        print("     | sudo gpg --dearmor -o /usr/share/keyrings/miguelrodo-repos.gpg")
-        print('  echo "deb [signed-by=/usr/share/keyrings/miguelrodo-repos.gpg] '
-              'https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/ ./" \\')
-        print("     | sudo tee /etc/apt/sources.list.d/miguelrodo-repos.list >/dev/null")
+        print("  curl -fsSL https://miguelrodo.github.io/apt-miguelrodo/KEY.gpg \\")
+        print("     | sudo gpg --dearmor -o /usr/share/keyrings/apt-miguelrodo.gpg")
+        print('  echo "deb [signed-by=/usr/share/keyrings/apt-miguelrodo.gpg] '
+              'https://miguelrodo.github.io/apt-miguelrodo stable main" \\')
+        print("     | sudo tee /etc/apt/sources.list.d/apt-miguelrodo.list >/dev/null")
         print("  sudo apt-get update && sudo apt-get install -y repos\n")
         print("  # Option 2: User-level install (no sudo required):")
         print("  git clone https://github.com/MiguelRodo/repos.git /tmp/repos-cli")
@@ -575,4 +575,3 @@ def clone_raw(*args):
         >>> clone_raw("--debug")
     """
     return run_script("helper/clone-repos.sh", list(args))
-

@@ -14,12 +14,12 @@ Install and keep `repos` up to date directly via `apt`:
 
 ```bash
 # Add repository signing key
-curl -fsSL https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/KEY.gpg \
-   | sudo gpg --dearmor -o /usr/share/keyrings/miguelrodo-repos.gpg
+curl -fsSL https://miguelrodo.github.io/apt-miguelrodo/KEY.gpg \
+   | sudo gpg --dearmor -o /usr/share/keyrings/apt-miguelrodo.gpg
 
 # Add apt source
-echo "deb [signed-by=/usr/share/keyrings/miguelrodo-repos.gpg] https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/ ./" \
-   | sudo tee /etc/apt/sources.list.d/miguelrodo-repos.list >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/apt-miguelrodo.gpg] https://miguelrodo.github.io/apt-miguelrodo stable main" \
+   | sudo tee /etc/apt/sources.list.d/apt-miguelrodo.list >/dev/null
 
 # Install repos
 sudo apt-get update
@@ -53,14 +53,16 @@ bash uninstall-local.sh
 
 ### Option 3: System-wide from Release `.deb` (requires sudo)
 
-Download and install the latest `.deb` from the
+Prefer Option 1 (APT) for automatic updates. If needed, you can manually download
+and install a release `.deb` from the
 [Releases page](https://github.com/MiguelRodo/repos/releases):
 
 ```bash
 VERSION_REPOS=1.2.6
-wget https://github.com/MiguelRodo/repos/releases/download/v${VERSION_REPOS}/repos_${VERSION_REPOS}_all.deb
-sudo dpkg -i repos_${VERSION_REPOS}_all.deb
-rm repos_${VERSION_REPOS}_all.deb
+ARCH="$(dpkg --print-architecture)"
+wget "https://github.com/MiguelRodo/repos/releases/download/v${VERSION_REPOS}/repos_${VERSION_REPOS}_${ARCH}.deb"
+sudo dpkg -i "repos_${VERSION_REPOS}_${ARCH}.deb"
+rm "repos_${VERSION_REPOS}_${ARCH}.deb"
 
 # Fix any dependency issues
 sudo apt-get install -f
