@@ -719,7 +719,7 @@ func (s *state) cloneOneRepo(ins instruction) (int, error) {
 			}
 		} else {
 			if !s.allowCreate {
-				return 1, fmt.Errorf("remote branch '%s' not found on %s (rerun with --create to create it)", ref, remoteHTTPS)
+				return 1, fmt.Errorf("remote branch '%s' not found on %s (run with --create to create it)", ref, remoteHTTPS)
 			}
 			fmt.Printf("Remote branch '%s' not found on %s; creating it.\n", ref, remoteHTTPS)
 			fmt.Printf("Cloning default branch of %s → %s\n", remoteHTTPS, dest)
@@ -868,7 +868,7 @@ func (s *state) createWorktreeForBranch(base, branch, targetDir, fetchMode strin
 	}
 
 	if !s.allowCreate {
-		return 1, fmt.Errorf("branch '%s' not found on remote origin (rerun with --create to create it)", branch)
+		return 1, fmt.Errorf("branch '%s' not found on remote origin (run with --create to create it)", branch)
 	}
 
 	fmt.Printf("Branch not found: %s (on remote, creating new)\n", branch)
