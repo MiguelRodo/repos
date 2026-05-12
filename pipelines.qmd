@@ -21,7 +21,7 @@ repos run
 In script mode, `repos run` also runs the dependency setup step by default
 (`repos install-r-deps`) before executing scripts. That step only installs
 dependencies in repositories detected as R projects. Use `--skip-deps` to
-disable the setup step. R projects are detected from files such as
+disable the setup step. R projects are detected by the presence of
 `renv.lock` or `DESCRIPTION`.
 
 ## Options
