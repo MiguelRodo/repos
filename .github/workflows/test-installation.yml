@@ -225,8 +225,18 @@ jobs:
 
       - name: Verify installed binary and architecture
         run: |
-          repos --help || true
-          dpkg -s repos | grep '^Architecture:'
+          repos --help
+          PKG_ARCH="$(dpkg-query -W -f='${Architecture}' repos)"
+          HOST_ARCH="$(dpkg --print-architecture)"
+          if [ "$PKG_ARCH" = "all" ]; then
+            echo "Error: expected architecture-specific package, got Architecture: all"
+            exit 1
+          fi
+          if [ "$PKG_ARCH" != "$HOST_ARCH" ]; then
+            echo "Error: installed package architecture ($PKG_ARCH) does not match host ($HOST_ARCH)"
+            exit 1
+          fi
+          echo "Installed package architecture: $PKG_ARCH"
           echo "APT repository installation test passed"
 
   # Test Windows manual installation
