@@ -50,6 +50,7 @@ func runClone(args []string) error {
 	fetchSingle := fs.Bool("fetch-single", false, "single fetch mode")
 	fetchAll := fs.Bool("fetch-all", false, "all fetch mode")
 	force := fs.Bool("force", false, "ignore per-line flag overrides")
+	create := fs.Bool("create", false, "create missing remote branches when requested branch is absent")
 	help := fs.Bool("help", false, "show help")
 	fs.BoolVar(help, "h", false, "show help")
 
@@ -96,6 +97,7 @@ func runClone(args []string) error {
 		cliWorktreeSet:        *globalWorktree,
 		cliFetchModeSet:       *fetchDeferred || *fetchSingle || *fetchAll,
 		cliForce:              *force,
+		allowCreate:           *create,
 		seenRemoteLocal:       map[string]string{},
 		plan:                  map[string]planInfo{},
 	}
