@@ -127,6 +127,7 @@ func TestHasNonLocalRemotesInFile(t *testing.T) {
 			name: "all-local-and-at-branch",
 			lines: []string{
 				"--worktree",
+				"--depth 1",
 				"/tmp/local/repo.git",
 				"file:///tmp/local2/repo.git",
 				"@feature-x",
@@ -267,6 +268,113 @@ func TestRunCloneFailsWhenAuthCheckFailsForNonLocalRemotes(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "auth missing") {
 		t.Fatalf("expected auth error, got: %v", err)
+	}
+}
+
+func TestRunCloneWithCLIDepthCreatesShallowClone(t *testing.T) {
+	enableBareRepoAccess(t)
+
+	tmp := t.TempDir()
+	remotes := filepath.Join(tmp, "remotes")
+	mustMkdir(t, remotes)
+	remote := createBareRepo(t, remotes, "repo-depth", "dev")
+
+	projectDir := filepath.Join(tmp, "workspace")
+	mustInitWorkspaceRepo(t, projectDir, remote)
+	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "file://"+remote+"@dev\n")
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(oldWD); err != nil {
+			t.Logf("restore working directory: %v", err)
+		}
+	})
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatalf("chdir project dir: %v", err)
+	}
+
+	if err := runClone([]string{"-f", "repos.list", "--depth", "1"}); err != nil {
+		t.Fatalf("runClone returned error: %v", err)
+	}
+
+	cloneDir := filepath.Join(tmp, "repo-depth")
+	assertDirExists(t, cloneDir)
+	if got := strings.TrimSpace(runGit(t, cloneDir, "rev-parse", "--is-shallow-repository")); got != "true" {
+		t.Fatalf("expected shallow clone, got %q", got)
+	}
+	if got := strings.TrimSpace(runGit(t, cloneDir, "rev-list", "--count", "HEAD")); got != "1" {
+		t.Fatalf("expected depth-limited history count 1, got %q", got)
+	}
+}
+
+func TestRunClonePerLineDepthOverridesGlobalDepth(t *testing.T) {
+	enableBareRepoAccess(t)
+
+	tmp := t.TempDir()
+	remotes := filepath.Join(tmp, "remotes")
+	mustMkdir(t, remotes)
+	remote := createBareRepo(t, remotes, "repo-depth-override", "dev")
+
+	projectDir := filepath.Join(tmp, "workspace")
+	mustInitWorkspaceRepo(t, projectDir, remote)
+	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), strings.Join([]string{
+		"--depth 2",
+		"file://" + remote + "@dev --depth 1",
+		"",
+	}, "\n"))
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(oldWD); err != nil {
+			t.Logf("restore working directory: %v", err)
+		}
+	})
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatalf("chdir project dir: %v", err)
+	}
+
+	if err := runClone([]string{"-f", "repos.list"}); err != nil {
+		t.Fatalf("runClone returned error: %v", err)
+	}
+
+	cloneDir := filepath.Join(tmp, "repo-depth-override")
+	assertDirExists(t, cloneDir)
+	if got := strings.TrimSpace(runGit(t, cloneDir, "rev-list", "--count", "HEAD")); got != "1" {
+		t.Fatalf("expected per-line depth override to limit history to 1, got %q", got)
+	}
+}
+
+func TestRunCloneRejectsInvalidDepth(t *testing.T) {
+	tmp := t.TempDir()
+	projectDir := filepath.Join(tmp, "workspace")
+	mustMkdir(t, projectDir)
+	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "acme/repo\n")
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(oldWD); err != nil {
+			t.Logf("restore working directory: %v", err)
+		}
+	})
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatalf("chdir project dir: %v", err)
+	}
+
+	err = runClone([]string{"-f", "repos.list", "--depth", "0"})
+	if err == nil {
+		t.Fatalf("expected invalid --depth error")
+	}
+	if !strings.Contains(err.Error(), "--depth") {
+		t.Fatalf("expected --depth error message, got %v", err)
 	}
 }
 

@@ -36,6 +36,33 @@ test <- function(description, expr) {
 }
 
 # Test repos_workspace with idiomatic syntax
+test("repos_clone(depth = 1)", {
+  repos_clone(depth = 1)
+  stopifnot(test_args$command == "repos")
+  stopifnot(test_args$args[1] == "clone")
+  depth_idx <- which(test_args$args == "--depth")
+  stopifnot(length(depth_idx) == 1)
+  stopifnot(test_args$args[depth_idx + 1] == "1")
+})
+
+test("repos_clone(depth = 0) errors", {
+  err <- tryCatch({
+    repos_clone(depth = 0)
+    NULL
+  }, error = function(e) e$message)
+  stopifnot(!is.null(err))
+  stopifnot(grepl("'depth' must be a positive whole number", err, fixed = TRUE))
+})
+
+test("repos_clone(depth = TRUE) errors", {
+  err <- tryCatch({
+    repos_clone(depth = TRUE)
+    NULL
+  }, error = function(e) e$message)
+  stopifnot(!is.null(err))
+  stopifnot(grepl("'depth' must be a positive whole number", err, fixed = TRUE))
+})
+
 test("repos_workspace() with no args", {
   repos_workspace()
   stopifnot(test_args$command == "repos")

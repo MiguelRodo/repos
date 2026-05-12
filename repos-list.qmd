@@ -90,6 +90,7 @@ bottom of the file applies to repositories listed above it.
 | `--fetch-all-deferred` | *(Default)* Fast single-branch clone; wildcard refspec restored immediately |
 | `--fetch-single` | Keep restricted single-branch refspec (CI/CD or metered connections) |
 | `--fetch-all` | Full clone — all remote branches downloaded upfront |
+| `--depth <n>` | Opt-in shallow clone depth for all clone operations |
 | `--force` | On a global-only flag line, make the other flag(s) on that line override conflicting per-line flags |
 
 Precedence rules:
@@ -102,8 +103,8 @@ Precedence rules:
 
 Per-line `--public`/`--private` flags always override the global default.
 
-`--fetch-single`, `--fetch-all-deferred`, and `--fetch-all` may also be
-specified per-line to override the global fetch mode for a specific
+`--fetch-single`, `--fetch-all-deferred`, `--fetch-all`, and `--depth <n>` may also be
+specified per-line to override global clone behavior for a specific
 repository or `@branch` line.
 
 ## Example

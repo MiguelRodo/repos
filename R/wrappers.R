@@ -244,6 +244,8 @@ repos <- function(command, ...) {
 #'     \item \code{"all"} — full clone without \code{--single-branch}; all
 #'       remote branches are downloaded upfront.
 #'   }
+#' @param depth Integer. Optional shallow clone depth. Must be a positive whole
+#'   number when provided.
 #' @param debug Logical. If \code{TRUE}, enable debug tracing to stderr.
 #' @param debug_file Character string or logical. Enable debug tracing to a
 #'   file.  If \code{TRUE}, an auto-generated filename is used; if a non-empty
@@ -282,11 +284,15 @@ repos <- function(command, ...) {
 #'
 #' # Download all branches upfront
 #' repos_clone(fetch_mode = "all")
+#'
+#' # Opt-in shallow clone
+#' repos_clone(depth = 1)
 #' }
 #'
 #' @export
 repos_clone <- function(file = NULL, worktree = FALSE, debug = FALSE,
-                        debug_file = NULL, fetch_mode = NULL, ...) {
+                        debug_file = NULL, fetch_mode = NULL,
+                        depth = NULL, ...) {
   args <- character()
 
   # Backward compatibility for positional calls introduced while fetch_mode
@@ -320,6 +326,18 @@ repos_clone <- function(file = NULL, worktree = FALSE, debug = FALSE,
       ))
     }
     args <- c(args, valid_fetch_modes[[fetch_mode]])
+  }
+
+  if (!is.null(depth)) {
+    if (is.logical(depth) || !is.numeric(depth) || length(depth) != 1 ||
+        !is.finite(depth) || depth <= 0 ||
+        depth != as.integer(depth)) {
+      stop(sprintf(
+        "'depth' must be a positive whole number; got: %s",
+        dQuote(as.character(depth))
+      ))
+    }
+    args <- c(args, "--depth", as.character(as.integer(depth)))
   }
 
   if (isTRUE(debug)) {

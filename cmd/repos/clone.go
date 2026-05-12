@@ -49,6 +49,7 @@ func runClone(args []string) error {
 	fetchDeferred := fs.Bool("fetch-all-deferred", false, "deferred fetch mode")
 	fetchSingle := fs.Bool("fetch-single", false, "single fetch mode")
 	fetchAll := fs.Bool("fetch-all", false, "all fetch mode")
+	depth := fs.Int("depth", 0, "opt-in shallow clone depth")
 	force := fs.Bool("force", false, "ignore per-line flag overrides")
 	create := fs.Bool("create", false, "create missing remote branches when requested branch is absent")
 	help := fs.Bool("help", false, "show help")
@@ -83,6 +84,17 @@ func runClone(args []string) error {
 	if *fetchDeferred {
 		globalFetchMode = "deferred"
 	}
+	depthSet := false
+	for i := 0; i < len(processedArgs); i++ {
+		arg := processedArgs[i]
+		if arg == "--depth" || strings.HasPrefix(arg, "--depth=") {
+			depthSet = true
+			break
+		}
+	}
+	if depthSet && *depth <= 0 {
+		return errors.New("error: --depth must be a positive integer")
+	}
 
 	st := &state{
 		startDir:              cwd,
@@ -94,8 +106,11 @@ func runClone(args []string) error {
 		globalWorktreeForced:  false,
 		globalFetchMode:       globalFetchMode,
 		globalFetchModeForced: false,
+		globalDepth:           *depth,
+		globalDepthForced:     false,
 		cliWorktreeSet:        *globalWorktree,
 		cliFetchModeSet:       *fetchDeferred || *fetchSingle || *fetchAll,
+		cliDepthSet:           depthSet,
 		cliForce:              *force,
 		allowCreate:           *create,
 		seenRemoteLocal:       map[string]string{},
@@ -210,7 +225,7 @@ func hasNonLocalRemotesInFile(reposFile string) (bool, error) {
 //
 // repos clone delegates all network operations to the system git binary, so
 // whatever auth git has configured for the remote's protocol is what gets used.
-// This check is a best-effort pre-flight: if none of the recognised methods are
+// This check is a best-effort pre-flight: if none of the recognized methods are
 // present, git would eventually prompt for credentials — which is undesirable in
 // non-interactive environments like CI/CD.
 //

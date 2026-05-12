@@ -49,6 +49,7 @@ your current location.
 repos_clone(fetch_mode = "deferred")  # default: fast clone, then restore wildcard refspec
 repos_clone(fetch_mode = "single")    # strict single-branch isolation
 repos_clone(fetch_mode = "all")       # full clone (all branches upfront)
+repos_clone(depth = 1)                # opt-in shallow clone
 ```
 
 ### Step 3 — Open in your IDE (optional)

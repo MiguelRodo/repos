@@ -45,6 +45,7 @@ This clones all listed repositories into the parent directory of your current lo
 - `--fetch-all-deferred` *(default)*: fast `--single-branch` clone, then restore wildcard fetch refspec
 - `--fetch-single`: keep strict single-branch refspec isolation
 - `--fetch-all`: full clone with all branches fetched upfront
+- `--depth <n>`: opt-in shallow clone depth (fast clone with truncated history)
 
 ## Commands and capabilities
 
