@@ -26,6 +26,21 @@ func RunGit(dir string, args ...string) (string, error) {
 	return trimmed, nil
 }
 
+func RunHuggingFaceCLI(dir string, args ...string) (string, error) {
+	cmd := exec.Command("huggingface-cli", args...)
+	if dir != "" {
+		cmd.Dir = dir
+	}
+	cmd.Stdin = nil
+	cmd.Env = NonInteractiveHFEnv()
+	out, err := cmd.CombinedOutput()
+	trimmed := strings.TrimSpace(string(out))
+	if err != nil {
+		return trimmed, fmt.Errorf("huggingface-cli %s failed: %s", strings.Join(args, " "), trimmed)
+	}
+	return trimmed, nil
+}
+
 func NonInteractiveGitEnv() []string {
 	env := os.Environ()
 	env = append(env, "GIT_TERMINAL_PROMPT=0")
@@ -34,6 +49,14 @@ func NonInteractiveGitEnv() []string {
 		if _, ok := os.LookupEnv("GIT_SSH_COMMAND"); !ok {
 			env = append(env, "GIT_SSH_COMMAND=ssh -oBatchMode=yes")
 		}
+	}
+	return env
+}
+
+func NonInteractiveHFEnv() []string {
+	env := os.Environ()
+	if token, ok := os.LookupEnv("HF_TOKEN"); ok {
+		env = append(env, "HF_TOKEN="+token)
 	}
 	return env
 }
