@@ -89,20 +89,18 @@ whatever `git` has available for the remote's protocol.
 Git uses your SSH key, either via an SSH agent (`SSH_AUTH_SOCK`) or through
 `~/.ssh/config`.  No token is needed.
 
-### HTTPS remotes — non-GitHub hosts
+### HTTPS remotes
 
 Git uses whatever credential helper is configured (`git config credential.helper`).
 Common options include [Git Credential Manager](https://github.com/git-ecosystem/git-credential-manager),
-`osxkeychain`, `wincred`, or a custom script.  Set one up with your hosting
-platform's instructions; `repos clone` will work automatically once git can
-authenticate.
+`osxkeychain`, `wincred`, or a custom script.  This works for any host,
+including GitHub.  Set one up with your hosting platform's instructions;
+`repos clone` will work automatically once git can authenticate.
 
-### HTTPS remotes — GitHub (`owner/repo` shorthand or `https://github.com/…`)
-
-For GitHub HTTPS remotes the easiest options are:
+For GitHub specifically, two additional shortcuts are available:
 
 ```bash
-# Option 1 — gh CLI (installs a credential helper automatically)
+# Option 1 — gh CLI (registers itself as a git credential helper automatically)
 gh auth login
 
 # Option 2 — personal-access token via environment variable
@@ -113,8 +111,7 @@ export GH_TOKEN="your_personal_access_token"
 because the `gh` CLI, when registered as git's credential helper (which
 `gh auth login` does automatically, and which GitHub Actions sets up by
 default), reads `GH_TOKEN` from the environment and supplies the token to
-git on request.  If `gh` is not your credential helper, set one up or use
-SSH instead.
+git on request.
 
 Public repositories on any host can be cloned without any credentials.
 
