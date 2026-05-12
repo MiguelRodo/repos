@@ -18,6 +18,10 @@ repository and executes it:
 repos run
 ```
 
+In script mode, `repos run` also runs the dependency setup step by default
+(`repos install-r-deps`) before executing scripts. Use `--skip-deps` to disable
+that setup step.
+
 ## Options
 
 | Flag | Description |

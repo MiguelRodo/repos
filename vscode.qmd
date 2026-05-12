@@ -54,8 +54,10 @@ workspace/
 
 ## `repos codespace`
 
-Inject the `GH_TOKEN` Codespaces secret into every managed repository and update
-its `devcontainer.json` Codespaces repository permissions.
+Set the repository-level Codespaces secret named `GH_TOKEN` for each managed
+GitHub repository (via `gh secret set --app codespaces`) and update matching
+`devcontainer.json` files with `customizations.codespaces.repositories`
+permissions entries.
 
 ```bash
 repos codespace
@@ -70,6 +72,12 @@ repos codespace
 | `--all` | Update all `devcontainer.json` files found under `.devcontainer/` |
 | `--permissions` | Codespaces permission level: `default`, `all`, or `contents` |
 | `--dry-run` | Preview secret/file updates without writing changes |
+
+Permission levels:
+
+- `default`: actions/contents write, packages read, workflows write
+- `all`: write-all
+- `contents`: contents write only
 
 ```bash
 # Use a custom list file
