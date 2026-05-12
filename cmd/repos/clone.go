@@ -49,6 +49,7 @@ func runClone(args []string) error {
 	fetchDeferred := fs.Bool("fetch-all-deferred", false, "deferred fetch mode")
 	fetchSingle := fs.Bool("fetch-single", false, "single fetch mode")
 	fetchAll := fs.Bool("fetch-all", false, "all fetch mode")
+	depth := fs.Int("depth", 0, "opt-in shallow clone depth")
 	force := fs.Bool("force", false, "ignore per-line flag overrides")
 	help := fs.Bool("help", false, "show help")
 	fs.BoolVar(help, "h", false, "show help")
@@ -82,6 +83,17 @@ func runClone(args []string) error {
 	if *fetchDeferred {
 		globalFetchMode = "deferred"
 	}
+	depthSet := false
+	for i := 0; i < len(processedArgs); i++ {
+		arg := processedArgs[i]
+		if arg == "--depth" || strings.HasPrefix(arg, "--depth=") {
+			depthSet = true
+			break
+		}
+	}
+	if depthSet && *depth <= 0 {
+		return errors.New("error: --depth must be a positive integer")
+	}
 
 	st := &state{
 		startDir:              cwd,
@@ -93,8 +105,11 @@ func runClone(args []string) error {
 		globalWorktreeForced:  false,
 		globalFetchMode:       globalFetchMode,
 		globalFetchModeForced: false,
+		globalDepth:           *depth,
+		globalDepthForced:     false,
 		cliWorktreeSet:        *globalWorktree,
 		cliFetchModeSet:       *fetchDeferred || *fetchSingle || *fetchAll,
+		cliDepthSet:           depthSet,
 		cliForce:              *force,
 		seenRemoteLocal:       map[string]string{},
 		plan:                  map[string]planInfo{},

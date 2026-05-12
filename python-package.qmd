@@ -58,6 +58,7 @@ from repos import clone
 clone(fetch_mode="deferred")  # default: fast clone, then restore wildcard refspec
 clone(fetch_mode="single")    # strict single-branch isolation
 clone(fetch_mode="all")       # full clone (all branches upfront)
+clone(depth=1)                # opt-in shallow clone
 ```
 
 ### Step 3 — Open in your IDE (optional)

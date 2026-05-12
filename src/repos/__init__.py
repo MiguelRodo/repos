@@ -498,6 +498,7 @@ def clone(
     debug: bool = False,
     debug_file: Optional[Union[bool, str]] = None,
     fetch_mode: Optional[str] = None,
+    depth: Optional[int] = None,
     **kwargs
 ):
     """
@@ -529,6 +530,7 @@ def clone(
             or specify an explicit path)
         fetch_mode: One of ``"deferred"`` (default), ``"single"``, or
             ``"all"``.  Overrides the global fetch mode for all repos.
+        depth: Optional shallow clone depth. Must be a positive integer.
         **kwargs: Additional keyword arguments (captured but ignored, for extensibility)
 
     Returns:
@@ -540,6 +542,7 @@ def clone(
         >>> clone(debug=True)
         >>> clone(fetch_mode="single")   # CI/CD — strict single-branch isolation
         >>> clone(fetch_mode="all")      # download all branches upfront
+        >>> clone(depth=1)               # opt-in shallow clone
     """
     script_args = []
 
@@ -567,6 +570,11 @@ def clone(
                 f"fetch_mode must be 'deferred', 'single', or 'all'; got: {fetch_mode!r}"
             )
         script_args.append(flag)
+
+    if depth is not None:
+        if not isinstance(depth, int) or depth <= 0:
+            raise ValueError(f"depth must be a positive integer; got: {depth!r}")
+        script_args.extend(["--depth", str(depth)])
 
     return run_script("helper/clone-repos.sh", script_args)
 

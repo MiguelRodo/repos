@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/MiguelRodo/repos/v2/internal/gitcmd"
@@ -33,8 +34,11 @@ type state struct {
 	globalWorktreeForced  bool
 	globalFetchMode       string
 	globalFetchModeForced bool
+	globalDepth           int
+	globalDepthForced     bool
 	cliWorktreeSet        bool
 	cliFetchModeSet       bool
+	cliDepthSet           bool
 	cliForce              bool
 	currentRepoHTTPS      string
 	fallbackRepoHTTPS     string
@@ -58,6 +62,7 @@ type instruction struct {
 	isWorktree  bool
 	isAtBranch  bool
 	fetchMode   string
+	depth       int
 }
 
 var ownerRepoRegex = regexp.MustCompile(`^[^/]+/[^/]+$`)
@@ -129,13 +134,14 @@ Run 'repos <command> --help' for more information.
 
 func cloneUsage() {
 	fmt.Print(`Usage: repos clone [--file <repo-list>] [--debug] [--debug-file [file]] [--worktree]
-                  [--fetch-all-deferred|--fetch-single|--fetch-all]
+                  [--fetch-all-deferred|--fetch-single|--fetch-all] [--depth <n>]
                   [--force]
 
 Fetch modes:
   --fetch-all-deferred   (default) clone with --single-branch then restore wildcard refspec
   --fetch-single         keep strict single-branch refspec
   --fetch-all            full clone of all branches
+  --depth <n>            opt-in shallow clone depth (must be > 0)
 
 Precedence:
   Per-line flags override global defaults by default.
@@ -234,7 +240,7 @@ func trimLine(line string) string {
 
 func isGlobalFlagToken(tok string) bool {
 	switch tok {
-	case "--codespaces", "--public", "--private", "--worktree", "--fetch-all-deferred", "--fetch-single", "--fetch-all", "--force":
+	case "--codespaces", "--public", "--private", "--worktree", "--fetch-all-deferred", "--fetch-single", "--fetch-all", "--force", "--depth":
 		return true
 	default:
 		return false
@@ -246,12 +252,56 @@ func lineIsGlobalFlagsOnly(line string) bool {
 	if len(parts) == 0 {
 		return false
 	}
-	for _, tok := range parts {
+	for i := 0; i < len(parts); i++ {
+		tok := parts[i]
+		if tok == "--depth" {
+			if i+1 >= len(parts) {
+				return false
+			}
+			i++
+			continue
+		}
+		if strings.HasPrefix(tok, "--depth=") {
+			if strings.TrimPrefix(tok, "--depth=") == "" {
+				return false
+			}
+			continue
+		}
 		if !isGlobalFlagToken(tok) {
 			return false
 		}
 	}
 	return true
+}
+
+func parseDepthValue(raw string) (int, error) {
+	depth, err := strconv.Atoi(strings.TrimSpace(raw))
+	if err != nil || depth <= 0 {
+		return 0, fmt.Errorf("error: invalid --depth value %q (must be a positive integer)", raw)
+	}
+	return depth, nil
+}
+
+func parseDepthToken(tokens []string, i int) (depth int, next int, ok bool, err error) {
+	tok := tokens[i]
+	if tok == "--depth" {
+		if i+1 >= len(tokens) {
+			return 0, i, true, errors.New("error: missing value for --depth")
+		}
+		d, derr := parseDepthValue(tokens[i+1])
+		if derr != nil {
+			return 0, i, true, derr
+		}
+		return d, i + 1, true, nil
+	}
+	if strings.HasPrefix(tok, "--depth=") {
+		d, derr := parseDepthValue(strings.TrimPrefix(tok, "--depth="))
+		if derr != nil {
+			return 0, i, true, derr
+		}
+		return d, i, true, nil
+	}
+	return 0, i, false, nil
 }
 
 func (s *state) applyGlobalFlagsFromFile() error {
@@ -277,7 +327,19 @@ func (s *state) applyGlobalFlagsFromFile() error {
 				break
 			}
 		}
-		for _, tok := range parts {
+		for i := 0; i < len(parts); i++ {
+			tok := parts[i]
+			if depth, next, ok, derr := parseDepthToken(parts, i); ok {
+				if derr != nil {
+					return derr
+				}
+				if !s.cliDepthSet {
+					s.globalDepth = depth
+					s.globalDepthForced = lineForce
+				}
+				i = next
+				continue
+			}
 			switch tok {
 			case "--worktree":
 				if !s.cliWorktreeSet {
@@ -329,10 +391,11 @@ func validateTargetDir(target string) error {
 }
 
 func (s *state) parseEffectiveLine(trimmed string, fallbackHTTPS string) (instruction, error) {
-	ins := instruction{fetchMode: s.globalFetchMode}
+	ins := instruction{fetchMode: s.globalFetchMode, depth: s.globalDepth}
 	ignoreLineFlags := s.cliForce
 	worktreeLocked := s.globalWorktreeForced
 	fetchModeLocked := s.globalFetchModeForced
+	depthLocked := s.globalDepthForced
 	parts := strings.Fields(trimmed)
 	if len(parts) == 0 {
 		return ins, nil
@@ -346,7 +409,18 @@ func (s *state) parseEffectiveLine(trimmed string, fallbackHTTPS string) (instru
 			return ins, err
 		}
 		useWorktree := s.globalWorktree
-		for _, tok := range rest {
+		for i := 0; i < len(rest); i++ {
+			tok := rest[i]
+			if depth, next, ok, derr := parseDepthToken(rest, i); ok {
+				if derr != nil {
+					return ins, derr
+				}
+				if !ignoreLineFlags && !depthLocked {
+					ins.depth = depth
+				}
+				i = next
+				continue
+			}
 			switch tok {
 			case "-w", "--worktree":
 				if !ignoreLineFlags && !worktreeLocked {
@@ -399,7 +473,18 @@ func (s *state) parseEffectiveLine(trimmed string, fallbackHTTPS string) (instru
 		return ins, fmt.Errorf("error: repository spec cannot start with a hyphen or contain '..': %s", first)
 	}
 	ins.repoSpec = first
-	for _, tok := range rest {
+	for i := 0; i < len(rest); i++ {
+		tok := rest[i]
+		if depth, next, ok, derr := parseDepthToken(rest, i); ok {
+			if derr != nil {
+				return ins, derr
+			}
+			if !ignoreLineFlags && !depthLocked {
+				ins.depth = depth
+			}
+			i = next
+			continue
+		}
 		switch tok {
 		case "-a", "--all-branches":
 			if !ignoreLineFlags && !fetchModeLocked {
@@ -622,7 +707,7 @@ func (s *state) ensureBranchFetchRefspec(base, branch string) {
 	}
 }
 
-func (s *state) ensureBaseExists(remote, base, fetchMode string) (int, error) {
+func (s *state) ensureBaseExists(remote, base, fetchMode string, depth int) (int, error) {
 	if _, err := gitcmd.RunGit(base, "rev-parse", "--is-inside-work-tree"); err == nil {
 		return 0, nil
 	}
@@ -636,6 +721,11 @@ func (s *state) ensureBaseExists(remote, base, fetchMode string) (int, error) {
 	cloneArgs := []string{"clone"}
 	if fetchMode != "all" {
 		cloneArgs = append(cloneArgs, "--single-branch")
+	} else if depth > 0 {
+		cloneArgs = append(cloneArgs, "--no-single-branch")
+	}
+	if depth > 0 {
+		cloneArgs = append(cloneArgs, "--depth", strconv.Itoa(depth))
 	}
 	cloneArgs = append(cloneArgs, "--", remote, base)
 	if _, err := gitcmd.RunGit("", cloneArgs...); err != nil {
@@ -703,6 +793,11 @@ func (s *state) cloneOneRepo(ins instruction) (int, error) {
 	cloneArgs := []string{"clone"}
 	if !ins.allBranches {
 		cloneArgs = append(cloneArgs, "--single-branch")
+	} else if ins.depth > 0 {
+		cloneArgs = append(cloneArgs, "--no-single-branch")
+	}
+	if ins.depth > 0 {
+		cloneArgs = append(cloneArgs, "--depth", strconv.Itoa(ins.depth))
 	}
 
 	if ref != "" {
@@ -899,7 +994,7 @@ func (s *state) processFile() error {
 					base = b
 				} else {
 					base = filepath.Join(s.parentDir, s.planBaseName(s.fallbackRepoHTTPS))
-					rc, e := s.ensureBaseExists(s.fallbackRepoHTTPS, base, ins.fetchMode)
+					rc, e := s.ensureBaseExists(s.fallbackRepoHTTPS, base, ins.fetchMode, ins.depth)
 					if e != nil {
 						err = e
 						lineRC = 1
@@ -953,7 +1048,7 @@ func (s *state) processFile() error {
 				} else {
 					if !seenBefore && s.planHasFull(thisRemoteHTTPS) {
 						base := filepath.Join(s.parentDir, s.planBaseName(thisRemoteHTTPS))
-						rc2, e2 := s.ensureBaseExists(thisRemoteHTTPS, base, ins.fetchMode)
+						rc2, e2 := s.ensureBaseExists(thisRemoteHTTPS, base, ins.fetchMode, ins.depth)
 						if e2 != nil {
 							err = e2
 							lineRC = 1
