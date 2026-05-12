@@ -412,12 +412,15 @@ func runScriptInTarget(t pipelineTarget, opts runOptions) runScriptResult {
 	}
 
 	scriptPath := filepath.Join(t.target.path, t.script)
-	if _, err := os.Stat(scriptPath); err != nil {
+	sinfo, err := os.Lstat(scriptPath)
+	if err != nil {
 		printPrefixedLine(t.target.name, "SKIP: no "+t.script+" found", nil)
 		return runScriptResult{skipped: true}
 	}
-	if err := os.Chmod(scriptPath, 0o755); err != nil {
-		printPrefixedLine(t.target.name, "Warning: could not chmod "+t.script+": "+err.Error(), nil)
+	if sinfo.Mode().IsRegular() {
+		if err := os.Chmod(scriptPath, 0o755); err != nil {
+			printPrefixedLine(t.target.name, "Warning: could not chmod "+t.script+": "+err.Error(), nil)
+		}
 	}
 
 	cmd := exec.Command("./" + t.script)

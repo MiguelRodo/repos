@@ -325,3 +325,46 @@ func assertFileExists(t *testing.T, path string) {
 		t.Fatalf("expected file %s to exist: %v", path, err)
 	}
 }
+
+func TestRunDoesNotChmodSymlinks(t *testing.T) {
+	tmp := t.TempDir()
+	sensitiveFile := filepath.Join(tmp, "sensitive")
+	if err := os.WriteFile(sensitiveFile, []byte("secret"), 0600); err != nil {
+		t.Fatalf("failed to write sensitive file: %v", err)
+	}
+
+	projectDir := filepath.Join(tmp, "project")
+	repo1 := filepath.Join(tmp, "repo-one")
+	mustMkdirAll(t, projectDir, repo1)
+
+	// Create a symlink named run.sh pointing to the sensitive file
+	scriptPath := filepath.Join(repo1, "run.sh")
+	if err := os.Symlink(sensitiveFile, scriptPath); err != nil {
+		t.Fatalf("failed to create symlink: %v", err)
+	}
+
+	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "example/repo-one\n")
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chdir(oldWD)
+	})
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatalf("chdir project dir: %v", err)
+	}
+
+	// runRun will attempt to run run.sh in repo-one
+	_ = runRun([]string{"--skip-deps"})
+
+	info, err := os.Stat(sensitiveFile)
+	if err != nil {
+		t.Fatalf("stat sensitive file: %v", err)
+	}
+
+	if info.Mode().Perm() != 0600 {
+		t.Fatalf("VULNERABILITY: sensitive file permissions changed to %o", info.Mode().Perm())
+	}
+}
