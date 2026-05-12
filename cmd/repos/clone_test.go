@@ -295,8 +295,7 @@ func TestRunCloneMissingBranchRequiresCreateFlag(t *testing.T) {
 		t.Fatalf("chdir project dir: %v", err)
 	}
 
-	var stderr string
-	stderr = captureStderr(t, func() {
+	stderr := captureStderr(t, func() {
 		err = runClone([]string{"-f", "repos.list"})
 	})
 	if err == nil {
@@ -368,8 +367,7 @@ func TestRunCloneWorktreeMissingBranchRequiresCreateFlag(t *testing.T) {
 		t.Fatalf("chdir project dir: %v", err)
 	}
 
-	var stderr string
-	stderr = captureStderr(t, func() {
+	stderr := captureStderr(t, func() {
 		err = runClone([]string{"-f", "repos.list"})
 	})
 	if err == nil {
