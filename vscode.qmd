@@ -70,7 +70,7 @@ repos codespace
 | `-f <file>` | Use a different list file (default: `repos.list`) |
 | `-d <path>` | Path to a `devcontainer.json` file (repeatable) |
 | `--all` | Update all `devcontainer.json` files found under `.devcontainer/` |
-| `--permissions` | Codespaces permission level: `default`, `all`, or `contents` |
+| `--permissions <level>` | Codespaces permission level (`default`, `all`, or `contents`) |
 | `--dry-run` | Preview secret/file updates without writing changes |
 
 Permission levels:
