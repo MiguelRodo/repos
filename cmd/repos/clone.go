@@ -203,6 +203,27 @@ func hasNonLocalRemotesInFile(reposFile string) (bool, error) {
 	return false, nil
 }
 
+// checkNonInteractiveAuthForClone verifies that at least one non-interactive
+// git authentication method is available before attempting remote clones.
+//
+// repos clone delegates all network operations to the system git binary, so
+// whatever auth git has configured for the remote's protocol is what gets used.
+// This check is a best-effort pre-flight: if none of the recognised methods are
+// present, git would eventually prompt for credentials — which is undesirable in
+// non-interactive environments like CI/CD.
+//
+// Accepted methods:
+//   - GH_TOKEN env var: git does not read this directly.  It works via the gh
+//     CLI acting as a git credential helper (configured automatically by
+//     "gh auth login" and by GitHub Actions).  When gh is the credential helper
+//     it reads GH_TOKEN from the environment and provides the token to git.
+//     This check therefore assumes that GH_TOKEN is only set in environments
+//     where gh is (or will be) the credential helper — e.g. GitHub Actions.
+//   - gh auth status: gh CLI is authenticated and will serve credentials to git.
+//   - SSH agent: SSH_AUTH_SOCK points to a socket with loaded keys, used for
+//     SSH remotes on any host (not just GitHub).
+//   - credential.helper: a git credential helper is configured, which handles
+//     HTTPS remotes on any host via the platform's own mechanism.
 func checkNonInteractiveAuthForClone() error {
 	if token := strings.TrimSpace(os.Getenv("GH_TOKEN")); token != "" {
 		return nil
