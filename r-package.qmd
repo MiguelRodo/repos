@@ -3,11 +3,8 @@ title: "R Package"
 toc: true
 ---
 
-The `repos` R package wraps the same Bash scripts used by the command-line
-tool, so every feature available at the terminal is also available from R.
-
-The package ships its own **bundled copy** of the CLI scripts, so all R
-functions work without requiring `repos` to be installed on your system `PATH`.
+The `repos` R package is a thin wrapper around the `repos` Go CLI. Every
+wrapper call dispatches to the installed `repos` binary.
 
 ## Installation
 
@@ -16,8 +13,8 @@ install.packages("devtools")
 devtools::install_github("MiguelRodo/repos")
 ```
 
-**System requirements:** `bash`, `git`, `curl`, and `jq` must be available on
-your `PATH`.
+**System requirements:** `repos` and `git` must be available on your `PATH`.
+For Codespaces support (`repos_codespace()`), `gh` must also be available.
 
 ## End-to-End Workflow
 
@@ -95,12 +92,9 @@ repos_install_cli(
 
 **Details**
 
-The R package uses its own bundled copy of the CLI for all R functions.
-However, if you also want to use `repos` directly from your terminal, this
-function installs the CLI system-wide.  Detects the operating system and prints
-the recommended installation command for that platform.  On Linux and macOS,
-passing `run = TRUE` will also execute the installer.  On Windows, only
-instructions are printed.
+The R package requires the `repos` binary to be installed on your system
+`PATH`. This helper prints installation instructions and can run the installer
+on Linux/macOS.
 
 **Returns:** Invisibly returns `NULL`.
 
@@ -120,20 +114,20 @@ repos_install_cli(run = TRUE)
 
 ### `repos_bundled_cli_version()` {#repos_bundled_cli_version}
 
-Return the version of the `repos` CLI bundled inside this package.
+Return the `repos` CLI version targeted by this package.
 
 ```r
 repos_bundled_cli_version()
 ```
 
-**Returns:** A character string with the bundled CLI version (e.g. `"1.1.0"`).
+**Returns:** A character string with the targeted CLI version (e.g. `"2.0.0"`).
 
 **Examples:**
 
 ```r
 library(repos)
 
-repos_bundled_cli_version()  # e.g. "1.1.0"
+repos_bundled_cli_version()  # e.g. "2.0.0"
 ```
 
 ---
@@ -179,7 +173,7 @@ repos(command, ...)
 | `command` | `character` | `"clone"`, `"workspace"`, `"codespace"`, `"codespaces"`, or `"run"` |
 | `...` | | Forwarded to the corresponding function |
 
-**Returns:** Invisibly returns the exit status of the script (0 for success).
+**Returns:** Invisibly returns the exit status of the command (0 for success).
 
 **Examples:**
 
@@ -204,7 +198,7 @@ repos_workspace(
   file       = NULL,   # path to a custom list file (default: repos.list)
   debug      = FALSE,  # write debug output to stderr
   debug_file = NULL,   # write debug output to a file (TRUE = auto-name, or a path)
-  ...                  # additional raw flags forwarded to vscode-workspace-add.sh
+  ...                  # additional raw flags forwarded to repos workspace
 )
 ```
 
@@ -217,7 +211,7 @@ repos_workspace(
 | `debug_file` | `logical` or `character` | `NULL` | Write debug output to a file |
 | `...` | | | Additional raw flags forwarded as-is |
 
-**Returns:** Invisibly returns the exit status of the script (0 for success).
+**Returns:** Invisibly returns the exit status of the command (0 for success).
 
 **Examples:**
 
@@ -243,11 +237,11 @@ Configure GitHub Codespaces authentication.
 repos_codespace(
   file         = NULL,  # path to a custom list file (default: repos.list)
   devcontainer = NULL,  # path(s) to devcontainer.json
-  permissions  = NULL,  # "all" or "contents" — passed to codespaces-auth-add.sh
-  tool         = NULL,  # force tool for codespaces-auth-add.sh ("jq" or "python")
+  permissions  = NULL,  # "default", "all", or "contents"
+  tool         = NULL,  # deprecated; ignored
   debug        = FALSE, # write debug output to stderr
   debug_file   = NULL,  # write debug output to a file (TRUE = auto-name, or a path)
-  ...                   # additional raw flags forwarded to codespaces-auth-add.sh
+  ...                   # additional raw flags forwarded to repos codespace
 )
 ```
 
@@ -257,13 +251,13 @@ repos_codespace(
 |---|---|---|---|
 | `file` | `character` | `NULL` | Path to repos list file (default: `repos.list`) |
 | `devcontainer` | `character` or `character vector` | `NULL` | Path(s) to `devcontainer.json` |
-| `permissions` | `character` | `NULL` | `"all"` or `"contents"` |
-| `tool` | `character` | `NULL` | Force `"jq"` or `"python"` for auth helper |
+| `permissions` | `character` | `NULL` | `"default"`, `"all"`, or `"contents"` |
+| `tool` | `character` | `NULL` | Deprecated; ignored |
 | `debug` | `logical` | `FALSE` | Print debug output to stderr |
 | `debug_file` | `logical` or `character` | `NULL` | Write debug output to a file |
 | `...` | | | Additional raw flags forwarded as-is |
 
-**Returns:** Invisibly returns the exit status of the script (0 for success).
+**Returns:** Invisibly returns the exit status of the command (0 for success).
 
 **Examples:**
 
@@ -296,11 +290,11 @@ repos_run(
   include          = NULL,   # repo name(s) to include
   exclude          = NULL,   # repo name(s) to skip
   ensure_setup     = FALSE,  # clone repos first (via repos clone)
-  skip_deps        = FALSE,  # skip install-r-deps.sh
+  skip_deps        = FALSE,  # skip install-r-deps
   dry_run          = FALSE,  # print what would run without executing
   verbose          = FALSE,  # verbose logging
   continue_on_error = FALSE, # keep running after a failure
-  ...                        # additional raw flags forwarded to run-pipeline.sh
+  ...                        # additional raw flags forwarded to repos run
 )
 ```
 
@@ -319,7 +313,7 @@ repos_run(
 | `continue_on_error` | `logical` | `FALSE` | Continue past failures |
 | `...` | | | Additional raw flags forwarded as-is |
 
-**Returns:** Invisibly returns the exit status of the script (0 for success).
+**Returns:** Invisibly returns the exit status of the command (0 for success).
 
 **Examples:**
 
@@ -372,12 +366,7 @@ Or set it in your shell before starting R:
 export GH_TOKEN="your_personal_access_token"
 ```
 
-## Bundled CLI vs. System CLI
-
-The R package ships a **bundled copy** of the Bash scripts that it uses for
-all R functions (`repos_run()`, `repos_workspace()`, etc.).  This bundled
-version is independent of any `repos` binary you may have installed on your
-system `PATH`.
+## Target CLI version vs. installed CLI
 
 You can inspect both versions at any time:
 
@@ -390,12 +379,8 @@ repos_installed_cli_version()   # system PATH version, or NULL
 
 ### Does installing the R package also install the `repos` CLI?
 
-**No.** The R package bundles its own copies of the Bash scripts, so all R
-functions (`repos_run()`, `repos_workspace()`, etc.) work without the `repos`
-command being on your `PATH`.
-
-If you also want to run `repos clone`, `repos run`, etc. directly from a
-terminal, install the CLI separately.  The easiest way is to call
+**No.** Installing the package does not install the `repos` command on your
+`PATH`. Install the CLI separately, then call
 `repos_install_cli()` from R:
 
 ```r

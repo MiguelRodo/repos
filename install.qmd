@@ -156,7 +156,7 @@ install.packages("devtools")
 devtools::install_github("MiguelRodo/repos")
 ```
 
-Requires `bash`, `git`, `curl`, and `jq` on your system.
+Requires `repos` and `git` on your system `PATH`.
 
 ### Python Package
 
@@ -172,8 +172,7 @@ cd repos
 pip install .
 ```
 
-Requires `bash`, `git`, `curl`, and `jq` on your system.  On Windows, use
-[Git for Windows](https://git-scm.com/download/win) or WSL.
+Requires `repos` and `git` on your system `PATH`.
 
 ---
 
