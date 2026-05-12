@@ -200,7 +200,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#repos_run" id="toc-repos_run" class="nav-link" data-scroll-target="#repos_run"><code>repos_run()</code></a></li>
   </ul></li>
   <li><a href="#github-authentication" id="toc-github-authentication" class="nav-link" data-scroll-target="#github-authentication">GitHub Authentication</a></li>
-  <li><a href="#bundled-cli-vs.-system-cli" id="toc-bundled-cli-vs.-system-cli" class="nav-link" data-scroll-target="#bundled-cli-vs.-system-cli">Bundled CLI vs.&nbsp;System CLI</a>
+  <li><a href="#target-cli-version-vs.-installed-cli" id="toc-target-cli-version-vs.-installed-cli" class="nav-link" data-scroll-target="#target-cli-version-vs.-installed-cli">Target CLI version vs.&nbsp;installed CLI</a>
   <ul class="collapse">
   <li><a href="#does-installing-the-r-package-also-install-the-repos-cli" id="toc-does-installing-the-r-package-also-install-the-repos-cli" class="nav-link" data-scroll-target="#does-installing-the-r-package-also-install-the-repos-cli">Does installing the R package also install the <code>repos</code> CLI?</a></li>
   </ul></li>
@@ -229,13 +229,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>The <code>repos</code> R package wraps the same Bash scripts used by the command-line tool, so every feature available at the terminal is also available from R.</p>
-<p>The package ships its own <strong>bundled copy</strong> of the CLI scripts, so all R functions work without requiring <code>repos</code> to be installed on your system <code>PATH</code>.</p>
+<p>The <code>repos</code> R package is a thin wrapper around the <code>repos</code> Go CLI. Every wrapper call dispatches to the installed <code>repos</code> binary.</p>
 <section id="installation" class="level2">
 <h2 class="anchored" data-anchor-id="installation">Installation</h2>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">"devtools"</span>)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"MiguelRodo/repos"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><strong>System requirements:</strong> <code>bash</code>, <code>git</code>, <code>curl</code>, and <code>jq</code> must be available on your <code>PATH</code>.</p>
+<p><strong>System requirements:</strong> <code>repos</code> and <code>git</code> must be available on your <code>PATH</code>. For Codespaces support (<code>repos_codespace()</code>), <code>gh</code> must also be available.</p>
 </section>
 <section id="end-to-end-workflow" class="level2">
 <h2 class="anchored" data-anchor-id="end-to-end-workflow">End-to-End Workflow</h2>
@@ -305,7 +304,7 @@ myorg/documentation</code></pre>
 </tbody>
 </table>
 <p><strong>Details</strong></p>
-<p>The R package uses its own bundled copy of the CLI for all R functions. However, if you also want to use <code>repos</code> directly from your terminal, this function installs the CLI system-wide. Detects the operating system and prints the recommended installation command for that platform. On Linux and macOS, passing <code>run = TRUE</code> will also execute the installer. On Windows, only instructions are printed.</p>
+<p>The R package requires the <code>repos</code> binary to be installed on your system <code>PATH</code>. This helper prints installation instructions and can run the installer on Linux/macOS.</p>
 <p><strong>Returns:</strong> Invisibly returns <code>NULL</code>.</p>
 <p><strong>Examples:</strong></p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(repos)</span>
@@ -319,13 +318,13 @@ myorg/documentation</code></pre>
 </section>
 <section id="repos_bundled_cli_version" class="level3">
 <h3 class="anchored" data-anchor-id="repos_bundled_cli_version"><code>repos_bundled_cli_version()</code></h3>
-<p>Return the version of the <code>repos</code> CLI bundled inside this package.</p>
+<p>Return the <code>repos</code> CLI version targeted by this package.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_bundled_cli_version</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><strong>Returns:</strong> A character string with the bundled CLI version (e.g.&nbsp;<code>"1.1.0"</code>).</p>
+<p><strong>Returns:</strong> A character string with the targeted CLI version (e.g.&nbsp;<code>"2.0.0"</code>).</p>
 <p><strong>Examples:</strong></p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(repos)</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_bundled_cli_version</span>()  <span class="co"># e.g. "1.1.0"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_bundled_cli_version</span>()  <span class="co"># e.g. "2.0.0"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <hr>
 </section>
 <section id="repos_installed_cli_version" class="level3">
@@ -375,7 +374,7 @@ myorg/documentation</code></pre>
 </tr>
 </tbody>
 </table>
-<p><strong>Returns:</strong> Invisibly returns the exit status of the script (0 for success).</p>
+<p><strong>Returns:</strong> Invisibly returns the exit status of the command (0 for success).</p>
 <p><strong>Examples:</strong></p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(repos)</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -393,7 +392,7 @@ myorg/documentation</code></pre>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">file       =</span> <span class="cn">NULL</span>,   <span class="co"># path to a custom list file (default: repos.list)</span></span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">debug      =</span> <span class="cn">FALSE</span>,  <span class="co"># write debug output to stderr</span></span>
 <span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">debug_file =</span> <span class="cn">NULL</span>,   <span class="co"># write debug output to a file (TRUE = auto-name, or a path)</span></span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  ...                  <span class="co"># additional raw flags forwarded to vscode-workspace-add.sh</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  ...                  <span class="co"># additional raw flags forwarded to repos workspace</span></span>
 <span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Parameters</strong></p>
 <table class="caption-top table">
@@ -438,7 +437,7 @@ myorg/documentation</code></pre>
 </tr>
 </tbody>
 </table>
-<p><strong>Returns:</strong> Invisibly returns the exit status of the script (0 for success).</p>
+<p><strong>Returns:</strong> Invisibly returns the exit status of the command (0 for success).</p>
 <p><strong>Examples:</strong></p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(repos)</span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -456,11 +455,11 @@ myorg/documentation</code></pre>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_codespace</span>(</span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">file         =</span> <span class="cn">NULL</span>,  <span class="co"># path to a custom list file (default: repos.list)</span></span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">devcontainer =</span> <span class="cn">NULL</span>,  <span class="co"># path(s) to devcontainer.json</span></span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">permissions  =</span> <span class="cn">NULL</span>,  <span class="co"># "all" or "contents" — passed to codespaces-auth-add.sh</span></span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">tool         =</span> <span class="cn">NULL</span>,  <span class="co"># force tool for codespaces-auth-add.sh ("jq" or "python")</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">permissions  =</span> <span class="cn">NULL</span>,  <span class="co"># "default", "all", or "contents"</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">tool         =</span> <span class="cn">NULL</span>,  <span class="co"># deprecated; ignored</span></span>
 <span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">debug        =</span> <span class="cn">FALSE</span>, <span class="co"># write debug output to stderr</span></span>
 <span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">debug_file   =</span> <span class="cn">NULL</span>,  <span class="co"># write debug output to a file (TRUE = auto-name, or a path)</span></span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>  ...                   <span class="co"># additional raw flags forwarded to codespaces-auth-add.sh</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>  ...                   <span class="co"># additional raw flags forwarded to repos codespace</span></span>
 <span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Parameters</strong></p>
 <table class="caption-top table">
@@ -495,13 +494,13 @@ myorg/documentation</code></pre>
 <td><code>permissions</code></td>
 <td><code>character</code></td>
 <td><code>NULL</code></td>
-<td><code>"all"</code> or <code>"contents"</code></td>
+<td><code>"default"</code>, <code>"all"</code>, or <code>"contents"</code></td>
 </tr>
 <tr class="even">
 <td><code>tool</code></td>
 <td><code>character</code></td>
 <td><code>NULL</code></td>
-<td>Force <code>"jq"</code> or <code>"python"</code> for auth helper</td>
+<td>Deprecated; ignored</td>
 </tr>
 <tr class="odd">
 <td><code>debug</code></td>
@@ -523,7 +522,7 @@ myorg/documentation</code></pre>
 </tr>
 </tbody>
 </table>
-<p><strong>Returns:</strong> Invisibly returns the exit status of the script (0 for success).</p>
+<p><strong>Returns:</strong> Invisibly returns the exit status of the command (0 for success).</p>
 <p><strong>Examples:</strong></p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(repos)</span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -548,11 +547,11 @@ myorg/documentation</code></pre>
 <span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">include          =</span> <span class="cn">NULL</span>,   <span class="co"># repo name(s) to include</span></span>
 <span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">exclude          =</span> <span class="cn">NULL</span>,   <span class="co"># repo name(s) to skip</span></span>
 <span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">ensure_setup     =</span> <span class="cn">FALSE</span>,  <span class="co"># clone repos first (via repos clone)</span></span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">skip_deps        =</span> <span class="cn">FALSE</span>,  <span class="co"># skip install-r-deps.sh</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">skip_deps        =</span> <span class="cn">FALSE</span>,  <span class="co"># skip install-r-deps</span></span>
 <span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">dry_run          =</span> <span class="cn">FALSE</span>,  <span class="co"># print what would run without executing</span></span>
 <span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">verbose          =</span> <span class="cn">FALSE</span>,  <span class="co"># verbose logging</span></span>
 <span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">continue_on_error =</span> <span class="cn">FALSE</span>, <span class="co"># keep running after a failure</span></span>
-<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>  ...                        <span class="co"># additional raw flags forwarded to run-pipeline.sh</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>  ...                        <span class="co"># additional raw flags forwarded to repos run</span></span>
 <span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Parameters</strong></p>
 <table class="caption-top table">
@@ -633,7 +632,7 @@ myorg/documentation</code></pre>
 </tr>
 </tbody>
 </table>
-<p><strong>Returns:</strong> Invisibly returns the exit status of the script (0 for success).</p>
+<p><strong>Returns:</strong> Invisibly returns the exit status of the command (0 for success).</p>
 <p><strong>Examples:</strong></p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(repos)</span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -674,9 +673,8 @@ myorg/documentation</code></pre>
 <p>Or set it in your shell before starting R:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GH_TOKEN</span><span class="op">=</span><span class="st">"your_personal_access_token"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
-<section id="bundled-cli-vs.-system-cli" class="level2">
-<h2 class="anchored" data-anchor-id="bundled-cli-vs.-system-cli">Bundled CLI vs.&nbsp;System CLI</h2>
-<p>The R package ships a <strong>bundled copy</strong> of the Bash scripts that it uses for all R functions (<code>repos_run()</code>, <code>repos_workspace()</code>, etc.). This bundled version is independent of any <code>repos</code> binary you may have installed on your system <code>PATH</code>.</p>
+<section id="target-cli-version-vs.-installed-cli" class="level2">
+<h2 class="anchored" data-anchor-id="target-cli-version-vs.-installed-cli">Target CLI version vs.&nbsp;installed CLI</h2>
 <p>You can inspect both versions at any time:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(repos)</span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -684,8 +682,7 @@ myorg/documentation</code></pre>
 <span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_installed_cli_version</span>()   <span class="co"># system PATH version, or NULL</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section id="does-installing-the-r-package-also-install-the-repos-cli" class="level3">
 <h3 class="anchored" data-anchor-id="does-installing-the-r-package-also-install-the-repos-cli">Does installing the R package also install the <code>repos</code> CLI?</h3>
-<p><strong>No.</strong> The R package bundles its own copies of the Bash scripts, so all R functions (<code>repos_run()</code>, <code>repos_workspace()</code>, etc.) work without the <code>repos</code> command being on your <code>PATH</code>.</p>
-<p>If you also want to run <code>repos clone</code>, <code>repos run</code>, etc. directly from a terminal, install the CLI separately. The easiest way is to call <code>repos_install_cli()</code> from R:</p>
+<p><strong>No.</strong> Installing the package does not install the <code>repos</code> command on your <code>PATH</code>. Install the CLI separately, then call <code>repos_install_cli()</code> from R:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(repos)</span>
 <span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Print OS-appropriate installation instructions</span></span>
