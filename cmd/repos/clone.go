@@ -225,7 +225,7 @@ func hasNonLocalRemotesInFile(reposFile string) (bool, error) {
 //
 // repos clone delegates all network operations to the system git binary, so
 // whatever auth git has configured for the remote's protocol is what gets used.
-// This check is a best-effort pre-flight: if none of the recognised methods are
+// This check is a best-effort pre-flight: if none of the recognized methods are
 // present, git would eventually prompt for credentials — which is undesirable in
 // non-interactive environments like CI/CD.
 //
