@@ -59,7 +59,7 @@ install a release `.deb` from the
 [Releases page](https://github.com/MiguelRodo/repos/releases):
 
 ```bash
-VERSION_REPOS=<version>
+VERSION_REPOS=1.2.6
 ARCH="$(dpkg --print-architecture)"
 wget "https://github.com/MiguelRodo/repos/releases/download/v${VERSION_REPOS}/repos_${VERSION_REPOS}_${ARCH}.deb"
 sudo dpkg -i "repos_${VERSION_REPOS}_${ARCH}.deb"
@@ -77,9 +77,11 @@ sudo dpkg -r repos
 
 ### Runtime Requirements
 
-- `git` is required for core multi-repo operations.
-- `gh` is required for `repos codespace` and `repos create`.
-- `Rscript` is required for `repos install-r-deps`.
+- Required for core usage:
+  - `git`
+- Required only for specific commands:
+  - `gh` (`repos codespace`, `repos create`)
+  - `Rscript` (`repos install-r-deps`)
 
 ---
 
