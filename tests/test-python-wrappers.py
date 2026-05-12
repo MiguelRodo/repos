@@ -2,6 +2,7 @@
 """Test Python wrapper functions with idiomatic syntax"""
 
 import sys
+import warnings
 from pathlib import Path
 
 # Add src to path to import repos module
@@ -107,10 +108,13 @@ def test_codespace_permissions():
     assert "all" in test_args["args"]
 
 def test_codespace_tool():
-    repos.codespace(tool="jq")
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        repos.codespace(tool="jq")
     assert test_args["command"] == "codespace"
     assert "-t" not in test_args["args"]
     assert "jq" not in test_args["args"]
+    assert any("codespace(tool=...)" in str(w.message) for w in caught)
 
 def test_codespace_debug():
     repos.codespace(debug=True)

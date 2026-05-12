@@ -7,6 +7,7 @@ A Python wrapper for the repos Go CLI that manages multiple related Git reposito
 import os
 import sys
 import subprocess
+import warnings
 from pathlib import Path
 from typing import Optional, List, Union
 
@@ -107,20 +108,18 @@ def install_cli(run: bool = False) -> None:
             print("Running user-level installer...")
             import tempfile
             tmp = os.path.join(tempfile.mkdtemp(), "repos-cli")
-            clone_ret = subprocess.run(
-                ["git", "clone", "https://github.com/MiguelRodo/repos.git", tmp],
-                check=False,
-            ).returncode
-            if clone_ret == 0:
-                ret = subprocess.run(
+            try:
+                subprocess.run(
+                    ["git", "clone", "https://github.com/MiguelRodo/repos.git", tmp],
+                    check=True,
+                )
+                subprocess.run(
                     ["bash", os.path.join(tmp, "install-local.sh")],
-                    check=False,
-                ).returncode
-            else:
-                ret = clone_ret
-            if ret != 0:
+                    check=True,
+                )
+            except subprocess.CalledProcessError as e:
                 print(
-                    f"Warning: installer exited with status {ret}."
+                    f"Warning: installer exited with status {e.returncode}."
                     " Check the output above for details.",
                     file=sys.stderr,
                 )
@@ -343,9 +342,10 @@ def codespace(
         script_args.extend(["--permissions", permissions])
 
     if tool is not None:
-        print(
-            "Warning: codespace(tool=...) is not supported by the Go CLI and will be ignored.",
-            file=sys.stderr,
+        warnings.warn(
+            "codespace(tool=...) is not supported by the Go CLI and will be ignored.",
+            DeprecationWarning,
+            stacklevel=2,
         )
 
     if debug:
