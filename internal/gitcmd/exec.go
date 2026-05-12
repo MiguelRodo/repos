@@ -54,7 +54,13 @@ func NonInteractiveGitEnv() []string {
 }
 
 func NonInteractiveHFEnv() []string {
-	env := os.Environ()
+	env := make([]string, 0, len(os.Environ())+1)
+	for _, entry := range os.Environ() {
+		if strings.HasPrefix(entry, "HF_TOKEN=") {
+			continue
+		}
+		env = append(env, entry)
+	}
 	if token, ok := os.LookupEnv("HF_TOKEN"); ok {
 		env = append(env, "HF_TOKEN="+token)
 	}

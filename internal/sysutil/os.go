@@ -107,10 +107,11 @@ func lineIsGlobalFlagsOnly(line string) bool {
 }
 
 func repoSpecWithoutRef(spec string) string {
-	if idx := strings.LastIndex(strings.TrimSpace(spec), "@"); idx > 0 {
-		return strings.TrimSpace(spec)[:idx]
+	trimmed := strings.TrimSpace(spec)
+	if idx := strings.LastIndex(trimmed, "@"); idx > 0 {
+		return trimmed[:idx]
 	}
-	return strings.TrimSpace(spec)
+	return trimmed
 }
 
 func isHuggingFaceSpec(spec string) bool {
