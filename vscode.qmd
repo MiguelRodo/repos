@@ -56,8 +56,8 @@ workspace/
 
 Set the repository-level Codespaces secret named `GH_TOKEN` for each managed
 GitHub repository (via `gh secret set --app codespaces`) and update matching
-`devcontainer.json` files with `customizations.codespaces.repositories`
-permissions entries.
+`devcontainer.json` files under
+`customizations.codespaces.repositories` permissions entries.
 
 ```bash
 repos codespace

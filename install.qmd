@@ -80,8 +80,8 @@ sudo dpkg -r repos
 - Required for core usage:
   - `git`
 - Required only for specific commands:
-  - authenticated `gh` (`repos codespace`, `repos create`), via `GH_TOKEN` or
-    `gh auth login`
+  - authenticated `gh` for `repos create` (use `GH_TOKEN` or `gh auth login`)
+  - `GH_TOKEN` (or `CODESPACES_TOKEN`) for `repos codespace`
   - `Rscript` (`repos install-r-deps`)
 
 ---
