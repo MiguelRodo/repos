@@ -99,17 +99,10 @@ pre-installed on macOS.
 
 ## Windows
 
-### Scoop (recommended)
+### Option 1: Installer Script (Recommended)
 
-```powershell
-scoop bucket add repos https://github.com/MiguelRodo/scoop-bucket
-scoop install repos
-```
-
-`git` and `jq` are installed automatically by Scoop. You will also need
-[Git for Windows](https://git-scm.com/download/win) for Bash support.
-
-### Manual
+Download and install the pre-compiled `repos.exe` into the first writable directory
+already present in your `PATH`:
 
 1. Clone the repository:
    ```powershell
@@ -120,10 +113,21 @@ scoop install repos
    ```powershell
    .\install.ps1
    ```
-3. The installer places `repos.exe` in the first writable directory already in your
-   current `PATH`.
 
-**Requirements:** PowerShell (with `Invoke-WebRequest`) and network access to GitHub releases.
+The installer downloads the latest `repos.exe` binary from GitHub releases and places
+it in the first writable directory in your current `PATH`.
+
+**Requirements:** PowerShell and network access to GitHub releases.
+
+### Option 2: Scoop
+
+```powershell
+scoop bucket add repos https://github.com/MiguelRodo/scoop-bucket
+scoop install repos
+```
+
+`git` and `jq` are installed automatically by Scoop. You will also need
+[Git for Windows](https://git-scm.com/download/win) for Bash support.
 
 ---
 
