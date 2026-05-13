@@ -554,7 +554,7 @@ func TestRunCloneHuggingFaceRoutesToCLIAndPassesHFToken(t *testing.T) {
 
 	projectDir := filepath.Join(tmp, "workspace")
 	mustInitWorkspaceRepo(t, projectDir, remote)
-	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "hf:datasets/acme/data@dev --fetch-all --worktree\n")
+	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "HF://datasets/acme/data@dev --fetch-all --worktree\n")
 
 	gitPath, err := exec.LookPath("git")
 	if err != nil {
@@ -583,7 +583,7 @@ done
 		t.Fatalf("write huggingface shim: %v", err)
 	}
 
-	t.Setenv("PATH", binDir)
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	t.Setenv("HF_TOKEN", "token-123")
 
 	oldWD, err := os.Getwd()

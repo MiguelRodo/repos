@@ -556,7 +556,7 @@ func isHuggingFaceSpec(s string) bool {
 func normalizeHuggingFaceSpec(spec string) string {
 	trimmed := strings.TrimSpace(spec)
 	if len(trimmed) >= 3 && strings.EqualFold(trimmed[:3], "hf:") {
-		return "hf:" + strings.TrimPrefix(trimmed[3:], "/")
+		return "hf:" + strings.TrimLeft(trimmed[3:], "/")
 	}
 	return trimmed
 }

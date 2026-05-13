@@ -184,3 +184,17 @@ hf:datasets/acme/data
 		t.Fatalf("expected warnings for ignored git-specific flags on huggingface line")
 	}
 }
+
+func TestSpecToHTTPSNormalizesHuggingFaceSlashes(t *testing.T) {
+	tests := []string{
+		"hf:datasets/acme/data",
+		"hf:/datasets/acme/data",
+		"hf://datasets/acme/data",
+		"HF://datasets/acme/data",
+	}
+	for _, in := range tests {
+		if got := SpecToHTTPS(in); got != "hf:datasets/acme/data" {
+			t.Fatalf("SpecToHTTPS(%q) = %q, want %q", in, got, "hf:datasets/acme/data")
+		}
+	}
+}
