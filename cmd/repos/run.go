@@ -467,8 +467,12 @@ func runScriptInTarget(t pipelineTarget, opts runOptions) runScriptResult {
 		printPrefixedLine(t.target.name, "SKIP: no "+t.script+" found", nil)
 		return runScriptResult{skipped: true}
 	}
-	if err := os.Chmod(scriptPath, 0o755); err != nil {
-		printPrefixedLine(t.target.name, "Warning: could not chmod "+t.script+": "+err.Error(), nil)
+	// Security: Use Lstat to ensure we don't follow symlinks when calling Chmod.
+	// os.Chmod follows symlinks on many platforms, which could lead to privilege escalation.
+	if info, err := os.Lstat(scriptPath); err == nil && info.Mode().IsRegular() {
+		if err := os.Chmod(scriptPath, 0o755); err != nil {
+			printPrefixedLine(t.target.name, "Warning: could not chmod "+t.script+": "+err.Error(), nil)
+		}
 	}
 
 	cmd := commandForScript(t.script)
