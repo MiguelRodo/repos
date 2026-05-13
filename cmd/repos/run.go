@@ -8,7 +8,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -248,13 +247,20 @@ func validateRunScriptPath(script string) error {
 	if script == "" {
 		return errors.New("script path cannot be empty")
 	}
-	if filepath.IsAbs(script) || path.IsAbs(filepath.ToSlash(script)) || strings.Contains(script, "..") || strings.HasPrefix(script, "-") {
+	if isAbsoluteScriptPath(script) || strings.Contains(script, "..") || strings.HasPrefix(script, "-") {
 		return fmt.Errorf("invalid script path: %s", script)
 	}
 	if !scriptPathCharPattern.MatchString(script) {
 		return fmt.Errorf("script path must only contain alphanumeric characters, dots, underscores, slashes, or hyphens: %s", script)
 	}
 	return nil
+}
+
+func isAbsoluteScriptPath(script string) bool {
+	if filepath.IsAbs(script) {
+		return true
+	}
+	return strings.HasPrefix(filepath.ToSlash(script), "/")
 }
 
 func (s *state) collectPipelineTargets(opts runOptions) ([]pipelineTarget, error) {
@@ -434,7 +440,9 @@ func runScriptInTarget(t pipelineTarget, opts runOptions) runScriptResult {
 
 func commandForScript(script string) *exec.Cmd {
 	if runtime.GOOS == "windows" {
-		return exec.Command("sh", filepath.ToSlash(script))
+		if _, err := exec.LookPath("sh"); err == nil {
+			return exec.Command("sh", filepath.ToSlash(script))
+		}
 	}
 	return exec.Command("./" + script)
 }
