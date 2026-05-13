@@ -203,9 +203,6 @@ workspace(
 
 **Returns:** `subprocess.CompletedProcess`
 
-In script mode, repos listed with `--dont-run` are skipped. Hugging Face
-dataset/model entries are also skipped automatically.
-
 **Examples:**
 
 ```python
@@ -249,6 +246,9 @@ codespace(
 | `debug_file` | `bool` or `str` | `None` | Write debug output to a file |
 
 **Returns:** `subprocess.CompletedProcess`
+
+In script mode, repos listed with `--dont-run` are skipped. Hugging Face
+dataset/model entries are also skipped automatically.
 
 **Examples:**
 

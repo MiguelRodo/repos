@@ -128,12 +128,13 @@ repository or `@branch` line.
 
 ## Pipeline-only per-line skip
 
-Use `--dont-run` on a repository line to keep that entry in the workspace but
-exclude it from `repos run` script mode:
+Use `--dont-run` on a repository line or `@branch` fallback line to keep that
+entry in the workspace but exclude it from `repos run` script mode:
 
 ```text
 myorg/backend
 myorg/generated-data --dont-run
+@staging --dont-run
 ```
 
 `--dont-run` is ignored by clone/workspace/setup commands.
