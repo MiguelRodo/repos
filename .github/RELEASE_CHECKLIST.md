@@ -1,0 +1,11 @@
+- [ ] Confirm GoReleaser artifacts are present for Linux, macOS, and Windows:
+  - Linux (`amd64`, `arm64`): `repos_<version>_linux_<arch>.tar.gz`
+  - macOS (`amd64`, `arm64`): `repos_<version>_darwin_<arch>.tar.gz`
+  - Windows (`amd64`, `arm64`): `repos_<version>_windows_<arch>.zip`
+  - Stable direct-download binaries: `repos_<os>_<arch>` and `repos_windows_<arch>.exe`
+- [ ] Verify release notes include the OS/arch install matrix and archive format mapping.
+- [ ] Verify release notes clarify that release assets are Go CLI binaries.
+- [ ] Verify release notes mention Python and R wrappers require an installed `repos` binary.
+- [ ] If relevant to the release, update linked package manager manifests/docs:
+  - Homebrew template/docs: `homebrew/repos.rb`, `homebrew/README.md`
+  - Scoop template/docs: `scoop/repos.json`, `scoop/README.md`
