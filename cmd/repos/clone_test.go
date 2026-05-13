@@ -616,7 +616,7 @@ done
 	}
 }
 
-func TestRunCloneHuggingFaceAuthIntegrationSkipsWithoutHFToken(t *testing.T) {
+func TestRunCloneHuggingFaceAuthIntegration(t *testing.T) {
 	enableBareRepoAccess(t)
 
 	privateRepo := strings.TrimSpace(os.Getenv("REPOS_TEST_HF_PRIVATE_REPO"))
