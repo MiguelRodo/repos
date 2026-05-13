@@ -167,7 +167,7 @@ func ParseList(r io.Reader, opts Options) ([]Instruction, error) {
 					return nil, fmt.Errorf("line %d: %w", lineNum, err)
 				}
 			} else if branch == "" {
-				return nil, fmt.Errorf("line %d: missing branch name", lineNum)
+				return nil, fmt.Errorf("line %d: missing branch/revision", lineNum)
 			}
 			useWorktree := globalWorktree
 			for _, tok := range rest {
