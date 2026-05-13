@@ -98,7 +98,11 @@ func TestRunCloneWorktreeAndFallbackTracking(t *testing.T) {
 	}
 
 	worktreeList := runGit(t, projectDir, "worktree", "list")
-	if !strings.Contains(normalizePathForCompare(worktreeList), normalizePathForCompare(worktreeDir)) {
+	resolvedWorktreeDir := worktreeDir
+	if ev, err := filepath.EvalSymlinks(worktreeDir); err == nil {
+		resolvedWorktreeDir = ev
+	}
+	if !strings.Contains(normalizePathForCompare(worktreeList), normalizePathForCompare(resolvedWorktreeDir)) {
 		t.Fatalf("expected %s in worktree list, got %q", worktreeDir, worktreeList)
 	}
 
