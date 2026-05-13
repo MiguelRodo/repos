@@ -2,16 +2,6 @@
 # Updated automatically by the version-and-release workflow.
 .bundled_cli_version <- "2.0.0"
 
-.script_to_command <- c(
-  "run-pipeline.sh" = "run",
-  "helper/clone-repos.sh" = "clone",
-  "clone-repos.sh" = "clone",
-  "helper/vscode-workspace-add.sh" = "workspace",
-  "vscode-workspace-add.sh" = "workspace",
-  "helper/codespaces-auth-add.sh" = "codespace",
-  "codespaces-auth-add.sh" = "codespace"
-)
-
 #' Return the repos CLI version targeted by this package
 #'
 #' The R package targets a specific `repos` CLI version. This function returns
@@ -149,19 +139,12 @@ repos_install_cli <- function(run = FALSE) {
 #' Internal helper that dispatches wrapper calls to the installed
 #' \code{repos} CLI.
 #'
-#' @param script_name Legacy script name mapped internally to a \code{repos}
-#'   subcommand.
+#' @param command repos subcommand name.
 #' @param args Character vector of arguments to pass to the subcommand.
 #' @return Invisibly returns the exit status of the \code{repos} command
 #'   (0 for success).
 #' @keywords internal
-run_repos_script <- function(script_name, args = character()) {
-  command <- unname(.script_to_command[[script_name]])
-
-  if (is.null(command)) {
-    stop("Unsupported script mapping: ", script_name)
-  }
-
+run_repos_script <- function(command, args = character()) {
   exit_status <- system2("repos", args = c(command, args))
   invisible(exit_status)
 }
@@ -363,7 +346,7 @@ repos_clone <- function(file = NULL, worktree = FALSE, debug = FALSE,
     args <- c(args, additional_args)
   }
 
-  run_repos_script("helper/clone-repos.sh", args = args)
+  run_repos_script("clone", args = args)
 }
 
 #' Generate VS Code Workspace File
@@ -421,7 +404,7 @@ repos_workspace <- function(file = NULL, debug = FALSE, debug_file = NULL, ...) 
     args <- c(args, additional_args)
   }
 
-  run_repos_script("helper/vscode-workspace-add.sh", args = args)
+  run_repos_script("workspace", args = args)
 }
 
 #' Configure GitHub Codespaces Authentication
@@ -502,7 +485,7 @@ repos_codespace <- function(file = NULL, devcontainer = NULL, permissions = NULL
     args <- c(args, additional_args)
   }
 
-  run_repos_script("helper/codespaces-auth-add.sh", args = args)
+  run_repos_script("codespace", args = args)
 }
 
 #' Run Pipeline Across Repositories
@@ -612,5 +595,5 @@ repos_run <- function(file = NULL, script = NULL, include = NULL, exclude = NULL
     args <- c(args, additional_args)
   }
   
-  run_repos_script("run-pipeline.sh", args = args)
+  run_repos_script("run", args = args)
 }

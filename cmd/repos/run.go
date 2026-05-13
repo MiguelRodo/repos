@@ -28,7 +28,7 @@ type runResult struct {
 type runOptions struct {
 	reposFile  string
 	concurrent bool
-	// script defaults to run.sh to match run-pipeline.sh behavior.
+	// script defaults to run.sh for pipeline mode.
 	script          string
 	include         map[string]struct{}
 	exclude         map[string]struct{}

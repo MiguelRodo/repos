@@ -234,7 +234,7 @@ func TestValidateRunScriptPath(t *testing.T) {
 			t.Fatalf("expected validateRunScriptPath(%q) to fail", script)
 		}
 	}
-	if err := validateRunScriptPath("scripts/run.sh"); err != nil {
+	if err := validateRunScriptPath("pipelines/run.sh"); err != nil {
 		t.Fatalf("expected valid script path, got error: %v", err)
 	}
 }

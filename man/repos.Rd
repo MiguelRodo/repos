@@ -11,25 +11,25 @@ repos(command, ...)
 Must be one of \code{"clone"}, \code{"workspace"}, \code{"codespace"},
 \code{"codespaces"}, or \code{"run"}.}
 
-\item{...}{Additional arguments passed to the underlying script.}
+\item{...}{Additional arguments passed to the underlying subcommand.}
 }
 \value{
-Invisibly returns the exit status of the script (0 for success).
+Invisibly returns the exit status of the command (0 for success).
 }
 \description{
 Dispatches to the appropriate repos subcommand.
 }
 \details{
-\code{repos("clone", ...)} delegates to \code{clone-repos.sh} (see
+\code{repos("clone", ...)} delegates to \code{repos clone} (see
 \code{\link{repos_clone}}).
 
-\code{repos("workspace", ...)} delegates to \code{vscode-workspace-add.sh} (see
+\code{repos("workspace", ...)} delegates to \code{repos workspace} (see
 \code{\link{repos_workspace}}).
 
 \code{repos("codespace", ...)} / \code{repos("codespaces", ...)} delegates to
-\code{codespaces-auth-add.sh} (see \code{\link{repos_codespace}}).
+\code{repos codespace} (see \code{\link{repos_codespace}}).
 
-\code{repos("run", ...)} delegates to \code{run-pipeline.sh} (see
+\code{repos("run", ...)} delegates to \code{repos run} (see
 \code{\link{repos_run}}).
 }
 \examples{

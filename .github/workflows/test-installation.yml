@@ -43,8 +43,7 @@ jobs:
       
       - name: Test Python API
         run: |
-          python -c "from repos import get_script_path, run_script; print('Python API works')"
-          python -c "from repos import get_script_path; path = get_script_path('run-pipeline.sh'); print(f'Script path: {path}')"
+          python -c "from repos import clone, workspace, codespace, run; print('Python API works')"
           echo "Python package installation test passed"
 
   # Test R package installation
@@ -133,17 +132,6 @@ jobs:
           repos --help || true
           echo "repos command is available"
       
-      - name: Verify script installation
-        run: |
-          test -f /usr/share/repos/scripts/run-pipeline.sh || exit 1
-          echo "Debian package installation test passed"
-      
-      - name: Run existing tests
-        run: |
-          cd tests
-          ./test-auth-check.sh || true
-          echo "Debian package tests completed"
-
   # Test local installation (Ubuntu without sudo)
   test-local-installation:
     runs-on: ubuntu-latest
@@ -178,10 +166,6 @@ jobs:
           export PATH="$HOME/.local/bin:$PATH"
           bash install-local.sh
 
-      - name: Run installer regression test
-        run: |
-          bash tests/test-install-local-binary.sh
-      
       - name: Verify repos command is available
         run: |
           which repos
@@ -309,7 +293,7 @@ jobs:
           & (Join-Path $installDir "repos.exe") --help
           Write-Host "Windows manual installation test passed"
 
-  # Test from source (direct script usage)
+  # Test from source (Go binary)
   test-from-source:
     runs-on: ubuntu-latest
     permissions:
@@ -322,24 +306,14 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git curl jq bash
+          sudo apt-get install -y git curl
       
-      - name: Make scripts executable
+      - name: Build repos binary from source
         run: |
-          chmod +x scripts/*.sh
-      
-      - name: Run test suite
-        run: |
-          cd tests
-          # Run a subset of tests to verify functionality
-          ./test-auth-check.sh
-          echo "From source tests passed"
-      
-      - name: Test other scripts
-        run: |
-          ./scripts/run-pipeline.sh --help || true
-          ./scripts/add-branch.sh --help || true
-          echo "From source installation test passed"
+          cd cmd/repos
+          go build -o /tmp/repos .
+          /tmp/repos --help
+          echo "From source binary test passed"
 
   # Summary job to ensure all tests pass
   test-summary:

@@ -30,7 +30,7 @@ repos_codespace(
 (auto-generated if \code{TRUE})}
 
 \item{...}{Additional arguments passed directly to the
-\code{codespaces-auth-add.sh} script as-is.}
+\code{repos codespace} as-is.}
 }
 \value{
 Invisibly returns the exit status of the script (0 for success).
@@ -40,7 +40,7 @@ Inject the \code{GH_TOKEN} Codespaces secret into every cloned repository
 that has a \code{devcontainer.json}.
 }
 \details{
-This function is a wrapper around \code{codespaces-auth-add.sh}.
+This function is a wrapper around \code{repos codespace}.
 }
 \examples{
 \dontrun{

@@ -8,7 +8,6 @@ import os
 import sys
 import subprocess
 import warnings
-from pathlib import Path
 from typing import Optional, List, Union
 
 __version__ = "2.0.0"
@@ -16,17 +15,6 @@ __version__ = "2.0.0"
 # Version of the repos CLI targeted by this package.
 # Updated automatically by the version-and-release workflow.
 _BUNDLED_CLI_VERSION = "2.0.0"
-
-_SCRIPT_TO_COMMAND = {
-    "run-pipeline.sh": "run",
-    "helper/clone-repos.sh": "clone",
-    "clone-repos.sh": "clone",
-    "helper/vscode-workspace-add.sh": "workspace",
-    "vscode-workspace-add.sh": "workspace",
-    "helper/codespaces-auth-add.sh": "codespace",
-    "codespaces-auth-add.sh": "codespace",
-}
-
 
 def _warn_installer_failure(step: str, returncode: int) -> None:
     print(
@@ -168,47 +156,6 @@ def install_cli(run: bool = False) -> None:
         print("  https://miguelrodo.github.io/repos/install.html\n")
 
 
-def get_script_path(script_name="run-pipeline.sh"):
-    """
-    Find the path to a repos script.
-    
-    Args:
-        script_name: Name of the script file (e.g., "helper/clone-repos.sh")
-        
-    Returns:
-        Path to the script file
-        
-    Raises:
-        FileNotFoundError: If the script cannot be found
-    """
-    # Try to find the script using importlib.resources (Python 3.7+)
-    try:
-        if sys.version_info >= (3, 9):
-            from importlib.resources import files
-            script_path = files('repos').joinpath('scripts', script_name)
-            if script_path.is_file():
-                return str(script_path)
-        else:
-            # Fallback for Python 3.7-3.8
-            import importlib.resources as pkg_resources
-            with pkg_resources.path('repos.scripts', script_name) as p:
-                if p.is_file():
-                    return str(p)
-    except (ImportError, FileNotFoundError, AttributeError):
-        pass
-    
-    # Fallback: use __file__ relative path
-    module_dir = Path(__file__).parent
-    script_path = module_dir / 'scripts' / script_name
-    
-    if script_path.is_file():
-        return str(script_path)
-    
-    raise FileNotFoundError(
-        f"Cannot find {script_name}. Make sure the package is properly installed."
-    )
-
-
 def run_repos_command(command: str, args=None):
     """
     Run the installed repos CLI with a subcommand and arguments.
@@ -217,27 +164,6 @@ def run_repos_command(command: str, args=None):
     if args:
         cmd.extend(args)
     return subprocess.run(cmd, check=True, text=True)
-
-
-def run_script(script_name="run-pipeline.sh", args=None):
-    """
-    Map a legacy script name to a repos subcommand and execute it.
-    
-    Args:
-        script_name: Legacy script name (e.g., "helper/clone-repos.sh")
-        args: List of arguments to pass to the mapped repos subcommand
-        
-    Returns:
-        subprocess.CompletedProcess object
-        
-    Raises:
-        FileNotFoundError: If the script name cannot be mapped to a repos subcommand
-        subprocess.CalledProcessError: If the repos command exits with non-zero status
-    """
-    command = _SCRIPT_TO_COMMAND.get(script_name)
-    if command is None:
-        raise FileNotFoundError(f"Unsupported script '{script_name}' for Go CLI wrapper.")
-    return run_repos_command(command, args)
 
 
 def workspace(
@@ -279,7 +205,7 @@ def workspace(
         else:
             script_args.extend(["--debug-file", debug_file])
 
-    return run_script("helper/vscode-workspace-add.sh", script_args)
+    return run_repos_command("workspace", script_args)
 
 
 def workspace_raw(*args):
@@ -287,7 +213,7 @@ def workspace_raw(*args):
     Generate or update the VS Code workspace file (raw argument passing).
 
     Args:
-        *args: Command-line arguments to pass directly to vscode-workspace-add.sh
+        *args: Command-line arguments to pass directly to repos workspace
 
     Returns:
         subprocess.CompletedProcess object
@@ -295,7 +221,7 @@ def workspace_raw(*args):
     Examples:
         >>> workspace_raw("-f", "custom.list")
     """
-    return run_script("helper/vscode-workspace-add.sh", list(args))
+    return run_repos_command("workspace", list(args))
 
 
 def codespace(
@@ -366,7 +292,7 @@ def codespace(
         else:
             script_args.extend(["--debug-file", debug_file])
 
-    return run_script("helper/codespaces-auth-add.sh", script_args)
+    return run_repos_command("codespace", script_args)
 
 
 def codespace_raw(*args):
@@ -374,7 +300,7 @@ def codespace_raw(*args):
     Configure GitHub Codespaces authentication (raw argument passing).
 
     Args:
-        *args: Command-line arguments to pass directly to codespaces-auth-add.sh
+        *args: Command-line arguments to pass directly to repos codespace
 
     Returns:
         subprocess.CompletedProcess object
@@ -382,7 +308,7 @@ def codespace_raw(*args):
     Examples:
         >>> codespace_raw("-d", ".devcontainer/devcontainer.json")
     """
-    return run_script("helper/codespaces-auth-add.sh", list(args))
+    return run_repos_command("codespace", list(args))
 
 
 def run(
@@ -469,7 +395,7 @@ def run(
     if continue_on_error:
         script_args.append("--continue-on-error")
     
-    return run_script("run-pipeline.sh", script_args)
+    return run_repos_command("run", script_args)
 
 
 def run_raw(*args):
@@ -480,7 +406,7 @@ def run_raw(*args):
     For idiomatic Python usage, use run() with keyword arguments instead.
     
     Args:
-        *args: Command-line arguments to pass directly to run-pipeline.sh
+        *args: Command-line arguments to pass directly to repos run
         
     Returns:
         subprocess.CompletedProcess object
@@ -490,7 +416,7 @@ def run_raw(*args):
         >>> run_raw("--script", "build.sh", "--dry-run")
         >>> run_raw("-f", "custom.list", "--continue-on-error")
     """
-    return run_script("run-pipeline.sh", list(args))
+    return run_repos_command("run", list(args))
 
 
 def clone(
@@ -582,7 +508,7 @@ def clone(
             raise ValueError(f"depth must be a positive integer; got: {depth!r}")
         script_args.extend(["--depth", str(depth)])
 
-    return run_script("helper/clone-repos.sh", script_args)
+    return run_repos_command("clone", script_args)
 
 
 def clone_raw(*args):
@@ -590,7 +516,7 @@ def clone_raw(*args):
     Clone repositories listed in a repos.list file (raw argument passing).
 
     Args:
-        *args: Command-line arguments to pass directly to clone-repos.sh
+        *args: Command-line arguments to pass directly to repos clone
 
     Returns:
         subprocess.CompletedProcess object
@@ -599,4 +525,4 @@ def clone_raw(*args):
         >>> clone_raw("-f", "my-repos.list")
         >>> clone_raw("--debug")
     """
-    return run_script("helper/clone-repos.sh", list(args))
+    return run_repos_command("clone", list(args))
