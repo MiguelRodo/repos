@@ -616,7 +616,7 @@ done
 	}
 }
 
-func TestRunCloneHuggingFaceCloneSucceedsWithoutHFTokenOrAuthCheck(t *testing.T) {
+func TestRunCloneHuggingFaceNoAuthRequired(t *testing.T) {
 	enableBareRepoAccess(t)
 
 	tmp := t.TempDir()
