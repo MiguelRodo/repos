@@ -39,6 +39,24 @@ repository as the remote.  If the file begins with bare `@branch` lines and no
 repository has been listed yet, the current local repository's own remote is
 used as the fallback.
 
+## Hugging Face Repositories
+
+Use the `hf:` prefix to download Hugging Face repositories:
+
+```text
+hf:datasets/huggingface/stack
+hf:datasets/huggingface/stack@main
+```
+
+`hf://...` and mixed-case HF prefixes are normalized to canonical `hf:<path>`
+format. Bare `@revision` lines use the same fallback semantics as Git entries.
+
+Hugging Face entries require `huggingface-cli`:
+
+```bash
+pip install huggingface_hub[cli]
+```
+
 ## Custom Target Directory
 
 Add a name after the repository to clone into a different directory:

@@ -18,6 +18,7 @@ you want:
 myorg/data-curation
 myorg/analysis
 myorg/documentation
+hf:datasets/huggingface/stack
 ```
 
 Then run:
@@ -28,6 +29,8 @@ repos clone
 
 This clones all listed repositories into the parent directory of your current
 location.
+Hugging Face entries (`hf:...`) require `huggingface-cli`
+(`pip install huggingface_hub[cli]`).
 
 By default, `repos clone` uses `--fetch-all-deferred`: a fast single-branch
 clone plus immediate wildcard fetch-refspec restoration. You can also use
@@ -45,7 +48,8 @@ clone plus immediate wildcard fetch-refspec restoration. You can also use
 - `repos install-r-deps` — install R dependencies across managed repos
 
 `repos.list` supports specific branches (`owner/repo@branch`), fallback
-`@branch` entries, worktrees, visibility flags, and global flags.
+`@branch` entries, Hugging Face entries (`hf:owner/repo@revision`), worktrees,
+visibility flags, and global flags.
 → [repos.list reference](repos-list.html)
 
 **IDE integration** — generate a VS Code multi-root workspace file
