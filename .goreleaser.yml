@@ -8,6 +8,13 @@ builds:
     goarch:
       - amd64
       - arm64
+  - id: repos-darwin
+    main: ./cmd/repos
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
   - id: repos-windows
     main: ./cmd/repos
     goos:
@@ -33,8 +40,30 @@ nfpms:
 archives:
   - id: tarballs
     format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
   # Bare binaries with version-agnostic names so `releases/latest/download` URLs
   # remain stable across releases (e.g. repos_linux_amd64, repos_windows_amd64.exe).
   - id: binaries
     format: binary
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+
+release:
+  footer: |
+    ## Install matrix
+
+    | OS | Architectures | Release archive |
+    | --- | --- | --- |
+    | Linux | amd64, arm64 | `repos_{{ .Version }}_linux_<arch>.tar.gz` |
+    | macOS | amd64, arm64 | `repos_{{ .Version }}_darwin_<arch>.tar.gz` |
+    | Windows | amd64, arm64 | `repos_{{ .Version }}_windows_<arch>.zip` |
+
+    Also published for installer scripts:
+
+    - `repos_<os>_<arch>` (Linux/macOS)
+    - `repos_windows_<arch>.exe` (Windows)
+
+    `repos` release assets are the Go CLI binaries.
+    Python and R packages are wrappers that call the installed `repos` binary.
+    See [install docs](https://miguelrodo.github.io/repos/install.html), Homebrew formula docs (`homebrew/README.md`), and Scoop manifest docs (`scoop/README.md`).

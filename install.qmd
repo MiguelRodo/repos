@@ -7,6 +7,17 @@ toc: true
 Install it via system package managers, release installers, or from source.
 Optional R and Python wrappers dispatch to the installed `repos` binary.
 
+## Release asset matrix
+
+GitHub Releases publish Go CLI binaries for:
+
+- Linux (`amd64`, `arm64`) as `.tar.gz`
+- macOS (`amd64`, `arm64`) as `.tar.gz`
+- Windows (`amd64`, `arm64`) as `.zip` (plus `.exe` bare binaries for installer scripts)
+
+Python and R components are wrappers around the same CLI and are platform-neutral.
+Install the wrapper package (`pip`/`R`) and ensure `repos` is installed on `PATH`.
+
 ## Ubuntu / Debian
 
 ### Option 1: Install from APT Repository (Recommended)
