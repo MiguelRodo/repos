@@ -61,9 +61,10 @@ release:
 
     Also published for installer scripts:
 
-    - `repos_<os>_<arch>` (Linux/macOS)
+    - `repos_linux_<arch>`
+    - `repos_darwin_<arch>`
     - `repos_windows_<arch>.exe` (Windows)
 
     `repos` release assets are the Go CLI binaries.
     Python and R packages are wrappers that call the installed `repos` binary.
-    See [install docs](https://miguelrodo.github.io/repos/install.html), Homebrew formula docs (`homebrew/README.md`), and Scoop manifest docs (`scoop/README.md`).
+    See [install docs](https://miguelrodo.github.io/repos/install.html), [Homebrew formula docs](https://github.com/MiguelRodo/repos/blob/main/homebrew/README.md), and [Scoop manifest docs](https://github.com/MiguelRodo/repos/blob/main/scoop/README.md).
