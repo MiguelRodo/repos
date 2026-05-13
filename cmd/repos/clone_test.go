@@ -704,6 +704,123 @@ done
 	}
 }
 
+func TestRunCloneHuggingFaceFallbackAllowsNonGitRevision(t *testing.T) {
+	enableBareRepoAccess(t)
+
+	tmp := t.TempDir()
+	remotes := filepath.Join(tmp, "remotes")
+	mustMkdir(t, remotes)
+	remote := createBareRepo(t, remotes, "repo-one")
+
+	projectDir := filepath.Join(tmp, "workspace")
+	mustInitWorkspaceRepo(t, projectDir, remote)
+	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "hf:datasets/acme/data\n@main~1\n")
+
+	gitPath, err := exec.LookPath("git")
+	if err != nil {
+		t.Fatalf("lookpath git: %v", err)
+	}
+	binDir := filepath.Join(tmp, "bin-with-hf")
+	mustMkdir(t, binDir)
+	if err := os.Symlink(gitPath, filepath.Join(binDir, "git")); err != nil {
+		t.Fatalf("symlink git: %v", err)
+	}
+
+	logFile := filepath.Join(tmp, "hf.log")
+	hfShim := filepath.Join(binDir, "huggingface-cli")
+	script := fmt.Sprintf(`#!/bin/sh
+echo "$@" >> %q
+while [ "$#" -gt 0 ]; do
+  if [ "$1" = "--local-dir" ]; then
+    shift
+    mkdir -p "$1"
+  fi
+  shift
+done
+`, logFile)
+	if err := os.WriteFile(hfShim, []byte(script), 0o755); err != nil {
+		t.Fatalf("write huggingface shim: %v", err)
+	}
+
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(oldWD); err != nil {
+			t.Logf("restore working directory: %v", err)
+		}
+	})
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatalf("chdir project dir: %v", err)
+	}
+
+	if err := runClone([]string{"-f", "repos.list"}); err != nil {
+		t.Fatalf("runClone returned error: %v", err)
+	}
+
+	content, err := os.ReadFile(logFile)
+	if err != nil {
+		t.Fatalf("read hf log: %v", err)
+	}
+	logs := string(content)
+	if !strings.Contains(logs, "download datasets/acme/data --revision main~1 --local-dir") {
+		t.Fatalf("expected fallback @revision to pass through for hf clone, got: %s", logs)
+	}
+}
+
+func TestRunCloneHuggingFaceRejectsOptionStyleRepoID(t *testing.T) {
+	enableBareRepoAccess(t)
+
+	tmp := t.TempDir()
+	remotes := filepath.Join(tmp, "remotes")
+	mustMkdir(t, remotes)
+	remote := createBareRepo(t, remotes, "repo-one")
+
+	projectDir := filepath.Join(tmp, "workspace")
+	mustInitWorkspaceRepo(t, projectDir, remote)
+	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "hf:-malicious\n")
+
+	gitPath, err := exec.LookPath("git")
+	if err != nil {
+		t.Fatalf("lookpath git: %v", err)
+	}
+	binDir := filepath.Join(tmp, "bin-with-hf")
+	mustMkdir(t, binDir)
+	if err := os.Symlink(gitPath, filepath.Join(binDir, "git")); err != nil {
+		t.Fatalf("symlink git: %v", err)
+	}
+	hfShim := filepath.Join(binDir, "huggingface-cli")
+	if err := os.WriteFile(hfShim, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatalf("write huggingface shim: %v", err)
+	}
+
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(oldWD); err != nil {
+			t.Logf("restore working directory: %v", err)
+		}
+	})
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatalf("chdir project dir: %v", err)
+	}
+
+	err = runClone([]string{"-f", "repos.list"})
+	if err == nil {
+		t.Fatalf("expected option-style huggingface repo id to be rejected")
+	}
+	if !strings.Contains(err.Error(), "clone finished with errors") {
+		t.Fatalf("expected clone failure error, got: %v", err)
+	}
+}
+
 func TestRunCloneHuggingFaceAuthIntegration(t *testing.T) {
 	enableBareRepoAccess(t)
 

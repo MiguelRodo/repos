@@ -416,10 +416,14 @@ func (s *state) parseEffectiveLine(trimmed string, fallbackHTTPS string) (instru
 
 	if strings.HasPrefix(first, "@") {
 		branch := strings.TrimPrefix(first, "@")
-		if err := validateBranch(branch); err != nil {
-			return ins, err
-		}
 		repoType := repoTypeFromSpec(fallbackHTTPS)
+		if repoType != repoTypeHuggingFace {
+			if err := validateBranch(branch); err != nil {
+				return ins, err
+			}
+		} else if branch == "" {
+			return ins, errors.New("error: missing branch name")
+		}
 		useWorktree := s.globalWorktree
 		for i := 0; i < len(rest); i++ {
 			tok := rest[i]
@@ -786,7 +790,7 @@ func (s *state) ensureBaseExists(remote, base, fetchMode string, depth int) (int
 
 func (s *state) cloneOneRepo(ins instruction) (int, error) {
 	repoURLNoRef, ref := splitRepoSpec(ins.repoSpec)
-	if ref != "" {
+	if ref != "" && ins.repoType != repoTypeHuggingFace {
 		if err := validateBranch(ref); err != nil {
 			return 1, err
 		}
@@ -901,7 +905,13 @@ func (s *state) cloneHuggingFaceRepo(remoteKey, repoSpec, ref, dest string) (int
 		ref = "main"
 	}
 	normalizedSpec := parser.SpecToHTTPS(repoSpec)
-	hfPath := strings.TrimPrefix(normalizedSpec, "hf:")
+	hfPath := strings.TrimLeft(strings.TrimPrefix(normalizedSpec, "hf:"), "/")
+	if hfPath == "" {
+		return 1, fmt.Errorf("error: invalid huggingface repo spec %q", repoSpec)
+	}
+	if strings.HasPrefix(hfPath, "-") {
+		return 1, fmt.Errorf("error: invalid huggingface repo id %q", hfPath)
+	}
 	args := []string{"download", hfPath, "--revision", ref, "--local-dir", dest}
 	fmt.Printf("Downloading %s → %s (revision %s)\n", remoteKey, dest, ref)
 	if _, err := gitcmd.RunHuggingFaceCLI("", args...); err != nil {

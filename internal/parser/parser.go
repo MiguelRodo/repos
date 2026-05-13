@@ -158,13 +158,17 @@ func ParseList(r io.Reader, opts Options) ([]Instruction, error) {
 
 		if strings.HasPrefix(first, "@") {
 			branch := strings.TrimPrefix(first, "@")
-			if err := validateBranch(branch); err != nil {
-				return nil, fmt.Errorf("line %d: %w", lineNum, err)
-			}
 			if fallbackRemote == "" {
 				return nil, fmt.Errorf("line %d: no fallback repository available for %q", lineNum, trimmed)
 			}
 			repoType := repoTypeFromSpec(fallbackRemote)
+			if repoType != repoTypeHuggingFace {
+				if err := validateBranch(branch); err != nil {
+					return nil, fmt.Errorf("line %d: %w", lineNum, err)
+				}
+			} else if branch == "" {
+				return nil, fmt.Errorf("line %d: missing branch name", lineNum)
+			}
 			useWorktree := globalWorktree
 			for _, tok := range rest {
 				switch tok {
@@ -234,14 +238,14 @@ func ParseList(r io.Reader, opts Options) ([]Instruction, error) {
 		if strings.HasPrefix(repoNoRef, "-") || strings.Contains(repoNoRef, "..") {
 			return nil, fmt.Errorf("line %d: invalid repository spec %q", lineNum, first)
 		}
-		if branch != "" {
+		ins.RepoType = repoTypeFromSpec(repoNoRef)
+		if branch != "" && ins.RepoType != repoTypeHuggingFace {
 			if err := validateBranch(branch); err != nil {
 				return nil, fmt.Errorf("line %d: %w", lineNum, err)
 			}
 		}
 		ins.Branch = branch
 		ins.CloneURL = repoNoRef
-		ins.RepoType = repoTypeFromSpec(repoNoRef)
 		ins.RemoteURL = specToHTTPS(repoNoRef)
 
 		for _, tok := range rest {
