@@ -37,6 +37,3 @@ Issues = "https://github.com/MiguelRodo/repos/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-
-[tool.setuptools.package-data]
-repos = ["scripts/**/*"]

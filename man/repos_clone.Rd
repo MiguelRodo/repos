@@ -40,7 +40,7 @@ One of:
 }}
 
 \item{...}{Additional arguments passed directly to the
-\code{clone-repos.sh} script as-is.}
+\code{repos clone} as-is.}
 }
 \value{
 Invisibly returns the exit status of the script (0 for success).
@@ -50,7 +50,7 @@ Clone all repositories (and branches) described in a \code{repos.list} file
 into the parent directory of the current working directory.
 }
 \details{
-This function is a wrapper around \code{clone-repos.sh}.  Each non-empty,
+This function is a wrapper around \code{repos clone}.  Each non-empty,
 non-comment line in the repos list file describes one of three operations:
 \enumerate{
   \item Clone a repository (default or all branches): \code{owner/repo}
