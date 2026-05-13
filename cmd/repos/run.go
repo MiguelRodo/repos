@@ -16,8 +16,11 @@ import (
 )
 
 type runTarget struct {
-	name string
-	path string
+	name     string
+	path     string
+	repoSpec string
+	repoType string
+	dontRun  bool
 }
 
 type runResult struct {
@@ -281,6 +284,9 @@ func (s *state) collectPipelineTargets(opts runOptions) ([]pipelineTarget, error
 		if !shouldRunRepo(t.name, opts.include, opts.exclude) {
 			continue
 		}
+		if t.dontRun || shouldAutoSkipPipelineRepo(t.repoSpec, t.repoType) {
+			continue
+		}
 		pipelineTargets = append(pipelineTargets, pipelineTarget{
 			target: t,
 			script: opts.script,
@@ -335,11 +341,24 @@ func (s *state) collectConciseRunTargets(opts runOptions) ([]pipelineTarget, err
 			return nil, err
 		}
 		script := opts.script
-		if len(parts) > 1 {
-			script = parts[1]
+		hasPerLineScript := false
+		dontRun := false
+		for _, tok := range parts[1:] {
+			if tok == "--dont-run" {
+				dontRun = true
+				continue
+			}
+			if hasPerLineScript {
+				return nil, fmt.Errorf("invalid concise repos.list line (multiple script values): %s", line)
+			}
+			script = tok
+			hasPerLineScript = true
 			if err := validateRunScriptPath(script); err != nil {
 				return nil, err
 			}
+		}
+		if dontRun {
+			continue
 		}
 		targets = append(targets, pipelineTarget{
 			target: runTarget{
@@ -377,6 +396,30 @@ func shouldRunRepo(name string, include, exclude map[string]struct{}) bool {
 		}
 	}
 	return true
+}
+
+func shouldAutoSkipPipelineRepo(repoSpec, repoType string) bool {
+	if repoType != repoTypeHuggingFace {
+		return false
+	}
+	repoURLNoRef, _ := splitRepoSpec(repoSpec)
+	trimmed := strings.TrimSpace(repoURLNoRef)
+	if len(trimmed) < 3 || !strings.EqualFold(trimmed[:3], "hf:") {
+		return false
+	}
+	hfPath := strings.TrimLeft(trimmed[3:], "/")
+	if hfPath == "" {
+		return false
+	}
+	lowerPath := strings.ToLower(hfPath)
+	if strings.HasPrefix(lowerPath, "datasets/") || strings.HasPrefix(lowerPath, "models/") {
+		return true
+	}
+	if strings.HasPrefix(lowerPath, "spaces/") {
+		return false
+	}
+	// Default model repos use "owner/model" (without a "models/" prefix).
+	return strings.Count(hfPath, "/") == 1
 }
 
 func runPipelineTargets(targets []pipelineTarget, opts runOptions) (runPipelineStats, error) {
@@ -536,7 +579,13 @@ func (s *state) collectRunTargets() ([]runTarget, error) {
 				return nil, err
 			}
 			destPath := filepath.Join(s.parentDir, destName)
-			targets = append(targets, runTarget{name: filepath.Base(destPath), path: destPath})
+			targets = append(targets, runTarget{
+				name:     filepath.Base(destPath),
+				path:     destPath,
+				repoSpec: ins.repoSpec,
+				repoType: ins.repoType,
+				dontRun:  ins.dontRun,
+			})
 
 			if ins.isWorktree {
 				if baseName != "" {
@@ -567,7 +616,13 @@ func (s *state) collectRunTargets() ([]runTarget, error) {
 		}
 
 		destPath := filepath.Join(s.parentDir, destName)
-		targets = append(targets, runTarget{name: filepath.Base(destPath), path: destPath})
+		targets = append(targets, runTarget{
+			name:     filepath.Base(destPath),
+			path:     destPath,
+			repoSpec: ins.repoSpec,
+			repoType: ins.repoType,
+			dontRun:  ins.dontRun,
+		})
 		fallbackHTTPS = remoteHTTPS
 		fallbackLocalName = filepath.Base(destPath)
 		s.seenRemoteLocal[remoteHTTPS] = destPath
@@ -736,6 +791,8 @@ Run mode:
 Options:
   -f, --file <file>        Repo list file (default: repos.list or repos-to-clone.list)
       --script <path>      Script to run in script mode (default: run.sh)
+                            Per-line --dont-run entries in repos.list are skipped.
+                            Hugging Face dataset/model entries are also skipped.
   -i, --include <names>    Comma-separated repository names to include
   -e, --exclude <names>    Comma-separated repository names to exclude
       --ensure-setup       Run clone step before script execution

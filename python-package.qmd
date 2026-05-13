@@ -247,6 +247,9 @@ codespace(
 
 **Returns:** `subprocess.CompletedProcess`
 
+In script mode, repos listed with `--dont-run` are skipped. Hugging Face
+dataset/model entries are also skipped automatically.
+
 **Examples:**
 
 ```python

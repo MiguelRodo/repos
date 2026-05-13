@@ -32,6 +32,7 @@ type Instruction struct {
 	BaseDir     string
 	IsWorktree  bool
 	IsAtBranch  bool
+	DontRun     bool
 	AllBranches bool
 	FetchMode   string
 	Warnings    []string
@@ -172,6 +173,8 @@ func ParseList(r io.Reader, opts Options) ([]Instruction, error) {
 			useWorktree := globalWorktree
 			for _, tok := range rest {
 				switch tok {
+				case "--dont-run":
+					ins.DontRun = true
 				case "-w", "--worktree":
 					if repoType == repoTypeHuggingFace {
 						ins.Warnings = append(ins.Warnings, fmt.Sprintf("%s ignored on huggingface line", tok))
@@ -250,6 +253,8 @@ func ParseList(r io.Reader, opts Options) ([]Instruction, error) {
 
 		for _, tok := range rest {
 			switch tok {
+			case "--dont-run":
+				ins.DontRun = true
 			case "-a", "--all-branches":
 				if ins.RepoType == repoTypeHuggingFace {
 					ins.Warnings = append(ins.Warnings, fmt.Sprintf("%s ignored on huggingface line", tok))

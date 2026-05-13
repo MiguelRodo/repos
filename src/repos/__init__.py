@@ -337,6 +337,10 @@ def run(
         verbose: If True, enable verbose logging
         continue_on_error: If True, continue on failure and report all results
         **kwargs: Additional keyword arguments (captured but ignored, for extensibility)
+
+    Notes:
+        In script mode, repos.list lines with ``--dont-run`` are skipped.
+        Hugging Face dataset/model entries are also skipped automatically.
         
     Returns:
         subprocess.CompletedProcess object

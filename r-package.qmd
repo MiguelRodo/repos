@@ -218,6 +218,9 @@ repos_workspace(
 
 **Returns:** Invisibly returns the exit status of the command (0 for success).
 
+In script mode, repos listed with `--dont-run` are skipped. Hugging Face
+dataset/model entries are also skipped automatically.
+
 **Examples:**
 
 ```r
