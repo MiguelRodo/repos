@@ -394,17 +394,24 @@ func shouldAutoSkipPipelineRepo(repoSpec, repoType string) bool {
 	if repoType != repoTypeHuggingFace {
 		return false
 	}
-	normalized := strings.TrimPrefix(strings.ToLower(specToHTTPS(repoSpec)), "hf:")
-	if normalized == "" {
+	repoURLNoRef, _ := splitRepoSpec(repoSpec)
+	trimmed := strings.TrimSpace(repoURLNoRef)
+	if len(trimmed) < 3 || !strings.EqualFold(trimmed[:3], "hf:") {
 		return false
 	}
-	if strings.HasPrefix(normalized, "datasets/") || strings.HasPrefix(normalized, "models/") {
+	hfPath := strings.TrimLeft(trimmed[3:], "/")
+	if hfPath == "" {
+		return false
+	}
+	lowerPath := strings.ToLower(hfPath)
+	if strings.HasPrefix(lowerPath, "datasets/") || strings.HasPrefix(lowerPath, "models/") {
 		return true
 	}
-	if strings.HasPrefix(normalized, "spaces/") {
+	if strings.HasPrefix(lowerPath, "spaces/") {
 		return false
 	}
-	return strings.Count(normalized, "/") == 1
+	// Default model repos use "owner/model" (without a "models/" prefix).
+	return strings.Count(hfPath, "/") == 1
 }
 
 func runPipelineTargets(targets []pipelineTarget, opts runOptions) (runPipelineStats, error) {
@@ -768,7 +775,7 @@ Options:
   -f, --file <file>        Repo list file (default: repos.list or repos-to-clone.list)
       --script <path>      Script to run in script mode (default: run.sh)
                             Per-line --dont-run entries in repos.list are skipped.
-                            Hugging Face datasets/models entries are also skipped.
+                            Hugging Face dataset/model entries are also skipped.
   -i, --include <names>    Comma-separated repository names to include
   -e, --exclude <names>    Comma-separated repository names to exclude
       --ensure-setup       Run clone step before script execution
