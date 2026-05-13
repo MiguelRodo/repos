@@ -422,7 +422,7 @@ func (s *state) parseEffectiveLine(trimmed string, fallbackHTTPS string) (instru
 				return ins, err
 			}
 		} else if branch == "" {
-			return ins, errors.New("error: missing branch/revision")
+			return ins, errors.New("missing branch/revision")
 		}
 		useWorktree := s.globalWorktree
 		for i := 0; i < len(rest); i++ {
@@ -906,7 +906,6 @@ func (s *state) cloneHuggingFaceRepo(remoteKey, repoSpec, ref, dest string) (int
 	}
 	normalizedSpec := parser.SpecToHTTPS(repoSpec)
 	hfPath := strings.TrimPrefix(normalizedSpec, "hf:")
-	hfPath = strings.TrimPrefix(hfPath, "/")
 	if hfPath == "" {
 		return 1, fmt.Errorf("error: empty huggingface repo path after parsing %q", repoSpec)
 	}
