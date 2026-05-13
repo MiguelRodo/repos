@@ -43,6 +43,10 @@ repos_clone()
 This reads `repos.list` and clones everything to the **parent directory** of
 your current location.
 
+`repos_clone()` also supports Hugging Face entries in `repos.list` using the
+`hf:` prefix (for example, `hf:datasets/org/data@dev`). This requires
+`huggingface-cli` (`pip install huggingface_hub[cli]`).
+
 `repos_clone()` supports explicit fetch modes:
 
 ```r

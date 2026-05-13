@@ -511,6 +511,9 @@ def clone(
     for the full syntax.
     Hugging Face entries require ``huggingface-cli`` (install with
     ``pip install huggingface_hub[cli]``).
+    For HF entries, ``@branch``/``@revision`` fallback semantics work the same
+    way as Git entries in ``repos.list``, and Git-only clone flags on HF lines
+    are safely ignored with warnings by the CLI.
 
     Global flags in repos.list (``--worktree``) are automatically applied.
 
