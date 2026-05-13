@@ -901,7 +901,7 @@ func (s *state) cloneHuggingFaceRepo(remoteKey, repoSpec, ref, dest string) (int
 		ref = "main"
 	}
 	normalizedSpec := parser.SpecToHTTPS(repoSpec)
-	hfPath := strings.TrimLeft(strings.TrimPrefix(normalizedSpec, "hf:"), "/")
+	hfPath := strings.TrimPrefix(normalizedSpec, "hf:")
 	args := []string{"download", hfPath, "--revision", ref, "--local-dir", dest}
 	fmt.Printf("Downloading %s → %s (revision %s)\n", remoteKey, dest, ref)
 	if _, err := gitcmd.RunHuggingFaceCLI("", args...); err != nil {
