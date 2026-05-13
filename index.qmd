@@ -18,7 +18,11 @@ you want:
 myorg/data-curation
 myorg/analysis
 myorg/documentation
+hf:datasets/huggingface/stack
 ```
+
+Hugging Face entries (`hf:...`) require `huggingface-cli`
+(`pip install huggingface_hub[cli]`).
 
 Then run:
 
@@ -45,7 +49,8 @@ clone plus immediate wildcard fetch-refspec restoration. You can also use
 - `repos install-r-deps` — install R dependencies across managed repos
 
 `repos.list` supports specific branches (`owner/repo@branch`), fallback
-`@branch` entries, worktrees, visibility flags, and global flags.
+`@branch` entries, Hugging Face entries (`hf:owner/repo@revision`), worktrees,
+visibility flags, and global flags.
 → [repos.list reference](repos-list.html)
 
 **IDE integration** — generate a VS Code multi-root workspace file

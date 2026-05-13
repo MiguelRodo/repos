@@ -263,7 +263,13 @@ repos <- function(command, ...) {
 #'   \item Clone a specific branch: \code{owner/repo@branch}
 #'   \item Clone or create a worktree for a branch from the fallback repo:
 #'     \code{@branch}
+#'   \item Download a Hugging Face repository: \code{hf:datasets/org/data}
 #' }
+#' Hugging Face entries require \code{huggingface-cli}
+#' (\code{pip install huggingface_hub[cli]}).
+#' For Hugging Face entries, fallback \code{@branch} / revision semantics follow
+#' the same \code{repos.list} behavior as Git entries, and Git-only flags on HF
+#' lines are ignored with warnings by the CLI.
 #' Repositories are always cloned into the \strong{parent} directory of the
 #' current working directory (i.e. the directory containing the project that
 #' holds \code{repos.list}).

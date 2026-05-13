@@ -73,6 +73,24 @@ default and tells you to rerun with `--create`.
 Use `--create` when you explicitly want `repos clone` to create and push missing
 branches for `owner/repo@branch` or `@branch` entries.
 
+## Hugging Face Repositories
+
+You can include Hugging Face repositories in `repos.list` using the `hf:` prefix:
+
+```text
+hf:datasets/huggingface/stack
+hf:datasets/huggingface/stack@main
+```
+
+These entries are downloaded with `huggingface-cli`, so install it first:
+
+```bash
+pip install huggingface_hub[cli]
+```
+
+Fallback `@branch` / revision behavior is supported for HF entries in the same
+way as Git entries in `repos.list`.
+
 ## Repository Layout
 
 Repositories are cloned to the **parent** of your current directory:

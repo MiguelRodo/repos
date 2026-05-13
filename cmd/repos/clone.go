@@ -124,7 +124,7 @@ func runClone(args []string) error {
 	if err := st.applyGlobalFlagsFromFile(); err != nil {
 		return err
 	}
-	if err := sysutil.CheckPrerequisites(); err != nil {
+	if err := sysutil.CheckClonePrerequisites(st.reposFile); err != nil {
 		return err
 	}
 	hasNonLocal, err := hasNonLocalRemotesInFileFunc(st.reposFile)
@@ -202,6 +202,9 @@ func hasNonLocalRemotesInFile(reposFile string) (bool, error) {
 			return true, nil
 		}
 		repoSpec, _ := splitRepoSpec(first)
+		if strings.HasPrefix(strings.ToLower(strings.TrimSpace(repoSpec)), "hf:") {
+			continue
+		}
 		if isLocalRepoSpecForAuthCheck(repoSpec) {
 			continue
 		}

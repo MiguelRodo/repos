@@ -149,3 +149,85 @@ func TestParseListRejectsInvalidTargetDirs(t *testing.T) {
 		})
 	}
 }
+
+func TestParseListHuggingFaceFallbackAndFlagStripping(t *testing.T) {
+	input := strings.NewReader(`
+hf:datasets/acme/data
+@dev --worktree --fetch-all
+`)
+
+	got, err := ParseList(input, Options{})
+	if err != nil {
+		t.Fatalf("ParseList returned error: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("expected 2 instructions, got %d", len(got))
+	}
+
+	if got[0].RepoType != "huggingface" {
+		t.Fatalf("expected first instruction to be huggingface, got %q", got[0].RepoType)
+	}
+	if got[0].RemoteURL != "hf:datasets/acme/data" {
+		t.Fatalf("unexpected remote URL: %q", got[0].RemoteURL)
+	}
+	if got[0].TargetDir != "data" {
+		t.Fatalf("unexpected target dir: %q", got[0].TargetDir)
+	}
+
+	if got[1].CloneURL != "hf:datasets/acme/data" || got[1].Branch != "dev" {
+		t.Fatalf("unexpected fallback resolution for @dev: cloneURL=%q branch=%q", got[1].CloneURL, got[1].Branch)
+	}
+	if got[1].IsWorktree {
+		t.Fatalf("expected --worktree to be ignored for huggingface fallback")
+	}
+	if len(got[1].Warnings) == 0 {
+		t.Fatalf("expected warnings for ignored git-specific flags on huggingface line")
+	}
+}
+
+func TestParseListHuggingFaceFallbackAcceptsNonGitRevisionToken(t *testing.T) {
+	input := strings.NewReader(`
+hf:datasets/acme/data
+@main~1
+`)
+
+	got, err := ParseList(input, Options{})
+	if err != nil {
+		t.Fatalf("ParseList returned error: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("expected 2 instructions, got %d", len(got))
+	}
+	if got[1].CloneURL != "hf:datasets/acme/data" || got[1].Branch != "main~1" {
+		t.Fatalf("unexpected fallback resolution for @main~1: cloneURL=%q branch=%q", got[1].CloneURL, got[1].Branch)
+	}
+}
+
+func TestParseListHuggingFaceRepoSpecAcceptsNonGitRevisionSuffix(t *testing.T) {
+	input := strings.NewReader("hf:datasets/acme/data@main~1\n")
+
+	got, err := ParseList(input, Options{})
+	if err != nil {
+		t.Fatalf("ParseList returned error: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("expected 1 instruction, got %d", len(got))
+	}
+	if got[0].Branch != "main~1" {
+		t.Fatalf("expected branch/revision main~1, got %q", got[0].Branch)
+	}
+}
+
+func TestSpecToHTTPSNormalizesHuggingFaceSlashes(t *testing.T) {
+	tests := []string{
+		"hf:datasets/acme/data",
+		"hf:/datasets/acme/data",
+		"hf://datasets/acme/data",
+		"HF://datasets/acme/data",
+	}
+	for _, in := range tests {
+		if got := SpecToHTTPS(in); got != "hf:datasets/acme/data" {
+			t.Fatalf("SpecToHTTPS(%q) = %q, want %q", in, got, "hf:datasets/acme/data")
+		}
+	}
+}

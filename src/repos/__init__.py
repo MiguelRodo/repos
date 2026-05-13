@@ -505,9 +505,15 @@ def clone(
     Clone repositories listed in a repos.list file.
 
     Each non-empty, non-comment line in the list file describes one cloning
-    instruction (full repo, specific branch, or worktree branch).  See the
+    instruction (full repo, specific branch, worktree branch, or Hugging Face
+    repo with ``hf:`` prefix).  See the
     `repos.list format <https://miguelrodo.github.io/repos/repos-list.html>`_
     for the full syntax.
+    Hugging Face entries require ``huggingface-cli`` (install with
+    ``pip install huggingface_hub[cli]``).
+    For HF entries, ``@branch``/``@revision`` fallback semantics work the same
+    way as Git entries in ``repos.list``, and Git-only clone flags on HF lines
+    are safely ignored with warnings by the CLI.
 
     Global flags in repos.list (``--worktree``) are automatically applied.
 

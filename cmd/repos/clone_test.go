@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -147,6 +148,13 @@ func TestHasNonLocalRemotesInFile(t *testing.T) {
 				"https://github.com/acme/repo.git",
 			},
 			want: true,
+		},
+		{
+			name: "huggingface-remote",
+			lines: []string{
+				"hf:datasets/acme/data",
+			},
+			want: false,
 		},
 		{
 			name: "ssh-scp-github-remote",
@@ -488,6 +496,378 @@ func TestCheckNonInteractiveAuthForCloneHasActionableError(t *testing.T) {
 		if !strings.Contains(msg, expected) {
 			t.Fatalf("expected error to mention %q, got: %q", expected, msg)
 		}
+	}
+}
+
+func TestRunCloneHuggingFaceRequiresCLIWhenHFRepoPresent(t *testing.T) {
+	enableBareRepoAccess(t)
+
+	tmp := t.TempDir()
+	remotes := filepath.Join(tmp, "remotes")
+	mustMkdir(t, remotes)
+	remote := createBareRepo(t, remotes, "repo-one")
+
+	projectDir := filepath.Join(tmp, "workspace")
+	mustInitWorkspaceRepo(t, projectDir, remote)
+	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "hf:datasets/acme/data\n")
+
+	gitPath, err := exec.LookPath("git")
+	if err != nil {
+		t.Fatalf("lookpath git: %v", err)
+	}
+	binDir := filepath.Join(tmp, "bin-no-hf")
+	mustMkdir(t, binDir)
+	if err := os.Symlink(gitPath, filepath.Join(binDir, "git")); err != nil {
+		t.Fatalf("symlink git: %v", err)
+	}
+	t.Setenv("PATH", binDir)
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(oldWD); err != nil {
+			t.Logf("restore working directory: %v", err)
+		}
+	})
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatalf("chdir project dir: %v", err)
+	}
+
+	err = runClone([]string{"-f", "repos.list"})
+	if err == nil {
+		t.Fatalf("expected missing huggingface-cli error")
+	}
+	if !strings.Contains(err.Error(), "huggingface_hub[cli]") {
+		t.Fatalf("expected install guidance in error, got: %v", err)
+	}
+}
+
+func TestRunCloneHuggingFaceRoutesToCLIAndPassesHFToken(t *testing.T) {
+	enableBareRepoAccess(t)
+
+	tmp := t.TempDir()
+	remotes := filepath.Join(tmp, "remotes")
+	mustMkdir(t, remotes)
+	remote := createBareRepo(t, remotes, "repo-one")
+
+	projectDir := filepath.Join(tmp, "workspace")
+	mustInitWorkspaceRepo(t, projectDir, remote)
+	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "HF://datasets/acme/data@dev --fetch-all --worktree\n")
+
+	gitPath, err := exec.LookPath("git")
+	if err != nil {
+		t.Fatalf("lookpath git: %v", err)
+	}
+	binDir := filepath.Join(tmp, "bin-with-hf")
+	mustMkdir(t, binDir)
+	if err := os.Symlink(gitPath, filepath.Join(binDir, "git")); err != nil {
+		t.Fatalf("symlink git: %v", err)
+	}
+
+	logFile := filepath.Join(tmp, "hf.log")
+	hfShim := filepath.Join(binDir, "huggingface-cli")
+	script := fmt.Sprintf(`#!/bin/sh
+echo "$@" >> %q
+echo "HF_TOKEN=$HF_TOKEN" >> %q
+while [ "$#" -gt 0 ]; do
+  if [ "$1" = "--local-dir" ]; then
+    shift
+    mkdir -p "$1"
+  fi
+  shift
+done
+`, logFile, logFile)
+	if err := os.WriteFile(hfShim, []byte(script), 0o755); err != nil {
+		t.Fatalf("write huggingface shim: %v", err)
+	}
+
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("HF_TOKEN", "token-123")
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(oldWD); err != nil {
+			t.Logf("restore working directory: %v", err)
+		}
+	})
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatalf("chdir project dir: %v", err)
+	}
+
+	if err := runClone([]string{"-f", "repos.list"}); err != nil {
+		t.Fatalf("runClone returned error: %v", err)
+	}
+
+	content, err := os.ReadFile(logFile)
+	if err != nil {
+		t.Fatalf("read hf log: %v", err)
+	}
+	logs := string(content)
+	if !strings.Contains(logs, "download datasets/acme/data --revision dev --local-dir") {
+		t.Fatalf("expected huggingface-cli download invocation, got: %s", logs)
+	}
+	if !strings.Contains(logs, "HF_TOKEN=token-123") {
+		t.Fatalf("expected HF_TOKEN to be passed through, got: %s", logs)
+	}
+}
+
+func TestRunCloneHuggingFaceSkipsAuthCheck(t *testing.T) {
+	enableBareRepoAccess(t)
+
+	tmp := t.TempDir()
+	remotes := filepath.Join(tmp, "remotes")
+	mustMkdir(t, remotes)
+	remote := createBareRepo(t, remotes, "repo-one")
+
+	projectDir := filepath.Join(tmp, "workspace")
+	mustInitWorkspaceRepo(t, projectDir, remote)
+	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "hf:datasets/acme/data\n")
+
+	gitPath, err := exec.LookPath("git")
+	if err != nil {
+		t.Fatalf("lookpath git: %v", err)
+	}
+	binDir := filepath.Join(tmp, "bin-with-hf")
+	mustMkdir(t, binDir)
+	if err := os.Symlink(gitPath, filepath.Join(binDir, "git")); err != nil {
+		t.Fatalf("symlink git: %v", err)
+	}
+
+	logFile := filepath.Join(tmp, "hf.log")
+	hfShim := filepath.Join(binDir, "huggingface-cli")
+	script := fmt.Sprintf(`#!/bin/sh
+echo "$@" >> %q
+echo "HF_TOKEN=$HF_TOKEN" >> %q
+while [ "$#" -gt 0 ]; do
+  if [ "$1" = "--local-dir" ]; then
+    shift
+    mkdir -p "$1"
+  fi
+  shift
+done
+`, logFile, logFile)
+	if err := os.WriteFile(hfShim, []byte(script), 0o755); err != nil {
+		t.Fatalf("write huggingface shim: %v", err)
+	}
+
+	oldHasNonLocal := hasNonLocalRemotesInFileFunc
+	oldAuthCheck := checkNonInteractiveAuthForCloneFunc
+	defer func() {
+		hasNonLocalRemotesInFileFunc = oldHasNonLocal
+		checkNonInteractiveAuthForCloneFunc = oldAuthCheck
+	}()
+
+	authCheckCalled := false
+	checkNonInteractiveAuthForCloneFunc = func() error {
+		authCheckCalled = true
+		return errors.New("should not be called for hf remotes")
+	}
+
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("HF_TOKEN", "")
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(oldWD); err != nil {
+			t.Logf("restore working directory: %v", err)
+		}
+	})
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatalf("chdir project dir: %v", err)
+	}
+
+	if err := runClone([]string{"-f", "repos.list"}); err != nil {
+		t.Fatalf("runClone returned error: %v", err)
+	}
+	if authCheckCalled {
+		t.Fatalf("expected auth check not to run for hf remotes")
+	}
+
+	content, err := os.ReadFile(logFile)
+	if err != nil {
+		t.Fatalf("read hf log: %v", err)
+	}
+	logs := string(content)
+	if !strings.Contains(logs, "download datasets/acme/data --revision main --local-dir") {
+		t.Fatalf("expected huggingface-cli download invocation, got: %s", logs)
+	}
+	if !strings.Contains(logs, "HF_TOKEN=") {
+		t.Fatalf("expected empty HF_TOKEN passthrough, got: %s", logs)
+	}
+}
+
+func TestRunCloneHuggingFaceFallbackAllowsNonGitRevision(t *testing.T) {
+	enableBareRepoAccess(t)
+
+	tmp := t.TempDir()
+	remotes := filepath.Join(tmp, "remotes")
+	mustMkdir(t, remotes)
+	remote := createBareRepo(t, remotes, "repo-one")
+
+	projectDir := filepath.Join(tmp, "workspace")
+	mustInitWorkspaceRepo(t, projectDir, remote)
+	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "hf:datasets/acme/data\n@main~1\n")
+
+	gitPath, err := exec.LookPath("git")
+	if err != nil {
+		t.Fatalf("lookpath git: %v", err)
+	}
+	binDir := filepath.Join(tmp, "bin-with-hf")
+	mustMkdir(t, binDir)
+	if err := os.Symlink(gitPath, filepath.Join(binDir, "git")); err != nil {
+		t.Fatalf("symlink git: %v", err)
+	}
+
+	logFile := filepath.Join(tmp, "hf.log")
+	hfShim := filepath.Join(binDir, "huggingface-cli")
+	script := fmt.Sprintf(`#!/bin/sh
+echo "$@" >> %q
+while [ "$#" -gt 0 ]; do
+  if [ "$1" = "--local-dir" ]; then
+    shift
+    mkdir -p "$1"
+  fi
+  shift
+done
+`, logFile)
+	if err := os.WriteFile(hfShim, []byte(script), 0o755); err != nil {
+		t.Fatalf("write huggingface shim: %v", err)
+	}
+
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(oldWD); err != nil {
+			t.Logf("restore working directory: %v", err)
+		}
+	})
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatalf("chdir project dir: %v", err)
+	}
+
+	if err := runClone([]string{"-f", "repos.list"}); err != nil {
+		t.Fatalf("runClone returned error: %v", err)
+	}
+
+	content, err := os.ReadFile(logFile)
+	if err != nil {
+		t.Fatalf("read hf log: %v", err)
+	}
+	logs := string(content)
+	if !strings.Contains(logs, "download datasets/acme/data --revision main~1 --local-dir") {
+		t.Fatalf("expected fallback @revision to pass through for hf clone, got: %s", logs)
+	}
+}
+
+func TestRunCloneHuggingFaceRejectsOptionStyleRepoID(t *testing.T) {
+	enableBareRepoAccess(t)
+
+	tmp := t.TempDir()
+	remotes := filepath.Join(tmp, "remotes")
+	mustMkdir(t, remotes)
+	remote := createBareRepo(t, remotes, "repo-one")
+
+	projectDir := filepath.Join(tmp, "workspace")
+	mustInitWorkspaceRepo(t, projectDir, remote)
+	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "hf:-malicious\n")
+
+	gitPath, err := exec.LookPath("git")
+	if err != nil {
+		t.Fatalf("lookpath git: %v", err)
+	}
+	binDir := filepath.Join(tmp, "bin-with-hf")
+	mustMkdir(t, binDir)
+	if err := os.Symlink(gitPath, filepath.Join(binDir, "git")); err != nil {
+		t.Fatalf("symlink git: %v", err)
+	}
+	hfShim := filepath.Join(binDir, "huggingface-cli")
+	if err := os.WriteFile(hfShim, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatalf("write huggingface shim: %v", err)
+	}
+
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(oldWD); err != nil {
+			t.Logf("restore working directory: %v", err)
+		}
+	})
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatalf("chdir project dir: %v", err)
+	}
+
+	err = runClone([]string{"-f", "repos.list"})
+	if err == nil {
+		t.Fatalf("expected option-style huggingface repo id to be rejected")
+	}
+	if !strings.Contains(err.Error(), "clone finished with errors") {
+		t.Fatalf("expected clone failure error, got: %v", err)
+	}
+}
+
+func TestRunCloneHuggingFaceAuthIntegration(t *testing.T) {
+	enableBareRepoAccess(t)
+
+	privateRepo := strings.TrimSpace(os.Getenv("REPOS_TEST_HF_PRIVATE_REPO"))
+	if privateRepo == "" {
+		t.Skip("set REPOS_TEST_HF_PRIVATE_REPO to run authenticated Hugging Face integration test")
+	}
+	if strings.TrimSpace(os.Getenv("HF_TOKEN")) == "" {
+		t.Skip("set HF_TOKEN to run authenticated Hugging Face integration test")
+	}
+	if _, err := exec.LookPath("huggingface-cli"); err != nil {
+		t.Skip("huggingface-cli not found in PATH")
+	}
+
+	tmp := t.TempDir()
+	remotes := filepath.Join(tmp, "remotes")
+	mustMkdir(t, remotes)
+	remote := createBareRepo(t, remotes, "repo-one")
+
+	projectDir := filepath.Join(tmp, "workspace")
+	mustInitWorkspaceRepo(t, projectDir, remote)
+	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "hf:"+privateRepo+"\n")
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(oldWD); err != nil {
+			t.Logf("restore working directory: %v", err)
+		}
+	})
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatalf("chdir project dir: %v", err)
+	}
+
+	if err := runClone([]string{"-f", "repos.list"}); err != nil {
+		t.Fatalf("runClone returned error: %v", err)
+	}
+
+	targetDir := filepath.Join(tmp, filepath.Base(privateRepo))
+	entries, err := os.ReadDir(targetDir)
+	if err != nil {
+		t.Fatalf("read target dir %s: %v", targetDir, err)
+	}
+	if len(entries) == 0 {
+		t.Fatalf("expected downloaded files in %s", targetDir)
 	}
 }
 

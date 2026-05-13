@@ -58,6 +58,7 @@ type planInfo struct {
 
 type instruction struct {
 	repoSpec    string
+	repoType    string
 	targetDir   string
 	allBranches bool
 	isWorktree  bool
@@ -67,6 +68,11 @@ type instruction struct {
 }
 
 var ownerRepoRegex = regexp.MustCompile(`^[^/]+/[^/]+$`)
+
+const (
+	repoTypeGit         = "git"
+	repoTypeHuggingFace = "huggingface"
+)
 
 func main() {
 	if len(os.Args) < 2 {
@@ -410,8 +416,13 @@ func (s *state) parseEffectiveLine(trimmed string, fallbackHTTPS string) (instru
 
 	if strings.HasPrefix(first, "@") {
 		branch := strings.TrimPrefix(first, "@")
-		if err := validateBranch(branch); err != nil {
-			return ins, err
+		repoType := repoTypeFromSpec(fallbackHTTPS)
+		if repoType != repoTypeHuggingFace {
+			if err := validateBranch(branch); err != nil {
+				return ins, err
+			}
+		} else if branch == "" {
+			return ins, errors.New("missing branch/revision")
 		}
 		useWorktree := s.globalWorktree
 		for i := 0; i < len(rest); i++ {
@@ -420,7 +431,9 @@ func (s *state) parseEffectiveLine(trimmed string, fallbackHTTPS string) (instru
 				if derr != nil {
 					return ins, derr
 				}
-				if !ignoreLineFlags && !depthLocked {
+				if repoType == repoTypeHuggingFace {
+					fmt.Fprintf(os.Stderr, "Warning: '--depth' ignored on huggingface line: %s\n", trimmed)
+				} else if !ignoreLineFlags && !depthLocked {
 					ins.depth = depth
 				}
 				i = next
@@ -428,23 +441,33 @@ func (s *state) parseEffectiveLine(trimmed string, fallbackHTTPS string) (instru
 			}
 			switch tok {
 			case "-w", "--worktree":
-				if !ignoreLineFlags && !worktreeLocked {
+				if repoType == repoTypeHuggingFace {
+					fmt.Fprintf(os.Stderr, "Warning: %q ignored on huggingface line: %s\n", tok, trimmed)
+				} else if !ignoreLineFlags && !worktreeLocked {
 					useWorktree = true
 				}
 			case "-a", "--all-branches":
-				if !ignoreLineFlags && !fetchModeLocked {
+				if repoType == repoTypeHuggingFace {
+					fmt.Fprintf(os.Stderr, "Warning: %q ignored on huggingface line: %s\n", tok, trimmed)
+				} else if !ignoreLineFlags && !fetchModeLocked {
 					ins.allBranches = true
 				}
 			case "--fetch-all-deferred":
-				if !ignoreLineFlags && !fetchModeLocked {
+				if repoType == repoTypeHuggingFace {
+					fmt.Fprintf(os.Stderr, "Warning: %q ignored on huggingface line: %s\n", tok, trimmed)
+				} else if !ignoreLineFlags && !fetchModeLocked {
 					ins.fetchMode = "deferred"
 				}
 			case "--fetch-single":
-				if !ignoreLineFlags && !fetchModeLocked {
+				if repoType == repoTypeHuggingFace {
+					fmt.Fprintf(os.Stderr, "Warning: %q ignored on huggingface line: %s\n", tok, trimmed)
+				} else if !ignoreLineFlags && !fetchModeLocked {
 					ins.fetchMode = "single"
 				}
 			case "--fetch-all":
-				if !ignoreLineFlags && !fetchModeLocked {
+				if repoType == repoTypeHuggingFace {
+					fmt.Fprintf(os.Stderr, "Warning: %q ignored on huggingface line: %s\n", tok, trimmed)
+				} else if !ignoreLineFlags && !fetchModeLocked {
 					ins.fetchMode = "all"
 				}
 			case "--public", "--private", "--codespaces", "--force":
@@ -464,7 +487,8 @@ func (s *state) parseEffectiveLine(trimmed string, fallbackHTTPS string) (instru
 		if err := validateTargetDir(ins.targetDir); err != nil {
 			return ins, err
 		}
-		ins.isWorktree = useWorktree
+		ins.repoType = repoType
+		ins.isWorktree = useWorktree && repoType != repoTypeHuggingFace
 		ins.isAtBranch = true
 		ins.repoSpec = fallbackHTTPS + "@" + branch
 		if ins.fetchMode == "all" {
@@ -478,13 +502,16 @@ func (s *state) parseEffectiveLine(trimmed string, fallbackHTTPS string) (instru
 		return ins, fmt.Errorf("error: repository spec cannot start with a hyphen or contain '..': %s", first)
 	}
 	ins.repoSpec = first
+	ins.repoType = repoTypeFromSpec(repoURL)
 	for i := 0; i < len(rest); i++ {
 		tok := rest[i]
 		if depth, next, ok, derr := parseDepthToken(rest, i); ok {
 			if derr != nil {
 				return ins, derr
 			}
-			if !ignoreLineFlags && !depthLocked {
+			if ins.repoType == repoTypeHuggingFace {
+				fmt.Fprintf(os.Stderr, "Warning: '--depth' ignored on huggingface line: %s\n", trimmed)
+			} else if !ignoreLineFlags && !depthLocked {
 				ins.depth = depth
 			}
 			i = next
@@ -492,24 +519,36 @@ func (s *state) parseEffectiveLine(trimmed string, fallbackHTTPS string) (instru
 		}
 		switch tok {
 		case "-a", "--all-branches":
-			if !ignoreLineFlags && !fetchModeLocked {
+			if ins.repoType == repoTypeHuggingFace {
+				fmt.Fprintf(os.Stderr, "Warning: %q ignored on huggingface line: %s\n", tok, trimmed)
+			} else if !ignoreLineFlags && !fetchModeLocked {
 				ins.allBranches = true
 			}
 		case "--fetch-all-deferred":
-			if !ignoreLineFlags && !fetchModeLocked {
+			if ins.repoType == repoTypeHuggingFace {
+				fmt.Fprintf(os.Stderr, "Warning: %q ignored on huggingface line: %s\n", tok, trimmed)
+			} else if !ignoreLineFlags && !fetchModeLocked {
 				ins.fetchMode = "deferred"
 			}
 		case "--fetch-single":
-			if !ignoreLineFlags && !fetchModeLocked {
+			if ins.repoType == repoTypeHuggingFace {
+				fmt.Fprintf(os.Stderr, "Warning: %q ignored on huggingface line: %s\n", tok, trimmed)
+			} else if !ignoreLineFlags && !fetchModeLocked {
 				ins.fetchMode = "single"
 			}
 		case "--fetch-all":
-			if !ignoreLineFlags && !fetchModeLocked {
+			if ins.repoType == repoTypeHuggingFace {
+				fmt.Fprintf(os.Stderr, "Warning: %q ignored on huggingface line: %s\n", tok, trimmed)
+			} else if !ignoreLineFlags && !fetchModeLocked {
 				ins.fetchMode = "all"
 				ins.allBranches = true
 			}
 		case "-w", "--worktree":
-			fmt.Fprintf(os.Stderr, "Warning: '--worktree' ignored on clone line: %s\n", trimmed)
+			if ins.repoType == repoTypeHuggingFace {
+				fmt.Fprintf(os.Stderr, "Warning: '--worktree' ignored on huggingface line: %s\n", trimmed)
+			} else {
+				fmt.Fprintf(os.Stderr, "Warning: '--worktree' ignored on clone line: %s\n", trimmed)
+			}
 		case "--public", "--private", "--codespaces", "--force":
 		default:
 			if strings.HasPrefix(tok, "-") {
@@ -751,7 +790,7 @@ func (s *state) ensureBaseExists(remote, base, fetchMode string, depth int) (int
 
 func (s *state) cloneOneRepo(ins instruction) (int, error) {
 	repoURLNoRef, ref := splitRepoSpec(ins.repoSpec)
-	if ref != "" {
+	if ref != "" && ins.repoType != repoTypeHuggingFace {
 		if err := validateBranch(ref); err != nil {
 			return 1, err
 		}
@@ -774,6 +813,9 @@ func (s *state) cloneOneRepo(ins instruction) (int, error) {
 		}
 	default:
 		dest = filepath.Join(s.parentDir, repoDir)
+	}
+	if ins.repoType == repoTypeHuggingFace {
+		return s.cloneHuggingFaceRepo(remoteHTTPS, repoURLNoRef, ref, dest)
 	}
 
 	if isGitRepo(dest) {
@@ -851,6 +893,45 @@ func (s *state) cloneOneRepo(ins instruction) (int, error) {
 	s.cloneDest = dest
 	s.seenRemoteLocal[remoteHTTPS] = dest
 	return 0, nil
+}
+
+func (s *state) cloneHuggingFaceRepo(remoteKey, repoSpec, ref, dest string) (int, error) {
+	if dirExists(dest) && isNonEmptyDir(dest) {
+		fmt.Printf("Skip: %s exists and is not empty; leaving as-is.\n", dest)
+		s.counts.skipped++
+		return 2, nil
+	}
+	if ref == "" {
+		ref = "main"
+	}
+	normalizedSpec := parser.SpecToHTTPS(repoSpec)
+	hfPath := strings.TrimPrefix(normalizedSpec, "hf:")
+	if hfPath == "" {
+		return 1, fmt.Errorf("error: empty huggingface repo path after parsing %q", repoSpec)
+	}
+	if strings.HasPrefix(hfPath, "-") {
+		return 1, fmt.Errorf("error: invalid huggingface repo id %q", hfPath)
+	}
+	args := []string{"download", hfPath, "--revision", ref, "--local-dir", dest}
+	fmt.Printf("Downloading %s → %s (revision %s)\n", remoteKey, dest, ref)
+	if _, err := gitcmd.RunHuggingFaceCLI("", args...); err != nil {
+		return 1, err
+	}
+	s.counts.clonedBranch++
+	s.cloneDest = dest
+	s.seenRemoteLocal[remoteKey] = dest
+	return 0, nil
+}
+
+func repoTypeFromSpec(spec string) string {
+	if isHuggingFaceSpec(spec) {
+		return repoTypeHuggingFace
+	}
+	return repoTypeGit
+}
+
+func isHuggingFaceSpec(spec string) bool {
+	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(spec)), "hf:")
 }
 
 func (s *state) createWorktreeForBranch(base, branch, targetDir, fetchMode string) (int, error) {

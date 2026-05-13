@@ -28,6 +28,7 @@ Create a `repos.list` file in your project directory listing the repositories yo
 myorg/data-curation
 myorg/analysis
 myorg/documentation
+hf:datasets/huggingface/stack
 ```
 
 Then run:
@@ -37,6 +38,8 @@ repos clone
 ```
 
 This clones all listed repositories into the parent directory of your current location.
+Hugging Face entries (`hf:...`) require `huggingface-cli`
+(`pip install huggingface_hub[cli]`).
 
 ### Fetch modes
 
@@ -59,7 +62,8 @@ This clones all listed repositories into the parent directory of your current lo
 - `repos install-r-deps` — install R dependencies across managed repos
 
 `repos.list` supports specific branches (`owner/repo@branch`), fallback
-`@branch` entries, worktrees, visibility flags, and global flags.
+`@branch` entries, Hugging Face entries (`hf:owner/repo@revision`), worktrees,
+visibility flags, and global flags.
 → [repos.list reference](https://miguelrodo.github.io/repos/repos-list.html)
 
 **Run a pipeline across all repos** — run `run.sh` (or another script), or run
