@@ -49,7 +49,8 @@ hf:datasets/huggingface/stack@main
 ```
 
 `hf://...` and mixed-case HF prefixes are normalized to canonical `hf:<path>`
-format. Bare `@revision` lines use the same fallback semantics as Git entries.
+format. In HF entries, `@revision` can be a branch, tag, or commit. Bare
+`@revision` lines use the same fallback semantics as Git entries.
 
 Hugging Face entries require `huggingface-cli`:
 

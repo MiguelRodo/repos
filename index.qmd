@@ -21,6 +21,9 @@ myorg/documentation
 hf:datasets/huggingface/stack
 ```
 
+Hugging Face entries (`hf:...`) require `huggingface-cli`
+(`pip install huggingface_hub[cli]`).
+
 Then run:
 
 ```bash
@@ -29,8 +32,6 @@ repos clone
 
 This clones all listed repositories into the parent directory of your current
 location.
-Hugging Face entries (`hf:...`) require `huggingface-cli`
-(`pip install huggingface_hub[cli]`).
 
 By default, `repos clone` uses `--fetch-all-deferred`: a fast single-branch
 clone plus immediate wildcard fetch-refspec restoration. You can also use
