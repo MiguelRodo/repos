@@ -10,6 +10,7 @@ repos_clone(
   debug = FALSE,
   debug_file = NULL,
   fetch_mode = NULL,
+  depth = NULL,
   ...
 )
 }
@@ -39,11 +40,14 @@ One of:
     remote branches are downloaded upfront.
 }}
 
-\item{...}{Additional arguments passed directly to the
-\code{repos clone} as-is.}
+<<<<<<< HEAD
+\item{depth}{Integer. Optional shallow clone depth. Must be a positive whole
+number when provided.}
+
+\item{...}{Additional arguments passed directly to \code{repos clone} as-is.}
 }
 \value{
-Invisibly returns the exit status of the script (0 for success).
+Invisibly returns the exit status of \code{repos clone} (0 for success).
 }
 \description{
 Clone all repositories (and branches) described in a \code{repos.list} file
@@ -57,6 +61,7 @@ non-comment line in the repos list file describes one of three operations:
   \item Clone a specific branch: \code{owner/repo@branch}
   \item Clone or create a worktree for a branch from the fallback repo:
     \code{@branch}
+  \item Download a Hugging Face repository: \code{hf:datasets/org/data}
 }
 Repositories are always cloned into the \strong{parent} directory of the
 current working directory (i.e. the directory containing the project that
@@ -78,6 +83,9 @@ repos_clone(fetch_mode = "single")
 
 # Download all branches upfront
 repos_clone(fetch_mode = "all")
+
+# Opt-in shallow clone
+repos_clone(depth = 1)
 }
 
 }
