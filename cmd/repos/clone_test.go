@@ -616,6 +616,56 @@ done
 	}
 }
 
+func TestRunCloneHuggingFaceAuthIntegrationSkipsWithoutHFToken(t *testing.T) {
+	enableBareRepoAccess(t)
+
+	privateRepo := strings.TrimSpace(os.Getenv("REPOS_TEST_HF_PRIVATE_REPO"))
+	if privateRepo == "" {
+		t.Skip("set REPOS_TEST_HF_PRIVATE_REPO to run authenticated Hugging Face integration test")
+	}
+	if strings.TrimSpace(os.Getenv("HF_TOKEN")) == "" {
+		t.Skip("set HF_TOKEN to run authenticated Hugging Face integration test")
+	}
+	if _, err := exec.LookPath("huggingface-cli"); err != nil {
+		t.Skip("huggingface-cli not found in PATH")
+	}
+
+	tmp := t.TempDir()
+	remotes := filepath.Join(tmp, "remotes")
+	mustMkdir(t, remotes)
+	remote := createBareRepo(t, remotes, "repo-one")
+
+	projectDir := filepath.Join(tmp, "workspace")
+	mustInitWorkspaceRepo(t, projectDir, remote)
+	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "hf:"+privateRepo+"\n")
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(oldWD); err != nil {
+			t.Logf("restore working directory: %v", err)
+		}
+	})
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatalf("chdir project dir: %v", err)
+	}
+
+	if err := runClone([]string{"-f", "repos.list"}); err != nil {
+		t.Fatalf("runClone returned error: %v", err)
+	}
+
+	targetDir := filepath.Join(tmp, filepath.Base(privateRepo))
+	entries, err := os.ReadDir(targetDir)
+	if err != nil {
+		t.Fatalf("read target dir %s: %v", targetDir, err)
+	}
+	if len(entries) == 0 {
+		t.Fatalf("expected downloaded files in %s", targetDir)
+	}
+}
+
 func enableBareRepoAccess(t *testing.T) {
 	t.Helper()
 	t.Setenv("GIT_CONFIG_COUNT", "1")
