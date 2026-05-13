@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync"
 )
@@ -246,13 +247,20 @@ func validateRunScriptPath(script string) error {
 	if script == "" {
 		return errors.New("script path cannot be empty")
 	}
-	if filepath.IsAbs(script) || strings.Contains(script, "..") || strings.HasPrefix(script, "-") {
+	if isAbsoluteScriptPath(script) || strings.Contains(script, "..") || strings.HasPrefix(script, "-") {
 		return fmt.Errorf("invalid script path: %s", script)
 	}
 	if !scriptPathCharPattern.MatchString(script) {
 		return fmt.Errorf("script path must only contain alphanumeric characters, dots, underscores, slashes, or hyphens: %s", script)
 	}
 	return nil
+}
+
+func isAbsoluteScriptPath(script string) bool {
+	if filepath.IsAbs(script) {
+		return true
+	}
+	return strings.HasPrefix(filepath.ToSlash(script), "/")
 }
 
 func (s *state) collectPipelineTargets(opts runOptions) ([]pipelineTarget, error) {
@@ -420,7 +428,7 @@ func runScriptInTarget(t pipelineTarget, opts runOptions) runScriptResult {
 		printPrefixedLine(t.target.name, "Warning: could not chmod "+t.script+": "+err.Error(), nil)
 	}
 
-	cmd := exec.Command("./" + t.script)
+	cmd := commandForScript(t.script)
 	cmd.Dir = t.target.path
 	outMu := &sync.Mutex{}
 	res := runCommandWithPrefixedOutput(t.target.name, cmd, outMu)
@@ -428,6 +436,15 @@ func runScriptInTarget(t pipelineTarget, opts runOptions) runScriptResult {
 		return runScriptResult{err: res}
 	}
 	return runScriptResult{}
+}
+
+func commandForScript(script string) *exec.Cmd {
+	if runtime.GOOS == "windows" {
+		if _, err := exec.LookPath("sh"); err == nil {
+			return exec.Command("sh", filepath.ToSlash(script))
+		}
+	}
+	return exec.Command("./" + script)
 }
 
 func runCommandWithPrefixedOutput(repoName string, cmd *exec.Cmd, outMu *sync.Mutex) error {
@@ -736,6 +753,7 @@ Examples:
   repos run --concurrent npm install
 `)
 }
+
 // pluralRepo returns "repository" for n==1 and "repositories" otherwise.
 func pluralRepo(n int) string {
 	if n == 1 {
