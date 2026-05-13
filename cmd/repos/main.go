@@ -905,9 +905,9 @@ func (s *state) cloneHuggingFaceRepo(remoteKey, repoSpec, ref, dest string) (int
 		ref = "main"
 	}
 	normalizedSpec := parser.SpecToHTTPS(repoSpec)
-	hfPath := strings.TrimLeft(strings.TrimPrefix(normalizedSpec, "hf:"), "/")
+	hfPath := strings.TrimPrefix(strings.TrimPrefix(normalizedSpec, "hf:"), "/")
 	if hfPath == "" {
-		return 1, fmt.Errorf("error: invalid huggingface repo spec %q", repoSpec)
+		return 1, fmt.Errorf("error: empty huggingface repo path after parsing %q", repoSpec)
 	}
 	if strings.HasPrefix(hfPath, "-") {
 		return 1, fmt.Errorf("error: invalid huggingface repo id %q", hfPath)
