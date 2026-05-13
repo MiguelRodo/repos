@@ -186,7 +186,7 @@ func runCodespacesAuth(args []string) error {
 }
 
 func codespacesAuthUsage() {
-	fmt.Print(`Usage: repos codespaces [--file <repo-list>] [--devcontainer <path>...] [--all]
+	fmt.Print(`Usage: repos codespace [--file <repo-list>] [--devcontainer <path>...] [--all]
                         [--permissions default|all|contents] [--dry-run]
                         [--debug] [--debug-file [file]]
 
