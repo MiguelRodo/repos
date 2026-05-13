@@ -23,6 +23,41 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
@@ -148,6 +183,7 @@ ul.task-list li input[type="checkbox"] {
   <ul>
   <li><a href="#basic-format" id="toc-basic-format" class="nav-link active" data-scroll-target="#basic-format">Basic Format</a></li>
   <li><a href="#cloning-a-specific-branch" id="toc-cloning-a-specific-branch" class="nav-link" data-scroll-target="#cloning-a-specific-branch">Cloning a Specific Branch</a></li>
+  <li><a href="#hugging-face-repositories" id="toc-hugging-face-repositories" class="nav-link" data-scroll-target="#hugging-face-repositories">Hugging Face Repositories</a></li>
   <li><a href="#custom-target-directory" id="toc-custom-target-directory" class="nav-link" data-scroll-target="#custom-target-directory">Custom Target Directory</a></li>
   <li><a href="#worktrees" id="toc-worktrees" class="nav-link" data-scroll-target="#worktrees">Worktrees</a></li>
   <li><a href="#visibility" id="toc-visibility" class="nav-link" data-scroll-target="#visibility">Visibility</a></li>
@@ -194,6 +230,15 @@ ul.task-list li input[type="checkbox"] {
 @feature-x
 @bugfix-123</code></pre>
 <p>If <code>owner/repo</code> is listed first, <code>@feature-x</code> and <code>@bugfix-123</code> use that repository as the remote. If the file begins with bare <code>@branch</code> lines and no repository has been listed yet, the current local repository’s own remote is used as the fallback.</p>
+</section>
+<section id="hugging-face-repositories" class="level2">
+<h2 class="anchored" data-anchor-id="hugging-face-repositories">Hugging Face Repositories</h2>
+<p>Use the <code>hf:</code> prefix to download Hugging Face repositories:</p>
+<pre class="text"><code>hf:datasets/huggingface/stack
+hf:datasets/huggingface/stack@main</code></pre>
+<p><code>hf://...</code> and mixed-case HF prefixes are normalized to canonical <code>hf:&lt;path&gt;</code> format. In HF entries, <code>@revision</code> can be a branch, tag, or commit. Bare <code>@revision</code> lines use the same fallback semantics as Git entries.</p>
+<p>Hugging Face entries require <code>huggingface-cli</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install huggingface_hub<span class="pp">[</span><span class="ss">cli</span><span class="pp">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </section>
 <section id="custom-target-directory" class="level2">
 <h2 class="anchored" data-anchor-id="custom-target-directory">Custom Target Directory</h2>

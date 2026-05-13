@@ -186,6 +186,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#default-fetch-behaviour" id="toc-default-fetch-behaviour" class="nav-link" data-scroll-target="#default-fetch-behaviour">Default Fetch Behaviour</a></li>
   <li><a href="#flag-precedence" id="toc-flag-precedence" class="nav-link" data-scroll-target="#flag-precedence">Flag Precedence</a></li>
   <li><a href="#missing-branches" id="toc-missing-branches" class="nav-link" data-scroll-target="#missing-branches">Missing Branches</a></li>
+  <li><a href="#hugging-face-repositories" id="toc-hugging-face-repositories" class="nav-link" data-scroll-target="#hugging-face-repositories">Hugging Face Repositories</a></li>
   <li><a href="#repository-layout" id="toc-repository-layout" class="nav-link" data-scroll-target="#repository-layout">Repository Layout</a></li>
   <li><a href="#whats-in-repos.list" id="toc-whats-in-repos.list" class="nav-link" data-scroll-target="#whats-in-repos.list">What’s in repos.list?</a></li>
   <li><a href="#authentication" id="toc-authentication" class="nav-link" data-scroll-target="#authentication">Authentication</a>
@@ -305,6 +306,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>When a requested branch does not exist on the remote, <code>repos clone</code> now fails by default and tells you to rerun with <code>--create</code>.</p>
 <p>Use <code>--create</code> when you explicitly want <code>repos clone</code> to create and push missing branches for <code>owner/repo@branch</code> or <code>@branch</code> entries.</p>
 </section>
+<section id="hugging-face-repositories" class="level2">
+<h2 class="anchored" data-anchor-id="hugging-face-repositories">Hugging Face Repositories</h2>
+<p>You can include Hugging Face repositories in <code>repos.list</code> using the <code>hf:</code> prefix:</p>
+<pre class="text"><code>hf:datasets/huggingface/stack
+hf:datasets/huggingface/stack@main</code></pre>
+<p>These entries are downloaded with <code>huggingface-cli</code>, so install it first:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install huggingface_hub<span class="pp">[</span><span class="ss">cli</span><span class="pp">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Fallback <code>@branch</code> / revision behavior is supported for HF entries in the same way as Git entries in <code>repos.list</code>.</p>
+</section>
 <section id="repository-layout" class="level2">
 <h2 class="anchored" data-anchor-id="repository-layout">Repository Layout</h2>
 <p>Repositories are cloned to the <strong>parent</strong> of your current directory:</p>
@@ -329,11 +339,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="https-remotes">HTTPS remotes</h3>
 <p>Git uses whatever credential helper is configured (<code>git config --get credential.helper</code>). Common options include <a href="https://github.com/git-ecosystem/git-credential-manager">Git Credential Manager</a>, <code>osxkeychain</code>, <code>wincred</code>, or a custom script. This works for any host, including GitHub. Set one up with your hosting platform’s instructions; <code>repos clone</code> will work automatically once git can authenticate.</p>
 <p>For GitHub specifically, two additional shortcuts are available:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Option 1 — gh CLI (registers itself as a git credential helper automatically)</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">gh</span> auth login</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Option 2 — personal-access token via environment variable</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GH_TOKEN</span><span class="op">=</span><span class="st">"your_personal_access_token"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Option 1 — gh CLI (registers itself as a git credential helper automatically)</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">gh</span> auth login</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Option 2 — personal-access token via environment variable</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GH_TOKEN</span><span class="op">=</span><span class="st">"your_personal_access_token"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>Note on <code>GH_TOKEN</code>:</strong> git does not read <code>GH_TOKEN</code> directly. It only prevents interactive prompts when <code>gh</code> is also configured as git’s credential helper (via <code>gh auth login</code> or <code>gh auth setup-git</code>), in which case <code>gh</code> reads <code>GH_TOKEN</code> from the environment and supplies the token to git on request.</p>
 <p>Public repositories on any host can be cloned without any credentials.</p>
 </section>

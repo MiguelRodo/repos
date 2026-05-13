@@ -255,6 +255,7 @@ myorg/documentation</code></pre>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>clone()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>This reads <code>repos.list</code> and clones everything to the <strong>parent directory</strong> of your current location.</p>
+<p><code>clone()</code> also supports Hugging Face entries in <code>repos.list</code> using the <code>hf:</code> prefix (for example, <code>hf:datasets/org/data@dev</code>). This requires <code>huggingface-cli</code> (<code>pip install huggingface_hub[cli]</code>).</p>
 <p><code>clone()</code> supports explicit fetch modes:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> clone</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>

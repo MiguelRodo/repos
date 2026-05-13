@@ -252,6 +252,7 @@ myorg/documentation</code></pre>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_clone</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>This reads <code>repos.list</code> and clones everything to the <strong>parent directory</strong> of your current location.</p>
+<p><code>repos_clone()</code> also supports Hugging Face entries in <code>repos.list</code> using the <code>hf:</code> prefix (for example, <code>hf:datasets/org/data@dev</code>). This requires <code>huggingface-cli</code> (<code>pip install huggingface_hub[cli]</code>).</p>
 <p><code>repos_clone()</code> supports explicit fetch modes:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_clone</span>(<span class="at">fetch_mode =</span> <span class="st">"deferred"</span>)  <span class="co"># default: fast clone, then restore wildcard refspec</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">repos_clone</span>(<span class="at">fetch_mode =</span> <span class="st">"single"</span>)    <span class="co"># strict single-branch isolation</span></span>

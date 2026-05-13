@@ -217,7 +217,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Create a <code>repos.list</code> file in your project directory listing the repositories you want:</p>
 <pre><code>myorg/data-curation
 myorg/analysis
-myorg/documentation</code></pre>
+myorg/documentation
+hf:datasets/huggingface/stack</code></pre>
+<p>Hugging Face entries (<code>hf:...</code>) require <code>huggingface-cli</code> (<code>pip install huggingface_hub[cli]</code>).</p>
 <p>Then run:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">repos</span> clone</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>This clones all listed repositories into the parent directory of your current location.</p>
@@ -233,7 +235,7 @@ myorg/documentation</code></pre>
 <li><code>repos codespace</code> — configure <code>GH_TOKEN</code> Codespaces secrets and devcontainer repository permissions</li>
 <li><code>repos install-r-deps</code> — install R dependencies across managed repos</li>
 </ul>
-<p><code>repos.list</code> supports specific branches (<code>owner/repo@branch</code>), fallback <code>@branch</code> entries, worktrees, visibility flags, and global flags. → <a href="repos-list.html">repos.list reference</a></p>
+<p><code>repos.list</code> supports specific branches (<code>owner/repo@branch</code>), fallback <code>@branch</code> entries, Hugging Face entries (<code>hf:owner/repo@revision</code>), worktrees, visibility flags, and global flags. → <a href="repos-list.html">repos.list reference</a></p>
 <p><strong>IDE integration</strong> — generate a VS Code multi-root workspace file (<code>repos workspace</code>) and configure GitHub Codespaces authentication (<code>repos codespace</code>). → <a href="vscode.html">VS Code integration</a></p>
 <p><strong>Run a pipeline across all repos</strong> — run <code>run.sh</code> (or another script), or run an explicit command in each repo. → <a href="pipelines.html">Running pipelines</a></p>
 </section>

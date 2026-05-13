@@ -91,6 +91,13 @@
     "text": "Missing Branches\nWhen a requested branch does not exist on the remote, repos clone now fails by default and tells you to rerun with --create.\nUse --create when you explicitly want repos clone to create and push missing branches for owner/repo@branch or @branch entries."
   },
   {
+    "objectID": "clone.html#hugging-face-repositories",
+    "href": "clone.html#hugging-face-repositories",
+    "title": "repos clone",
+    "section": "Hugging Face Repositories",
+    "text": "Hugging Face Repositories\nYou can include Hugging Face repositories in repos.list using the hf: prefix:\nhf:datasets/huggingface/stack\nhf:datasets/huggingface/stack@main\nThese entries are downloaded with huggingface-cli, so install it first:\npip install huggingface_hub[cli]\nFallback @branch / revision behavior is supported for HF entries in the same way as Git entries in repos.list."
+  },
+  {
     "objectID": "clone.html#repository-layout",
     "href": "clone.html#repository-layout",
     "title": "repos clone",
@@ -165,7 +172,7 @@
     "href": "python-package.html#end-to-end-workflow",
     "title": "Python Package",
     "section": "End-to-End Workflow",
-    "text": "End-to-End Workflow\n\nStep 1 — Create a repos.list file\nPlace a repos.list file in your project directory listing the repositories you want to manage (one per line):\nmyorg/data-curation\nmyorg/analysis\nmyorg/documentation\nSee the repos.list reference for the full syntax — branch pinning, worktrees, visibility flags, and more.\n\n\nStep 2 — Clone repositories\nfrom repos import clone\n\nclone()\nThis reads repos.list and clones everything to the parent directory of your current location.\nclone() supports explicit fetch modes:\nfrom repos import clone\n\nclone(fetch_mode=\"deferred\")  # default: fast clone, then restore wildcard refspec\nclone(fetch_mode=\"single\")    # strict single-branch isolation\nclone(fetch_mode=\"all\")       # full clone (all branches upfront)\nclone(depth=1)                # opt-in shallow clone\n\n\nStep 3 — Open in your IDE (optional)\nGenerate a VS Code multi-root workspace file:\nfrom repos import workspace\n\nworkspace()\n\n\nStep 4 — Run a pipeline\nOnce the repositories are cloned, run a script inside each one:\nfrom repos import run\n\nrun()          # executes run.sh in every repo\nSee run() below for all options."
+    "text": "End-to-End Workflow\n\nStep 1 — Create a repos.list file\nPlace a repos.list file in your project directory listing the repositories you want to manage (one per line):\nmyorg/data-curation\nmyorg/analysis\nmyorg/documentation\nSee the repos.list reference for the full syntax — branch pinning, worktrees, visibility flags, and more.\n\n\nStep 2 — Clone repositories\nfrom repos import clone\n\nclone()\nThis reads repos.list and clones everything to the parent directory of your current location.\nclone() also supports Hugging Face entries in repos.list using the hf: prefix (for example, hf:datasets/org/data@dev). This requires huggingface-cli (pip install huggingface_hub[cli]).\nclone() supports explicit fetch modes:\nfrom repos import clone\n\nclone(fetch_mode=\"deferred\")  # default: fast clone, then restore wildcard refspec\nclone(fetch_mode=\"single\")    # strict single-branch isolation\nclone(fetch_mode=\"all\")       # full clone (all branches upfront)\nclone(depth=1)                # opt-in shallow clone\n\n\nStep 3 — Open in your IDE (optional)\nGenerate a VS Code multi-root workspace file:\nfrom repos import workspace\n\nworkspace()\n\n\nStep 4 — Run a pipeline\nOnce the repositories are cloned, run a script inside each one:\nfrom repos import run\n\nrun()          # executes run.sh in every repo\nSee run() below for all options."
   },
   {
     "objectID": "python-package.html#api-reference",
@@ -245,6 +252,13 @@
     "text": "Cloning a Specific Branch\nAppend @branch to clone only that branch:\nowner/repo@develop\nUse @branch without a repository name to clone only that branch from the most recently listed repository (or the current repository if none has been listed yet):\nowner/repo\n@feature-x\n@bugfix-123\nIf owner/repo is listed first, @feature-x and @bugfix-123 use that repository as the remote. If the file begins with bare @branch lines and no repository has been listed yet, the current local repository’s own remote is used as the fallback."
   },
   {
+    "objectID": "repos-list.html#hugging-face-repositories",
+    "href": "repos-list.html#hugging-face-repositories",
+    "title": "repos.list Reference",
+    "section": "Hugging Face Repositories",
+    "text": "Hugging Face Repositories\nUse the hf: prefix to download Hugging Face repositories:\nhf:datasets/huggingface/stack\nhf:datasets/huggingface/stack@main\nhf://... and mixed-case HF prefixes are normalized to canonical hf:&lt;path&gt; format. In HF entries, @revision can be a branch, tag, or commit. Bare @revision lines use the same fallback semantics as Git entries.\nHugging Face entries require huggingface-cli:\npip install huggingface_hub[cli]"
+  },
+  {
     "objectID": "repos-list.html#custom-target-directory",
     "href": "repos-list.html#custom-target-directory",
     "title": "repos.list Reference",
@@ -298,7 +312,7 @@
     "href": "r-package.html#end-to-end-workflow",
     "title": "R Package",
     "section": "End-to-End Workflow",
-    "text": "End-to-End Workflow\n\nStep 1 — Create a repos.list file\nPlace a repos.list file in your project directory listing the repositories you want to manage (one per line):\nmyorg/data-curation\nmyorg/analysis\nmyorg/documentation\nSee the repos.list reference for the full syntax — branch pinning, worktrees, visibility flags, and more.\n\n\nStep 2 — Clone repositories\nlibrary(repos)\n\nrepos_clone()\nThis reads repos.list and clones everything to the parent directory of your current location.\nrepos_clone() supports explicit fetch modes:\nrepos_clone(fetch_mode = \"deferred\")  # default: fast clone, then restore wildcard refspec\nrepos_clone(fetch_mode = \"single\")    # strict single-branch isolation\nrepos_clone(fetch_mode = \"all\")       # full clone (all branches upfront)\nrepos_clone(depth = 1)                # opt-in shallow clone\n\n\nStep 3 — Open in your IDE (optional)\nGenerate a VS Code multi-root workspace file:\nrepos_workspace()\nSee repos_workspace() below for all options.\n\n\nStep 4 — Run a pipeline\nOnce the repositories are cloned, run a script inside each one:\nrepos_run()          # executes run.sh in every repo\nSee repos_run() below for all options."
+    "text": "End-to-End Workflow\n\nStep 1 — Create a repos.list file\nPlace a repos.list file in your project directory listing the repositories you want to manage (one per line):\nmyorg/data-curation\nmyorg/analysis\nmyorg/documentation\nSee the repos.list reference for the full syntax — branch pinning, worktrees, visibility flags, and more.\n\n\nStep 2 — Clone repositories\nlibrary(repos)\n\nrepos_clone()\nThis reads repos.list and clones everything to the parent directory of your current location.\nrepos_clone() also supports Hugging Face entries in repos.list using the hf: prefix (for example, hf:datasets/org/data@dev). This requires huggingface-cli (pip install huggingface_hub[cli]).\nrepos_clone() supports explicit fetch modes:\nrepos_clone(fetch_mode = \"deferred\")  # default: fast clone, then restore wildcard refspec\nrepos_clone(fetch_mode = \"single\")    # strict single-branch isolation\nrepos_clone(fetch_mode = \"all\")       # full clone (all branches upfront)\nrepos_clone(depth = 1)                # opt-in shallow clone\n\n\nStep 3 — Open in your IDE (optional)\nGenerate a VS Code multi-root workspace file:\nrepos_workspace()\nSee repos_workspace() below for all options.\n\n\nStep 4 — Run a pipeline\nOnce the repositories are cloned, run a script inside each one:\nrepos_run()          # executes run.sh in every repo\nSee repos_run() below for all options."
   },
   {
     "objectID": "r-package.html#api-reference",
@@ -333,14 +347,14 @@
     "href": "index.html#quick-start",
     "title": "repos",
     "section": "Quick Start",
-    "text": "Quick Start\nCreate a repos.list file in your project directory listing the repositories you want:\nmyorg/data-curation\nmyorg/analysis\nmyorg/documentation\nThen run:\nrepos clone\nThis clones all listed repositories into the parent directory of your current location.\nBy default, repos clone uses --fetch-all-deferred: a fast single-branch clone plus immediate wildcard fetch-refspec restoration. You can also use --fetch-single (strict isolation) or --fetch-all (full clone upfront)."
+    "text": "Quick Start\nCreate a repos.list file in your project directory listing the repositories you want:\nmyorg/data-curation\nmyorg/analysis\nmyorg/documentation\nhf:datasets/huggingface/stack\nHugging Face entries (hf:...) require huggingface-cli (pip install huggingface_hub[cli]).\nThen run:\nrepos clone\nThis clones all listed repositories into the parent directory of your current location.\nBy default, repos clone uses --fetch-all-deferred: a fast single-branch clone plus immediate wildcard fetch-refspec restoration. You can also use --fetch-single (strict isolation) or --fetch-all (full clone upfront)."
   },
   {
     "objectID": "index.html#commands-and-capabilities",
     "href": "index.html#commands-and-capabilities",
     "title": "repos",
     "section": "Commands and capabilities",
-    "text": "Commands and capabilities\n\nrepos clone — clone repos listed in repos.list (including branch/worktree patterns and fetch modes)\nrepos workspace — generate or refresh entire-project.code-workspace\nrepos run — run scripts or explicit commands across managed repos\nrepos create — create missing GitHub repos from repos.list\nrepos codespace — configure GH_TOKEN Codespaces secrets and devcontainer repository permissions\nrepos install-r-deps — install R dependencies across managed repos\n\nrepos.list supports specific branches (owner/repo@branch), fallback @branch entries, worktrees, visibility flags, and global flags. → repos.list reference\nIDE integration — generate a VS Code multi-root workspace file (repos workspace) and configure GitHub Codespaces authentication (repos codespace). → VS Code integration\nRun a pipeline across all repos — run run.sh (or another script), or run an explicit command in each repo. → Running pipelines"
+    "text": "Commands and capabilities\n\nrepos clone — clone repos listed in repos.list (including branch/worktree patterns and fetch modes)\nrepos workspace — generate or refresh entire-project.code-workspace\nrepos run — run scripts or explicit commands across managed repos\nrepos create — create missing GitHub repos from repos.list\nrepos codespace — configure GH_TOKEN Codespaces secrets and devcontainer repository permissions\nrepos install-r-deps — install R dependencies across managed repos\n\nrepos.list supports specific branches (owner/repo@branch), fallback @branch entries, Hugging Face entries (hf:owner/repo@revision), worktrees, visibility flags, and global flags. → repos.list reference\nIDE integration — generate a VS Code multi-root workspace file (repos workspace) and configure GitHub Codespaces authentication (repos codespace). → VS Code integration\nRun a pipeline across all repos — run run.sh (or another script), or run an explicit command in each repo. → Running pipelines"
   },
   {
     "objectID": "index.html#language-packages",
