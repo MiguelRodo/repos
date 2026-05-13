@@ -188,6 +188,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#worktrees" id="toc-worktrees" class="nav-link" data-scroll-target="#worktrees">Worktrees</a></li>
   <li><a href="#visibility" id="toc-visibility" class="nav-link" data-scroll-target="#visibility">Visibility</a></li>
   <li><a href="#global-flags" id="toc-global-flags" class="nav-link" data-scroll-target="#global-flags">Global Flags</a></li>
+  <li><a href="#pipeline-only-per-line-skip" id="toc-pipeline-only-per-line-skip" class="nav-link" data-scroll-target="#pipeline-only-per-line-skip">Pipeline-only per-line skip</a></li>
   <li><a href="#example" id="toc-example" class="nav-link" data-scroll-target="#example">Example</a></li>
   </ul>
 </nav>
@@ -322,6 +323,14 @@ owner/other-repo --private</code></pre>
 </ol>
 <p>Per-line <code>--public</code>/<code>--private</code> flags always override the global default.</p>
 <p><code>--fetch-single</code>, <code>--fetch-all-deferred</code>, <code>--fetch-all</code>, and <code>--depth &lt;n&gt;</code> may also be specified per-line to override global clone behavior for a specific repository or <code>@branch</code> line.</p>
+</section>
+<section id="pipeline-only-per-line-skip" class="level2">
+<h2 class="anchored" data-anchor-id="pipeline-only-per-line-skip">Pipeline-only per-line skip</h2>
+<p>Use <code>--dont-run</code> on a repository line or <code>@branch</code> fallback line to keep that entry in the workspace but exclude it from <code>repos run</code> script mode:</p>
+<pre class="text"><code>myorg/backend
+myorg/generated-data --dont-run
+@staging --dont-run</code></pre>
+<p><code>--dont-run</code> is ignored by clone/workspace/setup commands.</p>
 </section>
 <section id="example" class="level2">
 <h2 class="anchored" data-anchor-id="example">Example</h2>
