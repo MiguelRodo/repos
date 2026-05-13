@@ -15,8 +15,11 @@ import (
 )
 
 type runTarget struct {
-	name string
-	path string
+	name     string
+	path     string
+	repoSpec string
+	repoType string
+	dontRun  bool
 }
 
 type runResult struct {
@@ -273,6 +276,9 @@ func (s *state) collectPipelineTargets(opts runOptions) ([]pipelineTarget, error
 		if !shouldRunRepo(t.name, opts.include, opts.exclude) {
 			continue
 		}
+		if t.dontRun || shouldAutoSkipPipelineRepo(t.repoSpec, t.repoType) {
+			continue
+		}
 		pipelineTargets = append(pipelineTargets, pipelineTarget{
 			target: t,
 			script: opts.script,
@@ -327,11 +333,24 @@ func (s *state) collectConciseRunTargets(opts runOptions) ([]pipelineTarget, err
 			return nil, err
 		}
 		script := opts.script
-		if len(parts) > 1 {
-			script = parts[1]
+		hasPerLineScript := false
+		dontRun := false
+		for _, tok := range parts[1:] {
+			if tok == "--dont-run" {
+				dontRun = true
+				continue
+			}
+			if hasPerLineScript {
+				return nil, fmt.Errorf("invalid concise repos.list line (multiple script values): %s", line)
+			}
+			script = tok
+			hasPerLineScript = true
 			if err := validateRunScriptPath(script); err != nil {
 				return nil, err
 			}
+		}
+		if dontRun {
+			continue
 		}
 		targets = append(targets, pipelineTarget{
 			target: runTarget{
@@ -369,6 +388,23 @@ func shouldRunRepo(name string, include, exclude map[string]struct{}) bool {
 		}
 	}
 	return true
+}
+
+func shouldAutoSkipPipelineRepo(repoSpec, repoType string) bool {
+	if repoType != repoTypeHuggingFace {
+		return false
+	}
+	normalized := strings.TrimPrefix(strings.ToLower(specToHTTPS(repoSpec)), "hf:")
+	if normalized == "" {
+		return false
+	}
+	if strings.HasPrefix(normalized, "datasets/") || strings.HasPrefix(normalized, "models/") {
+		return true
+	}
+	if strings.HasPrefix(normalized, "spaces/") {
+		return false
+	}
+	return strings.Count(normalized, "/") == 1
 }
 
 func runPipelineTargets(targets []pipelineTarget, opts runOptions) (runPipelineStats, error) {
@@ -519,7 +555,13 @@ func (s *state) collectRunTargets() ([]runTarget, error) {
 				return nil, err
 			}
 			destPath := filepath.Join(s.parentDir, destName)
-			targets = append(targets, runTarget{name: filepath.Base(destPath), path: destPath})
+			targets = append(targets, runTarget{
+				name:     filepath.Base(destPath),
+				path:     destPath,
+				repoSpec: ins.repoSpec,
+				repoType: ins.repoType,
+				dontRun:  ins.dontRun,
+			})
 
 			if ins.isWorktree {
 				if baseName != "" {
@@ -550,7 +592,13 @@ func (s *state) collectRunTargets() ([]runTarget, error) {
 		}
 
 		destPath := filepath.Join(s.parentDir, destName)
-		targets = append(targets, runTarget{name: filepath.Base(destPath), path: destPath})
+		targets = append(targets, runTarget{
+			name:     filepath.Base(destPath),
+			path:     destPath,
+			repoSpec: ins.repoSpec,
+			repoType: ins.repoType,
+			dontRun:  ins.dontRun,
+		})
 		fallbackHTTPS = remoteHTTPS
 		fallbackLocalName = filepath.Base(destPath)
 		s.seenRemoteLocal[remoteHTTPS] = destPath
@@ -719,6 +767,8 @@ Run mode:
 Options:
   -f, --file <file>        Repo list file (default: repos.list or repos-to-clone.list)
       --script <path>      Script to run in script mode (default: run.sh)
+                            Per-line --dont-run entries in repos.list are skipped.
+                            Hugging Face datasets/models entries are also skipped.
   -i, --include <names>    Comma-separated repository names to include
   -e, --exclude <names>    Comma-separated repository names to exclude
       --ensure-setup       Run clone step before script execution
@@ -736,6 +786,7 @@ Examples:
   repos run --concurrent npm install
 `)
 }
+
 // pluralRepo returns "repository" for n==1 and "repositories" otherwise.
 func pluralRepo(n int) string {
 	if n == 1 {

@@ -39,6 +39,16 @@ either `renv.lock` or `DESCRIPTION`.
 | `--verbose` | Enable verbose logging |
 | `--concurrent` | Run explicit command mode in parallel |
 
+In script mode, pipeline targets can be skipped per-line in `repos.list` with
+`--dont-run`:
+
+```text
+myorg/backend
+myorg/legacy-service --dont-run
+```
+
+`repos run` also skips Hugging Face dataset/model entries automatically.
+
 ```bash
 # Run a custom script in each repo
 repos run --script build.sh

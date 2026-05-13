@@ -63,6 +63,7 @@ type instruction struct {
 	allBranches bool
 	isWorktree  bool
 	isAtBranch  bool
+	dontRun     bool
 	fetchMode   string
 	depth       int
 }
@@ -440,6 +441,8 @@ func (s *state) parseEffectiveLine(trimmed string, fallbackHTTPS string) (instru
 				continue
 			}
 			switch tok {
+			case "--dont-run":
+				ins.dontRun = true
 			case "-w", "--worktree":
 				if repoType == repoTypeHuggingFace {
 					fmt.Fprintf(os.Stderr, "Warning: %q ignored on huggingface line: %s\n", tok, trimmed)
@@ -518,6 +521,8 @@ func (s *state) parseEffectiveLine(trimmed string, fallbackHTTPS string) (instru
 			continue
 		}
 		switch tok {
+		case "--dont-run":
+			ins.dontRun = true
 		case "-a", "--all-branches":
 			if ins.repoType == repoTypeHuggingFace {
 				fmt.Fprintf(os.Stderr, "Warning: %q ignored on huggingface line: %s\n", tok, trimmed)

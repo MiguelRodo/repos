@@ -336,6 +336,10 @@ def run(
         dry_run: If True, show what would be done without executing
         verbose: If True, enable verbose logging
         continue_on_error: If True, continue on failure and report all results
+        
+    Notes:
+        In script mode, repos.list lines with ``--dont-run`` are skipped.
+        Hugging Face dataset/model entries are also skipped automatically.
         **kwargs: Additional keyword arguments (captured but ignored, for extensibility)
         
     Returns:

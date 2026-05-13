@@ -218,6 +218,27 @@ func TestParseListHuggingFaceRepoSpecAcceptsNonGitRevisionSuffix(t *testing.T) {
 	}
 }
 
+func TestParseListSupportsPerLineDontRunFlag(t *testing.T) {
+	input := strings.NewReader(`
+owner/repo --dont-run
+owner/other-repo
+`)
+
+	got, err := ParseList(input, Options{})
+	if err != nil {
+		t.Fatalf("ParseList returned error: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("expected 2 instructions, got %d", len(got))
+	}
+	if !got[0].DontRun {
+		t.Fatalf("expected first instruction DontRun=true")
+	}
+	if got[1].DontRun {
+		t.Fatalf("expected second instruction DontRun=false")
+	}
+}
+
 func TestSpecToHTTPSNormalizesHuggingFaceSlashes(t *testing.T) {
 	tests := []string{
 		"hf:datasets/acme/data",

@@ -516,6 +516,9 @@ repos_codespace <- function(file = NULL, devcontainer = NULL, permissions = NULL
 #'   \item Execute the target script (default: \code{run.sh}) in each repository
 #'   \item Print a per-repo summary at the end of execution
 #' }
+#' In script mode, lines flagged with \code{--dont-run} in \code{repos.list}
+#' are skipped. Hugging Face dataset/model entries are also skipped
+#' automatically.
 #'
 #' @examples
 #' \dontrun{
