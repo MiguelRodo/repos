@@ -10,6 +10,7 @@ override_dh_auto_install:
 override_dh_auto_clean:
 	dh_auto_clean
 	rm -rf debian/repos
+	rm -f cmd/repos/repos
 
 override_dh_auto_build:
 	cd cmd/repos && go build -o repos .

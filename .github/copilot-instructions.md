@@ -65,7 +65,7 @@ Run tests from the repository root:
 ```bash
 cd cmd/repos
 go test ./... -v
-cd ../
+cd ../..
 python tests/test-python-wrappers.py
 Rscript tests/test-r-wrappers.R
 ```
