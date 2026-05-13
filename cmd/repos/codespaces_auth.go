@@ -542,7 +542,7 @@ func mergeRepoPermissions(doc map[string]interface{}, reposBlock map[string]inte
 
 // validateDevcontainerRelPath checks that a path relative to .devcontainer/ is safe.
 func validateDevcontainerRelPath(p string) error {
-	if filepath.IsAbs(p) {
+	if filepath.IsAbs(p) || strings.HasPrefix(p, "/") || strings.HasPrefix(p, `\`) {
 		return fmt.Errorf("devcontainer path must be relative, not absolute: %s", p)
 	}
 	clean := filepath.Clean(p)

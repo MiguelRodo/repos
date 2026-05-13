@@ -3,9 +3,11 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -96,7 +98,7 @@ func TestRunCloneWorktreeAndFallbackTracking(t *testing.T) {
 	}
 
 	worktreeList := runGit(t, projectDir, "worktree", "list")
-	if !strings.Contains(worktreeList, worktreeDir) {
+	if !strings.Contains(normalizePathForCompare(worktreeList), normalizePathForCompare(worktreeDir)) {
 		t.Fatalf("expected %s in worktree list, got %q", worktreeDir, worktreeList)
 	}
 
@@ -517,9 +519,7 @@ func TestRunCloneHuggingFaceRequiresCLIWhenHFRepoPresent(t *testing.T) {
 	}
 	binDir := filepath.Join(tmp, "bin-no-hf")
 	mustMkdir(t, binDir)
-	if err := os.Symlink(gitPath, filepath.Join(binDir, "git")); err != nil {
-		t.Fatalf("symlink git: %v", err)
-	}
+	mustExposeExecutableInBin(t, gitPath, binDir, "git")
 	t.Setenv("PATH", binDir)
 
 	oldWD, err := os.Getwd()
@@ -562,26 +562,10 @@ func TestRunCloneHuggingFaceRoutesToCLIAndPassesHFToken(t *testing.T) {
 	}
 	binDir := filepath.Join(tmp, "bin-with-hf")
 	mustMkdir(t, binDir)
-	if err := os.Symlink(gitPath, filepath.Join(binDir, "git")); err != nil {
-		t.Fatalf("symlink git: %v", err)
-	}
+	mustExposeExecutableInBin(t, gitPath, binDir, "git")
 
 	logFile := filepath.Join(tmp, "hf.log")
-	hfShim := filepath.Join(binDir, "huggingface-cli")
-	script := fmt.Sprintf(`#!/bin/sh
-echo "$@" >> %q
-echo "HF_TOKEN=$HF_TOKEN" >> %q
-while [ "$#" -gt 0 ]; do
-  if [ "$1" = "--local-dir" ]; then
-    shift
-    mkdir -p "$1"
-  fi
-  shift
-done
-`, logFile, logFile)
-	if err := os.WriteFile(hfShim, []byte(script), 0o755); err != nil {
-		t.Fatalf("write huggingface shim: %v", err)
-	}
+	mustWriteHuggingFaceShim(t, binDir, logFile, true)
 
 	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	t.Setenv("HF_TOKEN", "token-123")
@@ -634,26 +618,10 @@ func TestRunCloneHuggingFaceSkipsAuthCheck(t *testing.T) {
 	}
 	binDir := filepath.Join(tmp, "bin-with-hf")
 	mustMkdir(t, binDir)
-	if err := os.Symlink(gitPath, filepath.Join(binDir, "git")); err != nil {
-		t.Fatalf("symlink git: %v", err)
-	}
+	mustExposeExecutableInBin(t, gitPath, binDir, "git")
 
 	logFile := filepath.Join(tmp, "hf.log")
-	hfShim := filepath.Join(binDir, "huggingface-cli")
-	script := fmt.Sprintf(`#!/bin/sh
-echo "$@" >> %q
-echo "HF_TOKEN=$HF_TOKEN" >> %q
-while [ "$#" -gt 0 ]; do
-  if [ "$1" = "--local-dir" ]; then
-    shift
-    mkdir -p "$1"
-  fi
-  shift
-done
-`, logFile, logFile)
-	if err := os.WriteFile(hfShim, []byte(script), 0o755); err != nil {
-		t.Fatalf("write huggingface shim: %v", err)
-	}
+	mustWriteHuggingFaceShim(t, binDir, logFile, true)
 
 	oldHasNonLocal := hasNonLocalRemotesInFileFunc
 	oldAuthCheck := checkNonInteractiveAuthForCloneFunc
@@ -722,25 +690,10 @@ func TestRunCloneHuggingFaceFallbackAllowsNonGitRevision(t *testing.T) {
 	}
 	binDir := filepath.Join(tmp, "bin-with-hf")
 	mustMkdir(t, binDir)
-	if err := os.Symlink(gitPath, filepath.Join(binDir, "git")); err != nil {
-		t.Fatalf("symlink git: %v", err)
-	}
+	mustExposeExecutableInBin(t, gitPath, binDir, "git")
 
 	logFile := filepath.Join(tmp, "hf.log")
-	hfShim := filepath.Join(binDir, "huggingface-cli")
-	script := fmt.Sprintf(`#!/bin/sh
-echo "$@" >> %q
-while [ "$#" -gt 0 ]; do
-  if [ "$1" = "--local-dir" ]; then
-    shift
-    mkdir -p "$1"
-  fi
-  shift
-done
-`, logFile)
-	if err := os.WriteFile(hfShim, []byte(script), 0o755); err != nil {
-		t.Fatalf("write huggingface shim: %v", err)
-	}
+	mustWriteHuggingFaceShim(t, binDir, logFile, false)
 
 	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 
@@ -789,13 +742,8 @@ func TestRunCloneHuggingFaceRejectsOptionStyleRepoID(t *testing.T) {
 	}
 	binDir := filepath.Join(tmp, "bin-with-hf")
 	mustMkdir(t, binDir)
-	if err := os.Symlink(gitPath, filepath.Join(binDir, "git")); err != nil {
-		t.Fatalf("symlink git: %v", err)
-	}
-	hfShim := filepath.Join(binDir, "huggingface-cli")
-	if err := os.WriteFile(hfShim, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
-		t.Fatalf("write huggingface shim: %v", err)
-	}
+	mustExposeExecutableInBin(t, gitPath, binDir, "git")
+	mustWriteNoopHuggingFaceShim(t, binDir)
 
 	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 
@@ -970,5 +918,108 @@ func assertDirExists(t *testing.T, dir string) {
 	}
 	if !st.IsDir() {
 		t.Fatalf("expected %s to be a directory", dir)
+	}
+}
+
+func normalizePathForCompare(s string) string {
+	normalized := strings.ReplaceAll(filepath.Clean(s), `\`, "/")
+	if runtime.GOOS == "windows" {
+		normalized = strings.ToLower(normalized)
+	}
+	return normalized
+}
+
+func mustExposeExecutableInBin(t *testing.T, srcPath, binDir, commandName string) {
+	t.Helper()
+
+	dstPath := filepath.Join(binDir, commandName)
+	if runtime.GOOS == "windows" {
+		dstPath += ".exe"
+	}
+	if err := os.Symlink(srcPath, dstPath); err == nil {
+		return
+	}
+
+	src, err := os.Open(srcPath)
+	if err != nil {
+		t.Fatalf("open %s: %v", srcPath, err)
+	}
+	defer src.Close()
+
+	dst, err := os.OpenFile(dstPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o755)
+	if err != nil {
+		t.Fatalf("create %s: %v", dstPath, err)
+	}
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, src); err != nil {
+		t.Fatalf("copy executable to %s: %v", dstPath, err)
+	}
+}
+
+func mustWriteHuggingFaceShim(t *testing.T, binDir, logFile string, logToken bool) {
+	t.Helper()
+
+	if runtime.GOOS == "windows" {
+		hfShim := filepath.Join(binDir, "huggingface-cli.bat")
+		tokenLine := ""
+		if logToken {
+			tokenLine = fmt.Sprintf("echo HF_TOKEN=%%HF_TOKEN%%>> %q\n", logFile)
+		}
+		script := fmt.Sprintf(`@echo off
+setlocal EnableDelayedExpansion
+echo %%*>> %q
+%sset "LOCAL_DIR="
+:loop
+if "%%~1"=="" goto done
+if "%%~1"=="--local-dir" (
+  shift
+  if "%%~1"=="" goto done
+  set "LOCAL_DIR=%%~1"
+)
+shift
+goto loop
+:done
+if not "%%LOCAL_DIR%%"=="" mkdir "%%LOCAL_DIR%%" 2>nul
+exit /b 0
+`, logFile, tokenLine)
+		if err := os.WriteFile(hfShim, []byte(script), 0o755); err != nil {
+			t.Fatalf("write huggingface shim: %v", err)
+		}
+		return
+	}
+
+	hfShim := filepath.Join(binDir, "huggingface-cli")
+	tokenLine := ""
+	if logToken {
+		tokenLine = fmt.Sprintf("echo \"HF_TOKEN=$HF_TOKEN\" >> %q\n", logFile)
+	}
+	script := fmt.Sprintf(`#!/bin/sh
+echo "$@" >> %q
+%swhile [ "$#" -gt 0 ]; do
+  if [ "$1" = "--local-dir" ]; then
+    shift
+    mkdir -p "$1"
+  fi
+  shift
+done
+`, logFile, tokenLine)
+	if err := os.WriteFile(hfShim, []byte(script), 0o755); err != nil {
+		t.Fatalf("write huggingface shim: %v", err)
+	}
+}
+
+func mustWriteNoopHuggingFaceShim(t *testing.T, binDir string) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		hfShim := filepath.Join(binDir, "huggingface-cli.bat")
+		if err := os.WriteFile(hfShim, []byte("@echo off\r\nexit /b 0\r\n"), 0o755); err != nil {
+			t.Fatalf("write huggingface shim: %v", err)
+		}
+		return
+	}
+	hfShim := filepath.Join(binDir, "huggingface-cli")
+	if err := os.WriteFile(hfShim, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatalf("write huggingface shim: %v", err)
 	}
 }
