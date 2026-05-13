@@ -40,7 +40,6 @@ One of:
     remote branches are downloaded upfront.
 }}
 
-<<<<<<< HEAD
 \item{depth}{Integer. Optional shallow clone depth. Must be a positive whole
 number when provided.}
 
