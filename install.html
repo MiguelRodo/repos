@@ -181,7 +181,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#ubuntu-debian" id="toc-ubuntu-debian" class="nav-link active" data-scroll-target="#ubuntu-debian">Ubuntu / Debian</a>
+  <li><a href="#release-asset-matrix" id="toc-release-asset-matrix" class="nav-link active" data-scroll-target="#release-asset-matrix">Release asset matrix</a></li>
+  <li><a href="#ubuntu-debian" id="toc-ubuntu-debian" class="nav-link" data-scroll-target="#ubuntu-debian">Ubuntu / Debian</a>
   <ul class="collapse">
   <li><a href="#option-1-install-from-apt-repository-recommended" id="toc-option-1-install-from-apt-repository-recommended" class="nav-link" data-scroll-target="#option-1-install-from-apt-repository-recommended">Option 1: Install from APT Repository (Recommended)</a></li>
   <li><a href="#option-2-local-release-installer-no-sudo-required" id="toc-option-2-local-release-installer-no-sudo-required" class="nav-link" data-scroll-target="#option-2-local-release-installer-no-sudo-required">Option 2: Local Release Installer (No sudo required)</a></li>
@@ -227,6 +228,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 <p><code>repos</code> is distributed as a compiled Go CLI binary. Install it via system package managers, release installers, or from source. Optional R and Python wrappers dispatch to the installed <code>repos</code> binary.</p>
+<section id="release-asset-matrix" class="level2">
+<h2 class="anchored" data-anchor-id="release-asset-matrix">Release asset matrix</h2>
+<p>GitHub Releases publish Go CLI binaries for:</p>
+<ul>
+<li>Linux (<code>amd64</code>, <code>arm64</code>) as <code>.tar.gz</code></li>
+<li>macOS (<code>amd64</code>, <code>arm64</code>) as <code>.tar.gz</code></li>
+<li>Windows (<code>amd64</code>, <code>arm64</code>) as <code>.zip</code> (plus <code>.exe</code> bare binaries for installer scripts)</li>
+<li>Stable direct-download bare binaries for installer scripts:
+<ul>
+<li><code>repos_linux_&lt;arch&gt;</code></li>
+<li><code>repos_darwin_&lt;arch&gt;</code></li>
+<li><code>repos_windows_&lt;arch&gt;.exe</code></li>
+</ul></li>
+</ul>
+<p>Python and R components are wrappers around the same CLI and are platform-neutral. Install the wrapper package (<code>pip</code>/<code>R</code>) and ensure <code>repos</code> is installed on <code>PATH</code>.</p>
+</section>
 <section id="ubuntu-debian" class="level2">
 <h2 class="anchored" data-anchor-id="ubuntu-debian">Ubuntu / Debian</h2>
 <section id="option-1-install-from-apt-repository-recommended" class="level3">
