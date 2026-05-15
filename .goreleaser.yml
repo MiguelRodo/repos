@@ -56,7 +56,9 @@ scoops:
     license: "MIT"
 
 brews:
-  - repository:
+  - ids:
+      - tarballs
+    repository:
       owner: MiguelRodo
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
