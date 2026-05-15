@@ -10,14 +10,15 @@ import (
 	"io/fs"
 	"net/url"
 	"os"
-	"os/exec"
+
 	"path/filepath"
 	"sort"
 	"strings"
 
+
 	"github.com/MiguelRodo/repos/v2/internal/gitcmd"
 	"github.com/MiguelRodo/repos/v2/internal/parser"
-	"golang.org/x/term"
+
 )
 
 // stringSliceFlag is a flag.Value that accumulates multiple --flag values into a slice.
@@ -59,7 +60,7 @@ func runCodespacesAuth(args []string) error {
 	cfs.Var(&devcontainerPaths, "d", "path relative to .devcontainer/ to update (shorthand for --devcontainer)")
 	allDevcontainers := cfs.Bool("all", false, "update all devcontainer.json files under .devcontainer/")
 	permissions := cfs.String("permissions", "default", `permissions level for repositories block: "default", "all", or "contents"`)
-	dryRun := cfs.Bool("dry-run", false, "print devcontainer.json changes to stdout without writing; also skips setting GH_TOKEN secret")
+	dryRun := cfs.Bool("dry-run", false, "print devcontainer.json changes to stdout without writing")
 	cfs.BoolVar(dryRun, "n", false, "same as --dry-run")
 
 	// Debug flags
@@ -108,15 +109,7 @@ func runCodespacesAuth(args []string) error {
 		fmt.Fprintf(w, "[DEBUG codespaces-go] "+format+"\n", a...)
 	}
 
-	if _, err := exec.LookPath("gh"); err != nil {
-		return errors.New("gh CLI is required but was not found on PATH")
-	}
-
-	token, err := resolveCodespacesToken()
-	if err != nil {
-		return err
-	}
-
+	// Determine devcontainer.json paths to update.
 	absReposFile, err := filepath.Abs(*reposFile)
 	if err != nil {
 		return fmt.Errorf("resolving repos file path: %w", err)
@@ -128,29 +121,6 @@ func runCodespacesAuth(args []string) error {
 	}
 	dbg("found %d managed repositories", len(repos))
 
-	// Set GH_TOKEN Codespaces secret for each repository.
-	if *dryRun {
-		fmt.Printf("DRY-RUN: would set GH_TOKEN Codespaces secret for %d repositories:\n", len(repos))
-		for _, repo := range repos {
-			fmt.Printf("  - %s\n", repo)
-		}
-	} else {
-		repoWord := "repositories"
-		if len(repos) == 1 {
-			repoWord = "repository"
-		}
-		fmt.Printf("Setting GH_TOKEN secret for %d %s...\n", len(repos), repoWord)
-		for _, repo := range repos {
-			fmt.Printf("  - %s\n", repo)
-			dbg("setting GH_TOKEN secret for %s", repo)
-			if err := setRepoCodespacesSecret(repo, token); err != nil {
-				return err
-			}
-		}
-		fmt.Println("Done.")
-	}
-
-	// Determine devcontainer.json paths to update.
 	var dcPaths []string
 	if *allDevcontainers {
 		dbg("scanning .devcontainer/ for all devcontainer.json files")
@@ -190,13 +160,8 @@ func codespacesAuthUsage() {
                         [--permissions default|all|contents] [--dry-run]
                         [--debug] [--debug-file [file]]
 
-Sets the GH_TOKEN Codespaces secret for each managed repository and updates
-devcontainer.json with the customizations.codespaces.repositories block.
-
-Token lookup order:
-  1) GH_TOKEN
-  2) CODESPACES_TOKEN
-  3) Secure terminal prompt
+Updates devcontainer.json with the customizations.codespaces.repositories block
+for each managed repository.
 
 Options:
   -f, --file <file>           Path to repo list file (default: repos.list,
@@ -212,40 +177,12 @@ Options:
                                 all      - write-all
                                 contents - contents write only
   -n, --dry-run               Print devcontainer.json changes to stdout without
-                              writing; also skips setting GH_TOKEN secret
+                              writing
   --debug                     Enable debug output to stderr.
   --debug-file [file]         Enable debug output to file (auto-generate temp
                               if no path given).
   -h, --help                  Show this help message.
 `)
-}
-
-func resolveCodespacesToken() (string, error) {
-	if tok := strings.TrimSpace(os.Getenv("GH_TOKEN")); tok != "" {
-		return tok, nil
-	}
-	if tok := strings.TrimSpace(os.Getenv("CODESPACES_TOKEN")); tok != "" {
-		return tok, nil
-	}
-	return promptTokenSecurely()
-}
-
-func promptTokenSecurely() (string, error) {
-	if !term.IsTerminal(int(os.Stdin.Fd())) {
-		return "", errors.New("no GH_TOKEN or CODESPACES_TOKEN set and stdin is not interactive")
-	}
-
-	fmt.Fprint(os.Stderr, "Enter token to store as GH_TOKEN secret: ")
-	line, err := term.ReadPassword(int(os.Stdin.Fd()))
-	fmt.Fprintln(os.Stderr)
-	if err != nil {
-		return "", fmt.Errorf("reading token: %w", err)
-	}
-	token := strings.TrimSpace(string(line))
-	if token == "" {
-		return "", errors.New("token cannot be empty")
-	}
-	return token, nil
 }
 
 func parseManagedReposFromFile(path string) ([]string, error) {
@@ -323,20 +260,6 @@ func parseManagedRepos(r io.Reader, resolveFallbackRemote func() (string, error)
 	}
 	sort.Strings(repos)
 	return repos, nil
-}
-
-func setRepoCodespacesSecret(repo, token string) error {
-	cmd := exec.Command("gh", "secret", "set", "GH_TOKEN", "--repo", repo, "--app", "codespaces")
-	cmd.Stdin = strings.NewReader(token)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		msg := strings.TrimSpace(string(out))
-		if msg == "" {
-			return fmt.Errorf("failed setting GH_TOKEN secret for %s: %w", repo, err)
-		}
-		return fmt.Errorf("failed setting GH_TOKEN secret for %s: %s", repo, gitcmd.SanitizeURL(msg))
-	}
-	return nil
 }
 
 func hasPathTraversal(spec string) bool {

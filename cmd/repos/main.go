@@ -137,7 +137,7 @@ Commands:
   clone             Clone repositories listed in repos.list into the parent directory
   workspace         Manage VS Code .code-workspace files
   install-r-deps    Install R dependencies for managed repositories
-  codespace         Set GH_TOKEN Codespaces secrets for managed repositories
+  codespace         Update devcontainer.json with codespaces permissions for managed repositories
   run               Execute a command inside each repository from repos.list
   create            Create missing GitHub repositories from repos.list
   version           Print the version number

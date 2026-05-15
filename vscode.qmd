@@ -54,10 +54,7 @@ workspace/
 
 ## `repos codespace`
 
-Set the repository-level Codespaces secret named `GH_TOKEN` for each managed
-GitHub repository (via `gh secret set --app codespaces`) and update matching
-`devcontainer.json` files by writing repository permission entries under
-`customizations.codespaces.repositories`.
+Update matching `devcontainer.json` files by writing repository permission entries under `customizations.codespaces.repositories`.
 
 ```bash
 repos codespace
@@ -71,7 +68,7 @@ repos codespace
 | `-d <path>` | Path relative to `.devcontainer/` (repeatable) |
 | `--all` | Update all `devcontainer.json` files found under `.devcontainer/` |
 | `--permissions <level>` | Codespaces permission level (`default`, `all`, or `contents`) |
-| `--dry-run` | Preview secret/file updates without writing changes |
+| `--dry-run` | Preview file updates without writing changes |
 
 Permission levels:
 
@@ -92,18 +89,8 @@ repos codespace -d path1/devcontainer.json -d path2/devcontainer.json
 # Update all devcontainer files under .devcontainer/
 repos codespace --all
 
-# Preview without changing files or secrets
+# Preview without changing files
 repos codespace --dry-run
-```
-
-### GitHub Authentication
-
-`repos codespace` requires a GitHub token with Codespaces permissions:
-
-```bash
-export GH_TOKEN="your_personal_access_token"
-# or
-gh auth login
 ```
 
 ---

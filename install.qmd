@@ -97,8 +97,6 @@ sudo dpkg -r repos
 - Required only for specific commands:
   - `repos create`: `gh` CLI with authentication (`gh auth login` or
     `GH_TOKEN`)
-  - `repos codespace`: token via `GH_TOKEN` (or `CODESPACES_TOKEN`) and `gh`
-    available on `PATH`
   - `Rscript` (`repos install-r-deps`)
 
 ---
@@ -175,7 +173,7 @@ install.packages("devtools")
 devtools::install_github("MiguelRodo/repos")
 ```
 
-Requires `repos`, `git`, and `gh` on your system `PATH` for full wrapper
+Requires `repos` and `git` on your system `PATH` for full wrapper
 coverage (including Codespaces helpers).
 
 ### Python Package
@@ -192,7 +190,7 @@ cd repos
 pip install .
 ```
 
-Requires `repos`, `git`, and `gh` on your system `PATH` for full wrapper
+Requires `repos` and `git` on your system `PATH` for full wrapper
 coverage (including Codespaces helpers).
 
 ---

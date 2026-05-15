@@ -37,7 +37,6 @@ When modifying or extending the tool:
 |---|---|
 | CLI Application | **Go** (`cmd/repos/`) |
 | VCS | **Git** (including `git worktree`) |
-| GitHub auth | `GH_TOKEN` env var or `gh` CLI |
 
 ### Wrappers
 | Language | Entry point |
