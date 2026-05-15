@@ -51,7 +51,6 @@ scoops:
     commit_author:
       name: github-actions[bot]
       email: github-actions[bot]@users.noreply.github.com
-    commit_msg: "Scoop update for {{ .ProjectName }} version {{ .Tag }}"
     homepage: "https://github.com/MiguelRodo/repos"
     description: "Cross-platform CLI for managing multiple related Git repositories as a unified workspace"
     license: "MIT"
@@ -65,7 +64,6 @@ brews:
     commit_author:
       name: github-actions[bot]
       email: github-actions[bot]@users.noreply.github.com
-    commit_msg: "Homebrew update for {{ .ProjectName }} version {{ .Tag }}"
     homepage: "https://github.com/MiguelRodo/repos"
     description: "Cross-platform CLI for managing multiple related Git repositories as a unified workspace"
     license: "MIT"
