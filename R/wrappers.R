@@ -399,7 +399,7 @@ repos_workspace <- function(file = NULL, debug = FALSE, debug_file = NULL, ...) 
 
 #' Configure GitHub Codespaces Authentication
 #'
-#' Inject the \code{GH_TOKEN} Codespaces secret into every cloned repository
+#' Update devcontainer.json with codespaces permissions for managed repositories
 #' that has a \code{devcontainer.json}.
 #'
 #' @param file Path to repos list file (default: repos.list)

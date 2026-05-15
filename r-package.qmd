@@ -14,7 +14,6 @@ devtools::install_github("MiguelRodo/repos")
 ```
 
 **System requirements:** `repos` and `git` must be available on your `PATH`.
-For Codespaces support (`repos_codespace()`), `gh` must also be available.
 
 ## End-to-End Workflow
 
@@ -239,7 +238,7 @@ For the full description, see the [VS Code integration guide](vscode.html).
 
 ### `repos_codespace()` {#repos_codespace}
 
-Configure GitHub Codespaces authentication.
+Configure GitHub Codespaces devcontainer.json.
 
 ```r
 repos_codespace(
@@ -357,22 +356,6 @@ repos_run("--script", "build.sh", "--dry-run")
 ```
 
 For the full description, see [Running Pipelines](pipelines.html).
-
-## GitHub Authentication
-
-`repos_codespace()` needs a GitHub token with Codespaces permissions.
-Provide it via the `GH_TOKEN` environment variable or via the `gh` CLI:
-
-```r
-Sys.setenv(GH_TOKEN = "your_personal_access_token")
-repos_codespace()
-```
-
-Or set it in your shell before starting R:
-
-```bash
-export GH_TOKEN="your_personal_access_token"
-```
 
 ## Target CLI version vs. installed CLI
 

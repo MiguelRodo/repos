@@ -57,7 +57,7 @@ Hugging Face entries (`hf:...`) require `huggingface-cli`
 - `repos workspace` — generate or refresh `entire-project.code-workspace`
 - `repos run` — run scripts or explicit commands across managed repos
 - `repos create` — create missing GitHub repos from `repos.list`
-- `repos codespace` — configure `GH_TOKEN` Codespaces secrets and devcontainer
+- `repos codespace` — configure devcontainer
   repository permissions
 - `repos install-r-deps` — install R dependencies across managed repos
 

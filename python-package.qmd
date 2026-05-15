@@ -21,7 +21,6 @@ pip install .
 ```
 
 **System requirements:** `repos` and `git` must be available on your `PATH`.
-For Codespaces support (`codespace()`), `gh` must also be available.
 
 ## End-to-End Workflow
 
@@ -219,7 +218,7 @@ For the full description, see the [VS Code integration guide](vscode.html).
 
 ### `codespace()` {#codespace}
 
-Configure GitHub Codespaces authentication.
+Configure GitHub Codespaces devcontainer.json.
 
 ```python
 from repos import codespace
@@ -354,26 +353,6 @@ run_raw("-f", "custom.list", "--continue-on-error")
 
 These functions forward all positional arguments directly to the corresponding
 `repos` subcommand.
-
-## GitHub Authentication
-
-`codespace()` needs a GitHub token with Codespaces permissions.
-Provide it via the `GH_TOKEN` environment variable or via the `gh` CLI:
-
-```python
-import os, subprocess
-from repos import codespace
-
-os.environ["GH_TOKEN"] = "your_personal_access_token"
-codespace()
-```
-
-Or in a shell before starting Python:
-
-```bash
-export GH_TOKEN="your_personal_access_token"
-python my_script.py
-```
 
 ## Target CLI version vs. installed CLI
 

@@ -236,7 +236,7 @@ def codespace(
     """
     Configure GitHub Codespaces authentication.
 
-    Injects the GH_TOKEN Codespaces secret into every cloned repository
+    Updates devcontainer.json with codespaces permissions for managed repositories
     that has a devcontainer.json.
 
     Args:
