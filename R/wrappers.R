@@ -88,6 +88,7 @@ repos_install_cli <- function(run = FALSE) {
   if (sysname == "Linux") {
     message("To install the repos CLI on Ubuntu/Debian, choose one of:\n")
     message("  # Option 1: APT repository (recommended -- keeps repos up to date):")
+    message("  sudo apt-get install -y curl gpg")
     message("  curl -fsSL https://miguelrodo.github.io/apt-miguelrodo/KEY.gpg \\")
     message("     | sudo gpg --dearmor -o /usr/share/keyrings/apt-miguelrodo.gpg")
     message('  echo "deb [signed-by=/usr/share/keyrings/apt-miguelrodo.gpg] https://miguelrodo.github.io/apt-miguelrodo stable main" \\')

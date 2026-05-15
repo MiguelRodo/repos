@@ -101,6 +101,7 @@ def install_cli(run: bool = False) -> None:
     if system == "Linux":
         print("To install the repos CLI on Ubuntu/Debian, choose one of:\n")
         print("  # Option 1: APT repository (recommended — keeps repos up to date):")
+        print("  sudo apt-get install -y curl gpg")
         print("  curl -fsSL https://miguelrodo.github.io/apt-miguelrodo/KEY.gpg \\")
         print("     | sudo gpg --dearmor -o /usr/share/keyrings/apt-miguelrodo.gpg")
         print('  echo "deb [signed-by=/usr/share/keyrings/apt-miguelrodo.gpg] '
