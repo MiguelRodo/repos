@@ -29,6 +29,9 @@ Install the wrapper package (`pip`/`R`) and ensure `repos` is installed on `PATH
 Install and keep `repos` up to date directly via `apt`:
 
 ```bash
+# Install prerequisites
+sudo apt-get install -y curl gpg
+
 # Add repository signing key
 curl -fsSL https://miguelrodo.github.io/apt-miguelrodo/KEY.gpg \
    | sudo gpg --dearmor -o /usr/share/keyrings/apt-miguelrodo.gpg
