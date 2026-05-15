@@ -383,6 +383,76 @@ func findAllDevcontainerFiles(dir string) ([]string, error) {
 	return paths, nil
 }
 
+func consumeString(data []byte, i int) int {
+	i++ // skip initial quote
+	for i < len(data) {
+		if data[i] == '\\' {
+			i++ // skip the backslash
+			if i < len(data) {
+				i++ // skip the escaped character
+			}
+			continue
+		}
+		if data[i] == '"' {
+			i++ // skip closing quote
+			break
+		}
+		i++
+	}
+	return i
+}
+
+func skipLineComment(data []byte, i int) int {
+	i += 2 // skip //
+	for i < len(data) && data[i] != '\n' {
+		i++
+	}
+	return i
+}
+
+func skipBlockComment(data []byte, i int) int {
+	i += 2 // skip /*
+	closed := false
+	for i+1 < len(data) {
+		if data[i] == '*' && data[i+1] == '/' {
+			i += 2
+			closed = true
+			break
+		}
+		i++
+	}
+	if !closed {
+		// Consume the last remaining byte of the unclosed comment.
+		i++
+	}
+	return i
+}
+
+func isTrailingComma(data []byte, i int) bool {
+	j := i + 1
+	// Skip whitespace and comments to find the next significant character.
+	for j < len(data) {
+		c := data[j]
+		// Skip whitespace.
+		if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
+			j++
+			continue
+		}
+		// Skip line comment.
+		if c == '/' && j+1 < len(data) && data[j+1] == '/' {
+			j = skipLineComment(data, j)
+			continue
+		}
+		// Skip block comment.
+		if c == '/' && j+1 < len(data) && data[j+1] == '*' {
+			j = skipBlockComment(data, j)
+			continue
+		}
+		break
+	}
+	return j < len(data) && (data[j] == '}' || data[j] == ']')
+}
+
 // stripJSONC removes // line comments and /* */ block comments, and strips
 // trailing commas before } or ], yielding valid JSON from JSONC input.
 func stripJSONC(data []byte) []byte {
@@ -394,89 +464,27 @@ func stripJSONC(data []byte) []byte {
 		// String literal: copy verbatim, handling escapes.
 		if b == '"' {
 			start := i
-			i++
-			for i < len(data) {
-				if data[i] == '\\' {
-					i++ // skip the backslash
-					if i < len(data) {
-						i++ // skip the escaped character
-					}
-					continue
-				}
-				if data[i] == '"' {
-					i++
-					break
-				}
-				i++
-			}
+			i = consumeString(data, i)
 			out = append(out, data[start:i]...)
 			continue
 		}
 
 		// Line comment: skip to end of line.
 		if b == '/' && i+1 < len(data) && data[i+1] == '/' {
-			for i < len(data) && data[i] != '\n' {
-				i++
-			}
+			i = skipLineComment(data, i)
 			continue
 		}
 
 		// Block comment: skip to */ (or EOF if unclosed).
 		if b == '/' && i+1 < len(data) && data[i+1] == '*' {
-			i += 2
-			closed := false
-			for i+1 < len(data) {
-				if data[i] == '*' && data[i+1] == '/' {
-					i += 2
-					closed = true
-					break
-				}
-				i++
-			}
-			if !closed {
-				// Consume the last remaining byte of the unclosed comment.
-				i++
-			}
+			i = skipBlockComment(data, i)
 			continue
 		}
 
 		// Trailing comma: , followed (possibly by whitespace and/or comments) by } or ].
-		if b == ',' {
-			j := i + 1
-			// Skip whitespace and comments to find the next significant character.
-			for j < len(data) {
-				c := data[j]
-				// Skip whitespace.
-				if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
-					j++
-					continue
-				}
-				// Skip line comment.
-				if c == '/' && j+1 < len(data) && data[j+1] == '/' {
-					j += 2
-					for j < len(data) && data[j] != '\n' {
-						j++
-					}
-					continue
-				}
-				// Skip block comment.
-				if c == '/' && j+1 < len(data) && data[j+1] == '*' {
-					j += 2
-					for j+1 < len(data) {
-						if data[j] == '*' && data[j+1] == '/' {
-							j += 2
-							break
-						}
-						j++
-					}
-					continue
-				}
-				break
-			}
-			if j < len(data) && (data[j] == '}' || data[j] == ']') {
-				i++ // skip the comma
-				continue
-			}
+		if b == ',' && isTrailingComma(data, i) {
+			i++ // skip the comma
+			continue
 		}
 
 		out = append(out, b)
