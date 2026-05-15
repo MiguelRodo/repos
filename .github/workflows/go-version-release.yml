@@ -46,3 +46,4 @@ jobs:
           apt_repo: ${{ inputs.apt_repo }}
           goreleaser_config: ${{ inputs.goreleaser_config }}
           scoop_token: ${{ secrets.SCOOP_TAP_TOKEN }}
+          homebrew_token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
