@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-var sanitizeURLRegex = regexp.MustCompile(`(https?://)[^/@\s]+@`)
+var sanitizeURLRegex = regexp.MustCompile(`(https?://)[^/\s]+@`)
 
 func RunGit(dir string, args ...string) (string, error) {
 	cmd := exec.Command("git", args...)
