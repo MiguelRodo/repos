@@ -225,6 +225,32 @@ def test_run_backward_compat():
     assert "test.sh" in test_args["args"]
     assert "--dry-run" in test_args["args"]
 
+def test_installed_cli_version_exception():
+    import shutil
+    import subprocess
+
+    # Save original functions
+    orig_which = shutil.which
+    orig_run = subprocess.run
+
+    try:
+        # Mock shutil.which to pretend CLI is installed
+        shutil.which = lambda x: "/usr/local/bin/repos" if x == "repos" else orig_which(x)
+
+        # Mock subprocess.run to raise an exception
+        def mock_subprocess_run(*args, **kwargs):
+            raise Exception("Mocked subprocess exception")
+
+        subprocess.run = mock_subprocess_run
+
+        # Test the function
+        result = repos.installed_cli_version()
+        assert result is None, f"Expected None, got {result}"
+    finally:
+        # Restore original functions
+        shutil.which = orig_which
+        subprocess.run = orig_run
+
 # Run all tests
 if __name__ == "__main__":
     print("Testing Python wrapper functions\n")
@@ -257,7 +283,11 @@ if __name__ == "__main__":
     test("repos.run(continue_on_error=True)", test_run_continue_on_error)
     test("repos.run(file='custom.list')", test_run_file)
     test("repos.run_raw('--script', 'test.sh', '--dry-run') backward compatibility", test_run_backward_compat)
+
+    test("repos.installed_cli_version() handles subprocess Exception", test_installed_cli_version_exception)
+
     test("repos.bundled_cli_version() returns string", test_bundled_cli_version)
+
     
     print("\n" + "=" * 40)
     print(f"Total tests: {test_count}")
