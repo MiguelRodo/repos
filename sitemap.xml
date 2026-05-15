@@ -1,39 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://MiguelRodo.github.io/repos/install.html</loc>
-    <lastmod>2026-05-15T11:40:52.127Z</lastmod>
-  </url>
-  <url>
     <loc>https://MiguelRodo.github.io/repos/clone.html</loc>
-    <lastmod>2026-05-15T11:40:52.125Z</lastmod>
-  </url>
-  <url>
-    <loc>https://MiguelRodo.github.io/repos/vscode.html</loc>
-    <lastmod>2026-05-15T11:40:52.129Z</lastmod>
-  </url>
-  <url>
-    <loc>https://MiguelRodo.github.io/repos/python-package.html</loc>
-    <lastmod>2026-05-15T11:40:52.128Z</lastmod>
-  </url>
-  <url>
-    <loc>https://MiguelRodo.github.io/repos/pipelines.html</loc>
-    <lastmod>2026-05-15T11:40:52.128Z</lastmod>
+    <lastmod>2026-05-15T11:58:03.670Z</lastmod>
   </url>
   <url>
     <loc>https://MiguelRodo.github.io/repos/repos-list.html</loc>
-    <lastmod>2026-05-15T11:40:52.128Z</lastmod>
-  </url>
-  <url>
-    <loc>https://MiguelRodo.github.io/repos/r-package.html</loc>
-    <lastmod>2026-05-15T11:40:52.128Z</lastmod>
+    <lastmod>2026-05-15T11:58:03.673Z</lastmod>
   </url>
   <url>
     <loc>https://MiguelRodo.github.io/repos/index.html</loc>
-    <lastmod>2026-05-15T11:40:52.127Z</lastmod>
+    <lastmod>2026-05-15T11:58:03.673Z</lastmod>
   </url>
   <url>
     <loc>https://MiguelRodo.github.io/repos/LICENSE.html</loc>
-    <lastmod>2026-05-15T11:40:52.125Z</lastmod>
+    <lastmod>2026-05-15T11:58:03.670Z</lastmod>
+  </url>
+  <url>
+    <loc>https://MiguelRodo.github.io/repos/install.html</loc>
+    <lastmod>2026-05-15T11:58:03.673Z</lastmod>
+  </url>
+  <url>
+    <loc>https://MiguelRodo.github.io/repos/python-package.html</loc>
+    <lastmod>2026-05-15T11:58:03.673Z</lastmod>
+  </url>
+  <url>
+    <loc>https://MiguelRodo.github.io/repos/vscode.html</loc>
+    <lastmod>2026-05-15T11:58:03.674Z</lastmod>
+  </url>
+  <url>
+    <loc>https://MiguelRodo.github.io/repos/pipelines.html</loc>
+    <lastmod>2026-05-15T11:58:03.673Z</lastmod>
+  </url>
+  <url>
+    <loc>https://MiguelRodo.github.io/repos/r-package.html</loc>
+    <lastmod>2026-05-15T11:58:03.673Z</lastmod>
   </url>
 </urlset>
