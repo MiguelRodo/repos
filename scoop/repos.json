@@ -1,12 +1,17 @@
 {
-    "version": "2.0.0",
+    "version": "2.5.1",
     "description": "A tool to setup and manage multiple Git repositories",
     "homepage": "https://github.com/MiguelRodo/repos",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/MiguelRodo/repos/releases/download/v2.0.0/repos_windows_amd64.zip",
-            "hash": "REPLACE_WITH_ACTUAL_HASH",
+            "url": "https://github.com/MiguelRodo/repos/releases/download/v2.5.1/repos_2.5.1_windows_amd64.zip",
+            "hash": "2503ad84a7b598ea4390bfb3ff24c392892198956451b41ace55e0c9a162ae89",
+            "bin": "repos.exe"
+        },
+        "arm64": {
+            "url": "https://github.com/MiguelRodo/repos/releases/download/v2.5.1/repos_2.5.1_windows_arm64.zip",
+            "hash": "ddd1dbe1ad0179cac76224e65ff81d4dee115eb8c73d232ecacb78aaa1d0830a",
             "bin": "repos.exe"
         }
     },
@@ -19,7 +24,10 @@
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/MiguelRodo/repos/releases/download/v$version/repos_windows_amd64.zip"
+                "url": "https://github.com/MiguelRodo/repos/releases/download/v$version/repos_$version_windows_amd64.zip"
+            },
+            "arm64": {
+                "url": "https://github.com/MiguelRodo/repos/releases/download/v$version/repos_$version_windows_arm64.zip"
             }
         }
     },
