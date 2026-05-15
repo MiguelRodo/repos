@@ -45,3 +45,4 @@ jobs:
           go_version: ${{ inputs.go_version }}
           apt_repo: ${{ inputs.apt_repo }}
           goreleaser_config: ${{ inputs.goreleaser_config }}
+          scoop_token: ${{ secrets.SCOOP_TAP_TOKEN }}
