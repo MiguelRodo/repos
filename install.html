@@ -297,7 +297,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>Required only for specific commands:
 <ul>
 <li><code>repos create</code>: <code>gh</code> CLI with authentication (<code>gh auth login</code> or <code>GH_TOKEN</code>)</li>
-<li><code>repos codespace</code>: token via <code>GH_TOKEN</code> (or <code>CODESPACES_TOKEN</code>) and <code>gh</code> available on <code>PATH</code></li>
 <li><code>Rscript</code> (<code>repos install-r-deps</code>)</li>
 </ul></li>
 </ul>
@@ -351,7 +350,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="r-package">R Package</h3>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">"devtools"</span>)</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"MiguelRodo/repos"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Requires <code>repos</code>, <code>git</code>, and <code>gh</code> on your system <code>PATH</code> for full wrapper coverage (including Codespaces helpers).</p>
+<p>Requires <code>repos</code> and <code>git</code> on your system <code>PATH</code> for full wrapper coverage (including Codespaces helpers).</p>
 </section>
 <section id="python-package" class="level3">
 <h3 class="anchored" data-anchor-id="python-package">Python Package</h3>
@@ -360,7 +359,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/MiguelRodo/repos.git</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> repos</span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install .</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Requires <code>repos</code>, <code>git</code>, and <code>gh</code> on your system <code>PATH</code> for full wrapper coverage (including Codespaces helpers).</p>
+<p>Requires <code>repos</code> and <code>git</code> on your system <code>PATH</code> for full wrapper coverage (including Codespaces helpers).</p>
 <hr>
 </section>
 </section>

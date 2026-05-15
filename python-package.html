@@ -199,7 +199,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#run" id="toc-run" class="nav-link" data-scroll-target="#run"><code>run()</code></a></li>
   <li><a href="#raw-argument-passing" id="toc-raw-argument-passing" class="nav-link" data-scroll-target="#raw-argument-passing">Raw argument passing</a></li>
   </ul></li>
-  <li><a href="#github-authentication" id="toc-github-authentication" class="nav-link" data-scroll-target="#github-authentication">GitHub Authentication</a></li>
   <li><a href="#target-cli-version-vs.-installed-cli" id="toc-target-cli-version-vs.-installed-cli" class="nav-link" data-scroll-target="#target-cli-version-vs.-installed-cli">Target CLI version vs.&nbsp;installed CLI</a>
   <ul class="collapse">
   <li><a href="#does-installing-the-python-package-also-install-the-repos-cli" id="toc-does-installing-the-python-package-also-install-the-repos-cli" class="nav-link" data-scroll-target="#does-installing-the-python-package-also-install-the-repos-cli">Does installing the Python package also install the <code>repos</code> CLI?</a></li>
@@ -237,7 +236,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/MiguelRodo/repos.git</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> repos</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install .</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><strong>System requirements:</strong> <code>repos</code> and <code>git</code> must be available on your <code>PATH</code>. For Codespaces support (<code>codespace()</code>), <code>gh</code> must also be available.</p>
+<p><strong>System requirements:</strong> <code>repos</code> and <code>git</code> must be available on your <code>PATH</code>.</p>
 </section>
 <section id="end-to-end-workflow" class="level2">
 <h2 class="anchored" data-anchor-id="end-to-end-workflow">End-to-End Workflow</h2>
@@ -418,7 +417,7 @@ myorg/documentation</code></pre>
 </section>
 <section id="codespace" class="level3">
 <h3 class="anchored" data-anchor-id="codespace"><code>codespace()</code></h3>
-<p>Configure GitHub Codespaces authentication.</p>
+<p>Configure GitHub Codespaces devcontainer.json.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> codespace</span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>codespace(</span>
@@ -632,36 +631,24 @@ myorg/documentation</code></pre>
 <p>These functions forward all positional arguments directly to the corresponding <code>repos</code> subcommand.</p>
 </section>
 </section>
-<section id="github-authentication" class="level2">
-<h2 class="anchored" data-anchor-id="github-authentication">GitHub Authentication</h2>
-<p><code>codespace()</code> needs a GitHub token with Codespaces permissions. Provide it via the <code>GH_TOKEN</code> environment variable or via the <code>gh</code> CLI:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os, subprocess</span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> codespace</span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>os.environ[<span class="st">"GH_TOKEN"</span>] <span class="op">=</span> <span class="st">"your_personal_access_token"</span></span>
-<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>codespace()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Or in a shell before starting Python:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GH_TOKEN</span><span class="op">=</span><span class="st">"your_personal_access_token"</span></span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> my_script.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
 <section id="target-cli-version-vs.-installed-cli" class="level2">
 <h2 class="anchored" data-anchor-id="target-cli-version-vs.-installed-cli">Target CLI version vs.&nbsp;installed CLI</h2>
 <p>You can inspect both versions at any time:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> bundled_cli_version, installed_cli_version</span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Bundled:"</span>, bundled_cli_version())</span>
-<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"System: "</span>, installed_cli_version())  <span class="co"># None if not installed</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> bundled_cli_version, installed_cli_version</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Bundled:"</span>, bundled_cli_version())</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"System: "</span>, installed_cli_version())  <span class="co"># None if not installed</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section id="does-installing-the-python-package-also-install-the-repos-cli" class="level3">
 <h3 class="anchored" data-anchor-id="does-installing-the-python-package-also-install-the-repos-cli">Does installing the Python package also install the <code>repos</code> CLI?</h3>
 <p><strong>No.</strong> Installing the package via <code>pip</code> does <strong>not</strong> place a <code>repos</code> command on your system <code>PATH</code>. Install the CLI separately before using the wrapper.</p>
 <p>The easiest way is to call <code>install_cli()</code> from Python:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> install_cli</span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Print OS-appropriate installation instructions</span></span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>install_cli()</span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Or print instructions AND run the installer automatically</span></span>
-<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>install_cli(run<span class="op">=</span><span class="va">True</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> repos <span class="im">import</span> install_cli</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Print OS-appropriate installation instructions</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>install_cli()</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Or print instructions AND run the installer automatically</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>install_cli(run<span class="op">=</span><span class="va">True</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>See <a href="#install_cli"><code>install_cli()</code></a> above for details, or visit the <a href="install.html">Installation guide</a> for all options.</p>
 
 
