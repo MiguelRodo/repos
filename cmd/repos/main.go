@@ -68,6 +68,8 @@ type instruction struct {
 	depth       int
 }
 
+var version = "dev"
+
 var ownerRepoRegex = regexp.MustCompile(`^[^/]+/[^/]+$`)
 
 const (
@@ -116,6 +118,9 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
+	case "version", "--version", "-v":
+		fmt.Printf("repos version %s\n", version)
+		os.Exit(0)
 	case "-h", "--help", "help":
 		usage()
 	default:
@@ -135,6 +140,7 @@ Commands:
   codespace         Set GH_TOKEN Codespaces secrets for managed repositories
   run               Execute a command inside each repository from repos.list
   create            Create missing GitHub repositories from repos.list
+  version           Print the version number
 
 Run 'repos <command> --help' for more information.
 `)
