@@ -97,30 +97,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
       
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y debhelper devscripts build-essential golang-any
-      
-      - name: Update changelog for test build
-        run: |
-          VERSION="1.0.0-test"
-          DATE=$(date -R)
-          cat > debian/changelog << EOF
-          repos ($VERSION) unstable; urgency=medium
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
 
-            * Test build for CI
-
-           -- Test User <test@example.com>  $DATE
-          EOF
+      - name: Install GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          install-only: true
+          version: '~> v2'
       
       - name: Build Debian package
         run: |
-          dpkg-buildpackage -us -uc -b
+          goreleaser release --snapshot --clean
       
       - name: Install Debian package
         run: |
-          sudo dpkg -i ../repos_*.deb || true
+          sudo dpkg -i dist/*.deb || true
           sudo apt-get install -f -y
       
       - name: Verify repos command is available

@@ -40,6 +40,10 @@ nfpms:
     license: "MIT"
     maintainer: "Miguel Rodo"
     bindir: /usr/bin
+    dependencies:
+      - git
+    recommends:
+      - gh
     builds:
       - repos-linux
 
