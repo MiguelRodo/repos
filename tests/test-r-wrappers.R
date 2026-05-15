@@ -11,6 +11,36 @@ system2 <- function(command, args = character(), stdout = "", stderr = "", ...) 
   0L
 }
 
+# Mock system to capture direct system calls
+system_args <- NULL
+system <- function(command, ...) {
+  system_args <<- command
+  0L
+}
+
+# Helper to mock Sys.info
+with_mock_sysinfo <- function(sysname, expr) {
+  orig_sysinfo <- base::Sys.info
+  env <- environment(Sys.info)
+  if (is.null(env)) env <- baseenv()
+
+  mock_sysinfo <- function() {
+    res <- orig_sysinfo()
+    res[["sysname"]] <- sysname
+    res
+  }
+
+  unlockBinding("Sys.info", baseenv())
+  assign("Sys.info", mock_sysinfo, envir = baseenv())
+
+  on.exit({
+    assign("Sys.info", orig_sysinfo, envir = baseenv())
+    lockBinding("Sys.info", baseenv())
+  })
+
+  force(expr)
+}
+
 test_count <- 0
 pass_count <- 0
 fail_count <- 0
@@ -190,6 +220,69 @@ test("repos_run('--script', 'test.sh') backward compatibility", {
   stopifnot(test_args$args[1] == "run")
   stopifnot("--script" %in% test_args$args)
   stopifnot("test.sh" %in% test_args$args)
+})
+
+# Test repos_install_cli
+test("repos_install_cli() on Linux (run = FALSE)", {
+  with_mock_sysinfo("Linux", {
+    out <- capture.output(repos_install_cli(), type = "message")
+    stopifnot(any(grepl("To install the repos CLI on Ubuntu/Debian", out)))
+    stopifnot(any(grepl("sudo apt-get install", out)))
+  })
+})
+
+test("repos_install_cli() on Linux (run = TRUE)", {
+  with_mock_sysinfo("Linux", {
+    system_args <<- NULL
+    out <- capture.output(repos_install_cli(run = TRUE), type = "message")
+    stopifnot(any(grepl("Running user-level installer...", out)))
+    stopifnot(!is.null(system_args))
+    stopifnot(grepl("git clone", system_args))
+    stopifnot(grepl("install-local.sh", system_args))
+  })
+})
+
+test("repos_install_cli() on Darwin (run = FALSE)", {
+  with_mock_sysinfo("Darwin", {
+    out <- capture.output(repos_install_cli(), type = "message")
+    stopifnot(any(grepl("To install the repos CLI on macOS", out)))
+    stopifnot(any(grepl("brew install repos", out)))
+  })
+})
+
+test("repos_install_cli() on Darwin (run = TRUE)", {
+  with_mock_sysinfo("Darwin", {
+    system_args <<- NULL
+    out <- capture.output(repos_install_cli(run = TRUE), type = "message")
+    stopifnot(any(grepl("Running Homebrew installer...", out)))
+    stopifnot(!is.null(system_args))
+    stopifnot(system_args == "brew tap MiguelRodo/repos && brew install repos")
+  })
+})
+
+test("repos_install_cli() on Windows (run = FALSE)", {
+  with_mock_sysinfo("Windows", {
+    out <- capture.output(repos_install_cli(), type = "message")
+    stopifnot(any(grepl("To install the repos CLI on Windows, run in PowerShell", out)))
+    stopifnot(any(grepl("scoop install repos", out)))
+  })
+})
+
+test("repos_install_cli() on Windows (run = TRUE)", {
+  with_mock_sysinfo("Windows", {
+    system_args <<- NULL
+    out <- capture.output(repos_install_cli(run = TRUE), type = "message")
+    stopifnot(any(grepl("Automatic installation via run = TRUE is not supported on Windows", out)))
+    stopifnot(is.null(system_args))
+  })
+})
+
+test("repos_install_cli() on unknown OS", {
+  with_mock_sysinfo("Solaris", {
+    out <- capture.output(repos_install_cli(), type = "message")
+    stopifnot(any(grepl("To install the repos CLI, see the installation guide", out)))
+    stopifnot(any(grepl("install.html", out)))
+  })
 })
 
 # Summary
