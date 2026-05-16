@@ -13,6 +13,8 @@ import (
 	"sync"
 )
 
+var sanitizeURLRegex = regexp.MustCompile(`(https?://)[^/\s]+@`)
+
 type Options struct {
 	InitialFallbackRemote string
 	InitialBaseDir        string
@@ -445,14 +447,7 @@ func normaliseRemoteToHTTPS(url string) string {
 	}
 	u = strings.ReplaceAll(u, "\\", "/")
 	if strings.HasPrefix(u, "http://") || strings.HasPrefix(u, "https://") {
-		if i := strings.Index(u, "://"); i >= 0 {
-			prefix := u[:i+3]
-			rest := u[i+3:]
-			if at := strings.Index(rest, "@"); at >= 0 {
-				rest = rest[at+1:]
-			}
-			u = prefix + rest
-		}
+		u = sanitizeURLRegex.ReplaceAllString(u, "$1")
 		return strings.TrimSuffix(u, "/")
 	}
 	if strings.HasPrefix(u, "ssh://git@") {
