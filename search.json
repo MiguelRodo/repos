@@ -228,7 +228,7 @@
     "href": "install.html#from-source-go",
     "title": "Installation",
     "section": "From Source (Go)",
-    "text": "From Source (Go)\n# Install latest from module path\ngo install github.com/MiguelRodo/repos/v2/cmd/repos@latest\nOr build from a local clone:\ngit clone https://github.com/MiguelRodo/repos.git\ncd repos\ngo build -o repos ./cmd/repos\n# Optional: move ./repos somewhere on PATH"
+    "text": "From Source (Go)\nInstall directly from the remote module path:\ngo install [github.com/MiguelRodo/repos/v2/cmd/repos@latest](https://github.com/MiguelRodo/repos/v2/cmd/repos@latest)\nOr build from a local clone:\ngit clone [https://github.com/MiguelRodo/repos.git](https://github.com/MiguelRodo/repos.git)\ncd repos\ngo build -o repos ./cmd/repos\n# Install system-wide on Linux/macOS\nsudo mv repos /usr/local/bin/"
   },
   {
     "objectID": "install.html#language-wrappers",
