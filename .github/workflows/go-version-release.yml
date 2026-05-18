@@ -29,15 +29,21 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: MiguelRodo/actions/go-version-release@v2
+        env:
+          SCOOP_TAP_TOKEN: ${{ secrets.SCOOP_TAP_TOKEN }}
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          apt_repo_token: ${{ secrets.APT_REPO_TOKEN }}
+          apt_signing_key: ${{ secrets.GPG_PRIVATE_KEY }}
           version: ${{ inputs.version }}
           bump_type: ${{ inputs.bump_type }}
           version_check: ${{ inputs.version_check }}
           go_version: ${{ inputs.go_version }}
           apt_repo: ${{ inputs.apt_repo }}
           goreleaser_config: ${{ inputs.goreleaser_config }}
+          scoop_token: ${{ secrets.SCOOP_TAP_TOKEN }}
+          homebrew_token: ${{ secrets.HOMEBREW_TAP_TOKEN }}

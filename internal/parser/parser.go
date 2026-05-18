@@ -13,6 +13,8 @@ import (
 	"sync"
 )
 
+var sanitizeURLRegex = regexp.MustCompile(`(https?://)[^/\s]+@`)
+
 type Options struct {
 	InitialFallbackRemote string
 	InitialBaseDir        string
@@ -26,11 +28,13 @@ type Options struct {
 type Instruction struct {
 	RemoteURL   string
 	CloneURL    string
+	RepoType    string
 	Branch      string
 	TargetDir   string
 	BaseDir     string
 	IsWorktree  bool
 	IsAtBranch  bool
+	DontRun     bool
 	AllBranches bool
 	FetchMode   string
 	Warnings    []string
@@ -38,6 +42,11 @@ type Instruction struct {
 
 var ownerRepoRegex = regexp.MustCompile(`^[^/]+/[^/]+$`)
 var branchValidationCache sync.Map
+
+const (
+	repoTypeGit         = "git"
+	repoTypeHuggingFace = "huggingface"
+)
 
 func ParseList(r io.Reader, opts Options) ([]Instruction, error) {
 	content, err := io.ReadAll(r)
@@ -152,33 +161,50 @@ func ParseList(r io.Reader, opts Options) ([]Instruction, error) {
 
 		if strings.HasPrefix(first, "@") {
 			branch := strings.TrimPrefix(first, "@")
-			if err := validateBranch(branch); err != nil {
-				return nil, fmt.Errorf("line %d: %w", lineNum, err)
-			}
 			if fallbackRemote == "" {
 				return nil, fmt.Errorf("line %d: no fallback repository available for %q", lineNum, trimmed)
+			}
+			repoType := repoTypeFromSpec(fallbackRemote)
+			if repoType != repoTypeHuggingFace {
+				if err := validateBranch(branch); err != nil {
+					return nil, fmt.Errorf("line %d: %w", lineNum, err)
+				}
+			} else if branch == "" {
+				return nil, fmt.Errorf("line %d: missing branch/revision", lineNum)
 			}
 			useWorktree := globalWorktree
 			for _, tok := range rest {
 				switch tok {
+				case "--dont-run":
+					ins.DontRun = true
 				case "-w", "--worktree":
-					if !ignoreLineFlags && !worktreeLocked {
+					if repoType == repoTypeHuggingFace {
+						ins.Warnings = append(ins.Warnings, fmt.Sprintf("%s ignored on huggingface line", tok))
+					} else if !ignoreLineFlags && !worktreeLocked {
 						useWorktree = true
 					}
 				case "-a", "--all-branches":
-					if !ignoreLineFlags && !fetchModeLocked {
+					if repoType == repoTypeHuggingFace {
+						ins.Warnings = append(ins.Warnings, fmt.Sprintf("%s ignored on huggingface line", tok))
+					} else if !ignoreLineFlags && !fetchModeLocked {
 						ins.AllBranches = true
 					}
 				case "--fetch-all-deferred":
-					if !ignoreLineFlags && !fetchModeLocked {
+					if repoType == repoTypeHuggingFace {
+						ins.Warnings = append(ins.Warnings, "--fetch-all-deferred ignored on huggingface line")
+					} else if !ignoreLineFlags && !fetchModeLocked {
 						ins.FetchMode = "deferred"
 					}
 				case "--fetch-single":
-					if !ignoreLineFlags && !fetchModeLocked {
+					if repoType == repoTypeHuggingFace {
+						ins.Warnings = append(ins.Warnings, "--fetch-single ignored on huggingface line")
+					} else if !ignoreLineFlags && !fetchModeLocked {
 						ins.FetchMode = "single"
 					}
 				case "--fetch-all":
-					if !ignoreLineFlags && !fetchModeLocked {
+					if repoType == repoTypeHuggingFace {
+						ins.Warnings = append(ins.Warnings, "--fetch-all ignored on huggingface line")
+					} else if !ignoreLineFlags && !fetchModeLocked {
 						ins.FetchMode = "all"
 						ins.AllBranches = true
 					}
@@ -194,9 +220,10 @@ func ParseList(r io.Reader, opts Options) ([]Instruction, error) {
 				}
 			}
 			ins.IsAtBranch = true
-			ins.IsWorktree = useWorktree
+			ins.IsWorktree = useWorktree && repoType != repoTypeHuggingFace
 			ins.Branch = branch
 			ins.CloneURL = fallbackRemote
+			ins.RepoType = repoType
 			ins.RemoteURL = specToHTTPS(fallbackRemote)
 			ins.BaseDir = fallbackBase
 			if ins.TargetDir == "" {
@@ -216,7 +243,8 @@ func ParseList(r io.Reader, opts Options) ([]Instruction, error) {
 		if strings.HasPrefix(repoNoRef, "-") || strings.Contains(repoNoRef, "..") {
 			return nil, fmt.Errorf("line %d: invalid repository spec %q", lineNum, first)
 		}
-		if branch != "" {
+		ins.RepoType = repoTypeFromSpec(repoNoRef)
+		if branch != "" && ins.RepoType != repoTypeHuggingFace {
 			if err := validateBranch(branch); err != nil {
 				return nil, fmt.Errorf("line %d: %w", lineNum, err)
 			}
@@ -227,25 +255,39 @@ func ParseList(r io.Reader, opts Options) ([]Instruction, error) {
 
 		for _, tok := range rest {
 			switch tok {
+			case "--dont-run":
+				ins.DontRun = true
 			case "-a", "--all-branches":
-				if !ignoreLineFlags && !fetchModeLocked {
+				if ins.RepoType == repoTypeHuggingFace {
+					ins.Warnings = append(ins.Warnings, fmt.Sprintf("%s ignored on huggingface line", tok))
+				} else if !ignoreLineFlags && !fetchModeLocked {
 					ins.AllBranches = true
 				}
 			case "--fetch-all-deferred":
-				if !ignoreLineFlags && !fetchModeLocked {
+				if ins.RepoType == repoTypeHuggingFace {
+					ins.Warnings = append(ins.Warnings, "--fetch-all-deferred ignored on huggingface line")
+				} else if !ignoreLineFlags && !fetchModeLocked {
 					ins.FetchMode = "deferred"
 				}
 			case "--fetch-single":
-				if !ignoreLineFlags && !fetchModeLocked {
+				if ins.RepoType == repoTypeHuggingFace {
+					ins.Warnings = append(ins.Warnings, "--fetch-single ignored on huggingface line")
+				} else if !ignoreLineFlags && !fetchModeLocked {
 					ins.FetchMode = "single"
 				}
 			case "--fetch-all":
-				if !ignoreLineFlags && !fetchModeLocked {
+				if ins.RepoType == repoTypeHuggingFace {
+					ins.Warnings = append(ins.Warnings, "--fetch-all ignored on huggingface line")
+				} else if !ignoreLineFlags && !fetchModeLocked {
 					ins.FetchMode = "all"
 					ins.AllBranches = true
 				}
 			case "-w", "--worktree":
-				ins.Warnings = append(ins.Warnings, "--worktree ignored on clone line")
+				if ins.RepoType == repoTypeHuggingFace {
+					ins.Warnings = append(ins.Warnings, "--worktree ignored on huggingface line")
+				} else {
+					ins.Warnings = append(ins.Warnings, "--worktree ignored on clone line")
+				}
 			case "--public", "--private", "--codespaces", "--force":
 			default:
 				if strings.HasPrefix(tok, "-") {
@@ -376,6 +418,9 @@ func sanitizeBranchName(branch string) string {
 
 func specToHTTPS(spec string) string {
 	s := strings.TrimSpace(spec)
+	if isHuggingFaceSpec(s) {
+		return normalizeHuggingFaceSpec(s)
+	}
 	s = strings.TrimSuffix(s, ".git")
 	if strings.HasPrefix(s, "file://") ||
 		strings.HasPrefix(s, "/") ||
@@ -402,14 +447,7 @@ func normaliseRemoteToHTTPS(url string) string {
 	}
 	u = strings.ReplaceAll(u, "\\", "/")
 	if strings.HasPrefix(u, "http://") || strings.HasPrefix(u, "https://") {
-		if i := strings.Index(u, "://"); i >= 0 {
-			prefix := u[:i+3]
-			rest := u[i+3:]
-			if at := strings.Index(rest, "@"); at >= 0 {
-				rest = rest[at+1:]
-			}
-			u = prefix + rest
-		}
+		u = sanitizeURLRegex.ReplaceAllString(u, "$1")
 		return strings.TrimSuffix(u, "/")
 	}
 	if strings.HasPrefix(u, "ssh://git@") {
@@ -478,6 +516,13 @@ func parseRepoURL(repoURLNoRef string) (repoURL, repoDir string, err error) {
 	s := repoURLNoRef
 	sNoGit := strings.TrimSuffix(s, ".git")
 	switch {
+	case isHuggingFaceSpec(s):
+		repoURL = normalizeHuggingFaceSpec(s)
+		repoPath := strings.Trim(strings.TrimPrefix(repoURL, "hf:"), "/")
+		if repoPath == "" {
+			return "", "", fmt.Errorf("error: invalid repo spec %q", s)
+		}
+		repoDir = filepath.Base(repoPath)
 	case strings.HasPrefix(s, "file://"):
 		repoURL = s
 		repoDir = filepath.Base(strings.TrimPrefix(sNoGit, "file://"))
@@ -506,6 +551,25 @@ func parseRepoURL(repoURLNoRef string) (repoURL, repoDir string, err error) {
 		return "", "", fmt.Errorf("error: invalid repo spec %q", s)
 	}
 	return repoURL, repoDir, nil
+}
+
+func isHuggingFaceSpec(s string) bool {
+	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(s)), "hf:")
+}
+
+func normalizeHuggingFaceSpec(spec string) string {
+	trimmed := strings.TrimSpace(spec)
+	if len(trimmed) >= 3 && strings.EqualFold(trimmed[:3], "hf:") {
+		return "hf:" + strings.TrimLeft(trimmed[3:], "/")
+	}
+	return trimmed
+}
+
+func repoTypeFromSpec(spec string) string {
+	if isHuggingFaceSpec(spec) {
+		return repoTypeHuggingFace
+	}
+	return repoTypeGit
 }
 
 // NormaliseRemoteToHTTPS converts git remote syntaxes to canonical HTTPS form.

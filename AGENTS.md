@@ -8,13 +8,13 @@ Configuration for AI coding agents (e.g., Google Jules, GitHub Copilot) working 
 
 `repos` is a command-line tool for managing multiple related Git repositories as a unified workspace.
 
-### Transition to Pure Go
+### Pure Go Implementation
 Historically, this project was built on Bash 3.2-compatible scripts (designed to work in environments like Git Bash on Windows) with a CLI frontend and language wrappers (R and Python) that shelled out to those scripts.
 
-**We are actively transitioning to a pure Go implementation (`cmd/repos/`).**
+**That transition is complete: `repos` is implemented as a pure Go CLI (`cmd/repos/`).**
 
 When modifying or extending the tool:
-- **Do NOT use or shell out to the legacy shell scripts** in the `scripts/` directory from the Go code.
+- **Do NOT add shell-script command implementations back into the project.**
 - The Go commands must be fully self-contained and implemented in pure Go (with the exception of shelling out to `git` or `gh` where unavoidable, though native Go solutions are preferred when practical).
 - Do not rely on external tools like `jq`, `curl`, Python, or R inside the Go codebase. Use standard Go libraries (e.g., `encoding/json`, `net/http`).
 
@@ -37,13 +37,11 @@ When modifying or extending the tool:
 |---|---|
 | CLI Application | **Go** (`cmd/repos/`) |
 | VCS | **Git** (including `git worktree`) |
-| GitHub auth | `GH_TOKEN` env var or `gh` CLI |
 
-### Legacy Wrappers (Transitioning)
+### Wrappers
 | Language | Entry point |
 |---|---|
-| Shell | `scripts/` (Legacy core logic) |
-| R | `R/` package; functions in `R/repos.R` |
+| R | `R/` package; functions in `R/wrappers.R` |
 | Python | `src/repos/` package; entry point `src/repos/__init__.py` |
 
 ---
@@ -60,15 +58,12 @@ cd cmd/repos
 go test ./... -v
 ```
 
-### Legacy Shell Tests
-There are still legacy Bash tests in `tests/` which ensure the old scripts (and sometimes the Go binaries) function correctly. Run them using:
+### Wrapper Tests
+Run wrapper checks with:
 
 ```bash
-# Run all legacy tests (from the repo root)
-for t in tests/test-*.sh; do
-  echo "==> $t"
-  bash "$t"
-done
+python tests/test-python-wrappers.py
+Rscript tests/test-r-wrappers.R
 ```
 
 ---

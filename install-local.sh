@@ -7,9 +7,9 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
 
-RELEASE_REPO="${REPOS_RELEASE_REPO:-miguelrodo/repos-go}"
+RELEASE_REPO="${REPOS_RELEASE_REPO:-MiguelRodo/repos}"
 BINARY_NAME="${REPOS_BINARY_NAME:-repos}"
-DOWNLOAD_BASE_URL="https://github.com/${RELEASE_REPO}/releases/latest/download"
+DOWNLOAD_BASE_URL="${REPOS_DOWNLOAD_BASE_URL:-https://github.com/${RELEASE_REPO}/releases/latest/download}"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/repos"
 STATE_FILE="${STATE_DIR}/install-dir"
 
@@ -84,8 +84,8 @@ echo "Detected platform: ${OS_NAME}/${ARCH_NAME}"
 echo "Install directory: ${INSTALL_DIR}"
 
 ASSET_CANDIDATES=(
-  "${BINARY_NAME}-${OS_NAME}-${ARCH_NAME}"
   "${BINARY_NAME}_${OS_NAME}_${ARCH_NAME}"
+  "${BINARY_NAME}-${OS_NAME}-${ARCH_NAME}"
 )
 
 TMP_BIN="$(mktemp "${TMPDIR:-/tmp}/repos-install.XXXXXX")"

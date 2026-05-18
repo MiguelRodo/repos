@@ -263,15 +263,21 @@ func processCreateLine(line string, privateDefault bool) error {
 	}
 	if exists {
 		fmt.Printf("Exists: %s\n", ownerRepo)
-		return nil
+	} else {
+		fmt.Printf("Creating repo %s ... ", ownerRepo)
+		if err := ghCreateRepoFunc(ownerRepo, privateValue); err != nil {
+			fmt.Println("failed.")
+			return err
+		}
+		fmt.Println("done.")
 	}
 
-	fmt.Printf("Creating repo %s ... ", ownerRepo)
-	if err := ghCreateRepoFunc(ownerRepo, privateValue); err != nil {
-		fmt.Println("failed.")
-		return err
+	_, branch := splitRepoSpec(repoSpec)
+	if branch != "" {
+		if err := ensureBranchExistsOnRepo(ownerRepo, branch); err != nil {
+			return err
+		}
 	}
-	fmt.Println("done.")
 	return nil
 }
 
@@ -340,7 +346,8 @@ func ensureBranchExistsOnRepo(ownerRepo, branch string) error {
 	}
 	exists, err := ghBranchExistsFunc(ownerRepo, normalizedBranch)
 	if err != nil {
-		return err
+		fmt.Fprintf(os.Stderr, "Warning: could not check if branch %s exists on %s: %v\n", normalizedBranch, ownerRepo, err)
+		return nil
 	}
 	if exists {
 		fmt.Printf("Branch exists: %s@%s\n", ownerRepo, normalizedBranch)

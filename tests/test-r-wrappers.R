@@ -1,15 +1,45 @@
 #!/usr/bin/env Rscript
 # Test R wrapper functions with idiomatic syntax
 
-# Mock run_repos_script to capture arguments
-test_args <- NULL
-run_repos_script <- function(script_name, args = character()) {
-  test_args <<- list(script = script_name, args = args)
-  invisible(0)
-}
-
 # Load the wrappers code
 source("R/wrappers.R")
+
+# Mock system2 to capture repos binary invocations
+test_args <- NULL
+system2 <- function(command, args = character(), stdout = "", stderr = "", ...) {
+  test_args <<- list(command = command, args = args)
+  0L
+}
+
+# Mock system to capture direct system calls
+system_args <- NULL
+system <- function(command, ...) {
+  system_args <<- command
+  0L
+}
+
+# Helper to mock Sys.info
+with_mock_sysinfo <- function(sysname, expr) {
+  orig_sysinfo <- base::Sys.info
+  env <- environment(Sys.info)
+  if (is.null(env)) env <- baseenv()
+
+  mock_sysinfo <- function() {
+    res <- orig_sysinfo()
+    res[["sysname"]] <- sysname
+    res
+  }
+
+  unlockBinding("Sys.info", baseenv())
+  assign("Sys.info", mock_sysinfo, envir = baseenv())
+
+  on.exit({
+    assign("Sys.info", orig_sysinfo, envir = baseenv())
+    lockBinding("Sys.info", baseenv())
+  })
+
+  force(expr)
+}
 
 test_count <- 0
 pass_count <- 0
@@ -36,42 +66,75 @@ test <- function(description, expr) {
 }
 
 # Test repos_workspace with idiomatic syntax
+test("repos_clone(depth = 1)", {
+  repos_clone(depth = 1)
+  stopifnot(test_args$command == "repos")
+  stopifnot(test_args$args[1] == "clone")
+  depth_idx <- which(test_args$args == "--depth")
+  stopifnot(length(depth_idx) == 1)
+  stopifnot(test_args$args[depth_idx + 1] == "1")
+})
+
+test("repos_clone(depth = 0) errors", {
+  err <- tryCatch({
+    repos_clone(depth = 0)
+    NULL
+  }, error = function(e) e$message)
+  stopifnot(!is.null(err))
+  stopifnot(grepl("'depth' must be a positive whole number", err, fixed = TRUE))
+})
+
+test("repos_clone(depth = TRUE) errors", {
+  err <- tryCatch({
+    repos_clone(depth = TRUE)
+    NULL
+  }, error = function(e) e$message)
+  stopifnot(!is.null(err))
+  stopifnot(grepl("'depth' must be a positive whole number", err, fixed = TRUE))
+})
+
 test("repos_workspace() with no args", {
   repos_workspace()
-  stopifnot(test_args$script == "helper/vscode-workspace-add.sh")
-  stopifnot(length(test_args$args) == 0)
+  stopifnot(test_args$command == "repos")
+  stopifnot(length(test_args$args) == 1)
+  stopifnot(test_args$args[1] == "workspace")
 })
 
 test("repos_workspace(file = 'custom.list')", {
   repos_workspace(file = "custom.list")
-  stopifnot(test_args$script == "helper/vscode-workspace-add.sh")
+  stopifnot(test_args$command == "repos")
+  stopifnot(test_args$args[1] == "workspace")
   stopifnot(any(test_args$args == "-f"))
   stopifnot(any(test_args$args == "custom.list"))
 })
 
 test("repos_workspace(debug = TRUE)", {
   repos_workspace(debug = TRUE)
-  stopifnot(test_args$script == "helper/vscode-workspace-add.sh")
+  stopifnot(test_args$command == "repos")
+  stopifnot(test_args$args[1] == "workspace")
   stopifnot("--debug" %in% test_args$args)
 })
 
 # Test repos_codespace with idiomatic syntax
 test("repos_codespace() with no args", {
   repos_codespace()
-  stopifnot(test_args$script == "helper/codespaces-auth-add.sh")
-  stopifnot(length(test_args$args) == 0)
+  stopifnot(test_args$command == "repos")
+  stopifnot(length(test_args$args) == 1)
+  stopifnot(test_args$args[1] == "codespace")
 })
 
 test("repos_codespace(file = 'custom.list')", {
   repos_codespace(file = "custom.list")
-  stopifnot(test_args$script == "helper/codespaces-auth-add.sh")
+  stopifnot(test_args$command == "repos")
+  stopifnot(test_args$args[1] == "codespace")
   stopifnot(any(test_args$args == "-f"))
   stopifnot(any(test_args$args == "custom.list"))
 })
 
 test("repos_codespace(devcontainer = c('path1', 'path2'))", {
   repos_codespace(devcontainer = c("path1", "path2"))
-  stopifnot(test_args$script == "helper/codespaces-auth-add.sh")
+  stopifnot(test_args$command == "repos")
+  stopifnot(test_args$args[1] == "codespace")
   dc_indices <- which(test_args$args == "-d")
   stopifnot(length(dc_indices) == 2)
   stopifnot(test_args$args[dc_indices[1] + 1] == "path1")
@@ -80,41 +143,47 @@ test("repos_codespace(devcontainer = c('path1', 'path2'))", {
 
 test("repos_codespace(permissions = 'all')", {
   repos_codespace(permissions = "all")
-  stopifnot(test_args$script == "helper/codespaces-auth-add.sh")
+  stopifnot(test_args$command == "repos")
+  stopifnot(test_args$args[1] == "codespace")
   stopifnot("--permissions" %in% test_args$args)
   stopifnot("all" %in% test_args$args)
 })
 
 test("repos_codespace(debug = TRUE)", {
   repos_codespace(debug = TRUE)
-  stopifnot(test_args$script == "helper/codespaces-auth-add.sh")
+  stopifnot(test_args$command == "repos")
+  stopifnot(test_args$args[1] == "codespace")
   stopifnot("--debug" %in% test_args$args)
 })
 
 # Test repos_run with idiomatic syntax
 test("repos_run() with no args", {
   repos_run()
-  stopifnot(test_args$script == "run-pipeline.sh")
-  stopifnot(length(test_args$args) == 0)
+  stopifnot(test_args$command == "repos")
+  stopifnot(length(test_args$args) == 1)
+  stopifnot(test_args$args[1] == "run")
 })
 
 test("repos_run(script = 'build.sh')", {
   repos_run(script = "build.sh")
-  stopifnot(test_args$script == "run-pipeline.sh")
+  stopifnot(test_args$command == "repos")
+  stopifnot(test_args$args[1] == "run")
   stopifnot(any(test_args$args == "--script"))
   stopifnot(any(test_args$args == "build.sh"))
 })
 
 test("repos_run(dry_run = TRUE, verbose = TRUE)", {
   repos_run(dry_run = TRUE, verbose = TRUE)
-  stopifnot(test_args$script == "run-pipeline.sh")
-  stopifnot("-n" %in% test_args$args)
-  stopifnot("-v" %in% test_args$args)
+  stopifnot(test_args$command == "repos")
+  stopifnot(test_args$args[1] == "run")
+  stopifnot("--dry-run" %in% test_args$args)
+  stopifnot("--verbose" %in% test_args$args)
 })
 
 test("repos_run(include = c('repo1', 'repo2'))", {
   repos_run(include = c("repo1", "repo2"))
-  stopifnot(test_args$script == "run-pipeline.sh")
+  stopifnot(test_args$command == "repos")
+  stopifnot(test_args$args[1] == "run")
   i_idx <- which(test_args$args == "-i")
   stopifnot(length(i_idx) == 1)
   stopifnot(test_args$args[i_idx + 1] == "repo1,repo2")
@@ -122,7 +191,8 @@ test("repos_run(include = c('repo1', 'repo2'))", {
 
 test("repos_run(exclude = 'repo3')", {
   repos_run(exclude = "repo3")
-  stopifnot(test_args$script == "run-pipeline.sh")
+  stopifnot(test_args$command == "repos")
+  stopifnot(test_args$args[1] == "run")
   e_idx <- which(test_args$args == "-e")
   stopifnot(length(e_idx) == 1)
   stopifnot(test_args$args[e_idx + 1] == "repo3")
@@ -130,23 +200,89 @@ test("repos_run(exclude = 'repo3')", {
 
 test("repos_run(ensure_setup = TRUE, skip_deps = TRUE)", {
   repos_run(ensure_setup = TRUE, skip_deps = TRUE)
-  stopifnot(test_args$script == "run-pipeline.sh")
+  stopifnot(test_args$command == "repos")
+  stopifnot(test_args$args[1] == "run")
   stopifnot("--ensure-setup" %in% test_args$args)
-  stopifnot("-d" %in% test_args$args)
+  stopifnot("--skip-deps" %in% test_args$args)
 })
 
 test("repos_run(continue_on_error = TRUE)", {
   repos_run(continue_on_error = TRUE)
-  stopifnot(test_args$script == "run-pipeline.sh")
+  stopifnot(test_args$command == "repos")
+  stopifnot(test_args$args[1] == "run")
   stopifnot("--continue-on-error" %in% test_args$args)
 })
 
 # Test backward compatibility
 test("repos_run('--script', 'test.sh') backward compatibility", {
   repos_run("--script", "test.sh")
-  stopifnot(test_args$script == "run-pipeline.sh")
+  stopifnot(test_args$command == "repos")
+  stopifnot(test_args$args[1] == "run")
   stopifnot("--script" %in% test_args$args)
   stopifnot("test.sh" %in% test_args$args)
+})
+
+# Test repos_install_cli
+test("repos_install_cli() on Linux (run = FALSE)", {
+  with_mock_sysinfo("Linux", {
+    out <- capture.output(repos_install_cli(), type = "message")
+    stopifnot(any(grepl("To install the repos CLI on Ubuntu/Debian", out)))
+    stopifnot(any(grepl("sudo apt-get install", out)))
+  })
+})
+
+test("repos_install_cli() on Linux (run = TRUE)", {
+  with_mock_sysinfo("Linux", {
+    system_args <<- NULL
+    out <- capture.output(repos_install_cli(run = TRUE), type = "message")
+    stopifnot(any(grepl("Running user-level installer...", out)))
+    stopifnot(!is.null(system_args))
+    stopifnot(grepl("git clone", system_args))
+    stopifnot(grepl("install-local.sh", system_args))
+  })
+})
+
+test("repos_install_cli() on Darwin (run = FALSE)", {
+  with_mock_sysinfo("Darwin", {
+    out <- capture.output(repos_install_cli(), type = "message")
+    stopifnot(any(grepl("To install the repos CLI on macOS", out)))
+    stopifnot(any(grepl("brew install repos", out)))
+  })
+})
+
+test("repos_install_cli() on Darwin (run = TRUE)", {
+  with_mock_sysinfo("Darwin", {
+    system_args <<- NULL
+    out <- capture.output(repos_install_cli(run = TRUE), type = "message")
+    stopifnot(any(grepl("Running Homebrew installer...", out)))
+    stopifnot(!is.null(system_args))
+    stopifnot(system_args == "brew tap MiguelRodo/repos && brew install repos")
+  })
+})
+
+test("repos_install_cli() on Windows (run = FALSE)", {
+  with_mock_sysinfo("Windows", {
+    out <- capture.output(repos_install_cli(), type = "message")
+    stopifnot(any(grepl("To install the repos CLI on Windows, run in PowerShell", out)))
+    stopifnot(any(grepl("scoop install repos", out)))
+  })
+})
+
+test("repos_install_cli() on Windows (run = TRUE)", {
+  with_mock_sysinfo("Windows", {
+    system_args <<- NULL
+    out <- capture.output(repos_install_cli(run = TRUE), type = "message")
+    stopifnot(any(grepl("Automatic installation via run = TRUE is not supported on Windows", out)))
+    stopifnot(is.null(system_args))
+  })
+})
+
+test("repos_install_cli() on unknown OS", {
+  with_mock_sysinfo("Solaris", {
+    out <- capture.output(repos_install_cli(), type = "message")
+    stopifnot(any(grepl("To install the repos CLI, see the installation guide", out)))
+    stopifnot(any(grepl("install.html", out)))
+  })
 })
 
 # Summary

@@ -31,9 +31,7 @@ jobs:
         run: |
           if [ "${{ runner.os }}" = "Linux" ]; then
             sudo apt-get update
-            sudo apt-get install -y git curl jq
-          elif [ "${{ runner.os }}" = "macOS" ]; then
-            brew install jq
+            sudo apt-get install -y git curl
           fi
       
       - name: Install Python package
@@ -43,8 +41,7 @@ jobs:
       
       - name: Test Python API
         run: |
-          python -c "from repos import get_script_path, run_script; print('Python API works')"
-          python -c "from repos import get_script_path; path = get_script_path('run-pipeline.sh'); print(f'Script path: {path}')"
+          python -c "from repos import clone, workspace, codespace, run; print('Python API works')"
           echo "Python package installation test passed"
 
   # Test R package installation
@@ -68,7 +65,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y git \
             curl \
-            jq \
             libcurl4-openssl-dev \
             libfontconfig1-dev \
             libfreetype6-dev
@@ -101,30 +97,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
       
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y debhelper devscripts build-essential
-      
-      - name: Update changelog for test build
-        run: |
-          VERSION="1.0.0-test"
-          DATE=$(date -R)
-          cat > debian/changelog << EOF
-          repos ($VERSION) unstable; urgency=medium
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
 
-            * Test build for CI
-
-           -- Test User <test@example.com>  $DATE
-          EOF
+      - name: Install GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          install-only: true
+          version: '~> v2'
       
       - name: Build Debian package
         run: |
-          dpkg-buildpackage -us -uc -b
+          goreleaser release --snapshot --clean
       
       - name: Install Debian package
         run: |
-          sudo dpkg -i ../repos_*.deb || true
+          sudo dpkg -i dist/*.deb || true
           sudo apt-get install -f -y
       
       - name: Verify repos command is available
@@ -133,17 +123,6 @@ jobs:
           repos --help || true
           echo "repos command is available"
       
-      - name: Verify script installation
-        run: |
-          test -f /usr/share/repos/scripts/run-pipeline.sh || exit 1
-          echo "Debian package installation test passed"
-      
-      - name: Run existing tests
-        run: |
-          cd tests
-          ./test-auth-check.sh || true
-          echo "Debian package tests completed"
-
   # Test local installation (Ubuntu without sudo)
   test-local-installation:
     runs-on: ubuntu-latest
@@ -157,18 +136,27 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git curl jq bash
+          sudo apt-get install -y git curl bash
       
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: 'stable'
+      
+      - name: Build fake release binary
+        run: |
+          mkdir -p /tmp/fake-release
+          cd cmd/repos
+          GOOS=linux GOARCH=amd64 go build -o /tmp/fake-release/repos_linux_amd64 .
+
       - name: Run local installation script
+        env:
+          REPOS_DOWNLOAD_BASE_URL: "file:///tmp/fake-release"
         run: |
           mkdir -p "$HOME/.local/bin"
           export PATH="$HOME/.local/bin:$PATH"
           bash install-local.sh
 
-      - name: Run installer regression test
-        run: |
-          bash tests/test-install-local-binary.sh
-      
       - name: Verify repos command is available
         run: |
           which repos
@@ -199,6 +187,46 @@ jobs:
           fi
           echo "Uninstallation successful"
 
+  # Test installation from published APT repository
+  test-apt-repo-installation:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Install APT repository prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl gpg
+
+      - name: Add MiguelRodo APT repository
+        run: |
+          curl -fsSL https://miguelrodo.github.io/apt-miguelrodo/KEY.gpg \
+            | sudo gpg --dearmor -o /usr/share/keyrings/apt-miguelrodo.gpg
+          echo "deb [signed-by=/usr/share/keyrings/apt-miguelrodo.gpg] https://miguelrodo.github.io/apt-miguelrodo stable main" \
+            | sudo tee /etc/apt/sources.list.d/apt-miguelrodo.list >/dev/null
+
+      - name: Install repos from APT
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y repos
+
+      - name: Verify installed binary and architecture
+        run: |
+          repos --help
+          PKG_ARCH="$(dpkg-query -W -f='${Architecture}' repos)"
+          HOST_ARCH="$(dpkg --print-architecture)"
+          if [ "$PKG_ARCH" = "all" ]; then
+            echo "Error: expected architecture-specific package, got Architecture: all"
+            exit 1
+          fi
+          if [ "$PKG_ARCH" != "$HOST_ARCH" ]; then
+            echo "Error: installed package architecture ($PKG_ARCH) does not match host ($HOST_ARCH)"
+            exit 1
+          fi
+          echo "Installed package architecture: $PKG_ARCH"
+          echo "APT repository installation test passed"
+
   # Test Windows manual installation
   test-windows-manual:
     runs-on: windows-latest
@@ -209,12 +237,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
       
-      - name: Install dependencies
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: 'stable'
+      
+      - name: Build fake release binary
         shell: pwsh
         run: |
-          # Install jq using chocolatey
-          choco install jq -y
-          # Git is already installed on GitHub runners
+          $fakeRelease = Join-Path $env:TEMP "fake-release"
+          New-Item -ItemType Directory -Path $fakeRelease -Force | Out-Null
+          Set-Location cmd/repos
+          $env:GOOS = "windows"
+          $env:GOARCH = "amd64"
+          go build -o (Join-Path $fakeRelease "repos_windows_amd64.exe") .
+          Write-Host "Fake release binary built"
       
       - name: Run install.ps1
         shell: pwsh
@@ -222,6 +259,8 @@ jobs:
           $installDir = Join-Path $env:USERPROFILE ".local\bin"
           New-Item -ItemType Directory -Path $installDir -Force | Out-Null
           $env:Path = "$installDir;$env:Path"
+          $fakeRelease = Join-Path $env:TEMP "fake-release"
+          $env:REPOS_DOWNLOAD_BASE_URL = "file:///$($fakeRelease -replace '\\', '/')"
           .\install.ps1
           Write-Host "Installation script executed"
       
@@ -245,7 +284,7 @@ jobs:
           & (Join-Path $installDir "repos.exe") --help
           Write-Host "Windows manual installation test passed"
 
-  # Test from source (direct script usage)
+  # Test from source (Go binary)
   test-from-source:
     runs-on: ubuntu-latest
     permissions:
@@ -258,31 +297,21 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git curl jq bash
+          sudo apt-get install -y git curl
       
-      - name: Make scripts executable
+      - name: Build repos binary from source
         run: |
-          chmod +x scripts/*.sh
-      
-      - name: Run test suite
-        run: |
-          cd tests
-          # Run a subset of tests to verify functionality
-          ./test-auth-check.sh
-          echo "From source tests passed"
-      
-      - name: Test other scripts
-        run: |
-          ./scripts/run-pipeline.sh --help || true
-          ./scripts/add-branch.sh --help || true
-          echo "From source installation test passed"
+          cd cmd/repos
+          go build -o /tmp/repos .
+          /tmp/repos --help
+          echo "From source binary test passed"
 
   # Summary job to ensure all tests pass
   test-summary:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    needs: [test-python-package, test-r-package, test-debian-package, test-local-installation, test-windows-manual, test-from-source]
+    needs: [test-python-package, test-r-package, test-debian-package, test-local-installation, test-apt-repo-installation, test-windows-manual, test-from-source]
     if: always()
     
     steps:
@@ -302,6 +331,10 @@ jobs:
           fi
           if [ "${{ needs.test-local-installation.result }}" != "success" ]; then
             echo "Local installation tests failed"
+            exit 1
+          fi
+          if [ "${{ needs.test-apt-repo-installation.result }}" != "success" ]; then
+            echo "APT repository installation tests failed"
             exit 1
           fi
           if [ "${{ needs.test-windows-manual.result }}" != "success" ]; then

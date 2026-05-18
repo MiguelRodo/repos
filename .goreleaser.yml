@@ -1,12 +1,33 @@
 project_name: repos
 
 builds:
-  - id: default
+  - id: repos-linux
     main: ./cmd/repos
+    ldflags:
+      - -s -w -X main.version={{.Version}}
     goos:
       - linux
     goarch:
       - amd64
+      - arm64
+  - id: repos-darwin
+    main: ./cmd/repos
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+  - id: repos-windows
+    main: ./cmd/repos
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+    goos:
+      - windows
+    goarch:
+      - amd64
+      - arm64
 
 nfpms:
   - id: repos
@@ -19,6 +40,68 @@ nfpms:
     license: "MIT"
     maintainer: "Miguel Rodo"
     bindir: /usr/bin
+    dependencies:
+      - git
+    recommends:
+      - gh
+    builds:
+      - repos-linux
+
+scoops:
+  - repository:
+      owner: MiguelRodo
+      name: scoop-bucket
+      token: "{{ .Env.SCOOP_TAP_TOKEN }}"
+    commit_author:
+      name: github-actions[bot]
+      email: github-actions[bot]@users.noreply.github.com
+    homepage: "https://github.com/MiguelRodo/repos"
+    description: "Cross-platform CLI for managing multiple related Git repositories as a unified workspace"
+    license: "MIT"
+
+brews:
+  - ids:
+      - tarballs
+    repository:
+      owner: MiguelRodo
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Formula
+    commit_author:
+      name: github-actions[bot]
+      email: github-actions[bot]@users.noreply.github.com
+    homepage: "https://github.com/MiguelRodo/repos"
+    description: "Cross-platform CLI for managing multiple related Git repositories as a unified workspace"
+    license: "MIT"
 
 archives:
-  - format: tar.gz
+  - id: tarballs
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+  # Bare binaries with version-agnostic names so `releases/latest/download` URLs
+  # remain stable across releases (e.g. repos_linux_amd64, repos_windows_amd64.exe).
+  - id: binaries
+    format: binary
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+
+release:
+  footer: |
+    ## Install matrix
+
+    | OS | Architectures | Release archive |
+    | --- | --- | --- |
+    | Linux | amd64, arm64 | `repos_{{ .Version }}_linux_<arch>.tar.gz` |
+    | macOS | amd64, arm64 | `repos_{{ .Version }}_darwin_<arch>.tar.gz` |
+    | Windows | amd64, arm64 | `repos_{{ .Version }}_windows_<arch>.zip` |
+
+    Also published for installer scripts:
+
+    - `repos_linux_<arch>`
+    - `repos_darwin_<arch>`
+    - `repos_windows_<arch>.exe` (Windows)
+
+    `repos` release assets are the Go CLI binaries.
+    Python and R packages are wrappers that call the installed `repos` binary.
+    See [install docs](https://miguelrodo.github.io/repos/install.html), [Homebrew formula docs](https://github.com/MiguelRodo/repos/blob/main/homebrew/README.md), and [Scoop manifest docs](https://github.com/MiguelRodo/repos/blob/main/scoop/README.md).

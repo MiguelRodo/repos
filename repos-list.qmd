@@ -39,6 +39,25 @@ repository as the remote.  If the file begins with bare `@branch` lines and no
 repository has been listed yet, the current local repository's own remote is
 used as the fallback.
 
+## Hugging Face Repositories
+
+Use the `hf:` prefix to download Hugging Face repositories:
+
+```text
+hf:datasets/huggingface/stack
+hf:datasets/huggingface/stack@main
+```
+
+`hf://...` and mixed-case HF prefixes are normalized to canonical `hf:<path>`
+format. In HF entries, `@revision` can be a branch, tag, or commit. Bare
+`@revision` lines use the same fallback semantics as Git entries.
+
+Hugging Face entries require `huggingface-cli`:
+
+```bash
+pip install huggingface_hub[cli]
+```
+
 ## Custom Target Directory
 
 Add a name after the repository to clone into a different directory:
@@ -90,6 +109,7 @@ bottom of the file applies to repositories listed above it.
 | `--fetch-all-deferred` | *(Default)* Fast single-branch clone; wildcard refspec restored immediately |
 | `--fetch-single` | Keep restricted single-branch refspec (CI/CD or metered connections) |
 | `--fetch-all` | Full clone — all remote branches downloaded upfront |
+| `--depth <n>` | Opt-in shallow clone depth for all clone operations |
 | `--force` | On a global-only flag line, make the other flag(s) on that line override conflicting per-line flags |
 
 Precedence rules:
@@ -102,9 +122,22 @@ Precedence rules:
 
 Per-line `--public`/`--private` flags always override the global default.
 
-`--fetch-single`, `--fetch-all-deferred`, and `--fetch-all` may also be
-specified per-line to override the global fetch mode for a specific
+`--fetch-single`, `--fetch-all-deferred`, `--fetch-all`, and `--depth <n>` may also be
+specified per-line to override global clone behavior for a specific
 repository or `@branch` line.
+
+## Pipeline-only per-line skip
+
+Use `--dont-run` on a repository line or `@branch` fallback line to keep that
+entry in the workspace but exclude it from `repos run` script mode:
+
+```text
+myorg/backend
+myorg/generated-data --dont-run
+@staging --dont-run
+```
+
+`--dont-run` is ignored by clone/workspace/setup commands.
 
 ## Example
 

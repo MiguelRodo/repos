@@ -10,13 +10,17 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync"
 )
 
 type runTarget struct {
-	name string
-	path string
+	name     string
+	path     string
+	repoSpec string
+	repoType string
+	dontRun  bool
 }
 
 type runResult struct {
@@ -28,7 +32,7 @@ type runResult struct {
 type runOptions struct {
 	reposFile  string
 	concurrent bool
-	// script defaults to run.sh to match run-pipeline.sh behavior.
+	// script defaults to run.sh for pipeline mode.
 	script          string
 	include         map[string]struct{}
 	exclude         map[string]struct{}
@@ -246,13 +250,20 @@ func validateRunScriptPath(script string) error {
 	if script == "" {
 		return errors.New("script path cannot be empty")
 	}
-	if filepath.IsAbs(script) || strings.Contains(script, "..") || strings.HasPrefix(script, "-") {
+	if isAbsoluteScriptPath(script) || strings.Contains(script, "..") || strings.HasPrefix(script, "-") {
 		return fmt.Errorf("invalid script path: %s", script)
 	}
 	if !scriptPathCharPattern.MatchString(script) {
 		return fmt.Errorf("script path must only contain alphanumeric characters, dots, underscores, slashes, or hyphens: %s", script)
 	}
 	return nil
+}
+
+func isAbsoluteScriptPath(script string) bool {
+	if filepath.IsAbs(script) {
+		return true
+	}
+	return strings.HasPrefix(filepath.ToSlash(script), "/")
 }
 
 func (s *state) collectPipelineTargets(opts runOptions) ([]pipelineTarget, error) {
@@ -271,6 +282,9 @@ func (s *state) collectPipelineTargets(opts runOptions) ([]pipelineTarget, error
 	pipelineTargets := make([]pipelineTarget, 0, len(targets))
 	for _, t := range targets {
 		if !shouldRunRepo(t.name, opts.include, opts.exclude) {
+			continue
+		}
+		if t.dontRun || shouldAutoSkipPipelineRepo(t.repoSpec, t.repoType) {
 			continue
 		}
 		pipelineTargets = append(pipelineTargets, pipelineTarget{
@@ -327,11 +341,24 @@ func (s *state) collectConciseRunTargets(opts runOptions) ([]pipelineTarget, err
 			return nil, err
 		}
 		script := opts.script
-		if len(parts) > 1 {
-			script = parts[1]
+		hasPerLineScript := false
+		dontRun := false
+		for _, tok := range parts[1:] {
+			if tok == "--dont-run" {
+				dontRun = true
+				continue
+			}
+			if hasPerLineScript {
+				return nil, fmt.Errorf("invalid concise repos.list line (multiple script values): %s", line)
+			}
+			script = tok
+			hasPerLineScript = true
 			if err := validateRunScriptPath(script); err != nil {
 				return nil, err
 			}
+		}
+		if dontRun {
+			continue
 		}
 		targets = append(targets, pipelineTarget{
 			target: runTarget{
@@ -369,6 +396,30 @@ func shouldRunRepo(name string, include, exclude map[string]struct{}) bool {
 		}
 	}
 	return true
+}
+
+func shouldAutoSkipPipelineRepo(repoSpec, repoType string) bool {
+	if repoType != repoTypeHuggingFace {
+		return false
+	}
+	repoURLNoRef, _ := splitRepoSpec(repoSpec)
+	trimmed := strings.TrimSpace(repoURLNoRef)
+	if len(trimmed) < 3 || !strings.EqualFold(trimmed[:3], "hf:") {
+		return false
+	}
+	hfPath := strings.TrimLeft(trimmed[3:], "/")
+	if hfPath == "" {
+		return false
+	}
+	lowerPath := strings.ToLower(hfPath)
+	if strings.HasPrefix(lowerPath, "datasets/") || strings.HasPrefix(lowerPath, "models/") {
+		return true
+	}
+	if strings.HasPrefix(lowerPath, "spaces/") {
+		return false
+	}
+	// Default model repos use "owner/model" (without a "models/" prefix).
+	return strings.Count(hfPath, "/") == 1
 }
 
 func runPipelineTargets(targets []pipelineTarget, opts runOptions) (runPipelineStats, error) {
@@ -416,11 +467,15 @@ func runScriptInTarget(t pipelineTarget, opts runOptions) runScriptResult {
 		printPrefixedLine(t.target.name, "SKIP: no "+t.script+" found", nil)
 		return runScriptResult{skipped: true}
 	}
-	if err := os.Chmod(scriptPath, 0o755); err != nil {
-		printPrefixedLine(t.target.name, "Warning: could not chmod "+t.script+": "+err.Error(), nil)
+	// Security: Use Lstat to ensure we don't follow symlinks when calling Chmod.
+	// os.Chmod follows symlinks on many platforms, which could lead to privilege escalation.
+	if info, err := os.Lstat(scriptPath); err == nil && info.Mode().IsRegular() {
+		if err := os.Chmod(scriptPath, 0o755); err != nil {
+			printPrefixedLine(t.target.name, "Warning: could not chmod "+t.script+": "+err.Error(), nil)
+		}
 	}
 
-	cmd := exec.Command("./" + t.script)
+	cmd := commandForScript(t.script)
 	cmd.Dir = t.target.path
 	outMu := &sync.Mutex{}
 	res := runCommandWithPrefixedOutput(t.target.name, cmd, outMu)
@@ -428,6 +483,15 @@ func runScriptInTarget(t pipelineTarget, opts runOptions) runScriptResult {
 		return runScriptResult{err: res}
 	}
 	return runScriptResult{}
+}
+
+func commandForScript(script string) *exec.Cmd {
+	if runtime.GOOS == "windows" {
+		if _, err := exec.LookPath("sh"); err == nil {
+			return exec.Command("sh", filepath.ToSlash(script))
+		}
+	}
+	return exec.Command("./" + script)
 }
 
 func runCommandWithPrefixedOutput(repoName string, cmd *exec.Cmd, outMu *sync.Mutex) error {
@@ -519,7 +583,13 @@ func (s *state) collectRunTargets() ([]runTarget, error) {
 				return nil, err
 			}
 			destPath := filepath.Join(s.parentDir, destName)
-			targets = append(targets, runTarget{name: filepath.Base(destPath), path: destPath})
+			targets = append(targets, runTarget{
+				name:     filepath.Base(destPath),
+				path:     destPath,
+				repoSpec: ins.repoSpec,
+				repoType: ins.repoType,
+				dontRun:  ins.dontRun,
+			})
 
 			if ins.isWorktree {
 				if baseName != "" {
@@ -550,7 +620,13 @@ func (s *state) collectRunTargets() ([]runTarget, error) {
 		}
 
 		destPath := filepath.Join(s.parentDir, destName)
-		targets = append(targets, runTarget{name: filepath.Base(destPath), path: destPath})
+		targets = append(targets, runTarget{
+			name:     filepath.Base(destPath),
+			path:     destPath,
+			repoSpec: ins.repoSpec,
+			repoType: ins.repoType,
+			dontRun:  ins.dontRun,
+		})
 		fallbackHTTPS = remoteHTTPS
 		fallbackLocalName = filepath.Base(destPath)
 		s.seenRemoteLocal[remoteHTTPS] = destPath
@@ -719,6 +795,8 @@ Run mode:
 Options:
   -f, --file <file>        Repo list file (default: repos.list or repos-to-clone.list)
       --script <path>      Script to run in script mode (default: run.sh)
+                            Per-line --dont-run entries in repos.list are skipped.
+                            Hugging Face dataset/model entries are also skipped.
   -i, --include <names>    Comma-separated repository names to include
   -e, --exclude <names>    Comma-separated repository names to exclude
       --ensure-setup       Run clone step before script execution
@@ -736,6 +814,7 @@ Examples:
   repos run --concurrent npm install
 `)
 }
+
 // pluralRepo returns "repository" for n==1 and "repositories" otherwise.
 func pluralRepo(n int) string {
 	if n == 1 {

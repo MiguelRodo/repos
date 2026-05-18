@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/MiguelRodo/repos/v2/internal/gitcmd"
@@ -29,12 +30,16 @@ type state struct {
 	reposFile             string
 	debug                 bool
 	debugWriter           io.Writer
+	allowCreate           bool
 	globalWorktree        bool
 	globalWorktreeForced  bool
 	globalFetchMode       string
 	globalFetchModeForced bool
+	globalDepth           int
+	globalDepthForced     bool
 	cliWorktreeSet        bool
 	cliFetchModeSet       bool
+	cliDepthSet           bool
 	cliForce              bool
 	currentRepoHTTPS      string
 	fallbackRepoHTTPS     string
@@ -53,14 +58,24 @@ type planInfo struct {
 
 type instruction struct {
 	repoSpec    string
+	repoType    string
 	targetDir   string
 	allBranches bool
 	isWorktree  bool
 	isAtBranch  bool
+	dontRun     bool
 	fetchMode   string
+	depth       int
 }
 
+var version = "dev"
+
 var ownerRepoRegex = regexp.MustCompile(`^[^/]+/[^/]+$`)
+
+const (
+	repoTypeGit         = "git"
+	repoTypeHuggingFace = "huggingface"
+)
 
 func main() {
 	if len(os.Args) < 2 {
@@ -85,8 +100,10 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-	// codespace, codespaces, and codespaces-auth are aliases for the same behavior.
-	case "codespace", "codespaces-auth", "codespaces":
+	case "codespaces", "codespaces-auth":
+		fmt.Fprintln(os.Stderr, "Error: command removed; use 'repos codespace'")
+		os.Exit(1)
+	case "codespace":
 		if err := runCodespacesAuth(os.Args[2:]); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
@@ -101,6 +118,9 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
+	case "version", "--version", "-v":
+		fmt.Printf("repos version %s\n", version)
+		os.Exit(0)
 	case "-h", "--help", "help":
 		usage()
 	default:
@@ -117,29 +137,33 @@ Commands:
   clone             Clone repositories listed in repos.list into the parent directory
   workspace         Manage VS Code .code-workspace files
   install-r-deps    Install R dependencies for managed repositories
-  codespace         Set GH_TOKEN Codespaces secrets for managed repositories
-  codespaces        Alias for codespace
-  codespaces-auth   Legacy alias for codespace
+  codespace         Update devcontainer.json with codespaces permissions for managed repositories
   run               Execute a command inside each repository from repos.list
   create            Create missing GitHub repositories from repos.list
+  version           Print the version number
 
 Run 'repos <command> --help' for more information.
 `)
 }
 
 func cloneUsage() {
-	fmt.Print(`Usage: repos clone [--file <repo-list>] [--debug] [--debug-file [file]] [--worktree]
-                  [--fetch-all-deferred|--fetch-single|--fetch-all]
-                  [--force]
+	fmt.Print(`Usage: repos clone [--file <repo-list>] [--debug] [--debug-file [file]] [--worktree] [--create]
+                   [--fetch-all-deferred|--fetch-single|--fetch-all] [--depth <n>]
+                   [--force]
 
 Fetch modes:
   --fetch-all-deferred   (default) clone with --single-branch then restore wildcard refspec
   --fetch-single         keep strict single-branch refspec
   --fetch-all            full clone of all branches
+  --depth <n>            opt-in shallow clone depth (must be > 0)
 
 Precedence:
   Per-line flags override global defaults by default.
   Use --force to enforce CLI global flags over per-line overrides.
+
+Branch creation:
+  Missing remote branches are not created by default.
+  Use --create to create and push missing branches requested in repos.list.
 `)
 }
 
@@ -234,7 +258,7 @@ func trimLine(line string) string {
 
 func isGlobalFlagToken(tok string) bool {
 	switch tok {
-	case "--codespaces", "--public", "--private", "--worktree", "--fetch-all-deferred", "--fetch-single", "--fetch-all", "--force":
+	case "--codespaces", "--public", "--private", "--worktree", "--fetch-all-deferred", "--fetch-single", "--fetch-all", "--force", "--depth":
 		return true
 	default:
 		return false
@@ -246,12 +270,56 @@ func lineIsGlobalFlagsOnly(line string) bool {
 	if len(parts) == 0 {
 		return false
 	}
-	for _, tok := range parts {
+	for i := 0; i < len(parts); i++ {
+		tok := parts[i]
+		if tok == "--depth" {
+			if i+1 >= len(parts) {
+				return false
+			}
+			i++
+			continue
+		}
+		if strings.HasPrefix(tok, "--depth=") {
+			if strings.TrimPrefix(tok, "--depth=") == "" {
+				return false
+			}
+			continue
+		}
 		if !isGlobalFlagToken(tok) {
 			return false
 		}
 	}
 	return true
+}
+
+func parseDepthValue(raw string) (int, error) {
+	depth, err := strconv.Atoi(strings.TrimSpace(raw))
+	if err != nil || depth <= 0 {
+		return 0, fmt.Errorf("error: invalid --depth value %q (must be a positive integer)", raw)
+	}
+	return depth, nil
+}
+
+func parseDepthToken(tokens []string, i int) (depth int, next int, ok bool, err error) {
+	tok := tokens[i]
+	if tok == "--depth" {
+		if i+1 >= len(tokens) {
+			return 0, i, true, errors.New("error: missing value for --depth")
+		}
+		d, derr := parseDepthValue(tokens[i+1])
+		if derr != nil {
+			return 0, i, true, derr
+		}
+		return d, i + 1, true, nil
+	}
+	if strings.HasPrefix(tok, "--depth=") {
+		d, derr := parseDepthValue(strings.TrimPrefix(tok, "--depth="))
+		if derr != nil {
+			return 0, i, true, derr
+		}
+		return d, i, true, nil
+	}
+	return 0, i, false, nil
 }
 
 func (s *state) applyGlobalFlagsFromFile() error {
@@ -277,7 +345,19 @@ func (s *state) applyGlobalFlagsFromFile() error {
 				break
 			}
 		}
-		for _, tok := range parts {
+		for i := 0; i < len(parts); i++ {
+			tok := parts[i]
+			if depth, next, ok, derr := parseDepthToken(parts, i); ok {
+				if derr != nil {
+					return derr
+				}
+				if !s.cliDepthSet {
+					s.globalDepth = depth
+					s.globalDepthForced = lineForce
+				}
+				i = next
+				continue
+			}
 			switch tok {
 			case "--worktree":
 				if !s.cliWorktreeSet {
@@ -329,10 +409,11 @@ func validateTargetDir(target string) error {
 }
 
 func (s *state) parseEffectiveLine(trimmed string, fallbackHTTPS string) (instruction, error) {
-	ins := instruction{fetchMode: s.globalFetchMode}
+	ins := instruction{fetchMode: s.globalFetchMode, depth: s.globalDepth}
 	ignoreLineFlags := s.cliForce
 	worktreeLocked := s.globalWorktreeForced
 	fetchModeLocked := s.globalFetchModeForced
+	depthLocked := s.globalDepthForced
 	parts := strings.Fields(trimmed)
 	if len(parts) == 0 {
 		return ins, nil
@@ -342,30 +423,60 @@ func (s *state) parseEffectiveLine(trimmed string, fallbackHTTPS string) (instru
 
 	if strings.HasPrefix(first, "@") {
 		branch := strings.TrimPrefix(first, "@")
-		if err := validateBranch(branch); err != nil {
-			return ins, err
+		repoType := repoTypeFromSpec(fallbackHTTPS)
+		if repoType != repoTypeHuggingFace {
+			if err := validateBranch(branch); err != nil {
+				return ins, err
+			}
+		} else if branch == "" {
+			return ins, errors.New("missing branch/revision")
 		}
 		useWorktree := s.globalWorktree
-		for _, tok := range rest {
+		for i := 0; i < len(rest); i++ {
+			tok := rest[i]
+			if depth, next, ok, derr := parseDepthToken(rest, i); ok {
+				if derr != nil {
+					return ins, derr
+				}
+				if repoType == repoTypeHuggingFace {
+					fmt.Fprintf(os.Stderr, "Warning: '--depth' ignored on huggingface line: %s\n", trimmed)
+				} else if !ignoreLineFlags && !depthLocked {
+					ins.depth = depth
+				}
+				i = next
+				continue
+			}
 			switch tok {
+			case "--dont-run":
+				ins.dontRun = true
 			case "-w", "--worktree":
-				if !ignoreLineFlags && !worktreeLocked {
+				if repoType == repoTypeHuggingFace {
+					fmt.Fprintf(os.Stderr, "Warning: %q ignored on huggingface line: %s\n", tok, trimmed)
+				} else if !ignoreLineFlags && !worktreeLocked {
 					useWorktree = true
 				}
 			case "-a", "--all-branches":
-				if !ignoreLineFlags && !fetchModeLocked {
+				if repoType == repoTypeHuggingFace {
+					fmt.Fprintf(os.Stderr, "Warning: %q ignored on huggingface line: %s\n", tok, trimmed)
+				} else if !ignoreLineFlags && !fetchModeLocked {
 					ins.allBranches = true
 				}
 			case "--fetch-all-deferred":
-				if !ignoreLineFlags && !fetchModeLocked {
+				if repoType == repoTypeHuggingFace {
+					fmt.Fprintf(os.Stderr, "Warning: %q ignored on huggingface line: %s\n", tok, trimmed)
+				} else if !ignoreLineFlags && !fetchModeLocked {
 					ins.fetchMode = "deferred"
 				}
 			case "--fetch-single":
-				if !ignoreLineFlags && !fetchModeLocked {
+				if repoType == repoTypeHuggingFace {
+					fmt.Fprintf(os.Stderr, "Warning: %q ignored on huggingface line: %s\n", tok, trimmed)
+				} else if !ignoreLineFlags && !fetchModeLocked {
 					ins.fetchMode = "single"
 				}
 			case "--fetch-all":
-				if !ignoreLineFlags && !fetchModeLocked {
+				if repoType == repoTypeHuggingFace {
+					fmt.Fprintf(os.Stderr, "Warning: %q ignored on huggingface line: %s\n", tok, trimmed)
+				} else if !ignoreLineFlags && !fetchModeLocked {
 					ins.fetchMode = "all"
 				}
 			case "--public", "--private", "--codespaces", "--force":
@@ -385,7 +496,8 @@ func (s *state) parseEffectiveLine(trimmed string, fallbackHTTPS string) (instru
 		if err := validateTargetDir(ins.targetDir); err != nil {
 			return ins, err
 		}
-		ins.isWorktree = useWorktree
+		ins.repoType = repoType
+		ins.isWorktree = useWorktree && repoType != repoTypeHuggingFace
 		ins.isAtBranch = true
 		ins.repoSpec = fallbackHTTPS + "@" + branch
 		if ins.fetchMode == "all" {
@@ -399,27 +511,55 @@ func (s *state) parseEffectiveLine(trimmed string, fallbackHTTPS string) (instru
 		return ins, fmt.Errorf("error: repository spec cannot start with a hyphen or contain '..': %s", first)
 	}
 	ins.repoSpec = first
-	for _, tok := range rest {
+	ins.repoType = repoTypeFromSpec(repoURL)
+	for i := 0; i < len(rest); i++ {
+		tok := rest[i]
+		if depth, next, ok, derr := parseDepthToken(rest, i); ok {
+			if derr != nil {
+				return ins, derr
+			}
+			if ins.repoType == repoTypeHuggingFace {
+				fmt.Fprintf(os.Stderr, "Warning: '--depth' ignored on huggingface line: %s\n", trimmed)
+			} else if !ignoreLineFlags && !depthLocked {
+				ins.depth = depth
+			}
+			i = next
+			continue
+		}
 		switch tok {
+		case "--dont-run":
+			ins.dontRun = true
 		case "-a", "--all-branches":
-			if !ignoreLineFlags && !fetchModeLocked {
+			if ins.repoType == repoTypeHuggingFace {
+				fmt.Fprintf(os.Stderr, "Warning: %q ignored on huggingface line: %s\n", tok, trimmed)
+			} else if !ignoreLineFlags && !fetchModeLocked {
 				ins.allBranches = true
 			}
 		case "--fetch-all-deferred":
-			if !ignoreLineFlags && !fetchModeLocked {
+			if ins.repoType == repoTypeHuggingFace {
+				fmt.Fprintf(os.Stderr, "Warning: %q ignored on huggingface line: %s\n", tok, trimmed)
+			} else if !ignoreLineFlags && !fetchModeLocked {
 				ins.fetchMode = "deferred"
 			}
 		case "--fetch-single":
-			if !ignoreLineFlags && !fetchModeLocked {
+			if ins.repoType == repoTypeHuggingFace {
+				fmt.Fprintf(os.Stderr, "Warning: %q ignored on huggingface line: %s\n", tok, trimmed)
+			} else if !ignoreLineFlags && !fetchModeLocked {
 				ins.fetchMode = "single"
 			}
 		case "--fetch-all":
-			if !ignoreLineFlags && !fetchModeLocked {
+			if ins.repoType == repoTypeHuggingFace {
+				fmt.Fprintf(os.Stderr, "Warning: %q ignored on huggingface line: %s\n", tok, trimmed)
+			} else if !ignoreLineFlags && !fetchModeLocked {
 				ins.fetchMode = "all"
 				ins.allBranches = true
 			}
 		case "-w", "--worktree":
-			fmt.Fprintf(os.Stderr, "Warning: '--worktree' ignored on clone line: %s\n", trimmed)
+			if ins.repoType == repoTypeHuggingFace {
+				fmt.Fprintf(os.Stderr, "Warning: '--worktree' ignored on huggingface line: %s\n", trimmed)
+			} else {
+				fmt.Fprintf(os.Stderr, "Warning: '--worktree' ignored on clone line: %s\n", trimmed)
+			}
 		case "--public", "--private", "--codespaces", "--force":
 		default:
 			if strings.HasPrefix(tok, "-") {
@@ -622,7 +762,7 @@ func (s *state) ensureBranchFetchRefspec(base, branch string) {
 	}
 }
 
-func (s *state) ensureBaseExists(remote, base, fetchMode string) (int, error) {
+func (s *state) ensureBaseExists(remote, base, fetchMode string, depth int) (int, error) {
 	if _, err := gitcmd.RunGit(base, "rev-parse", "--is-inside-work-tree"); err == nil {
 		return 0, nil
 	}
@@ -636,6 +776,12 @@ func (s *state) ensureBaseExists(remote, base, fetchMode string) (int, error) {
 	cloneArgs := []string{"clone"}
 	if fetchMode != "all" {
 		cloneArgs = append(cloneArgs, "--single-branch")
+	}
+	if fetchMode == "all" && depth > 0 {
+		cloneArgs = append(cloneArgs, "--no-single-branch")
+	}
+	if depth > 0 {
+		cloneArgs = append(cloneArgs, "--depth", strconv.Itoa(depth))
 	}
 	cloneArgs = append(cloneArgs, "--", remote, base)
 	if _, err := gitcmd.RunGit("", cloneArgs...); err != nil {
@@ -655,7 +801,7 @@ func (s *state) ensureBaseExists(remote, base, fetchMode string) (int, error) {
 
 func (s *state) cloneOneRepo(ins instruction) (int, error) {
 	repoURLNoRef, ref := splitRepoSpec(ins.repoSpec)
-	if ref != "" {
+	if ref != "" && ins.repoType != repoTypeHuggingFace {
 		if err := validateBranch(ref); err != nil {
 			return 1, err
 		}
@@ -678,6 +824,9 @@ func (s *state) cloneOneRepo(ins instruction) (int, error) {
 		}
 	default:
 		dest = filepath.Join(s.parentDir, repoDir)
+	}
+	if ins.repoType == repoTypeHuggingFace {
+		return s.cloneHuggingFaceRepo(remoteHTTPS, repoURLNoRef, ref, dest)
 	}
 
 	if isGitRepo(dest) {
@@ -704,6 +853,12 @@ func (s *state) cloneOneRepo(ins instruction) (int, error) {
 	if !ins.allBranches {
 		cloneArgs = append(cloneArgs, "--single-branch")
 	}
+	if ins.allBranches && ins.depth > 0 {
+		cloneArgs = append(cloneArgs, "--no-single-branch")
+	}
+	if ins.depth > 0 {
+		cloneArgs = append(cloneArgs, "--depth", strconv.Itoa(ins.depth))
+	}
 
 	if ref != "" {
 		if _, err := gitcmd.RunGit("", "ls-remote", "--exit-code", "--heads", "--", repoURL, ref); err == nil {
@@ -713,6 +868,9 @@ func (s *state) cloneOneRepo(ins instruction) (int, error) {
 				return 1, err
 			}
 		} else {
+			if !s.allowCreate {
+				return 1, fmt.Errorf("remote branch %q not found on %q (run with --create to create it)", ref, remoteHTTPS)
+			}
 			fmt.Printf("Remote branch '%s' not found on %s; creating it.\n", ref, remoteHTTPS)
 			fmt.Printf("Cloning default branch of %s → %s\n", remoteHTTPS, dest)
 			cloneArgs2 := append(cloneArgs, "--", repoURL, dest)
@@ -746,6 +904,45 @@ func (s *state) cloneOneRepo(ins instruction) (int, error) {
 	s.cloneDest = dest
 	s.seenRemoteLocal[remoteHTTPS] = dest
 	return 0, nil
+}
+
+func (s *state) cloneHuggingFaceRepo(remoteKey, repoSpec, ref, dest string) (int, error) {
+	if dirExists(dest) && isNonEmptyDir(dest) {
+		fmt.Printf("Skip: %s exists and is not empty; leaving as-is.\n", dest)
+		s.counts.skipped++
+		return 2, nil
+	}
+	if ref == "" {
+		ref = "main"
+	}
+	normalizedSpec := parser.SpecToHTTPS(repoSpec)
+	hfPath := strings.TrimPrefix(normalizedSpec, "hf:")
+	if hfPath == "" {
+		return 1, fmt.Errorf("error: empty huggingface repo path after parsing %q", repoSpec)
+	}
+	if strings.HasPrefix(hfPath, "-") {
+		return 1, fmt.Errorf("error: invalid huggingface repo id %q", hfPath)
+	}
+	args := []string{"download", hfPath, "--revision", ref, "--local-dir", dest}
+	fmt.Printf("Downloading %s → %s (revision %s)\n", remoteKey, dest, ref)
+	if _, err := gitcmd.RunHuggingFaceCLI("", args...); err != nil {
+		return 1, err
+	}
+	s.counts.clonedBranch++
+	s.cloneDest = dest
+	s.seenRemoteLocal[remoteKey] = dest
+	return 0, nil
+}
+
+func repoTypeFromSpec(spec string) string {
+	if isHuggingFaceSpec(spec) {
+		return repoTypeHuggingFace
+	}
+	return repoTypeGit
+}
+
+func isHuggingFaceSpec(spec string) bool {
+	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(spec)), "hf:")
 }
 
 func (s *state) createWorktreeForBranch(base, branch, targetDir, fetchMode string) (int, error) {
@@ -809,8 +1006,12 @@ func (s *state) createWorktreeForBranch(base, branch, targetDir, fetchMode strin
 				fmt.Fprintf(os.Stderr, "Warning: failed to set upstream for %s: %v\n", branch, err)
 			}
 		} else {
-			if _, err := gitcmd.RunGit(dest, "push", "-u", "origin", "--", "HEAD:"+branch); err != nil {
-				fmt.Fprintf(os.Stderr, "Warning: failed to push branch %s: %v\n", branch, err)
+			if s.allowCreate {
+				if _, err := gitcmd.RunGit(dest, "push", "-u", "origin", "--", "HEAD:"+branch); err != nil {
+					fmt.Fprintf(os.Stderr, "Warning: failed to push branch %s: %v\n", branch, err)
+				}
+			} else {
+				fmt.Printf("Branch '%s' exists locally but not on origin; leaving it local (use --create to push).\n", branch)
 			}
 		}
 		return 0, nil
@@ -853,6 +1054,14 @@ func (s *state) createWorktreeForBranch(base, branch, targetDir, fetchMode strin
 			fmt.Fprintf(os.Stderr, "Warning: failed to push branch %s: %v\n", branch, err)
 		}
 		return 0, nil
+	}
+
+	if !s.allowCreate {
+		origin := normaliseRemoteToHTTPS(gitcmd.SafeGetOriginURL(base))
+		if origin == "" {
+			origin = "origin"
+		}
+		return 1, fmt.Errorf("branch %q not found on %q (run with --create to create it)", branch, origin)
 	}
 
 	fmt.Printf("Branch not found: %s (on remote, creating new)\n", branch)
@@ -899,7 +1108,7 @@ func (s *state) processFile() error {
 					base = b
 				} else {
 					base = filepath.Join(s.parentDir, s.planBaseName(s.fallbackRepoHTTPS))
-					rc, e := s.ensureBaseExists(s.fallbackRepoHTTPS, base, ins.fetchMode)
+					rc, e := s.ensureBaseExists(s.fallbackRepoHTTPS, base, ins.fetchMode, ins.depth)
 					if e != nil {
 						err = e
 						lineRC = 1
@@ -953,7 +1162,7 @@ func (s *state) processFile() error {
 				} else {
 					if !seenBefore && s.planHasFull(thisRemoteHTTPS) {
 						base := filepath.Join(s.parentDir, s.planBaseName(thisRemoteHTTPS))
-						rc2, e2 := s.ensureBaseExists(thisRemoteHTTPS, base, ins.fetchMode)
+						rc2, e2 := s.ensureBaseExists(thisRemoteHTTPS, base, ins.fetchMode, ins.depth)
 						if e2 != nil {
 							err = e2
 							lineRC = 1

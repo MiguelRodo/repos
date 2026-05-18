@@ -15,7 +15,7 @@ repos_workspace(file = NULL, debug = FALSE, debug_file = NULL, ...)
 (auto-generated if \code{TRUE})}
 
 \item{...}{Additional arguments passed directly to the
-\code{vscode-workspace-add.sh} script as-is.}
+\code{repos workspace} as-is.}
 }
 \value{
 Invisibly returns the exit status of the script (0 for success).
@@ -25,7 +25,7 @@ Generate or update the VS Code multi-root workspace file from a
 \code{repos.list} file.
 }
 \details{
-This function is a wrapper around \code{vscode-workspace-add.sh}.
+This function is a wrapper around \code{repos workspace}.
 It writes (or refreshes) the \code{entire-project.code-workspace} file in
 your project directory so you can open all cloned repositories as a
 multi-root workspace in VS Code or other IDEs that support the VS Code workspace format.
