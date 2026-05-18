@@ -137,6 +137,9 @@ bash install-local.sh
 # Or system-wide on Ubuntu/Debian
 sudo dpkg-buildpackage -us -uc -b
 sudo dpkg -i ../repos_*.deb
+
+# Fix any dependency issues
+sudo apt-get install -f
 ```
 
 ---
