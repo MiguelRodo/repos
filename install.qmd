@@ -151,18 +151,20 @@ if your workspace scripts rely on Bash (for example `run.sh` pipelines).
 
 ## From Source (Go)
 
+Install directly from the remote module path:
+
 ```bash
-# Install latest from module path
-go install github.com/MiguelRodo/repos/v2/cmd/repos@latest
+go install [github.com/MiguelRodo/repos/v2/cmd/repos@latest](https://github.com/MiguelRodo/repos/v2/cmd/repos@latest)
 ```
 
 Or build from a local clone:
 
 ```bash
-git clone https://github.com/MiguelRodo/repos.git
+git clone [https://github.com/MiguelRodo/repos.git](https://github.com/MiguelRodo/repos.git)
 cd repos
 go build -o repos ./cmd/repos
-# Optional: move ./repos somewhere on PATH
+# Install system-wide on Linux/macOS
+sudo mv repos /usr/local/bin/
 ```
 
 ---
