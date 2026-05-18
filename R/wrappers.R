@@ -88,6 +88,7 @@ repos_install_cli <- function(run = FALSE) {
   if (sysname == "Linux") {
     message("To install the repos CLI on Ubuntu/Debian, choose one of:\n")
     message("  # Option 1: APT repository (recommended -- keeps repos up to date):")
+    message("  sudo apt-get install -y curl gpg")
     message("  curl -fsSL https://miguelrodo.github.io/apt-miguelrodo/KEY.gpg \\")
     message("     | sudo gpg --dearmor -o /usr/share/keyrings/apt-miguelrodo.gpg")
     message('  echo "deb [signed-by=/usr/share/keyrings/apt-miguelrodo.gpg] https://miguelrodo.github.io/apt-miguelrodo stable main" \\')
@@ -399,7 +400,7 @@ repos_workspace <- function(file = NULL, debug = FALSE, debug_file = NULL, ...) 
 
 #' Configure GitHub Codespaces Authentication
 #'
-#' Inject the \code{GH_TOKEN} Codespaces secret into every cloned repository
+#' Update devcontainer.json with codespaces permissions for managed repositories
 #' that has a \code{devcontainer.json}.
 #'
 #' @param file Path to repos list file (default: repos.list)

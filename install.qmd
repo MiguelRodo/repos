@@ -29,6 +29,9 @@ Install the wrapper package (`pip`/`R`) and ensure `repos` is installed on `PATH
 Install and keep `repos` up to date directly via `apt`:
 
 ```bash
+# Install prerequisites
+sudo apt-get install -y curl gpg
+
 # Add repository signing key
 curl -fsSL https://miguelrodo.github.io/apt-miguelrodo/KEY.gpg \
    | sudo gpg --dearmor -o /usr/share/keyrings/apt-miguelrodo.gpg
@@ -97,8 +100,6 @@ sudo dpkg -r repos
 - Required only for specific commands:
   - `repos create`: `gh` CLI with authentication (`gh auth login` or
     `GH_TOKEN`)
-  - `repos codespace`: token via `GH_TOKEN` (or `CODESPACES_TOKEN`) and `gh`
-    available on `PATH`
   - `Rscript` (`repos install-r-deps`)
 
 ---
@@ -175,7 +176,7 @@ install.packages("devtools")
 devtools::install_github("MiguelRodo/repos")
 ```
 
-Requires `repos`, `git`, and `gh` on your system `PATH` for full wrapper
+Requires `repos` and `git` on your system `PATH` for full wrapper
 coverage (including Codespaces helpers).
 
 ### Python Package
@@ -192,7 +193,7 @@ cd repos
 pip install .
 ```
 
-Requires `repos`, `git`, and `gh` on your system `PATH` for full wrapper
+Requires `repos` and `git` on your system `PATH` for full wrapper
 coverage (including Codespaces helpers).
 
 ---

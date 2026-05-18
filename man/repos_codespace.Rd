@@ -36,7 +36,7 @@ repos_codespace(
 Invisibly returns the exit status of the script (0 for success).
 }
 \description{
-Inject the \code{GH_TOKEN} Codespaces secret into every cloned repository
+Update devcontainer.json with codespaces permissions for managed repositories
 that has a \code{devcontainer.json}.
 }
 \details{

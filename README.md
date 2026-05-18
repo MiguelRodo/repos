@@ -16,6 +16,12 @@ Install on Linux, macOS, or Windows, with optional R and Python wrappers.
 Common install paths:
 
 ```bash
+# Ubuntu / Debian
+sudo apt-get install -y curl gpg
+curl -fsSL https://miguelrodo.github.io/apt-miguelrodo/KEY.gpg | sudo gpg --dearmor -o /usr/share/keyrings/apt-miguelrodo.gpg
+echo "deb [signed-by=/usr/share/keyrings/apt-miguelrodo.gpg] https://miguelrodo.github.io/apt-miguelrodo stable main" | sudo tee /etc/apt/sources.list.d/apt-miguelrodo.list >/dev/null
+sudo apt-get update && sudo apt-get install -y repos
+
 # Go (from source)
 go install github.com/MiguelRodo/repos/v2/cmd/repos@latest
 ```
@@ -57,7 +63,7 @@ Hugging Face entries (`hf:...`) require `huggingface-cli`
 - `repos workspace` — generate or refresh `entire-project.code-workspace`
 - `repos run` — run scripts or explicit commands across managed repos
 - `repos create` — create missing GitHub repos from `repos.list`
-- `repos codespace` — configure `GH_TOKEN` Codespaces secrets and devcontainer
+- `repos codespace` — configure devcontainer
   repository permissions
 - `repos install-r-deps` — install R dependencies across managed repos
 

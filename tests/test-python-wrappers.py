@@ -288,6 +288,7 @@ if __name__ == "__main__":
 
     test("repos.bundled_cli_version() returns string", test_bundled_cli_version)
 
+    test("repos.installed_cli_version() handles subprocess Exception", test_installed_cli_version_exception)
     
     print("\n" + "=" * 40)
     print(f"Total tests: {test_count}")
