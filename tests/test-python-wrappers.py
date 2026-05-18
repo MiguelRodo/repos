@@ -47,6 +47,12 @@ def test(description, func):
         print(f"FAILED\n  Unexpected error: {e}")
         fail_count += 1
 
+# Test version utilities
+def test_bundled_cli_version():
+    version = repos.bundled_cli_version()
+    assert isinstance(version, str), f"Expected string, got {type(version)}"
+    assert version == repos._BUNDLED_CLI_VERSION, f"Expected {repos._BUNDLED_CLI_VERSION}, got {version}"
+
 # Test repos.workspace with idiomatic syntax
 def test_clone_depth():
     repos.clone(depth=1)
@@ -277,6 +283,11 @@ if __name__ == "__main__":
     test("repos.run(continue_on_error=True)", test_run_continue_on_error)
     test("repos.run(file='custom.list')", test_run_file)
     test("repos.run_raw('--script', 'test.sh', '--dry-run') backward compatibility", test_run_backward_compat)
+
+    test("repos.installed_cli_version() handles subprocess Exception", test_installed_cli_version_exception)
+
+    test("repos.bundled_cli_version() returns string", test_bundled_cli_version)
+
     test("repos.installed_cli_version() handles subprocess Exception", test_installed_cli_version_exception)
     
     print("\n" + "=" * 40)
