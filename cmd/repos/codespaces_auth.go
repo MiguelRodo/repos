@@ -10,14 +10,15 @@ import (
 	"io/fs"
 	"net/url"
 	"os"
-	"os/exec"
+
 	"path/filepath"
 	"sort"
 	"strings"
 
+
 	"github.com/MiguelRodo/repos/v2/internal/gitcmd"
 	"github.com/MiguelRodo/repos/v2/internal/parser"
-	"golang.org/x/term"
+
 )
 
 // stringSliceFlag is a flag.Value that accumulates multiple --flag values into a slice.
@@ -59,7 +60,7 @@ func runCodespacesAuth(args []string) error {
 	cfs.Var(&devcontainerPaths, "d", "path relative to .devcontainer/ to update (shorthand for --devcontainer)")
 	allDevcontainers := cfs.Bool("all", false, "update all devcontainer.json files under .devcontainer/")
 	permissions := cfs.String("permissions", "default", `permissions level for repositories block: "default", "all", or "contents"`)
-	dryRun := cfs.Bool("dry-run", false, "print devcontainer.json changes to stdout without writing; also skips setting GH_TOKEN secret")
+	dryRun := cfs.Bool("dry-run", false, "print devcontainer.json changes to stdout without writing")
 	cfs.BoolVar(dryRun, "n", false, "same as --dry-run")
 
 	// Debug flags
@@ -108,15 +109,7 @@ func runCodespacesAuth(args []string) error {
 		fmt.Fprintf(w, "[DEBUG codespaces-go] "+format+"\n", a...)
 	}
 
-	if _, err := exec.LookPath("gh"); err != nil {
-		return errors.New("gh CLI is required but was not found on PATH")
-	}
-
-	token, err := resolveCodespacesToken()
-	if err != nil {
-		return err
-	}
-
+	// Determine devcontainer.json paths to update.
 	absReposFile, err := filepath.Abs(*reposFile)
 	if err != nil {
 		return fmt.Errorf("resolving repos file path: %w", err)
@@ -128,29 +121,6 @@ func runCodespacesAuth(args []string) error {
 	}
 	dbg("found %d managed repositories", len(repos))
 
-	// Set GH_TOKEN Codespaces secret for each repository.
-	if *dryRun {
-		fmt.Printf("DRY-RUN: would set GH_TOKEN Codespaces secret for %d repositories:\n", len(repos))
-		for _, repo := range repos {
-			fmt.Printf("  - %s\n", repo)
-		}
-	} else {
-		repoWord := "repositories"
-		if len(repos) == 1 {
-			repoWord = "repository"
-		}
-		fmt.Printf("Setting GH_TOKEN secret for %d %s...\n", len(repos), repoWord)
-		for _, repo := range repos {
-			fmt.Printf("  - %s\n", repo)
-			dbg("setting GH_TOKEN secret for %s", repo)
-			if err := setRepoCodespacesSecret(repo, token); err != nil {
-				return err
-			}
-		}
-		fmt.Println("Done.")
-	}
-
-	// Determine devcontainer.json paths to update.
 	var dcPaths []string
 	if *allDevcontainers {
 		dbg("scanning .devcontainer/ for all devcontainer.json files")
@@ -186,17 +156,12 @@ func runCodespacesAuth(args []string) error {
 }
 
 func codespacesAuthUsage() {
-	fmt.Print(`Usage: repos codespaces [--file <repo-list>] [--devcontainer <path>...] [--all]
+	fmt.Print(`Usage: repos codespace [--file <repo-list>] [--devcontainer <path>...] [--all]
                         [--permissions default|all|contents] [--dry-run]
                         [--debug] [--debug-file [file]]
 
-Sets the GH_TOKEN Codespaces secret for each managed repository and updates
-devcontainer.json with the customizations.codespaces.repositories block.
-
-Token lookup order:
-  1) GH_TOKEN
-  2) CODESPACES_TOKEN
-  3) Secure terminal prompt
+Updates devcontainer.json with the customizations.codespaces.repositories block
+for each managed repository.
 
 Options:
   -f, --file <file>           Path to repo list file (default: repos.list,
@@ -212,40 +177,12 @@ Options:
                                 all      - write-all
                                 contents - contents write only
   -n, --dry-run               Print devcontainer.json changes to stdout without
-                              writing; also skips setting GH_TOKEN secret
+                              writing
   --debug                     Enable debug output to stderr.
   --debug-file [file]         Enable debug output to file (auto-generate temp
                               if no path given).
   -h, --help                  Show this help message.
 `)
-}
-
-func resolveCodespacesToken() (string, error) {
-	if tok := strings.TrimSpace(os.Getenv("GH_TOKEN")); tok != "" {
-		return tok, nil
-	}
-	if tok := strings.TrimSpace(os.Getenv("CODESPACES_TOKEN")); tok != "" {
-		return tok, nil
-	}
-	return promptTokenSecurely()
-}
-
-func promptTokenSecurely() (string, error) {
-	if !term.IsTerminal(int(os.Stdin.Fd())) {
-		return "", errors.New("no GH_TOKEN or CODESPACES_TOKEN set and stdin is not interactive")
-	}
-
-	fmt.Fprint(os.Stderr, "Enter token to store as GH_TOKEN secret: ")
-	line, err := term.ReadPassword(int(os.Stdin.Fd()))
-	fmt.Fprintln(os.Stderr)
-	if err != nil {
-		return "", fmt.Errorf("reading token: %w", err)
-	}
-	token := strings.TrimSpace(string(line))
-	if token == "" {
-		return "", errors.New("token cannot be empty")
-	}
-	return token, nil
 }
 
 func parseManagedReposFromFile(path string) ([]string, error) {
@@ -325,20 +262,6 @@ func parseManagedRepos(r io.Reader, resolveFallbackRemote func() (string, error)
 	return repos, nil
 }
 
-func setRepoCodespacesSecret(repo, token string) error {
-	cmd := exec.Command("gh", "secret", "set", "GH_TOKEN", "--repo", repo, "--app", "codespaces")
-	cmd.Stdin = strings.NewReader(token)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		msg := strings.TrimSpace(string(out))
-		if msg == "" {
-			return fmt.Errorf("failed setting GH_TOKEN secret for %s: %w", repo, err)
-		}
-		return fmt.Errorf("failed setting GH_TOKEN secret for %s: %s", repo, gitcmd.SanitizeURL(msg))
-	}
-	return nil
-}
-
 func hasPathTraversal(spec string) bool {
 	candidates := []string{spec}
 	if decoded, err := url.PathUnescape(spec); err == nil {
@@ -383,6 +306,76 @@ func findAllDevcontainerFiles(dir string) ([]string, error) {
 	return paths, nil
 }
 
+func consumeString(data []byte, i int) int {
+	i++ // skip initial quote
+	for i < len(data) {
+		if data[i] == '\\' {
+			i++ // skip the backslash
+			if i < len(data) {
+				i++ // skip the escaped character
+			}
+			continue
+		}
+		if data[i] == '"' {
+			i++ // skip closing quote
+			break
+		}
+		i++
+	}
+	return i
+}
+
+func skipLineComment(data []byte, i int) int {
+	i += 2 // skip //
+	for i < len(data) && data[i] != '\n' {
+		i++
+	}
+	return i
+}
+
+func skipBlockComment(data []byte, i int) int {
+	i += 2 // skip /*
+	closed := false
+	for i+1 < len(data) {
+		if data[i] == '*' && data[i+1] == '/' {
+			i += 2
+			closed = true
+			break
+		}
+		i++
+	}
+	if !closed {
+		// Consume the last remaining byte of the unclosed comment.
+		i++
+	}
+	return i
+}
+
+func isTrailingComma(data []byte, i int) bool {
+	j := i + 1
+	// Skip whitespace and comments to find the next significant character.
+	for j < len(data) {
+		c := data[j]
+		// Skip whitespace.
+		if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
+			j++
+			continue
+		}
+		// Skip line comment.
+		if c == '/' && j+1 < len(data) && data[j+1] == '/' {
+			j = skipLineComment(data, j)
+			continue
+		}
+		// Skip block comment.
+		if c == '/' && j+1 < len(data) && data[j+1] == '*' {
+			j = skipBlockComment(data, j)
+			continue
+		}
+		break
+	}
+	return j < len(data) && (data[j] == '}' || data[j] == ']')
+}
+
 // stripJSONC removes // line comments and /* */ block comments, and strips
 // trailing commas before } or ], yielding valid JSON from JSONC input.
 func stripJSONC(data []byte) []byte {
@@ -394,89 +387,27 @@ func stripJSONC(data []byte) []byte {
 		// String literal: copy verbatim, handling escapes.
 		if b == '"' {
 			start := i
-			i++
-			for i < len(data) {
-				if data[i] == '\\' {
-					i++ // skip the backslash
-					if i < len(data) {
-						i++ // skip the escaped character
-					}
-					continue
-				}
-				if data[i] == '"' {
-					i++
-					break
-				}
-				i++
-			}
+			i = consumeString(data, i)
 			out = append(out, data[start:i]...)
 			continue
 		}
 
 		// Line comment: skip to end of line.
 		if b == '/' && i+1 < len(data) && data[i+1] == '/' {
-			for i < len(data) && data[i] != '\n' {
-				i++
-			}
+			i = skipLineComment(data, i)
 			continue
 		}
 
 		// Block comment: skip to */ (or EOF if unclosed).
 		if b == '/' && i+1 < len(data) && data[i+1] == '*' {
-			i += 2
-			closed := false
-			for i+1 < len(data) {
-				if data[i] == '*' && data[i+1] == '/' {
-					i += 2
-					closed = true
-					break
-				}
-				i++
-			}
-			if !closed {
-				// Consume the last remaining byte of the unclosed comment.
-				i++
-			}
+			i = skipBlockComment(data, i)
 			continue
 		}
 
 		// Trailing comma: , followed (possibly by whitespace and/or comments) by } or ].
-		if b == ',' {
-			j := i + 1
-			// Skip whitespace and comments to find the next significant character.
-			for j < len(data) {
-				c := data[j]
-				// Skip whitespace.
-				if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
-					j++
-					continue
-				}
-				// Skip line comment.
-				if c == '/' && j+1 < len(data) && data[j+1] == '/' {
-					j += 2
-					for j < len(data) && data[j] != '\n' {
-						j++
-					}
-					continue
-				}
-				// Skip block comment.
-				if c == '/' && j+1 < len(data) && data[j+1] == '*' {
-					j += 2
-					for j+1 < len(data) {
-						if data[j] == '*' && data[j+1] == '/' {
-							j += 2
-							break
-						}
-						j++
-					}
-					continue
-				}
-				break
-			}
-			if j < len(data) && (data[j] == '}' || data[j] == ']') {
-				i++ // skip the comma
-				continue
-			}
+		if b == ',' && isTrailingComma(data, i) {
+			i++ // skip the comma
+			continue
 		}
 
 		out = append(out, b)
@@ -542,7 +473,7 @@ func mergeRepoPermissions(doc map[string]interface{}, reposBlock map[string]inte
 
 // validateDevcontainerRelPath checks that a path relative to .devcontainer/ is safe.
 func validateDevcontainerRelPath(p string) error {
-	if filepath.IsAbs(p) {
+	if filepath.IsAbs(p) || strings.HasPrefix(p, "/") || strings.HasPrefix(p, `\`) {
 		return fmt.Errorf("devcontainer path must be relative, not absolute: %s", p)
 	}
 	clean := filepath.Clean(p)

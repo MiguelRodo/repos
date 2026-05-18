@@ -36,7 +36,7 @@ repos_run(
 
 \item{continue_on_error}{Logical. If \code{TRUE}, continue on failure and report all results}
 
-\item{...}{Additional arguments passed directly to the \code{run-pipeline.sh} script as-is.
+\item{...}{Additional arguments passed directly to \code{repos run} as-is.
 Useful for passing custom flags or for backward compatibility.}
 }
 \value{
@@ -46,10 +46,10 @@ Invisibly returns the exit status of the script (0 for success).
 Execute a script inside each cloned repository.
 }
 \details{
-This function is a wrapper around the \code{run-pipeline.sh} Bash script.
+This function is a wrapper around \code{repos run}.
 It will:
 \itemize{
-  \item Optionally clone repositories (via \code{clone-repos.sh}) before running scripts
+  \item Optionally clone repositories (via \code{repos clone}) before running scripts
   \item Optionally install R dependencies
   \item Execute the target script (default: \code{run.sh}) in each repository
   \item Print a per-repo summary at the end of execution

@@ -22,7 +22,9 @@ repos clone
 | `--fetch-all-deferred` | *(Default)* Fast `--single-branch` clone; wildcard refspec restored immediately |
 | `--fetch-single` | Keep restricted single-branch refspec (CI/CD or metered connections) |
 | `--fetch-all` | Full clone — all remote branches downloaded upfront |
+| `--depth <n>` | Opt-in shallow clone depth (must be a positive integer) |
 | `--force` | Ignore per-line flag overrides and enforce CLI flags |
+| `--create` | Create and push missing branches referenced in `repos.list` |
 
 ```bash
 # Use a custom list file
@@ -33,6 +35,9 @@ repos clone --fetch-single
 
 # Download everything upfront
 repos clone --fetch-all
+
+# Shallow clone (opt-in)
+repos clone --depth 1
 
 # Force all @branch lines to be worktrees, ignoring per-line flag overrides
 repos clone --worktree --force
@@ -60,6 +65,32 @@ ignore per-line flag overrides entirely.  Inside `repos.list`, a global-only
 line such as `--fetch-single --force` or `--worktree --force` forces that
 global setting to override conflicting per-line flags.
 
+## Missing Branches
+
+When a requested branch does not exist on the remote, `repos clone` now fails by
+default and tells you to rerun with `--create`.
+
+Use `--create` when you explicitly want `repos clone` to create and push missing
+branches for `owner/repo@branch` or `@branch` entries.
+
+## Hugging Face Repositories
+
+You can include Hugging Face repositories in `repos.list` using the `hf:` prefix:
+
+```text
+hf:datasets/huggingface/stack
+hf:datasets/huggingface/stack@main
+```
+
+These entries are downloaded with `huggingface-cli`, so install it first:
+
+```bash
+pip install huggingface_hub[cli]
+```
+
+Fallback `@branch` / revision behavior is supported for HF entries in the same
+way as Git entries in `repos.list`.
+
 ## Repository Layout
 
 Repositories are cloned to the **parent** of your current directory:
@@ -78,17 +109,41 @@ workspace/
 See the [repos.list reference](repos-list.html) for the full format, including
 cloning specific branches, creating worktrees, and setting per-repo visibility.
 
-## GitHub Authentication
+## Authentication
 
-For **private** repositories, provide a GitHub token:
+`repos clone` delegates all network operations to the system `git` binary — it
+has no built-in credential store of its own.  Authentication is therefore
+whatever `git` has available for the remote's protocol.
+
+### SSH remotes (`git@host:…` or `ssh://…`)
+
+Git uses your SSH key, either via an SSH agent (`SSH_AUTH_SOCK`) or through
+`~/.ssh/config`.  No token is needed.
+
+### HTTPS remotes
+
+Git uses whatever credential helper is configured (`git config --get credential.helper`).
+Common options include [Git Credential Manager](https://github.com/git-ecosystem/git-credential-manager),
+`osxkeychain`, `wincred`, or a custom script.  This works for any host,
+including GitHub.  Set one up with your hosting platform's instructions;
+`repos clone` will work automatically once git can authenticate.
+
+For GitHub specifically, two additional shortcuts are available:
 
 ```bash
-export GH_TOKEN="your_personal_access_token"
-# or
+# Option 1 — gh CLI (registers itself as a git credential helper automatically)
 gh auth login
+
+# Option 2 — personal-access token via environment variable
+export GH_TOKEN="your_personal_access_token"
 ```
 
-Public repositories can be cloned without any token.
+**Note on `GH_TOKEN`:** git does not read `GH_TOKEN` directly.  It only
+prevents interactive prompts when `gh` is also configured as git's credential
+helper (via `gh auth login` or `gh auth setup-git`), in which case `gh` reads
+`GH_TOKEN` from the environment and supplies the token to git on request.
+
+Public repositories on any host can be cloned without any credentials.
 
 ## Going further
 

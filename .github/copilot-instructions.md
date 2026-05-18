@@ -2,11 +2,11 @@
 
 This document provides guidance for GitHub Copilot when working with the repos tool.
 
-## Script Architecture
+## CLI Architecture
 
-### clone-repos.sh Path Logic
+### `repos clone` Path Logic
 
-The `clone-repos.sh` script clones repositories to the **parent directory** of the current location.
+The `repos clone` command clones repositories to the **parent directory** of the current location.
 
 Example:
 ```
@@ -37,7 +37,7 @@ Global flags can be specified at the start of any line in `repos.list` (with onl
 - `--private` - Create all repositories as private by default
 - `--worktree` - Create all branch clones as worktrees instead of separate clones
 
-These flags are parsed directly by the individual helper scripts (`clone-repos.sh` handles `--worktree`; `create-repos.sh` handles `--public`/`--private`).
+These flags are parsed directly by the Go CLI subcommands (`repos clone` handles `--worktree`; `repos create` handles `--public`/`--private`).
 
 ### Per-Line Flags
 
@@ -61,10 +61,11 @@ myorg/repo2 --public   # Override: created as public
 
 ## Testing
 
-Run tests from the `tests/` directory:
+Run tests from the repository root:
 ```bash
-cd tests
-./test-auth-check.sh
-./test-clone-variations-comprehensive.sh
-./test-worktree-tracking.sh
+cd cmd/repos
+go test ./... -v
+cd ../..
+python tests/test-python-wrappers.py
+Rscript tests/test-r-wrappers.R
 ```

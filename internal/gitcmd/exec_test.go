@@ -8,31 +8,58 @@ import (
 
 func TestSanitizeURL(t *testing.T) {
 	tests := []struct {
+		name string
 		in   string
 		want string
 	}{
 		{
+			name: "credentials with user and pass",
 			in:   "https://user:pass@github.com/repo.git",
 			want: "https://github.com/repo.git",
 		},
 		{
+			name: "credentials with token",
 			in:   "http://token@github.com/repo.git",
 			want: "http://github.com/repo.git",
 		},
 		{
+			name: "git command with credentials",
 			in:   "git checkout https://user:pass@github.com/repo.git",
 			want: "git checkout https://github.com/repo.git",
 		},
 		{
+			name: "no sensitive info",
 			in:   "no sensitive info",
 			want: "no sensitive info",
+		},
+		{
+			name: "plain URL",
+			in:   "https://github.com/path",
+			want: "https://github.com/path",
+		},
+		{
+			name: "multiple @ in credentials",
+			in:   "https://user:p@ss@github.com/path",
+			want: "https://github.com/path",
+		},
+		{
+			name: "token in credentials",
+			in:   "https://ghp_abcdef@github.com/path",
+			want: "https://github.com/path",
+		},
+		{
+			name: "non-http string",
+			in:   "git clone https://user:password@github.com/path",
+			want: "git clone https://github.com/path",
 		},
 	}
 
 	for _, tt := range tests {
-		if got := SanitizeURL(tt.in); got != tt.want {
-			t.Errorf("SanitizeURL(%q) = %q, want %q", tt.in, got, tt.want)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			if got := SanitizeURL(tt.in); got != tt.want {
+				t.Errorf("SanitizeURL(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
 	}
 }
 

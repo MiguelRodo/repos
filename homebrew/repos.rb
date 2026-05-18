@@ -5,17 +5,10 @@ class Repos < Formula
   sha256 "REPLACE_WITH_ACTUAL_SHA256"
   license "MIT"
 
-  depends_on "jq"
+  depends_on "go" => :build
 
   def install
-    # Install all scripts to libexec to preserve directory structure
-    libexec.install "scripts"
-    
-    # Create a wrapper script in bin that calls the main script
-    (bin/"repos").write <<~EOS
-      #!/bin/bash
-      exec "#{libexec}/scripts/setup-repos.sh" "$@"
-    EOS
+    system "go", "build", *std_go_args(output: bin/"repos"), "./cmd/repos"
   end
 
   test do

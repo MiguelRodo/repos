@@ -65,10 +65,13 @@ func mirrorDir(srcDir, dstDir string, srcPerm os.FileMode, opts MirrorOptions) (
 			}
 			changed = true
 		} else if dstInfo.Mode().Perm() != srcPerm {
-			if err := os.Chmod(dstDir, srcPerm); err != nil {
-				return false, fmt.Errorf("set permissions on %s: %w", dstDir, err)
+			// Security: ensure we don't follow symlinks when calling Chmod.
+			if dstInfo.Mode().IsRegular() || dstInfo.IsDir() {
+				if err := os.Chmod(dstDir, srcPerm); err != nil {
+					return false, fmt.Errorf("set permissions on %s: %w", dstDir, err)
+				}
+				changed = true
 			}
-			changed = true
 		}
 	}
 
@@ -112,8 +115,15 @@ func mirrorDir(srcDir, dstDir string, srcPerm os.FileMode, opts MirrorOptions) (
 }
 
 func ensurePerms(path string, mode os.FileMode) error {
-	if err := os.Chmod(path, mode); err != nil {
-		return fmt.Errorf("set permissions on %s: %w", path, err)
+	// Security: ensure we don't follow symlinks when calling Chmod.
+	info, err := os.Lstat(path)
+	if err != nil {
+		return fmt.Errorf("stat %s: %w", path, err)
+	}
+	if info.Mode().IsRegular() || info.IsDir() {
+		if err := os.Chmod(path, mode); err != nil {
+			return fmt.Errorf("set permissions on %s: %w", path, err)
+		}
 	}
 	return nil
 }
@@ -125,15 +135,19 @@ func mirrorFile(src, dst string, srcPerm os.FileMode) (bool, error) {
 	}
 
 	if same {
-		dstInfo, err := os.Stat(dst)
+		dstInfo, err := os.Lstat(dst)
 		if err != nil {
 			return false, fmt.Errorf("stat destination %s: %w", dst, err)
 		}
 		if dstInfo.Mode().Perm() != srcPerm {
-			if err := os.Chmod(dst, srcPerm); err != nil {
-				return false, fmt.Errorf("set permissions on %s: %w", dst, err)
+			// Security: ensure we don't follow symlinks when calling Chmod.
+			if dstInfo.Mode().IsRegular() || dstInfo.IsDir() {
+				if err := os.Chmod(dst, srcPerm); err != nil {
+					return false, fmt.Errorf("set permissions on %s: %w", dst, err)
+				}
+				return true, nil
 			}
-			return true, nil
+			return false, nil
 		}
 		return false, nil
 	}

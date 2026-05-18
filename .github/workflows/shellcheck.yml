@@ -20,15 +20,8 @@ jobs:
       - name: Install ShellCheck
         run: sudo apt-get update && sudo apt-get install -y shellcheck
 
-      - name: Run ShellCheck on scripts
+      - name: Run ShellCheck on installer scripts
         run: |
           shellcheck --severity=warning \
-            scripts/*.sh \
-            scripts/helper/*.sh \
             install-local.sh \
             uninstall-local.sh
-
-      - name: Run ShellCheck on tests
-        run: |
-          shellcheck --severity=warning \
-            tests/*.sh

@@ -3,8 +3,24 @@ title: "Installation"
 toc: true
 ---
 
-You can install `repos` as a system package (Ubuntu/Debian, macOS, Windows), from
-source, or as a language-specific wrapper (R or Python).
+`repos` is distributed as a compiled Go CLI binary.
+Install it via system package managers, release installers, or from source.
+Optional R and Python wrappers dispatch to the installed `repos` binary.
+
+## Release asset matrix
+
+GitHub Releases publish Go CLI binaries for:
+
+- Linux (`amd64`, `arm64`) as `.tar.gz`
+- macOS (`amd64`, `arm64`) as `.tar.gz`
+- Windows (`amd64`, `arm64`) as `.zip` (plus `.exe` bare binaries for installer scripts)
+- Stable direct-download bare binaries for installer scripts:
+  - `repos_linux_<arch>`
+  - `repos_darwin_<arch>`
+  - `repos_windows_<arch>.exe`
+
+Python and R components are wrappers around the same CLI and are platform-neutral.
+Install the wrapper package (`pip`/`R`) and ensure `repos` is installed on `PATH`.
 
 ## Ubuntu / Debian
 
@@ -13,13 +29,16 @@ source, or as a language-specific wrapper (R or Python).
 Install and keep `repos` up to date directly via `apt`:
 
 ```bash
+# Install prerequisites
+sudo apt-get install -y curl gpg
+
 # Add repository signing key
-curl -fsSL https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/KEY.gpg \
-   | sudo gpg --dearmor -o /usr/share/keyrings/miguelrodo-repos.gpg
+curl -fsSL https://miguelrodo.github.io/apt-miguelrodo/KEY.gpg \
+   | sudo gpg --dearmor -o /usr/share/keyrings/apt-miguelrodo.gpg
 
 # Add apt source
-echo "deb [signed-by=/usr/share/keyrings/miguelrodo-repos.gpg] https://raw.githubusercontent.com/MiguelRodo/apt-miguelrodo/main/ ./" \
-   | sudo tee /etc/apt/sources.list.d/miguelrodo-repos.list >/dev/null
+echo "deb [signed-by=/usr/share/keyrings/apt-miguelrodo.gpg] https://miguelrodo.github.io/apt-miguelrodo stable main" \
+   | sudo tee /etc/apt/sources.list.d/apt-miguelrodo.list >/dev/null
 
 # Install repos
 sudo apt-get update
@@ -32,10 +51,10 @@ To uninstall:
 sudo apt-get remove repos
 ```
 
-### Option 2: Local Installation (No sudo required)
+### Option 2: Local Release Installer (No sudo required)
 
-Install the latest precompiled `repos` binary into the first writable directory
-already present in your `PATH`:
+Install the latest release binary into the first writable directory already
+present in your `PATH`:
 
 ```bash
 git clone https://github.com/MiguelRodo/repos.git
@@ -53,14 +72,16 @@ bash uninstall-local.sh
 
 ### Option 3: System-wide from Release `.deb` (requires sudo)
 
-Download and install the latest `.deb` from the
+Prefer Option 1 (APT) for automatic updates. If needed, manually download and
+install a release `.deb` from the
 [Releases page](https://github.com/MiguelRodo/repos/releases):
 
 ```bash
 VERSION_REPOS=1.2.6
-wget https://github.com/MiguelRodo/repos/releases/download/v${VERSION_REPOS}/repos_${VERSION_REPOS}_all.deb
-sudo dpkg -i repos_${VERSION_REPOS}_all.deb
-rm repos_${VERSION_REPOS}_all.deb
+ARCH="$(dpkg --print-architecture)"
+wget "https://github.com/MiguelRodo/repos/releases/download/v${VERSION_REPOS}/repos_${VERSION_REPOS}_${ARCH}.deb"
+sudo dpkg -i "repos_${VERSION_REPOS}_${ARCH}.deb"
+rm "repos_${VERSION_REPOS}_${ARCH}.deb"
 
 # Fix any dependency issues
 sudo apt-get install -f
@@ -72,14 +93,14 @@ To uninstall:
 sudo dpkg -r repos
 ```
 
-### Dependencies
+### Runtime Requirements
 
-All Ubuntu/Debian methods require `bash`, `git`, `curl`, and `jq`.  These are
-typically pre-installed.  If not:
-
-```bash
-sudo apt-get install bash git curl jq
-```
+- Required for core usage:
+  - `git`
+- Required only for specific commands:
+  - `repos create`: `gh` CLI with authentication (`gh auth login` or
+    `GH_TOKEN`)
+  - `Rscript` (`repos install-r-deps`)
 
 ---
 
@@ -90,24 +111,16 @@ brew tap MiguelRodo/repos
 brew install repos
 ```
 
-The formula automatically handles the `jq` dependency. Git is typically
-pre-installed on macOS.
+Git is typically pre-installed on macOS.
 
 ---
 
 ## Windows
 
-### Scoop (recommended)
+### Option 1: Installer Script (Recommended)
 
-```powershell
-scoop bucket add repos https://github.com/MiguelRodo/scoop-bucket
-scoop install repos
-```
-
-`git` and `jq` are installed automatically by Scoop. You will also need
-[Git for Windows](https://git-scm.com/download/win) for Bash support.
-
-### Manual
+Download and install the pre-compiled `repos.exe` into the first writable directory
+already present in your `PATH`:
 
 1. Clone the repository:
    ```powershell
@@ -118,25 +131,38 @@ scoop install repos
    ```powershell
    .\install.ps1
    ```
-3. The installer places `repos.exe` in the first writable directory already in your
-   current `PATH`.
 
-**Requirements:** PowerShell (with `Invoke-WebRequest`) and network access to GitHub releases.
+The installer downloads the latest `repos.exe` binary from GitHub releases and places
+it in the first writable directory in your current `PATH`.
+
+**Requirements:** PowerShell and network access to GitHub releases.
+
+### Option 2: Scoop
+
+```powershell
+scoop bucket add repos https://github.com/MiguelRodo/scoop-bucket
+scoop install repos
+```
+
+`git` and `jq` are installed automatically by Scoop. Git Bash is only needed
+if your workspace scripts rely on Bash (for example `run.sh` pipelines).
 
 ---
 
-## From Source
+## From Source (Go)
+
+```bash
+# Install latest from module path
+go install github.com/MiguelRodo/repos/v2/cmd/repos@latest
+```
+
+Or build from a local clone:
 
 ```bash
 git clone https://github.com/MiguelRodo/repos.git
 cd repos
-
-# Local install (no sudo)
-bash install-local.sh
-
-# Or system-wide on Ubuntu/Debian
-sudo dpkg-buildpackage -us -uc -b
-sudo dpkg -i ../repos_*.deb
+go build -o repos ./cmd/repos
+# Optional: move ./repos somewhere on PATH
 ```
 
 ---
@@ -150,7 +176,8 @@ install.packages("devtools")
 devtools::install_github("MiguelRodo/repos")
 ```
 
-Requires `bash`, `git`, `curl`, and `jq` on your system.
+Requires `repos` and `git` on your system `PATH` for full wrapper
+coverage (including Codespaces helpers).
 
 ### Python Package
 
@@ -166,8 +193,8 @@ cd repos
 pip install .
 ```
 
-Requires `bash`, `git`, `curl`, and `jq` on your system.  On Windows, use
-[Git for Windows](https://git-scm.com/download/win) or WSL.
+Requires `repos` and `git` on your system `PATH` for full wrapper
+coverage (including Codespaces helpers).
 
 ---
 
