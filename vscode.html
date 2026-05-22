@@ -228,6 +228,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="options" class="level3">
 <h3 class="anchored" data-anchor-id="options">Options</h3>
 <table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
 <thead>
 <tr class="header">
 <th>Flag</th>
@@ -238,6 +242,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td><code>-f &lt;file&gt;</code></td>
 <td>Use a different list file (default: <code>repos.list</code>)</td>
+</tr>
+<tr class="even">
+<td><code>--debug</code></td>
+<td>Enable debug output to stderr</td>
+</tr>
+<tr class="odd">
+<td><code>--debug-file [file]</code></td>
+<td>Enable debug output to file (auto-generate temp if no path given)</td>
 </tr>
 </tbody>
 </table>
@@ -292,6 +304,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td><code>--dry-run</code></td>
 <td>Preview file updates without writing changes</td>
+</tr>
+<tr class="even">
+<td><code>--debug</code></td>
+<td>Enable debug output to stderr</td>
+</tr>
+<tr class="odd">
+<td><code>--debug-file [file]</code></td>
+<td>Enable debug output to file (auto-generate temp if no path given)</td>
 </tr>
 </tbody>
 </table>
