@@ -225,35 +225,7 @@ func hasNonLocalRemotesInFile(reposFile string) (bool, error) {
 
 // checkNonInteractiveAuthForClone verifies that at least one non-interactive
 // git authentication method is available before attempting remote clones.
-//
-// repos clone delegates all network operations to the system git binary, so
-// whatever auth git has configured for the remote's protocol is what gets used.
-// This check is a best-effort pre-flight: if none of the recognized methods are
-// present, git would eventually prompt for credentials — which is undesirable in
-// non-interactive environments like CI/CD.
-//
-// Accepted methods:
-//   - GH_TOKEN env var: git does not read this directly — it only prevents
-//     interactive prompts when gh is also configured as git's credential helper
-//     (via "gh auth login" or "gh auth setup-git").  This check treats a
-//     non-empty GH_TOKEN as a best-effort signal that such an environment is
-//     in place, but does not verify it.
-//   - gh auth status: gh CLI is authenticated and will serve credentials to git.
-//   - SSH agent: SSH_AUTH_SOCK points to a socket with loaded keys, used for
-//     SSH remotes on any host (not just GitHub).
-//   - credential.helper: a git credential helper is configured, which handles
-//     HTTPS remotes on any host via the platform's own mechanism.
 func checkNonInteractiveAuthForClone() error {
-	if token := strings.TrimSpace(os.Getenv("GH_TOKEN")); token != "" {
-		return nil
-	}
-
-	if _, err := exec.LookPath("gh"); err == nil {
-		if err := exec.Command("gh", "auth", "status").Run(); err == nil {
-			return nil
-		}
-	}
-
 	if sock := strings.TrimSpace(os.Getenv("SSH_AUTH_SOCK")); sock != "" {
 		if st, err := os.Stat(sock); err == nil && st.Mode()&os.ModeSocket != 0 {
 			if _, err := exec.LookPath("ssh-add"); err == nil {
@@ -264,9 +236,6 @@ func checkNonInteractiveAuthForClone() error {
 		}
 	}
 
-	if err := exec.Command("git", "config", "--get", "credential.helper").Run(); err == nil {
-		return nil
-	}
-
-	return errors.New("error: no non-interactive git authentication available for remote clones (set GH_TOKEN, run 'gh auth login', ensure SSH agent keys are loaded, or configure a git credential.helper)")
+	_, err := sysutil.DiscoverGitHubToken()
+	return err
 }
