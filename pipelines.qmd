@@ -34,6 +34,8 @@ either `renv.lock` or `DESCRIPTION`.
 | `--exclude <repos>` | Comma-separated list of repositories to skip |
 | `--continue-on-error` | Keep running even if a repository fails |
 | `--dry-run` | Print what would be run without executing anything |
+| `--debug` | Enable debug output to stderr |
+| `--debug-file [file]` | Enable debug output to file (auto-generate temp if no path given) |
 | `--ensure-setup` | Clone repositories before running the pipeline |
 | `--skip-deps` | Skip the default `install-r-deps` setup step |
 | `--verbose` | Enable verbose logging |
