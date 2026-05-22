@@ -32,6 +32,8 @@ positron entire-project.code-workspace  # Positron
 | Flag | Description |
 |---|---|
 | `-f <file>` | Use a different list file (default: `repos.list`) |
+| `--debug` | Enable debug output to stderr |
+| `--debug-file [file]` | Enable debug output to file (auto-generate temp if no path given) |
 
 ```bash
 # Use a custom list file
@@ -69,6 +71,8 @@ repos codespace
 | `--all` | Update all `devcontainer.json` files found under `.devcontainer/` |
 | `--permissions <level>` | Codespaces permission level (`default`, `all`, or `contents`) |
 | `--dry-run` | Preview file updates without writing changes |
+| `--debug` | Enable debug output to stderr |
+| `--debug-file [file]` | Enable debug output to file (auto-generate temp if no path given) |
 
 Permission levels:
 

@@ -25,6 +25,8 @@ repos clone
 | `--depth <n>` | Opt-in shallow clone depth (must be a positive integer) |
 | `--force` | Ignore per-line flag overrides and enforce CLI flags |
 | `--create` | Create and push missing branches referenced in `repos.list` |
+| `--debug` | Enable debug output to stderr |
+| `--debug-file [file]` | Enable debug output to file (auto-generate temp if no path given) |
 
 ```bash
 # Use a custom list file
