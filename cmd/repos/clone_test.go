@@ -498,7 +498,7 @@ func TestCheckNonInteractiveAuthForCloneHasActionableError(t *testing.T) {
 		t.Fatalf("expected auth check error")
 	}
 	msg := err.Error()
-	for _, expected := range []string{"GH_TOKEN", "gh auth login", "SSH agent", "credential.helper"} {
+	for _, expected := range []string{"GITHUB_PAT", "gh auth login", "git credential approve"} {
 		if !strings.Contains(msg, expected) {
 			t.Fatalf("expected error to mention %q, got: %q", expected, msg)
 		}
