@@ -9,8 +9,8 @@ on:
       bump_type:
         description: 'Component to bump: major | minor | patch. Cannot be used with version.'
         required: false
-      version_check:
-        description: 'Run strict version progression checks (true/false).'
+      version_force:
+        description: 'Force `version`, if specified, regardless of incremental version progression checks (true/false).'
         required: false
       go_version:
         description: 'Go version to install.'
@@ -41,7 +41,7 @@ jobs:
           apt_signing_key: ${{ secrets.GPG_PRIVATE_KEY }}
           version: ${{ inputs.version }}
           bump_type: ${{ inputs.bump_type }}
-          version_check: ${{ inputs.version_check }}
+          version_force: ${{ inputs.version_force }}
           go_version: ${{ inputs.go_version }}
           apt_repo: ${{ inputs.apt_repo }}
           goreleaser_config: ${{ inputs.goreleaser_config }}
