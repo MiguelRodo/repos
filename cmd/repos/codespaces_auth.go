@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -417,57 +418,70 @@ func stripJSONC(data []byte) []byte {
 }
 
 // buildRepoPermissionsBlock constructs the JSON object for the repositories block.
-func buildRepoPermissionsBlock(repos []string, permissions string) map[string]interface{} {
-	block := make(map[string]interface{}, len(repos))
+func buildRepoPermissionsBlock(repos []string, permissions string) *OrderedMap {
+	block := NewOrderedMap()
 	for _, repo := range repos {
+		repoPerms := NewOrderedMap()
 		switch permissions {
 		case "all":
-			block[repo] = map[string]interface{}{
-				"permissions": "write-all",
-			}
+			repoPerms.Set("permissions", "write-all")
 		case "contents":
-			block[repo] = map[string]interface{}{
-				"permissions": map[string]interface{}{
-					"contents": "write",
-				},
-			}
+			perms := NewOrderedMap()
+			perms.Set("contents", "write")
+			repoPerms.Set("permissions", perms)
 		default:
-			block[repo] = map[string]interface{}{
-				"permissions": map[string]interface{}{
-					"actions":   "write",
-					"contents":  "write",
-					"packages":  "read",
-					"workflows": "write",
-				},
-			}
+			perms := NewOrderedMap()
+			perms.Set("actions", "write")
+			perms.Set("contents", "write")
+			perms.Set("packages", "read")
+			perms.Set("workflows", "write")
+			repoPerms.Set("permissions", perms)
 		}
+		block.Set(repo, repoPerms)
 	}
 	return block
 }
 
 // mergeRepoPermissions drills into doc["customizations"]["codespaces"]["repositories"]
 // and merges reposBlock, creating intermediate maps as needed.
-func mergeRepoPermissions(doc map[string]interface{}, reposBlock map[string]interface{}) {
-	customizations, _ := doc["customizations"].(map[string]interface{})
+func mergeRepoPermissions(doc *OrderedMap, reposBlock *OrderedMap) {
+	var customizations *OrderedMap
+	if c, ok := doc.Get("customizations"); ok {
+		if co, ok := c.(*OrderedMap); ok {
+			customizations = co
+		}
+	}
 	if customizations == nil {
-		customizations = make(map[string]interface{})
-		doc["customizations"] = customizations
+		customizations = NewOrderedMap()
+		doc.Set("customizations", customizations)
 	}
 
-	codespaces, _ := customizations["codespaces"].(map[string]interface{})
+	var codespaces *OrderedMap
+	if c, ok := customizations.Get("codespaces"); ok {
+		if co, ok := c.(*OrderedMap); ok {
+			codespaces = co
+		}
+	}
 	if codespaces == nil {
-		codespaces = make(map[string]interface{})
-		customizations["codespaces"] = codespaces
+		codespaces = NewOrderedMap()
+		customizations.Set("codespaces", codespaces)
 	}
 
-	repositories, _ := codespaces["repositories"].(map[string]interface{})
+	var repositories *OrderedMap
+	if r, ok := codespaces.Get("repositories"); ok {
+		if ro, ok := r.(*OrderedMap); ok {
+			repositories = ro
+		}
+	}
 	if repositories == nil {
-		repositories = make(map[string]interface{})
-		codespaces["repositories"] = repositories
+		repositories = NewOrderedMap()
+		codespaces.Set("repositories", repositories)
 	}
 
-	for k, v := range reposBlock {
-		repositories[k] = v
+	for _, k := range reposBlock.Keys {
+		if v, ok := reposBlock.Get(k); ok {
+			repositories.Set(k, v)
+		}
 	}
 }
 
@@ -492,18 +506,25 @@ func validateDevcontainerRelPath(p string) error {
 func updateDevcontainerFile(path string, repos []string, permissions string, dryRun bool) error {
 	reposBlock := buildRepoPermissionsBlock(repos, permissions)
 
-	var doc map[string]interface{}
+	var doc *OrderedMap
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
 			return fmt.Errorf("reading %s: %w", path, err)
 		}
 		// File does not exist – start with an empty JSON object.
-		doc = make(map[string]interface{})
+		doc = NewOrderedMap()
 	} else {
 		clean := stripJSONC(data)
-		if err := json.Unmarshal(clean, &doc); err != nil {
+		dec := json.NewDecoder(bytes.NewReader(clean))
+		val, err := decodeValue(dec)
+		if err != nil {
 			return fmt.Errorf("parsing %s: %w", path, err)
+		}
+		var ok bool
+		doc, ok = val.(*OrderedMap)
+		if !ok {
+			return fmt.Errorf("parsing %s: root is not an object", path)
 		}
 	}
 

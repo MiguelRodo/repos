@@ -196,42 +196,66 @@ func TestStripJSONC_PreservesCommasInStrings(t *testing.T) {
 
 func TestBuildRepoPermissionsBlock_Default(t *testing.T) {
 	block := buildRepoPermissionsBlock([]string{"acme/api"}, "default")
-	entry, ok := block["acme/api"].(map[string]interface{})
+	v, ok := block.Get("acme/api")
 	if !ok {
-		t.Fatalf("expected map entry for acme/api, got %T", block["acme/api"])
+		t.Fatalf("missing acme/api")
 	}
-	perms, ok := entry["permissions"].(map[string]interface{})
+	entry, ok := v.(*OrderedMap)
 	if !ok {
-		t.Fatalf("expected permissions map, got %T", entry["permissions"])
+		t.Fatalf("expected map entry for acme/api, got %T", v)
 	}
-	if perms["actions"] != "write" || perms["contents"] != "write" {
+	v, ok = entry.Get("permissions")
+	if !ok {
+		t.Fatalf("missing permissions")
+	}
+	perms, ok := v.(*OrderedMap)
+	if !ok {
+		t.Fatalf("expected permissions map, got %T", v)
+	}
+	a, _ := perms.Get("actions")
+	c, _ := perms.Get("contents")
+	if a != "write" || c != "write" {
 		t.Fatalf("unexpected default permissions: %v", perms)
 	}
 }
 
 func TestBuildRepoPermissionsBlock_All(t *testing.T) {
 	block := buildRepoPermissionsBlock([]string{"acme/api"}, "all")
-	entry, ok := block["acme/api"].(map[string]interface{})
+	v, ok := block.Get("acme/api")
 	if !ok {
-		t.Fatalf("expected map entry for acme/api, got %T", block["acme/api"])
+		t.Fatalf("missing acme/api")
 	}
-	if entry["permissions"] != "write-all" {
-		t.Fatalf("expected write-all, got %v", entry["permissions"])
+	entry, ok := v.(*OrderedMap)
+	if !ok {
+		t.Fatalf("expected map entry for acme/api, got %T", v)
+	}
+	p, _ := entry.Get("permissions")
+	if p != "write-all" {
+		t.Fatalf("expected write-all, got %v", p)
 	}
 }
 
 func TestBuildRepoPermissionsBlock_Contents(t *testing.T) {
 	block := buildRepoPermissionsBlock([]string{"acme/api"}, "contents")
-	entry, ok := block["acme/api"].(map[string]interface{})
+	v, ok := block.Get("acme/api")
 	if !ok {
-		t.Fatalf("expected map entry for acme/api, got %T", block["acme/api"])
+		t.Fatalf("missing acme/api")
 	}
-	perms, ok := entry["permissions"].(map[string]interface{})
+	entry, ok := v.(*OrderedMap)
 	if !ok {
-		t.Fatalf("expected permissions map, got %T", entry["permissions"])
+		t.Fatalf("expected map entry for acme/api, got %T", v)
 	}
-	if perms["contents"] != "write" {
-		t.Fatalf("expected contents:write, got %v", perms)
+	v, ok = entry.Get("permissions")
+	if !ok {
+		t.Fatalf("missing permissions")
+	}
+	perms, ok := v.(*OrderedMap)
+	if !ok {
+		t.Fatalf("expected permissions map, got %T", v)
+	}
+	c, _ := perms.Get("contents")
+	if c != "write" {
+		t.Fatalf("expected contents:write, got %v", c)
 	}
 }
 
@@ -247,46 +271,60 @@ func TestRunCodespacesAuth_InvalidPermissionsReturnsError(t *testing.T) {
 }
 
 func TestMergeRepoPermissions_CreatesNestedKeys(t *testing.T) {
-	doc := make(map[string]interface{})
+	doc := NewOrderedMap()
 	block := buildRepoPermissionsBlock([]string{"acme/api"}, "default")
 	mergeRepoPermissions(doc, block)
 
-	custom, ok := doc["customizations"].(map[string]interface{})
+	v, ok := doc.Get("customizations")
 	if !ok {
 		t.Fatalf("customizations not created")
 	}
-	cs, ok := custom["codespaces"].(map[string]interface{})
+	custom, ok := v.(*OrderedMap)
+	if !ok {
+		t.Fatalf("customizations is not an ordered map")
+	}
+	v, ok = custom.Get("codespaces")
 	if !ok {
 		t.Fatalf("codespaces not created")
 	}
-	repos, ok := cs["repositories"].(map[string]interface{})
+	cs, ok := v.(*OrderedMap)
+	if !ok {
+		t.Fatalf("codespaces is not an ordered map")
+	}
+	v, ok = cs.Get("repositories")
 	if !ok {
 		t.Fatalf("repositories not created")
 	}
-	if _, ok := repos["acme/api"]; !ok {
+	repos, ok := v.(*OrderedMap)
+	if !ok {
+		t.Fatalf("repositories is not an ordered map")
+	}
+	if _, ok := repos.Get("acme/api"); !ok {
 		t.Fatalf("acme/api not found in repositories")
 	}
 }
 
 func TestMergeRepoPermissions_MergesIntoExisting(t *testing.T) {
-	doc := map[string]interface{}{
-		"customizations": map[string]interface{}{
-			"codespaces": map[string]interface{}{
-				"repositories": map[string]interface{}{
-					"existing/repo": map[string]interface{}{},
-				},
-			},
-		},
-	}
+	doc := NewOrderedMap()
+	custom := NewOrderedMap()
+	codespaces := NewOrderedMap()
+	repos := NewOrderedMap()
+	repos.Set("existing/repo", NewOrderedMap())
+	codespaces.Set("repositories", repos)
+	custom.Set("codespaces", codespaces)
+	doc.Set("customizations", custom)
+
 	block := buildRepoPermissionsBlock([]string{"acme/new"}, "default")
 	mergeRepoPermissions(doc, block)
 
-	cs := doc["customizations"].(map[string]interface{})["codespaces"].(map[string]interface{})
-	repos := cs["repositories"].(map[string]interface{})
-	if _, ok := repos["existing/repo"]; !ok {
+	v1, _ := doc.Get("customizations")
+	v2, _ := v1.(*OrderedMap).Get("codespaces")
+	v3, _ := v2.(*OrderedMap).Get("repositories")
+	repoMap := v3.(*OrderedMap)
+	if _, ok := repoMap.Get("existing/repo"); !ok {
 		t.Fatalf("existing/repo was removed")
 	}
-	if _, ok := repos["acme/new"]; !ok {
+	if _, ok := repoMap.Get("acme/new"); !ok {
 		t.Fatalf("acme/new was not added")
 	}
 }
