@@ -4,8 +4,8 @@ toc: true
 ---
 
 `repos clone` reads your `repos.list` file and clones all listed repositories
-into the **parent directory** of your current location.  It is the simplest
-way to get started — no GitHub account or token required for public repositories.
+into your current location, and adds them to `.gitignore`.
+It is the simplest way to get started — no GitHub account or token required for public repositories.
 
 ## Basic Usage
 

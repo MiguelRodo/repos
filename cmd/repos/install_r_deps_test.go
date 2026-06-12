@@ -43,7 +43,7 @@ func TestCollectManagedRepoPathsBasicAndFallbackBranch(t *testing.T) {
 	if err := os.MkdirAll(startDir, 0o755); err != nil {
 		t.Fatalf("mkdir startDir: %v", err)
 	}
-	parentDir := filepath.Dir(startDir)
+	baseDir := startDir
 
 	reposList := filepath.Join(startDir, "repos.list")
 	content := "org/alpha\n@feature\norg/beta custom-beta\n"
@@ -53,7 +53,7 @@ func TestCollectManagedRepoPathsBasicAndFallbackBranch(t *testing.T) {
 
 	st := &state{
 		startDir:         startDir,
-		parentDir:        parentDir,
+		baseDir:          baseDir,
 		reposFile:        reposList,
 		globalFetchMode:  "deferred",
 		currentRepoHTTPS: "https://github.com/example/current",
@@ -76,9 +76,9 @@ func TestCollectManagedRepoPathsBasicAndFallbackBranch(t *testing.T) {
 	}
 
 	want := []string{
-		filepath.Join(parentDir, "alpha"),
-		filepath.Join(parentDir, "alpha-feature"),
-		filepath.Join(parentDir, "custom-beta"),
+		filepath.Join(baseDir, "alpha"),
+		filepath.Join(baseDir, "alpha-feature"),
+		filepath.Join(baseDir, "custom-beta"),
 	}
 	for i := range want {
 		if repos[i].path != want[i] {

@@ -99,7 +99,7 @@ func runClone(args []string) error {
 
 	st := &state{
 		startDir:              cwd,
-		parentDir:             cwd,
+		baseDir:               cwd,
 		reposFile:             *reposFile,
 		debug:                 *debug,
 		debugWriter:           debugWriter,

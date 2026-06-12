@@ -26,7 +26,7 @@ type counters struct {
 
 type state struct {
 	startDir              string
-	parentDir             string
+	baseDir               string
 	reposFile             string
 	debug                 bool
 	debugWriter           io.Writer
@@ -134,7 +134,7 @@ func usage() {
 	fmt.Print(`Usage: repos <command> [options]
 
 Commands:
-  clone             Clone repositories listed in repos.list into the parent directory
+  clone             Clone repositories listed in repos.list into current directory
   workspace         Manage VS Code .code-workspace files
   install-r-deps    Install R dependencies for managed repositories
   codespace         Update devcontainer.json with codespaces permissions for managed repositories
@@ -815,15 +815,15 @@ func (s *state) cloneOneRepo(ins instruction) (int, error) {
 	dest := ""
 	switch {
 	case ins.targetDir != "":
-		dest = filepath.Join(s.parentDir, ins.targetDir)
+		dest = filepath.Join(s.baseDir, ins.targetDir)
 	case ref != "":
 		if s.remoteRefCount(remoteHTTPS) > 1 {
-			dest = filepath.Join(s.parentDir, repoDir+"-"+sanitizeBranchName(ref))
+			dest = filepath.Join(s.baseDir, repoDir+"-"+sanitizeBranchName(ref))
 		} else {
-			dest = filepath.Join(s.parentDir, repoDir)
+			dest = filepath.Join(s.baseDir, repoDir)
 		}
 	default:
-		dest = filepath.Join(s.parentDir, repoDir)
+		dest = filepath.Join(s.baseDir, repoDir)
 	}
 	if ins.repoType == repoTypeHuggingFace {
 		return s.cloneHuggingFaceRepo(remoteHTTPS, repoURLNoRef, ref, dest)
@@ -964,9 +964,9 @@ func (s *state) createWorktreeForBranch(base, branch, targetDir, fetchMode strin
 	repoBase := filepath.Base(base)
 	dest := ""
 	if targetDir != "" {
-		dest = filepath.Join(s.parentDir, targetDir)
+		dest = filepath.Join(s.baseDir, targetDir)
 	} else {
-		dest = filepath.Join(s.parentDir, repoBase+"-"+sanitizeBranchName(branch))
+		dest = filepath.Join(s.baseDir, repoBase+"-"+sanitizeBranchName(branch))
 	}
 	if isGitRepo(dest) {
 		curb, err := gitcmd.RunGit(dest, "rev-parse", "--abbrev-ref", "HEAD")
@@ -1107,7 +1107,7 @@ func (s *state) processFile() error {
 				} else if b, ok := s.seenRemoteLocal[s.fallbackRepoHTTPS]; ok && b != "" {
 					base = b
 				} else {
-					base = filepath.Join(s.parentDir, s.planBaseName(s.fallbackRepoHTTPS))
+					base = filepath.Join(s.baseDir, s.planBaseName(s.fallbackRepoHTTPS))
 					rc, e := s.ensureBaseExists(s.fallbackRepoHTTPS, base, ins.fetchMode, ins.depth)
 					if e != nil {
 						err = e
@@ -1161,7 +1161,7 @@ func (s *state) processFile() error {
 					s.seenRemoteLocal[thisRemoteHTTPS] = s.fallbackRepoLocal
 				} else {
 					if !seenBefore && s.planHasFull(thisRemoteHTTPS) {
-						base := filepath.Join(s.parentDir, s.planBaseName(thisRemoteHTTPS))
+						base := filepath.Join(s.baseDir, s.planBaseName(thisRemoteHTTPS))
 						rc2, e2 := s.ensureBaseExists(thisRemoteHTTPS, base, ins.fetchMode, ins.depth)
 						if e2 != nil {
 							err = e2

@@ -87,7 +87,7 @@ func runRun(args []string) error {
 
 	st := &state{
 		startDir:        cwd,
-		parentDir:       filepath.Dir(cwd),
+		baseDir:         cwd,
 		reposFile:       opts.reposFile,
 		globalFetchMode: "deferred",
 		seenRemoteLocal: map[string]string{},
@@ -363,7 +363,7 @@ func (s *state) collectConciseRunTargets(opts runOptions) ([]pipelineTarget, err
 		targets = append(targets, pipelineTarget{
 			target: runTarget{
 				name: filepath.Base(repoName),
-				path: filepath.Join(s.parentDir, repoName),
+				path: filepath.Join(s.baseDir, repoName),
 			},
 			script: script,
 		})
@@ -582,7 +582,7 @@ func (s *state) collectRunTargets() ([]runTarget, error) {
 			if err != nil {
 				return nil, err
 			}
-			destPath := filepath.Join(s.parentDir, destName)
+			destPath := filepath.Join(s.baseDir, destName)
 			targets = append(targets, runTarget{
 				name:     filepath.Base(destPath),
 				path:     destPath,
@@ -619,7 +619,7 @@ func (s *state) collectRunTargets() ([]runTarget, error) {
 			destName = repoDir + "-" + sanitizeBranchName(ref)
 		}
 
-		destPath := filepath.Join(s.parentDir, destName)
+		destPath := filepath.Join(s.baseDir, destName)
 		targets = append(targets, runTarget{
 			name:     filepath.Base(destPath),
 			path:     destPath,

@@ -67,7 +67,7 @@ func runInstallRDeps(args []string) error {
 
 	st := &state{
 		startDir:        cwd,
-		parentDir:       filepath.Dir(cwd),
+		baseDir:         cwd,
 		reposFile:       *reposFile,
 		globalFetchMode: "deferred",
 		seenRemoteLocal: map[string]string{},
@@ -191,13 +191,13 @@ func (s *state) collectManagedRepoPaths() ([]managedRepo, error) {
 				base = seen
 			}
 			if base == "" {
-				base = filepath.Join(s.parentDir, s.planBaseName(fallbackHTTPS))
+				base = filepath.Join(s.baseDir, s.planBaseName(fallbackHTTPS))
 			}
 			dest := ""
 			if ins.targetDir != "" {
-				dest = filepath.Join(s.parentDir, ins.targetDir)
+				dest = filepath.Join(s.baseDir, ins.targetDir)
 			} else {
-				dest = filepath.Join(s.parentDir, filepath.Base(base)+"-"+sanitizeBranchName(branch))
+				dest = filepath.Join(s.baseDir, filepath.Base(base)+"-"+sanitizeBranchName(branch))
 			}
 			addRepo(dest)
 			if ins.isWorktree {
@@ -221,15 +221,15 @@ func (s *state) collectManagedRepoPaths() ([]managedRepo, error) {
 		dest := ""
 		switch {
 		case ins.targetDir != "":
-			dest = filepath.Join(s.parentDir, ins.targetDir)
+			dest = filepath.Join(s.baseDir, ins.targetDir)
 		case ref != "":
 			if s.remoteRefCount(remoteHTTPS) > 1 {
-				dest = filepath.Join(s.parentDir, repoDir+"-"+sanitizeBranchName(ref))
+				dest = filepath.Join(s.baseDir, repoDir+"-"+sanitizeBranchName(ref))
 			} else {
-				dest = filepath.Join(s.parentDir, repoDir)
+				dest = filepath.Join(s.baseDir, repoDir)
 			}
 		default:
-			dest = filepath.Join(s.parentDir, repoDir)
+			dest = filepath.Join(s.baseDir, repoDir)
 		}
 		addRepo(dest)
 
@@ -241,7 +241,7 @@ func (s *state) collectManagedRepoPaths() ([]managedRepo, error) {
 		}
 
 		if !seenBefore && s.planHasFull(remoteHTTPS) {
-			base := filepath.Join(s.parentDir, s.planBaseName(remoteHTTPS))
+			base := filepath.Join(s.baseDir, s.planBaseName(remoteHTTPS))
 			fallbackLocal = base
 			seenRemoteLocal[remoteHTTPS] = base
 			continue
