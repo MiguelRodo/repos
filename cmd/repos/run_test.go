@@ -12,8 +12,8 @@ import (
 func TestRunExecutesCommandInAllRepos(t *testing.T) {
 	tmp := t.TempDir()
 	projectDir := filepath.Join(tmp, "project")
-	repo1 := filepath.Join(tmp, "repo-one")
-	repo2 := filepath.Join(tmp, "repo-two")
+	repo1 := filepath.Join(projectDir, "repo-one")
+	repo2 := filepath.Join(projectDir, "repo-two")
 
 	mustMkdirAll(t, projectDir, repo1, repo2)
 	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "example/repo-one\nexample/repo-two\n")
@@ -41,8 +41,8 @@ func TestRunExecutesCommandInAllRepos(t *testing.T) {
 func TestRunReturnsErrorButContinuesAfterFailure(t *testing.T) {
 	tmp := t.TempDir()
 	projectDir := filepath.Join(tmp, "project")
-	repo1 := filepath.Join(tmp, "repo-one")
-	repo2 := filepath.Join(tmp, "repo-two")
+	repo1 := filepath.Join(projectDir, "repo-one")
+	repo2 := filepath.Join(projectDir, "repo-two")
 
 	mustMkdirAll(t, projectDir, repo1, repo2)
 	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "example/repo-one\nexample/repo-two\n")
@@ -68,7 +68,7 @@ func TestRunReturnsErrorButContinuesAfterFailure(t *testing.T) {
 func TestRunPrefixesStdoutAndStderrLines(t *testing.T) {
 	tmp := t.TempDir()
 	projectDir := filepath.Join(tmp, "project")
-	repo1 := filepath.Join(tmp, "repo-one")
+	repo1 := filepath.Join(projectDir, "repo-one")
 
 	mustMkdirAll(t, projectDir, repo1)
 	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "example/repo-one\n")
@@ -101,8 +101,8 @@ func TestRunPrefixesStdoutAndStderrLines(t *testing.T) {
 func TestRunConcurrentExecutesCommandInAllRepos(t *testing.T) {
 	tmp := t.TempDir()
 	projectDir := filepath.Join(tmp, "project")
-	repo1 := filepath.Join(tmp, "repo-one")
-	repo2 := filepath.Join(tmp, "repo-two")
+	repo1 := filepath.Join(projectDir, "repo-one")
+	repo2 := filepath.Join(projectDir, "repo-two")
 
 	mustMkdirAll(t, projectDir, repo1, repo2)
 	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "example/repo-one\nexample/repo-two\n")
@@ -130,8 +130,8 @@ func TestRunConcurrentExecutesCommandInAllRepos(t *testing.T) {
 func TestRunPipelineModeExecutesDefaultScript(t *testing.T) {
 	tmp := t.TempDir()
 	projectDir := filepath.Join(tmp, "project")
-	repo1 := filepath.Join(tmp, "repo-one")
-	repo2 := filepath.Join(tmp, "repo-two")
+	repo1 := filepath.Join(projectDir, "repo-one")
+	repo2 := filepath.Join(projectDir, "repo-two")
 
 	mustMkdirAll(t, projectDir, repo1, repo2)
 	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "example/repo-one\nexample/repo-two\n")
@@ -160,8 +160,8 @@ func TestRunPipelineModeExecutesDefaultScript(t *testing.T) {
 func TestRunPipelineModeHonorsIncludeFilter(t *testing.T) {
 	tmp := t.TempDir()
 	projectDir := filepath.Join(tmp, "project")
-	repo1 := filepath.Join(tmp, "repo-one")
-	repo2 := filepath.Join(tmp, "repo-two")
+	repo1 := filepath.Join(projectDir, "repo-one")
+	repo2 := filepath.Join(projectDir, "repo-two")
 
 	mustMkdirAll(t, projectDir, repo1, repo2)
 	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "example/repo-one\nexample/repo-two\n")
@@ -194,8 +194,8 @@ func TestRunPipelineModeHonorsIncludeFilter(t *testing.T) {
 func TestRunPipelineModeSupportsConciseListPerLineScript(t *testing.T) {
 	tmp := t.TempDir()
 	projectDir := filepath.Join(tmp, "project")
-	repo1 := filepath.Join(tmp, "repo-one")
-	repo2 := filepath.Join(tmp, "repo-two")
+	repo1 := filepath.Join(projectDir, "repo-one")
+	repo2 := filepath.Join(projectDir, "repo-two")
 
 	mustMkdirAll(t, projectDir, repo1, repo2)
 	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "repo-one custom.sh\nrepo-two\n")
@@ -224,9 +224,9 @@ func TestRunPipelineModeSupportsConciseListPerLineScript(t *testing.T) {
 func TestRunPipelineModeSkipsHuggingFaceDatasetsAndModels(t *testing.T) {
 	tmp := t.TempDir()
 	projectDir := filepath.Join(tmp, "project")
-	gitRepo := filepath.Join(tmp, "repo-one")
-	hfDatasetRepo := filepath.Join(tmp, "data")
-	hfModelRepo := filepath.Join(tmp, "model-repo")
+	gitRepo := filepath.Join(projectDir, "repo-one")
+	hfDatasetRepo := filepath.Join(projectDir, "data")
+	hfModelRepo := filepath.Join(projectDir, "model-repo")
 
 	mustMkdirAll(t, projectDir, gitRepo, hfDatasetRepo, hfModelRepo)
 	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "example/repo-one\nhf:datasets/acme/data\nhf:acme/model-repo\n")
@@ -265,8 +265,8 @@ func TestRunPipelineModeSkipsHuggingFaceDatasetsAndModels(t *testing.T) {
 func TestRunPipelineModeHonorsPerLineDontRun(t *testing.T) {
 	tmp := t.TempDir()
 	projectDir := filepath.Join(tmp, "project")
-	repo1 := filepath.Join(tmp, "repo-one")
-	repo2 := filepath.Join(tmp, "repo-two")
+	repo1 := filepath.Join(projectDir, "repo-one")
+	repo2 := filepath.Join(projectDir, "repo-two")
 
 	mustMkdirAll(t, projectDir, repo1, repo2)
 	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "example/repo-one --dont-run\nexample/repo-two\n")
@@ -299,8 +299,8 @@ func TestRunPipelineModeHonorsPerLineDontRun(t *testing.T) {
 func TestRunPipelineModeHonorsPerLineDontRunInConciseList(t *testing.T) {
 	tmp := t.TempDir()
 	projectDir := filepath.Join(tmp, "project")
-	repo1 := filepath.Join(tmp, "repo-one")
-	repo2 := filepath.Join(tmp, "repo-two")
+	repo1 := filepath.Join(projectDir, "repo-one")
+	repo2 := filepath.Join(projectDir, "repo-two")
 
 	mustMkdirAll(t, projectDir, repo1, repo2)
 	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "repo-one --dont-run\nrepo-two\n")

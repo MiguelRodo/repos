@@ -16,10 +16,8 @@ import (
 	"sort"
 	"strings"
 
-
 	"github.com/MiguelRodo/repos/v2/internal/gitcmd"
 	"github.com/MiguelRodo/repos/v2/internal/parser"
-
 )
 
 // stringSliceFlag is a flag.Value that accumulates multiple --flag values into a slice.

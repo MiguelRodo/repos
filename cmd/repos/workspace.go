@@ -186,7 +186,7 @@ func runWorkspaceGenerate(args []string) error {
 	}
 	defer file.Close()
 
-  cwd, err := os.Getwd()
+	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("getting working directory: %w", err)
 	}

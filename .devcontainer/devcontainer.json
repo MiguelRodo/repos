@@ -1,7 +1,7 @@
 {
   "name": "Repos CLI Environment",
-  
-  "image": "ghcr.io/MiguelRodo/devcontainers-repos:v1.0.0",
+
+  "image": "ghcr.io/miguelrodo/devcontainers-repos:v1",
 
   "customizations": {
     "vscode": {
