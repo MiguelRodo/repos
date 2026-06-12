@@ -1,9 +1,8 @@
 {
   "name": "Repos CLI Environment",
   
-  "image": "ghcr.io/MiguelRodo/devcontainers-repos:latest",
+  "image": "ghcr.io/MiguelRodo/devcontainers-repos:v1.0.0",
 
-  // Pre-configure VS Code with the exact extensions you need for this project
   "customizations": {
     "vscode": {
       "extensions": [
