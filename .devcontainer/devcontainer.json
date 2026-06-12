@@ -1,0 +1,21 @@
+{
+  "name": "Repos CLI Environment",
+  
+  "image": "ghcr.io/MiguelRodo/devcontainers-repos:latest",
+
+  // Pre-configure VS Code with the exact extensions you need for this project
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.Go",
+        "ms-python.python",
+        "Posit.air-vscode",
+        "github.vscode-github-actions"
+      ],
+      "settings": {
+        "go.useLanguageServer": true,
+        "go.toolsManagement.checkForUpdates": "local"
+      }
+    }
+  }
+}
