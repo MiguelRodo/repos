@@ -47,9 +47,9 @@ func TestRunWorkspaceGeneratesFoldersFromReposList(t *testing.T) {
 	got := string(data)
 	for _, want := range []string{
 		`"path": "."`,
-		`"path": "../workspace-dev"`,
-		`"path": "../repo"`,
-		`"path": "../repo-feature"`,
+		`"path": "workspace-dev"`,
+		`"path": "repo"`,
+		`"path": "repo-feature"`,
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("workspace missing %q:\n%s", want, got)
@@ -95,7 +95,7 @@ func TestRunWorkspacePreservesExistingExtraFields(t *testing.T) {
 	if !strings.Contains(got, `"settings": {`) {
 		t.Fatalf("expected settings to be preserved, got:\n%s", got)
 	}
-	if !strings.Contains(got, `"path": "../repo"`) {
+	if !strings.Contains(got, `"path": "repo"`) {
 		t.Fatalf("expected regenerated folders, got:\n%s", got)
 	}
 }

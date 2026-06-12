@@ -186,13 +186,12 @@ func runWorkspaceGenerate(args []string) error {
 	}
 	defer file.Close()
 
-	cwd, err := os.Getwd()
+  cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("getting working directory: %w", err)
 	}
-	parentDir := filepath.Dir(cwd)
 	base := filepath.Base(cwd)
-	dbg("cwd=%s parentDir=%s", cwd, parentDir)
+	dbg("cwd=%s", cwd)
 	instructions, err := parser.ParseList(file, parser.Options{
 		InitialFallbackRemote: base,
 		InitialBaseDir:        base,
@@ -203,13 +202,9 @@ func runWorkspaceGenerate(args []string) error {
 
 	folders := []workspaceFolder{{Path: "."}}
 	for _, ins := range instructions {
-		absPath := filepath.Join(parentDir, ins.TargetDir)
-		rel, err := filepath.Rel(cwd, absPath)
-		if err != nil {
-			return fmt.Errorf("computing relative path for %s: %w", ins.TargetDir, err)
-		}
-		dbg("adding folder: %s", filepath.ToSlash(rel))
-		folders = append(folders, workspaceFolder{Path: filepath.ToSlash(rel)})
+		// Because we clone into cwd, the relative path is simply the TargetDir
+		dbg("adding folder: %s", filepath.ToSlash(ins.TargetDir))
+		folders = append(folders, workspaceFolder{Path: filepath.ToSlash(ins.TargetDir)})
 	}
 
 	wsPath := findWorkspaceFile(cwd)

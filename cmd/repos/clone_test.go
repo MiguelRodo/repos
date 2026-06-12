@@ -43,7 +43,7 @@ func TestRunCloneSingleBranchRestoresWildcardRefspec(t *testing.T) {
 		t.Fatalf("runClone returned error: %v", err)
 	}
 
-	cloneDir := filepath.Join(tmp, "repo-two")
+	cloneDir := filepath.Join(projectDir, "repo-two")
 	assertDirExists(t, cloneDir)
 	if got := strings.TrimSpace(runGit(t, cloneDir, "rev-parse", "--abbrev-ref", "HEAD")); got != "hotfix/urgent" {
 		t.Fatalf("expected branch hotfix/urgent, got %q", got)
@@ -91,7 +91,7 @@ func TestRunCloneWorktreeAndFallbackTracking(t *testing.T) {
 		t.Fatalf("runClone returned error: %v", err)
 	}
 
-	worktreeDir := filepath.Join(tmp, "workspace-dev")
+	worktreeDir := filepath.Join(projectDir, "workspace-dev")
 	assertDirExists(t, worktreeDir)
 	if got := strings.TrimSpace(runGit(t, worktreeDir, "rev-parse", "--abbrev-ref", "HEAD")); got != "dev" {
 		t.Fatalf("expected worktree branch dev, got %q", got)
@@ -106,10 +106,10 @@ func TestRunCloneWorktreeAndFallbackTracking(t *testing.T) {
 		t.Fatalf("expected %s in worktree list, got %q", worktreeDir, worktreeList)
 	}
 
-	repoTwoClone := filepath.Join(tmp, "repo-two")
+	repoTwoClone := filepath.Join(projectDir, "repo-two")
 	assertDirExists(t, repoTwoClone)
 
-	fallbackClone := filepath.Join(tmp, "repo-two-staging")
+	fallbackClone := filepath.Join(projectDir, "repo-two-staging")
 	assertDirExists(t, fallbackClone)
 	if got := strings.TrimSpace(runGit(t, fallbackClone, "rev-parse", "--abbrev-ref", "HEAD")); got != "staging" {
 		t.Fatalf("expected fallback clone on staging branch, got %q", got)
@@ -314,7 +314,7 @@ func TestRunCloneWithCLIDepthCreatesShallowClone(t *testing.T) {
 		t.Fatalf("runClone returned error: %v", err)
 	}
 
-	cloneDir := filepath.Join(tmp, "repo-depth")
+	cloneDir := filepath.Join(projectDir, "repo-depth")
 	assertDirExists(t, cloneDir)
 	if got := strings.TrimSpace(runGit(t, cloneDir, "rev-parse", "--is-shallow-repository")); got != "true" {
 		t.Fatalf("expected shallow clone, got %q", got)
@@ -357,7 +357,7 @@ func TestRunClonePerLineDepthOverridesGlobalDepth(t *testing.T) {
 		t.Fatalf("runClone returned error: %v", err)
 	}
 
-	cloneDir := filepath.Join(tmp, "repo-depth-override")
+	cloneDir := filepath.Join(projectDir, "repo-depth-override")
 	assertDirExists(t, cloneDir)
 	if got := strings.TrimSpace(runGit(t, cloneDir, "rev-list", "--count", "HEAD")); got != "1" {
 		t.Fatalf("expected per-line depth override to limit history to 1, got %q", got)
@@ -813,7 +813,7 @@ func TestRunCloneHuggingFaceAuthIntegration(t *testing.T) {
 		t.Fatalf("runClone returned error: %v", err)
 	}
 
-	targetDir := filepath.Join(tmp, filepath.Base(privateRepo))
+	targetDir := filepath.Join(projectDir, filepath.Base(privateRepo))
 	entries, err := os.ReadDir(targetDir)
 	if err != nil {
 		t.Fatalf("read target dir %s: %v", targetDir, err)

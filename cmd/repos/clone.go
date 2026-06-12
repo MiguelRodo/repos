@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/MiguelRodo/repos/v2/internal/parser"
 	"github.com/MiguelRodo/repos/v2/internal/sysutil"
 )
 
@@ -98,7 +99,7 @@ func runClone(args []string) error {
 
 	st := &state{
 		startDir:              cwd,
-		parentDir:             filepath.Dir(cwd),
+		parentDir:             cwd,
 		reposFile:             *reposFile,
 		debug:                 *debug,
 		debugWriter:           debugWriter,
@@ -144,6 +145,17 @@ func runClone(args []string) error {
 	}
 	if err := st.processFile(); err != nil {
 		return err
+	}
+
+	if file, err := os.Open(st.reposFile); err == nil {
+		base := filepath.Base(cwd)
+		if instructions, err := parser.ParseList(file, parser.Options{
+			InitialFallbackRemote: base,
+			InitialBaseDir:        base,
+		}); err == nil {
+			updateGitignore(cwd, instructions)
+		}
+		file.Close()
 	}
 
 	fmt.Println()
@@ -238,4 +250,30 @@ func checkNonInteractiveAuthForClone() error {
 
 	_, err := sysutil.DiscoverGitHubToken()
 	return err
+}
+
+// updateGitignore safely appends new directories to .gitignore without creating duplicates
+func updateGitignore(cwd string, instructions []parser.Instruction) {
+	ignorePath := filepath.Join(cwd, ".gitignore")
+	existing := make(map[string]bool)
+
+	// Read existing entries to avoid duplicates
+	if data, err := os.ReadFile(ignorePath); err == nil {
+		for _, line := range strings.Split(string(data), "\n") {
+			existing[strings.TrimSpace(line)] = true
+		}
+	}
+
+	f, err := os.OpenFile(ignorePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+
+	for _, ins := range instructions {
+		if !existing[ins.TargetDir] {
+			f.WriteString(ins.TargetDir + "\n")
+			existing[ins.TargetDir] = true // mark as added
+		}
+	}
 }
