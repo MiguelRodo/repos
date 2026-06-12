@@ -137,7 +137,7 @@
     "href": "clone.html",
     "title": "repos clone",
     "section": "",
-    "text": "repos clone reads your repos.list file and clones all listed repositories into the parent directory of your current location. It is the simplest way to get started — no GitHub account or token required for public repositories."
+    "text": "repos clone reads your repos.list file and clones all listed repositories into your current location, and adds them to .gitignore. It is the simplest way to get started — no GitHub account or token required for public repositories."
   },
   {
     "objectID": "clone.html#basic-usage",
