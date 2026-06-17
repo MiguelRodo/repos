@@ -180,7 +180,43 @@ func (s *state) dbg(format string, args ...any) {
 func (s *state) initFallback() error {
 	remote, err := getCurrentRepoRemoteHTTPS(s.startDir)
 	if err != nil {
-		return err
+		// If Git fails (e.g., due to ownership or missing .git folder),
+		// guess the fallback remote from repos.list instead of crashing.
+		f, ferr := os.Open(s.reposFile)
+		if ferr == nil {
+			base := filepath.Base(s.startDir)
+			var firstRemote string
+			sc := bufio.NewScanner(f)
+			for sc.Scan() {
+				line := trimLine(sc.Text())
+				if line == "" || strings.HasPrefix(line, "@") || lineIsGlobalFlagsOnly(line) {
+					continue
+				}
+				repoURL, _ := splitRepoSpec(strings.Fields(line)[0])
+				httpsURL := specToHTTPS(repoURL)
+
+				if firstRemote == "" {
+					firstRemote = httpsURL
+				}
+				_, repoDir, perr := parseRepoURL(repoURL)
+				if perr == nil && repoDir == base {
+					remote = httpsURL
+					err = nil
+					break
+				}
+			}
+			f.Close()
+
+			// If the directory name didn't match anything, default to the very first repo
+			if err != nil && firstRemote != "" {
+				remote = firstRemote
+				err = nil
+			}
+		}
+
+		if err != nil {
+			return err
+		}
 	}
 	s.currentRepoHTTPS = remote
 	s.fallbackRepoHTTPS = remote
