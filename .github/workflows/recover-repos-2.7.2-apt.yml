@@ -1,0 +1,93 @@
+name: Recover repos 2.7.2 APT publication
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: recover-repos-2.7.2-apt
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'MiguelRodo/repos' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout pinned APT publisher
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: MiguelRodo/actions
+          ref: bf850afe48d42ac221079cfede39021d0574c15a # v3.0.0
+          path: _release-actions
+          persist-credentials: false
+
+      - name: Install APT metadata tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apt-utils dpkg-dev
+
+      - name: Validate existing release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          base=https://github.com/MiguelRodo/repos/releases/download/v2.7.2
+          mkdir -p dist
+          cd dist
+          for arch in amd64 arm64; do
+            file="repos_2.7.2_${arch}.deb"
+            curl --fail --silent --show-error --location --retry 3 "$base/$file" -o "$file"
+          done
+          sha256sum --check --strict <<'CHECKSUMS'
+          f6aaef236aa718447f6bd6c2f2101241d37aa2555a6db82f76222cbbb6ae0a7d  repos_2.7.2_amd64.deb
+          dd02814091d31fa9650579585fde776eedd59aa6338e87f8574e8641d7518362  repos_2.7.2_arm64.deb
+          CHECKSUMS
+          for arch in amd64 arm64; do
+            file="repos_2.7.2_${arch}.deb"
+            test "$(dpkg-deb -f "$file" Package)" = repos
+            test "$(dpkg-deb -f "$file" Version)" = 2.7.2
+            test "$(dpkg-deb -f "$file" Architecture)" = "$arch"
+          done
+
+      - name: Publish signed APT metadata from the verified packages
+        env:
+          APT_REPO_INPUT: MiguelRodo/apt-miguelrodo
+          APT_REPO_TOKEN: ${{ secrets.APT_REPO_TOKEN }}
+          GITHUB_TOKEN_INPUT: ""
+          APT_SIGNING_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          APT_SIGNING_KEY_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          TAG: v2.7.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$APT_REPO_TOKEN"
+          test -n "$APT_SIGNING_KEY"
+          bash _release-actions/scripts/publish-apt-repository.sh
+
+      - name: Verify signed amd64 and arm64 packages from GitHub Pages
+        timeout-minutes: 8
+        shell: bash
+        run: |
+          set -euo pipefail
+          check_dir="$(mktemp -d)"
+          chmod 755 "$check_dir"
+          trap 'sudo rm -rf "$check_dir"' EXIT
+          base=https://miguelrodo.github.io/apt-miguelrodo
+          curl --fail --silent --show-error --location "$base/KEY.gpg" | gpg --dearmor > "$check_dir/key.gpg"
+          echo "deb [arch=amd64,arm64 signed-by=$check_dir/key.gpg] $base stable main" > "$check_dir/sources.list"
+          mkdir "$check_dir/lists"
+          sudo dpkg --add-architecture arm64
+          options=(-o "Dir::Etc::sourcelist=$check_dir/sources.list" -o Dir::Etc::sourceparts=- -o "Dir::State::lists=$check_dir/lists" -o Dir::Cache::pkgcache= -o Dir::Cache::srcpkgcache= -o Dir::State::status=/dev/null)
+          for attempt in {1..20}; do
+            if sudo apt-get "${options[@]}" update --error-on=any &&
+               apt-cache "${options[@]}" show repos:amd64=2.7.2 >/dev/null &&
+               apt-cache "${options[@]}" show repos:arm64=2.7.2 >/dev/null; then
+              echo "Verified signed APT indexes contain repos 2.7.2 for amd64 and arm64." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "Waiting for signed APT indexes ($attempt/20)..."
+            sleep 15
+          done
+          exit 1
