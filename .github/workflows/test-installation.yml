@@ -17,6 +17,13 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         python-version: ['3.8', '3.11']
+        # Ubuntu 26.04 has no setup-python build for Python 3.8.
+        exclude:
+          - os: ubuntu-latest
+            python-version: "3.8"
+        include:
+          - os: ubuntu-24.04
+            python-version: "3.8"
     
     steps:
       - name: Checkout code
