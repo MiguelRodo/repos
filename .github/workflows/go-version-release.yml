@@ -32,6 +32,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+      - name: Install APT publication prerequisites
+        if: ${{ inputs.apt_repo != '' || github.event_name == 'push' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apt-utils dpkg-dev
       - uses: MiguelRodo/actions/go-version-release@bf850afe48d42ac221079cfede39021d0574c15a # v3.0.0
         env:
           SCOOP_TAP_TOKEN: ${{ secrets.SCOOP_TAP_TOKEN }}
