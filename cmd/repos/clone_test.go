@@ -1,9 +1,10 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -120,168 +121,75 @@ func TestRunCloneWorktreeAndFallbackTracking(t *testing.T) {
 	}
 }
 
-func TestHasNonLocalRemotesInFile(t *testing.T) {
-	tmp := t.TempDir()
-	list := filepath.Join(tmp, "repos.list")
+func TestRunCloneUsesGitAuthentication(t *testing.T) {
+	for _, mode := range []string{"anonymous", "credential-helper"} {
+		t.Run(mode, func(t *testing.T) {
+			private := mode == "credential-helper"
+			enableBareRepoAccess(t)
+			tmp := t.TempDir()
+			t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
+			t.Setenv("GIT_CONFIG_GLOBAL", filepath.Join(tmp, "gitconfig"))
+			t.Setenv("GH_CONFIG_DIR", tmp)
+			t.Setenv("SSH_AUTH_SOCK", "")
+			t.Setenv("GITHUB_PAT", "")
+			t.Setenv("GITHUB_TOKEN", "")
+			t.Setenv("GH_TOKEN", "")
+			t.Setenv("NO_PROXY", "127.0.0.1")
+			t.Setenv("no_proxy", "127.0.0.1")
 
-	tests := []struct {
-		name    string
-		lines   []string
-		want    bool
-		wantErr bool
-	}{
-		{
-			name: "all-local-and-at-branch",
-			lines: []string{
-				"--worktree",
-				"--depth 1",
-				"/tmp/local/repo.git",
-				"file:///tmp/local2/repo.git",
-				"@feature-x",
-			},
-			want: false,
-		},
-		{
-			name: "github-owner-repo",
-			lines: []string{
-				"acme/repo",
-			},
-			want: true,
-		},
-		{
-			name: "https-remote",
-			lines: []string{
-				"https://github.com/acme/repo.git",
-			},
-			want: true,
-		},
-		{
-			name: "huggingface-remote",
-			lines: []string{
-				"hf:datasets/acme/data",
-			},
-			want: false,
-		},
-		{
-			name: "ssh-scp-github-remote",
-			lines: []string{
-				"git@github.com:acme/repo.git",
-			},
-			want: true,
-		},
-		{
-			name: "ssh-url-github-remote",
-			lines: []string{
-				"ssh://git@github.com/acme/repo.git",
-			},
-			want: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := os.WriteFile(list, []byte(strings.Join(tt.lines, "\n")+"\n"), 0o644); err != nil {
-				t.Fatalf("write repos.list: %v", err)
-			}
-			got, err := hasNonLocalRemotesInFile(list)
-			if tt.wantErr {
-				if err == nil {
-					t.Fatalf("expected error")
+			remote := createBareRepo(t, tmp, "example")
+			runGit(t, "", "--git-dir", remote, "update-server-info")
+			files := http.StripPrefix("/example", http.FileServer(http.Dir(remote)))
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if private {
+					user, password, ok := r.BasicAuth()
+					if !ok || user != "fixture" || password != "from-helper" {
+						w.Header().Set("WWW-Authenticate", `Basic realm="test"`)
+						w.WriteHeader(http.StatusUnauthorized)
+						return
+					}
 				}
-				return
+				files.ServeHTTP(w, r)
+			}))
+			t.Cleanup(server.Close)
+			runGit(t, "", "config", "--global", "url."+server.URL+"/.insteadOf", "https://github.com/fixture/")
+			if private {
+				t.Setenv("GH_TOKEN", "unrelated-test-token")
+				runGit(t, "", "config", "--global", "credential."+server.URL+".helper",
+					`!f() { if test "$1" = get; then echo username=fixture; echo password=from-helper; fi; }; f`)
 			}
+
+			workspace := filepath.Join(tmp, "workspace")
+			mustInitWorkspaceRepo(t, workspace, remote)
+			mustWriteFile(t, filepath.Join(workspace, "repos.list"), "fixture/example\n")
+			wd, err := os.Getwd()
 			if err != nil {
-				t.Fatalf("hasNonLocalRemotesInFile error: %v", err)
+				t.Fatal(err)
 			}
-			if got != tt.want {
-				t.Fatalf("expected %v, got %v", tt.want, got)
+			if err := os.Chdir(workspace); err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() {
+				if err := os.Chdir(wd); err != nil {
+					t.Error(err)
+				}
+			})
+
+			trace := filepath.Join(tmp, "git-trace.json")
+			t.Setenv("GIT_TRACE2_EVENT", trace)
+			if err := runClone(nil); err != nil {
+				t.Fatal(err)
+			}
+			assertDirExists(t, filepath.Join(workspace, "example", ".git"))
+			data, err := os.ReadFile(trace)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if strings.Contains(string(data), "unrelated-test-token") ||
+				strings.Contains(string(data), `"credential","fill"`) {
+				t.Fatal("repos passed a token to Git or ran a separate credential probe")
 			}
 		})
-	}
-}
-
-func TestRunCloneSkipsAuthCheckWhenOnlyLocalRemotes(t *testing.T) {
-	enableBareRepoAccess(t)
-
-	tmp := t.TempDir()
-	remotes := filepath.Join(tmp, "remotes")
-	mustMkdir(t, remotes)
-	localRemote := createBareRepo(t, remotes, "local-only", "dev")
-
-	projectDir := filepath.Join(tmp, "workspace")
-	mustInitWorkspaceRepo(t, projectDir, localRemote)
-	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), localRemote+"\n")
-
-	oldHasNonLocal := hasNonLocalRemotesInFileFunc
-	oldAuthCheck := checkNonInteractiveAuthForCloneFunc
-	defer func() {
-		hasNonLocalRemotesInFileFunc = oldHasNonLocal
-		checkNonInteractiveAuthForCloneFunc = oldAuthCheck
-	}()
-
-	hasNonLocalRemotesInFileFunc = func(reposFile string) (bool, error) { return false, nil }
-	authCheckCalled := false
-	checkNonInteractiveAuthForCloneFunc = func() error {
-		authCheckCalled = true
-		return errors.New("should not be called")
-	}
-
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	t.Cleanup(func() {
-		if err := os.Chdir(oldWD); err != nil {
-			t.Logf("restore working directory: %v", err)
-		}
-	})
-	if err := os.Chdir(projectDir); err != nil {
-		t.Fatalf("chdir project dir: %v", err)
-	}
-
-	if err := runClone([]string{"-f", "repos.list"}); err != nil {
-		t.Fatalf("runClone returned error: %v", err)
-	}
-	if authCheckCalled {
-		t.Fatalf("expected auth check not to run for local-only remotes")
-	}
-}
-
-func TestRunCloneFailsWhenAuthCheckFailsForNonLocalRemotes(t *testing.T) {
-	tmp := t.TempDir()
-	projectDir := filepath.Join(tmp, "workspace")
-	mustMkdir(t, projectDir)
-	mustWriteFile(t, filepath.Join(projectDir, "repos.list"), "acme/repo\n")
-
-	oldHasNonLocal := hasNonLocalRemotesInFileFunc
-	oldAuthCheck := checkNonInteractiveAuthForCloneFunc
-	defer func() {
-		hasNonLocalRemotesInFileFunc = oldHasNonLocal
-		checkNonInteractiveAuthForCloneFunc = oldAuthCheck
-	}()
-
-	hasNonLocalRemotesInFileFunc = func(reposFile string) (bool, error) { return true, nil }
-	checkNonInteractiveAuthForCloneFunc = func() error { return errors.New("auth missing") }
-
-	oldWD, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	t.Cleanup(func() {
-		if err := os.Chdir(oldWD); err != nil {
-			t.Logf("restore working directory: %v", err)
-		}
-	})
-	if err := os.Chdir(projectDir); err != nil {
-		t.Fatalf("chdir project dir: %v", err)
-	}
-
-	err = runClone([]string{"-f", "repos.list"})
-	if err == nil {
-		t.Fatalf("expected auth check error")
-	}
-	if !strings.Contains(err.Error(), "auth missing") {
-		t.Fatalf("expected auth error, got: %v", err)
 	}
 }
 
@@ -487,24 +395,6 @@ func TestRunCloneWorktreeMissingBranchRequiresCreateFlag(t *testing.T) {
 	}
 }
 
-func TestCheckNonInteractiveAuthForCloneHasActionableError(t *testing.T) {
-	tmp := t.TempDir()
-	t.Setenv("PATH", tmp)
-	t.Setenv("GH_TOKEN", "")
-	t.Setenv("SSH_AUTH_SOCK", "")
-
-	err := checkNonInteractiveAuthForClone()
-	if err == nil {
-		t.Fatalf("expected auth check error")
-	}
-	msg := err.Error()
-	for _, expected := range []string{"GITHUB_PAT", "gh auth login", "git credential approve"} {
-		if !strings.Contains(msg, expected) {
-			t.Fatalf("expected error to mention %q, got: %q", expected, msg)
-		}
-	}
-}
-
 func TestRunCloneHuggingFaceRequiresCLIWhenHFRepoPresent(t *testing.T) {
 	enableBareRepoAccess(t)
 
@@ -604,7 +494,7 @@ func TestRunCloneHuggingFaceRoutesToCLIAndPassesHFToken(t *testing.T) {
 	}
 }
 
-func TestRunCloneHuggingFaceSkipsAuthCheck(t *testing.T) {
+func TestRunCloneHuggingFaceWithoutToken(t *testing.T) {
 	enableBareRepoAccess(t)
 
 	tmp := t.TempDir()
@@ -627,19 +517,6 @@ func TestRunCloneHuggingFaceSkipsAuthCheck(t *testing.T) {
 	logFile := filepath.Join(tmp, "hf.log")
 	mustWriteHuggingFaceShim(t, binDir, logFile, true)
 
-	oldHasNonLocal := hasNonLocalRemotesInFileFunc
-	oldAuthCheck := checkNonInteractiveAuthForCloneFunc
-	defer func() {
-		hasNonLocalRemotesInFileFunc = oldHasNonLocal
-		checkNonInteractiveAuthForCloneFunc = oldAuthCheck
-	}()
-
-	authCheckCalled := false
-	checkNonInteractiveAuthForCloneFunc = func() error {
-		authCheckCalled = true
-		return errors.New("should not be called for hf remotes")
-	}
-
 	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	t.Setenv("HF_TOKEN", "")
 
@@ -658,9 +535,6 @@ func TestRunCloneHuggingFaceSkipsAuthCheck(t *testing.T) {
 
 	if err := runClone([]string{"-f", "repos.list"}); err != nil {
 		t.Fatalf("runClone returned error: %v", err)
-	}
-	if authCheckCalled {
-		t.Fatalf("expected auth check not to run for hf remotes")
 	}
 
 	content, err := os.ReadFile(logFile)

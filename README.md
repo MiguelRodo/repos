@@ -43,7 +43,10 @@ Then run:
 repos clone
 ```
 
-This clones all listed repositories into the parent directory of your current location.
+This clones all listed repositories into your current directory. For private
+repositories, configure non-interactive authentication in Git. Clones and
+fetches use the same credentials as Git for the target remote.
+[Authentication examples](https://miguelrodo.github.io/repos/clone.html#authentication)
 Hugging Face entries (`hf:...`) require `huggingface-cli`
 (`pip install huggingface_hub[cli]`).
 

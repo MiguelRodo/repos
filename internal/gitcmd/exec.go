@@ -7,31 +7,12 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
-
-	"github.com/MiguelRodo/repos/v2/internal/sysutil"
 )
 
 var sanitizeURLRegex = regexp.MustCompile(`(https?://)[^/\s]+@`)
 
 func RunGit(dir string, args ...string) (string, error) {
-	needsAuth := false
-	for _, arg := range args {
-		if arg == "push" || arg == "fetch" || arg == "clone" || arg == "ls-remote" {
-			needsAuth = true
-			break
-		}
-	}
-
-	finalArgs := args
-	if needsAuth {
-		token, err := sysutil.DiscoverGitHubToken()
-		if err == nil && token != "" {
-			inlineHelper := fmt.Sprintf("!f() { echo \"password=%s\"; }; f", token)
-			finalArgs = append([]string{"-c", "credential.helper=" + inlineHelper}, args...)
-		}
-	}
-
-	cmd := exec.Command("git", finalArgs...)
+	cmd := exec.Command("git", args...)
 	if dir != "" {
 		cmd.Dir = dir
 	}
